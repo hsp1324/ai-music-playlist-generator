@@ -1,0 +1,407 @@
+import hashlib
+import hmac
+import json
+import time
+from collections.abc import Mapping
+from dataclasses import dataclass
+from pathlib import Path
+from urllib.parse import urlencode
+from typing import Any
+
+import httpx
+
+from app.config import Settings
+from app.models.slack_installation import SlackInstallation
+from app.models.track import Track
+
+
+@dataclass
+class SlackPostResult:
+    ok: bool
+    channel: str | None = None
+    ts: str | None = None
+    raw: dict[str, Any] | None = None
+
+
+@dataclass
+class SlackOAuthResult:
+    ok: bool
+    raw: dict[str, Any]
+
+
+@dataclass
+class SlackFileUploadResult:
+    ok: bool
+    file_id: str | None = None
+    raw: dict[str, Any] | None = None
+
+
+class SlackService:
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+
+    def build_install_url(self, state: str | None = None) -> str:
+        if not self.settings.slack_client_id:
+            raise ValueError("slack_client_id is not configured.")
+
+        params = {
+            "client_id": self.settings.slack_client_id,
+            "scope": self.settings.slack_scopes,
+        }
+        if self.settings.slack_user_scopes:
+            params["user_scope"] = self.settings.slack_user_scopes
+        if self.settings.slack_redirect_uri:
+            params["redirect_uri"] = self.settings.slack_redirect_uri
+        if state:
+            params["state"] = state
+        return f"https://slack.com/oauth/v2/authorize?{urlencode(params)}"
+
+    def verify_signature(self, headers: Mapping[str, str], raw_body: bytes) -> bool:
+        if not self.settings.slack_enable_signature_verification:
+            return True
+
+        timestamp = headers.get("x-slack-request-timestamp", "")
+        signature = headers.get("x-slack-signature", "")
+        if not timestamp or not signature or not self.settings.slack_signing_secret:
+            return False
+
+        if abs(time.time() - int(timestamp)) > 60 * 5:
+            return False
+
+        sig_basestring = f"v0:{timestamp}:{raw_body.decode('utf-8')}"
+        digest = hmac.new(
+            self.settings.slack_signing_secret.encode("utf-8"),
+            sig_basestring.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        expected = f"v0={digest}"
+        return hmac.compare_digest(expected, signature)
+
+    def build_track_review_blocks(self, track: Track) -> list[dict[str, Any]]:
+        metadata_text = json.dumps(track.metadata_json, ensure_ascii=True, indent=2)
+        value_prefix = f"track:{track.id}"
+        link_buttons: list[dict[str, Any]] = []
+        if track.preview_url:
+            link_buttons.append(self._link_button("Preview", track.preview_url))
+        if track.audio_path and track.audio_path.startswith(("http://", "https://")):
+            link_buttons.append(self._link_button("Download", track.audio_path))
+        image_url = track.metadata_json.get("image_url")
+        if image_url:
+            link_buttons.append(self._link_button("Cover", image_url))
+
+        blocks = [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": f"Track Review: {track.title}"},
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*Track ID:*\n`{track.id}`"},
+                    {"type": "mrkdwn", "text": f"*Duration:*\n{track.duration_seconds}s"},
+                    {"type": "mrkdwn", "text": f"*Status:*\n`{track.status.value}`"},
+                    {
+                        "type": "mrkdwn",
+                        "text": (
+                            f"*Audio File:*\n`{Path(track.audio_path).name}`"
+                            if track.audio_path and not track.audio_path.startswith(("http://", "https://"))
+                            else "*Audio File:*\nremote only"
+                            if track.audio_path
+                            else "*Audio File:*\nnot provided"
+                        ),
+                    },
+                ],
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*Prompt*\n```{track.prompt}```"},
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*Metadata*\n```{metadata_text}```"},
+            },
+        ]
+        if link_buttons:
+            blocks.append(
+                {
+                    "type": "actions",
+                    "elements": link_buttons,
+                }
+            )
+        blocks.append(
+            {
+                "type": "actions",
+                "elements": [
+                    self._button("Approve", f"{value_prefix}:approve", style="primary"),
+                    self._button("Reject", f"{value_prefix}:reject", style="danger"),
+                    self._button("Hold", f"{value_prefix}:hold"),
+                    self._button("Regenerate", f"{value_prefix}:regenerate"),
+                ],
+            },
+        )
+        return blocks
+
+    def build_app_home_blocks(self, stats: dict[str, int]) -> list[dict[str, Any]]:
+        return [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": "AI Music Ops Dashboard"},
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*Pending Review*\n{stats.get('pending_review', 0)}"},
+                    {"type": "mrkdwn", "text": f"*Approved*\n{stats.get('approved', 0)}"},
+                    {"type": "mrkdwn", "text": f"*Rejected*\n{stats.get('rejected', 0)}"},
+                    {"type": "mrkdwn", "text": f"*Held*\n{stats.get('held', 0)}"},
+                ],
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    self._button("Build Approved Playlist", "system:build_playlist", style="primary"),
+                    self._button("Refresh Dashboard", "system:refresh_dashboard"),
+                ],
+            },
+        ]
+
+    async def exchange_code_for_installation(self, code: str) -> SlackOAuthResult:
+        if not self.settings.slack_client_id or not self.settings.slack_client_secret:
+            return SlackOAuthResult(ok=False, raw={"error": "slack_client_credentials_missing"})
+
+        payload = {
+            "client_id": self.settings.slack_client_id,
+            "client_secret": self.settings.slack_client_secret,
+            "code": code,
+        }
+        if self.settings.slack_redirect_uri:
+            payload["redirect_uri"] = self.settings.slack_redirect_uri
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post("https://slack.com/api/oauth.v2.access", data=payload)
+            data = response.json()
+            return SlackOAuthResult(ok=bool(data.get("ok")), raw=data)
+
+    async def post_review_message(
+        self,
+        track: Track,
+        *,
+        token: str | None = None,
+        channel: str | None = None,
+    ) -> SlackPostResult:
+        channel = channel or self.settings.slack_review_channel_id
+        auth_token = token or self.settings.slack_bot_token
+        if not auth_token or not channel:
+            return SlackPostResult(ok=False, raw={"reason": "slack_bot_token or slack_review_channel_id missing"})
+
+        payload = {
+            "channel": channel,
+            "text": f"Track review requested for {track.title}",
+            "blocks": self.build_track_review_blocks(track),
+        }
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/chat.postMessage",
+                headers={
+                    "Authorization": f"Bearer {auth_token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json=payload,
+            )
+            data = response.json()
+            return SlackPostResult(
+                ok=bool(data.get("ok")),
+                channel=data.get("channel"),
+                ts=data.get("ts"),
+                raw=data,
+            )
+
+    async def upload_local_audio_file(
+        self,
+        *,
+        file_path: str,
+        title: str,
+        token: str,
+        channel: str,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+    ) -> SlackFileUploadResult:
+        path = Path(file_path)
+        if not path.exists():
+            return SlackFileUploadResult(ok=False, raw={"error": "file_not_found", "path": file_path})
+
+        file_size = path.stat().st_size
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            upload_ticket_response = await client.post(
+                "https://slack.com/api/files.getUploadURLExternal",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                },
+                data={
+                    "filename": path.name,
+                    "length": str(file_size),
+                },
+            )
+            upload_ticket = upload_ticket_response.json()
+            if not upload_ticket.get("ok"):
+                return SlackFileUploadResult(ok=False, raw=upload_ticket)
+
+            upload_url = upload_ticket["upload_url"]
+            file_id = upload_ticket["file_id"]
+            file_bytes = path.read_bytes()
+            binary_upload_response = await client.post(
+                upload_url,
+                headers={"Content-Type": "application/octet-stream"},
+                content=file_bytes,
+            )
+            if binary_upload_response.status_code != 200:
+                return SlackFileUploadResult(
+                    ok=False,
+                    file_id=file_id,
+                    raw={
+                        "error": "binary_upload_failed",
+                        "status_code": binary_upload_response.status_code,
+                        "body": binary_upload_response.text,
+                    },
+                )
+
+            completion_payload: dict[str, Any] = {
+                "files": [{"id": file_id, "title": title}],
+                "channel_id": channel,
+            }
+            if thread_ts:
+                completion_payload["thread_ts"] = thread_ts
+            if initial_comment:
+                completion_payload["initial_comment"] = initial_comment
+
+            completion_response = await client.post(
+                "https://slack.com/api/files.completeUploadExternal",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json=completion_payload,
+            )
+            completion_data = completion_response.json()
+            return SlackFileUploadResult(
+                ok=bool(completion_data.get("ok")),
+                file_id=file_id,
+                raw=completion_data,
+            )
+
+    async def publish_app_home(
+        self,
+        *,
+        user_id: str,
+        stats: dict[str, int],
+        token: str | None = None,
+    ) -> dict[str, Any]:
+        auth_token = token or self.settings.slack_bot_token
+        if not auth_token:
+            return {"ok": False, "error": "missing_bot_token"}
+
+        payload = {
+            "user_id": user_id,
+            "view": {
+                "type": "home",
+                "blocks": self.build_app_home_blocks(stats),
+            },
+        }
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/views.publish",
+                headers={
+                    "Authorization": f"Bearer {auth_token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json=payload,
+            )
+            return response.json()
+
+    async def post_ops_message(
+        self,
+        *,
+        text: str,
+        token: str | None = None,
+        channel: str | None = None,
+    ) -> SlackPostResult:
+        auth_token = token or self.settings.slack_bot_token
+        target_channel = channel or self.settings.slack_review_channel_id
+        if not auth_token or not target_channel:
+            return SlackPostResult(ok=False, raw={"error": "missing_bot_token_or_channel"})
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/chat.postMessage",
+                headers={
+                    "Authorization": f"Bearer {auth_token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json={
+                    "channel": target_channel,
+                    "text": text,
+                },
+            )
+            data = response.json()
+            return SlackPostResult(
+                ok=bool(data.get("ok")),
+                channel=data.get("channel"),
+                ts=data.get("ts"),
+                raw=data,
+            )
+
+    @staticmethod
+    def installation_from_oauth(payload: dict[str, Any]) -> SlackInstallation | None:
+        access_token = payload.get("access_token")
+        team = payload.get("team") or {}
+        authed_user = payload.get("authed_user") or {}
+        if not access_token or not team.get("id"):
+            return None
+
+        return SlackInstallation(
+            team_id=team["id"],
+            team_name=team.get("name"),
+            enterprise_id=(payload.get("enterprise") or {}).get("id"),
+            app_id=payload.get("app_id"),
+            bot_user_id=payload.get("bot_user_id"),
+            bot_token=access_token,
+            scope=payload.get("scope"),
+            installed_by_user_id=authed_user.get("id"),
+            is_active=True,
+        )
+
+    @staticmethod
+    def parse_track_action(action_value: str) -> tuple[str, str] | None:
+        parts = action_value.split(":")
+        if len(parts) != 3 or parts[0] != "track":
+            return None
+        return parts[1], parts[2]
+
+    @staticmethod
+    def parse_system_action(action_value: str) -> str | None:
+        parts = action_value.split(":")
+        if len(parts) != 2 or parts[0] != "system":
+            return None
+        return parts[1]
+
+    @staticmethod
+    def _button(text: str, value: str, style: str | None = None) -> dict[str, Any]:
+        button = {
+            "type": "button",
+            "text": {"type": "plain_text", "text": text, "emoji": True},
+            "value": value,
+            "action_id": value,
+        }
+        if style:
+            button["style"] = style
+        return button
+
+    @staticmethod
+    def _link_button(text: str, url: str) -> dict[str, Any]:
+        return {
+            "type": "button",
+            "text": {"type": "plain_text", "text": text, "emoji": True},
+            "url": url,
+            "action_id": f"link:{text.lower()}",
+        }
