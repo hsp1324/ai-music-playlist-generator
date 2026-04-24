@@ -174,6 +174,12 @@ Web UI:
 http://127.0.0.1:8000/
 ```
 
+Project handoff/status:
+
+```text
+docs/project-status.md
+```
+
 ## Suno Session Flow
 
 The web UI now includes a Suno session banner.
