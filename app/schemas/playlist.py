@@ -14,9 +14,12 @@ class PlaylistBuildRequest(BaseModel):
 
 class PlaylistWorkspaceCreateRequest(BaseModel):
     title: str
-    target_duration_seconds: int = Field(default=3600, ge=60)
+    target_duration_seconds: int = Field(default=3600, ge=0)
+    workspace_mode: str = "playlist"
+    auto_publish_when_ready: bool | None = None
     description: str | None = None
     cover_prompt: str | None = None
+    dreamina_prompt: str | None = None
 
 
 class PlaylistPublishApproveRequest(BaseModel):
@@ -54,12 +57,16 @@ class PlaylistTrackRead(BaseModel):
 class PlaylistWorkspaceRead(BaseModel):
     id: str
     title: str
+    hidden: bool = False
     status: PlaylistStatus
+    workspace_mode: str
+    auto_publish_when_ready: bool
     target_duration_seconds: int
     actual_duration_seconds: int
     progress_ratio: float
     description: str | None
     cover_prompt: str | None
+    dreamina_prompt: str | None
     workflow_state: str
     publish_ready: bool
     publish_approved: bool

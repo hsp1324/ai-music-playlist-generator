@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 
 from app.config import Settings
 from app.services.suno_session_service import SunoBrowserSessionService
@@ -18,10 +19,11 @@ def test_suno_session_status_needs_login_without_state(tmp_path) -> None:
 def test_suno_session_status_ready_with_recent_auth_cookie(tmp_path) -> None:
     settings = Settings(storage_root=tmp_path)
     settings.ensure_storage_dirs()
+    recent = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
     settings.suno_browser_state_path.write_text(
         json.dumps(
             {
-                "saved_at": "2026-04-20T12:00:00+00:00",
+                "saved_at": recent,
                 "cookies": [
                     {
                         "name": "__client",

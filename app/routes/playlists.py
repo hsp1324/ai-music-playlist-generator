@@ -82,8 +82,11 @@ def create_workspace_playlist(
         db,
         title=payload.title,
         target_duration_seconds=payload.target_duration_seconds,
+        workspace_mode=payload.workspace_mode,
+        auto_publish_when_ready=payload.auto_publish_when_ready,
         description=payload.description,
         cover_prompt=payload.cover_prompt,
+        dreamina_prompt=payload.dreamina_prompt,
     )
     return serialize_playlist_workspace(playlist)
 

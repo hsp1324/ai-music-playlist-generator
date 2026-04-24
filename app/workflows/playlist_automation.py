@@ -24,6 +24,21 @@ def _playlist_meta(playlist: Playlist) -> dict:
     return dict(playlist.metadata_json or {})
 
 
+def _workspace_mode(playlist: Playlist) -> str:
+    return str(_playlist_meta(playlist).get("workspace_mode") or "playlist")
+
+
+def _auto_publish_when_ready(playlist: Playlist) -> bool:
+    return bool(_playlist_meta(playlist).get("auto_publish_when_ready"))
+
+
+def _publish_is_ready(playlist: Playlist) -> bool:
+    mode = _workspace_mode(playlist)
+    if mode == "single_track_video":
+        return bool(playlist.items)
+    return playlist.actual_duration_seconds >= playlist.target_duration_seconds
+
+
 def _has_local_audio(track: Track) -> bool:
     if not track.audio_path:
         return False
@@ -53,17 +68,23 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         if item.track is not None
     ]
     progress_ratio = 0.0
-    if playlist.target_duration_seconds > 0:
+    if _workspace_mode(playlist) == "single_track_video":
+        progress_ratio = 1.0 if tracks else 0.0
+    elif playlist.target_duration_seconds > 0:
         progress_ratio = min(playlist.actual_duration_seconds / playlist.target_duration_seconds, 1.0)
     return PlaylistWorkspaceRead(
         id=playlist.id,
         title=playlist.title,
+        hidden=bool(meta.get("hidden")),
         status=playlist.status,
+        workspace_mode=str(meta.get("workspace_mode") or "playlist"),
+        auto_publish_when_ready=bool(meta.get("auto_publish_when_ready")),
         target_duration_seconds=playlist.target_duration_seconds,
         actual_duration_seconds=playlist.actual_duration_seconds,
         progress_ratio=progress_ratio,
         description=meta.get("description"),
         cover_prompt=meta.get("cover_prompt"),
+        dreamina_prompt=meta.get("dreamina_prompt"),
         workflow_state=meta.get("workflow_state", "collecting"),
         publish_ready=bool(meta.get("publish_ready")),
         publish_approved=bool(meta.get("publish_approved")),
@@ -91,17 +112,30 @@ def create_playlist_workspace(
     *,
     title: str,
     target_duration_seconds: int,
+    workspace_mode: str = "playlist",
+    auto_publish_when_ready: bool | None = None,
     description: str | None = None,
     cover_prompt: str | None = None,
+    dreamina_prompt: str | None = None,
 ) -> Playlist:
+    normalized_mode = workspace_mode if workspace_mode in {"playlist", "single_track_video"} else "playlist"
+    if normalized_mode == "single_track_video":
+        target_duration_seconds = 1
+    auto_publish = auto_publish_when_ready
+    if auto_publish is None:
+        auto_publish = normalized_mode == "single_track_video"
+
     playlist = Playlist(
         title=title,
         status=PlaylistStatus.draft,
         target_duration_seconds=target_duration_seconds,
         actual_duration_seconds=0,
         metadata_json={
+            "workspace_mode": normalized_mode,
+            "auto_publish_when_ready": auto_publish,
             "description": description,
             "cover_prompt": cover_prompt,
+            "dreamina_prompt": dreamina_prompt,
             "workflow_state": "collecting",
             "publish_ready": False,
             "publish_approved": False,
@@ -132,21 +166,109 @@ def _all_tracks_renderable(playlist: Playlist) -> bool:
     return bool(tracks) and all(_has_local_audio(track) for track in tracks)
 
 
-def _render_playlist_audio_if_possible(
+def _find_active_playlist_job(
     db: Session,
-    services: ServiceRegistry,
     playlist: Playlist,
-) -> None:
-    tracks = _playlist_tracks(playlist)
-    if not tracks or not _all_tracks_renderable(playlist):
-        return
-    if playlist.output_audio_path and Path(playlist.output_audio_path).exists():
-        return
+) -> Job | None:
+    return db.scalars(
+        select(Job).where(
+            Job.playlist_id == playlist.id,
+            Job.type == JobType.build_playlist,
+            Job.status.in_([JobStatus.queued, JobStatus.running]),
+        )
+    ).first()
 
-    output_path = Path(services.settings.playlists_dir) / f"{playlist.id}.mp3"
-    rendered_path = services.playlist_builder.build_audio(tracks, output_path)
-    playlist.output_audio_path = str(rendered_path)
+
+def _queue_playlist_render_job(
+    db: Session,
+    playlist: Playlist,
+    *,
+    source: str,
+    trigger: str,
+) -> Job | None:
+    if not _all_tracks_renderable(playlist):
+        return None
+    if playlist.output_audio_path and Path(playlist.output_audio_path).exists():
+        return None
+
+    active_job = _find_active_playlist_job(db, playlist)
+    if active_job:
+        return active_job
+
+    job = Job(
+        type=JobType.build_playlist,
+        status=JobStatus.queued,
+        source=source,
+        payload_json={
+            "playlist_id": playlist.id,
+            "trigger": trigger,
+        },
+        result_json={},
+        playlist=playlist,
+    )
+    db.add(job)
+    return job
+
+
+def _queue_publish_job(
+    db: Session,
+    playlist: Playlist,
+    *,
+    actor: str,
+    note: str | None,
+    source: str,
+) -> Job | None:
+    active_job = db.scalars(
+        select(Job).where(
+            Job.playlist_id == playlist.id,
+            Job.type == JobType.upload_youtube,
+            Job.status.in_([JobStatus.queued, JobStatus.running]),
+        )
+    ).first()
+    if active_job:
+        return active_job
+
+    meta = _playlist_meta(playlist)
+    meta["publish_approved"] = True
+    meta["publish_approved_by"] = actor
+    meta["workflow_state"] = "publish_queued"
+    meta["note"] = note or "Background worker queued cover, video render, and YouTube upload."
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.ready
     db.add(playlist)
+
+    job = Job(
+        type=JobType.upload_youtube,
+        status=JobStatus.queued,
+        source=source,
+        payload_json={
+            "playlist_id": playlist.id,
+            "actor": actor,
+            "note": note,
+        },
+        result_json={},
+        playlist=playlist,
+    )
+    db.add(job)
+    return job
+
+
+def maybe_queue_auto_publish_job(
+    db: Session,
+    playlist: Playlist,
+    *,
+    actor: str = "system:auto-publish",
+    note: str | None = None,
+    source: str = "system:auto-publish",
+) -> Job | None:
+    meta = _playlist_meta(playlist)
+    if not meta.get("publish_ready"):
+        return None
+    if not _auto_publish_when_ready(playlist):
+        return None
+    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+        return None
+    return _queue_publish_job(db, playlist, actor=actor, note=note, source=source)
 
 
 async def _update_publish_state(
@@ -159,19 +281,39 @@ async def _update_publish_state(
     meta = _playlist_meta(playlist)
     _refresh_playlist_duration(playlist)
 
-    if playlist.actual_duration_seconds >= playlist.target_duration_seconds:
+    if _publish_is_ready(playlist):
         meta["workflow_state"] = "pending_publish_approval"
         meta["publish_ready"] = True
         meta["publish_ready_trigger"] = trigger
         if _all_tracks_renderable(playlist):
-            try:
-                _render_playlist_audio_if_possible(db, services, playlist)
+            if playlist.output_audio_path and Path(playlist.output_audio_path).exists():
                 playlist.status = PlaylistStatus.ready
                 meta["render_ready"] = True
-            except Exception as exc:  # noqa: BLE001
+                meta.pop("render_error", None)
+                meta["note"] = meta.get("note") or "Playlist audio render is complete."
+                if _auto_publish_when_ready(playlist):
+                    meta["publish_approved"] = True
+                    meta["publish_approved_by"] = "system:auto-publish"
+                    meta["workflow_state"] = "publish_queued"
+                    meta["note"] = "Auto-publish queued immediately because the workspace is ready."
+                    _queue_publish_job(
+                        db,
+                        playlist,
+                        actor="system:auto-publish",
+                        note=meta["note"],
+                        source="system:auto-publish",
+                    )
+            else:
+                _queue_playlist_render_job(
+                    db,
+                    playlist,
+                    source="system:workspace-queue",
+                    trigger=trigger,
+                )
+                playlist.status = PlaylistStatus.building
                 meta["render_ready"] = False
-                meta["render_error"] = str(exc)
-                playlist.status = PlaylistStatus.draft
+                meta.pop("render_error", None)
+                meta["note"] = "Playlist audio render queued in background."
         else:
             meta["render_ready"] = False
             meta["render_error"] = "Some tracks are remote-only and must be uploaded locally before rendering."
@@ -253,6 +395,74 @@ async def assign_track_to_playlist(
     return playlist
 
 
+async def return_track_to_workspace_queue(
+    db: Session,
+    services: ServiceRegistry,
+    *,
+    track: Track,
+    playlist_id: str,
+    actor: str,
+) -> Playlist:
+    playlist = db.scalars(
+        select(Playlist)
+        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .where(Playlist.id == playlist_id)
+    ).first()
+    if not playlist:
+        raise ValueError("Playlist not found")
+
+    item = next((item for item in playlist.items if item.track_id == track.id), None)
+    if item is None:
+        raise ValueError("Track is not assigned to the selected playlist")
+
+    playlist.items.remove(item)
+    db.delete(item)
+    db.flush()
+
+    track.status = TrackStatus.pending_review
+    track.reviewed_at = None
+    track_meta = dict(track.metadata_json or {})
+    track_meta["pending_workspace_id"] = playlist.id
+    track_meta["pending_workspace_title"] = playlist.title
+    track.metadata_json = track_meta
+    db.add(track)
+
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("return_to_review_history") or [])
+    history.append(
+        {
+            "track_id": track.id,
+            "actor": actor,
+            "returned_at": _utcnow().isoformat(),
+        }
+    )
+    meta["return_to_review_history"] = history
+    meta["publish_ready"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "collecting"
+    meta["note"] = f"Track `{track.title}` returned to awaiting approval."
+    meta.pop("publish_approved_by", None)
+    meta.pop("publish_ready_trigger", None)
+    meta.pop("render_ready", None)
+    meta.pop("render_error", None)
+    meta.pop("cover_image_path", None)
+    playlist.metadata_json = meta
+    playlist.output_audio_path = None
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.status = PlaylistStatus.draft
+    db.commit()
+    db.refresh(playlist)
+
+    playlist = db.scalars(
+        select(Playlist)
+        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .where(Playlist.id == playlist.id)
+    ).first()
+    await _update_publish_state(db, services, playlist, trigger=f"return-to-review:{track.id}")
+    return playlist
+
+
 def list_available_approved_tracks(
     db: Session,
     *,
@@ -312,6 +522,8 @@ def build_playlist_from_tracks(
             "selected_track_ids": [track.id for track in selected_tracks],
             "shortage_seconds": max(target_duration_seconds - total, 0),
             "workflow_state": "collecting" if total < target_duration_seconds else "pending_publish_approval",
+            "publish_ready": total >= target_duration_seconds,
+            "publish_approved": False,
             **(metadata or {}),
         },
     )
@@ -331,7 +543,7 @@ def build_playlist_from_tracks(
     now = _utcnow()
     job = Job(
         type=JobType.build_playlist,
-        status=JobStatus.running if execute_render else JobStatus.succeeded,
+        status=JobStatus.queued if execute_render else JobStatus.succeeded,
         source=source,
         payload_json={
             "title": title,
@@ -340,29 +552,18 @@ def build_playlist_from_tracks(
         },
         result_json={"selected_track_ids": [track.id for track in selected_tracks]},
         playlist=playlist,
-        started_at=now,
+        started_at=None if execute_render else now,
         finished_at=None if execute_render else now,
     )
     db.add(job)
     db.flush()
 
     if execute_render:
-        output_path = Path(services.settings.playlists_dir) / f"{playlist.id}.mp3"
-        try:
-            rendered_path = services.playlist_builder.build_audio(selected_tracks, output_path)
-            playlist.output_audio_path = str(rendered_path)
-            playlist.status = PlaylistStatus.ready
-            job.status = JobStatus.succeeded
-            job.result_json = {
-                "selected_track_ids": [track.id for track in selected_tracks],
-                "output_audio_path": str(rendered_path),
-            }
-            job.finished_at = _utcnow()
-        except Exception as exc:  # noqa: BLE001
-            playlist.status = PlaylistStatus.failed
-            job.status = JobStatus.failed
-            job.error_text = str(exc)
-            job.finished_at = _utcnow()
+        playlist.metadata_json = {
+            **playlist.metadata_json,
+            "render_ready": False,
+            "note": "Playlist audio render queued in background.",
+        }
 
     db.commit()
     db.refresh(playlist)
@@ -417,136 +618,55 @@ def approve_playlist_publish(
     meta = _playlist_meta(playlist)
     if not playlist.items:
         raise ValueError("Playlist has no tracks to publish.")
-    if not meta.get("publish_ready") or playlist.actual_duration_seconds < playlist.target_duration_seconds:
+    if not meta.get("publish_ready") or not _publish_is_ready(playlist):
         raise ValueError("Playlist has not reached its target duration yet.")
-    if not youtube_video_id:
-        if not playlist.output_audio_path:
-            raise ValueError("Playlist audio has not been rendered yet.")
-        audio_path = Path(playlist.output_audio_path)
-        if not audio_path.exists():
-            raise ValueError("Rendered playlist audio file is missing on disk.")
-
-    cover_image_path = services.cover_art.generate_cover(playlist)
-    meta["cover_image_path"] = cover_image_path
-    meta["publish_approved"] = True
-    meta["workflow_state"] = "ready_for_youtube"
-    meta["publish_approved_by"] = actor
-    meta["note"] = note
-    playlist.metadata_json = meta
-
-    if (
-        playlist.output_audio_path
-        and (
-            not playlist.output_video_path
-            or not Path(playlist.output_video_path).exists()
-        )
-    ):
-        audio_path = Path(playlist.output_audio_path)
-        video_path = Path(services.settings.playlists_dir) / f"{playlist.id}.mp4"
-        try:
-            playlist.output_video_path = str(
-                services.playlist_builder.build_video(audio_path, Path(cover_image_path), video_path)
-            )
-        except Exception as exc:  # noqa: BLE001
-            playlist.status = PlaylistStatus.ready
-            meta["workflow_state"] = "video_build_failed"
-            meta["note"] = f"Automatic video build failed: {exc}"
-            meta["video_build_error"] = str(exc)
-            playlist.metadata_json = meta
-            db.add(playlist)
-
-            job = Job(
-                type=JobType.upload_youtube,
-                status=JobStatus.failed,
-                source="web",
-                payload_json={
-                    "playlist_id": playlist.id,
-                    "actor": actor,
-                    "note": note,
-                },
-                result_json={
-                    "cover_image_path": cover_image_path,
-                    "output_video_path": playlist.output_video_path,
-                },
-                error_text=str(exc),
-                playlist=playlist,
-                started_at=_utcnow(),
-                finished_at=_utcnow(),
-            )
-            db.add(job)
-            db.commit()
-            db.refresh(playlist)
-            return playlist
-
-    upload_status = JobStatus.queued
-    if playlist.output_video_path and services.settings.youtube_auto_upload_on_publish:
-        youtube_status = services.youtube.get_status()
-        if youtube_status["ready"]:
-            description = meta.get("description") or f"{playlist.title}\n\nGenerated by AI music workspace."
-            tags = sorted(
-                {
-                    tag.strip()
-                    for item in playlist.items
-                    for tag in str((item.track.metadata_json or {}).get("tags") or "").split(",")
-                    if tag.strip()
-                }
-            )
-            try:
-                result = services.youtube.upload_playlist_video(
-                    playlist,
-                    title=playlist.title,
-                    description=description,
-                    tags=tags,
-                    thumbnail_path=cover_image_path,
-                )
-                playlist.youtube_video_id = result.video_id
-                playlist.status = PlaylistStatus.uploaded
-                meta["workflow_state"] = "uploaded"
-                meta["youtube_response"] = result.response
-                upload_status = JobStatus.succeeded
-                for item in playlist.items:
-                    item.track.status = TrackStatus.uploaded
-                    db.add(item.track)
-            except Exception as exc:  # noqa: BLE001
-                playlist.status = PlaylistStatus.ready
-                meta["workflow_state"] = "youtube_upload_failed"
-                meta["note"] = f"Automatic YouTube upload failed: {exc}"
-                meta["youtube_upload_error"] = str(exc)
-                upload_status = JobStatus.failed
-        else:
-            meta["workflow_state"] = "ready_for_youtube_auth"
-            meta["note"] = (
-                f"{note} "
-                if note
-                else ""
-            ) + "Connect YouTube in the web app to enable automatic upload."
-
     if youtube_video_id:
         playlist.youtube_video_id = youtube_video_id
         playlist.status = PlaylistStatus.uploaded
         meta["workflow_state"] = "uploaded"
-        upload_status = JobStatus.succeeded
-    db.add(playlist)
+        meta["publish_approved"] = True
+        meta["publish_approved_by"] = actor
+        meta["note"] = note
+        db.add(playlist)
 
-    job = Job(
-        type=JobType.upload_youtube,
-        status=upload_status,
+        job = Job(
+            type=JobType.upload_youtube,
+            status=JobStatus.succeeded,
+            source="web",
+            payload_json={
+                "playlist_id": playlist.id,
+                "actor": actor,
+                "note": note,
+            },
+            result_json={
+                "youtube_video_id": playlist.youtube_video_id,
+                "output_video_path": playlist.output_video_path,
+            },
+            playlist=playlist,
+            started_at=_utcnow(),
+            finished_at=_utcnow(),
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(playlist)
+        return playlist
+
+    if not playlist.output_audio_path:
+        raise ValueError("Playlist audio has not been rendered yet.")
+    audio_path = Path(playlist.output_audio_path)
+    if not audio_path.exists():
+        raise ValueError("Rendered playlist audio file is missing on disk.")
+
+    _queue_publish_job(
+        db,
+        playlist,
+        actor=actor,
+        note=(
+        f"{note} " if note else ""
+        ) + "Background worker queued cover, video render, and YouTube upload.",
         source="web",
-        payload_json={
-            "playlist_id": playlist.id,
-            "actor": actor,
-            "note": note,
-        },
-        result_json={
-            "cover_image_path": cover_image_path,
-            "youtube_video_id": playlist.youtube_video_id,
-            "output_video_path": playlist.output_video_path,
-        },
-        playlist=playlist,
-        started_at=_utcnow(),
-        finished_at=_utcnow() if upload_status in {JobStatus.succeeded, JobStatus.failed} else None,
     )
-    db.add(job)
+
     db.commit()
     db.refresh(playlist)
     return playlist

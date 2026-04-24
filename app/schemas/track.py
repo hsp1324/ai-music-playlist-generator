@@ -37,6 +37,12 @@ class TrackDecisionRequest(BaseModel):
     playlist_id: str | None = None
 
 
+class TrackReturnToReviewRequest(BaseModel):
+    playlist_id: str
+    actor: str = "unknown"
+    rationale: str | None = None
+
+
 class TrackRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

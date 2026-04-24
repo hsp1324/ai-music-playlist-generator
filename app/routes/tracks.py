@@ -1,6 +1,6 @@
 import shutil
+import subprocess
 from pathlib import Path
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy import select
@@ -11,10 +11,10 @@ from app.models.enums import DecisionSource, DecisionValue, JobStatus, JobType, 
 from app.models.job import Job
 from app.models.track import Track
 from app.schemas.common import MessageResponse
-from app.schemas.track import TrackCreateRequest, TrackDecisionRequest, TrackRead
+from app.schemas.track import TrackCreateRequest, TrackDecisionRequest, TrackRead, TrackReturnToReviewRequest
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
-from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist
+from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist, return_track_to_workspace_queue
 from app.workflows.review_dispatch import dispatch_track_review
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
@@ -54,6 +54,52 @@ def _create_track_record(
     return track
 
 
+def _probe_duration_seconds(audio_path: str | None) -> int | None:
+    if not audio_path:
+        return None
+    if audio_path.startswith(("http://", "https://")):
+        return None
+
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                audio_path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        value = float(result.stdout.strip())
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+    return max(1, round(value))
+
+
+def _resolve_upload_destination(tracks_dir: Path, original_name: str) -> Path:
+    safe_name = Path(original_name).name.strip()
+    if not safe_name:
+        safe_name = "upload.mp3"
+
+    stem = Path(safe_name).stem.strip() or "upload"
+    suffix = Path(safe_name).suffix or ".mp3"
+    candidate = tracks_dir / f"{stem}{suffix}"
+    index = 2
+
+    while candidate.exists():
+        candidate = tracks_dir / f"{stem}-{index}{suffix}"
+        index += 1
+
+    return candidate
+
+
 @router.post("", response_model=TrackRead, status_code=status.HTTP_201_CREATED)
 async def create_track(
     payload: TrackCreateRequest,
@@ -78,26 +124,30 @@ async def manual_upload_track(
     image_url: str | None = Form(None),
     tags: str | None = Form(None),
     model_score: float | None = Form(None),
+    pending_workspace_id: str | None = Form(None),
     audio_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ) -> TrackRead:
     services = get_services(request)
     audio_path = audio_url
+    inferred_duration_seconds = duration_seconds
     if not audio_file and not audio_url:
         raise HTTPException(status_code=400, detail="Either audio_file or audio_url is required.")
 
     if audio_file and audio_file.filename:
-        suffix = Path(audio_file.filename).suffix or ".mp3"
-        stored_name = f"{uuid4()}{suffix}"
-        destination = services.settings.tracks_dir / stored_name
+        destination = _resolve_upload_destination(services.settings.tracks_dir, audio_file.filename)
         with destination.open("wb") as handle:
             shutil.copyfileobj(audio_file.file, handle)
         audio_path = str(destination)
+        if inferred_duration_seconds <= 0:
+            inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
+    elif inferred_duration_seconds <= 0:
+        inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
 
     payload = TrackCreateRequest(
         title=title,
         prompt=prompt,
-        duration_seconds=duration_seconds,
+        duration_seconds=inferred_duration_seconds,
         audio_path=audio_path,
         preview_url=preview_url,
         source_track_id=source_track_id,
@@ -106,6 +156,7 @@ async def manual_upload_track(
             **({"image_url": image_url} if image_url else {}),
             **({"tags": tags} if tags else {}),
             **({"model_score": model_score} if model_score is not None else {}),
+            **({"pending_workspace_id": pending_workspace_id} if pending_workspace_id else {}),
         },
     )
     track = _create_track_record(db, payload)
@@ -169,6 +220,44 @@ async def decide_track(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif payload.decision == DecisionValue.approve:
         await maybe_build_auto_playlist(db, services, trigger=f"manual-decision:{track.id}")
+    return TrackRead.model_validate(track)
+
+
+@router.post("/{track_id}/return-to-review", response_model=TrackRead)
+async def return_track_to_review(
+    track_id: str,
+    payload: TrackReturnToReviewRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> TrackRead:
+    services = get_services(request)
+    track = db.get(Track, track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    apply_track_decision(
+        db,
+        track,
+        decision=DecisionValue.hold,
+        source=DecisionSource.human,
+        actor=payload.actor,
+        rationale=payload.rationale or "Returned from approved tracks to awaiting approval.",
+    )
+    db.commit()
+    db.refresh(track)
+
+    try:
+        await return_track_to_workspace_queue(
+            db,
+            services,
+            track=track,
+            playlist_id=payload.playlist_id,
+            actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    db.refresh(track)
     return TrackRead.model_validate(track)
 
 

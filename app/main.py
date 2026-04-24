@@ -19,7 +19,11 @@ def create_app() -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        yield
+        app.state.services.worker.start()
+        try:
+            yield
+        finally:
+            app.state.services.worker.stop()
 
     app = FastAPI(
         title=settings.app_name,

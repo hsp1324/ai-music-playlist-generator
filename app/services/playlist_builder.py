@@ -119,3 +119,39 @@ class FFMpegPlaylistBuilder:
         ]
         subprocess.run(command, check=True, capture_output=True, text=True)
         return output_path
+
+    def build_looped_video(self, clip_path: Path, audio_path: Path, output_path: Path) -> Path:
+        if not clip_path.exists():
+            raise FileNotFoundError(f"Loop clip does not exist: {clip_path}")
+        if not audio_path.exists():
+            raise FileNotFoundError(f"Audio file does not exist: {audio_path}")
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-stream_loop",
+            "-1",
+            "-i",
+            str(clip_path),
+            "-i",
+            str(audio_path),
+            "-map",
+            "0:v:0",
+            "-map",
+            "1:a:0",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-shortest",
+            "-movflags",
+            "+faststart",
+            str(output_path),
+        ]
+        subprocess.run(command, check=True, capture_output=True, text=True)
+        return output_path

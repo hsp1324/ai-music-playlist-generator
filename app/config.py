@@ -69,6 +69,21 @@ class Settings(BaseSettings):
     youtube_privacy_status: Literal["private", "unlisted", "public"] = "private"
     youtube_category_id: str = "10"
     youtube_auto_upload_on_publish: bool = True
+    youtube_title_suffix: str = "Official AI Visualizer"
+    youtube_default_hashtags: str = "#aimusic #visualizer #electronicmusic"
+
+    dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
+    dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"
+    dreamina_api_token: str = ""
+    dreamina_account: str = ""
+    dreamina_video_model: str = "seedance-1.5-pro"
+    dreamina_video_duration_seconds: int = 5
+    dreamina_video_ratio: str = "16:9"
+    dreamina_poll_interval_seconds: float = 10.0
+    dreamina_timeout_seconds: float = 240.0
+
+    worker_autostart: bool = True
+    worker_poll_interval_seconds: float = 2.0
 
     @property
     def tracks_dir(self) -> Path:

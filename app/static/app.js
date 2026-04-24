@@ -1,17 +1,36 @@
 const state = {
   tracks: [],
   workspaces: [],
+  selectedWorkspaceId: "",
+  drawerOpen: false,
 };
 
-const queueGrid = document.querySelector("#queue-grid");
 const workspaceGrid = document.querySelector("#workspace-grid");
+const detailPanel = document.querySelector("#workspace-detail-panel");
+const detailTitle = document.querySelector("#detail-title");
+const detailMeta = document.querySelector("#detail-meta");
+const detailActions = document.querySelector("#detail-actions");
+const detailLinks = document.querySelector("#detail-links");
+const queueGrid = document.querySelector("#queue-grid");
+const approvedGrid = document.querySelector("#approved-grid");
+const queueTitle = document.querySelector("#queue-title");
+const approvedTitle = document.querySelector("#approved-title");
+const toolbarSummaryText = document.querySelector("#toolbar-summary-text");
+const menuToggleButton = document.querySelector("#menu-toggle-button");
+const utilityDrawer = document.querySelector("#utility-drawer");
+const refreshButton = document.querySelector("#refresh-button");
+const quickUploadInput = document.querySelector("#quick-upload-input");
+const quickUploadPickButton = document.querySelector("#quick-upload-pick-button");
+const quickUploadSubmitButton = document.querySelector("#quick-upload-submit-button");
+const quickUploadWorkspaceSelect = document.querySelector("#quick-upload-workspace-select");
+const quickUploadFileList = document.querySelector("#quick-upload-file-list");
+const quickUploadStatus = document.querySelector("#quick-upload-status");
+const uploadDropzone = document.querySelector("#upload-dropzone");
 const trackForm = document.querySelector("#track-form");
+const trackWorkspaceSelect = document.querySelector("#track-workspace-select");
 const workspaceForm = document.querySelector("#workspace-form");
 const trackStatus = document.querySelector("#track-status");
 const workspaceStatus = document.querySelector("#workspace-status");
-const refreshButton = document.querySelector("#refresh-button");
-const queueTemplate = document.querySelector("#queue-card-template");
-const workspaceTemplate = document.querySelector("#workspace-card-template");
 const sessionTitle = document.querySelector("#session-title");
 const sessionMessage = document.querySelector("#session-message");
 const sessionOpenButton = document.querySelector("#session-open-button");
@@ -19,12 +38,17 @@ const sessionAlertButton = document.querySelector("#session-alert-button");
 const youtubeTitle = document.querySelector("#youtube-title");
 const youtubeMessage = document.querySelector("#youtube-message");
 const youtubeConnectButton = document.querySelector("#youtube-connect-button");
+const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
+const queueTemplate = document.querySelector("#queue-card-template");
+const approvedCardTemplate = document.querySelector("#approved-card-template");
+
+let quickUploadFiles = [];
 
 function normalizeMediaUrl(path) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  if (path.startsWith("storage/")) return `/media/${path.slice("storage/".length)}`;
-  return path;
+  if (path.startsWith("storage/")) return encodeURI(`/media/${path.slice("storage/".length)}`);
+  return encodeURI(path);
 }
 
 function formatDuration(seconds) {
@@ -36,6 +60,28 @@ function formatDuration(seconds) {
 
 function setStatus(el, payload) {
   el.textContent = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
+}
+
+function displayTitle(value, fallback = "Untitled") {
+  if (!value) return fallback;
+  const cleaned = String(value).replace(/\s+[a-f0-9]{24,}$/i, "").trim();
+  return cleaned || fallback;
+}
+
+function shortText(value, maxLength = 120) {
+  if (!value) return "";
+  const normalized = String(value).replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function statusLabel(value) {
+  return String(value || "").replaceAll("_", " ");
+}
+
+function fileStem(filename) {
+  const value = String(filename || "").trim();
+  return value.replace(/\.[^.]+$/, "") || "Uploaded Track";
 }
 
 async function api(path, options = {}) {
@@ -84,215 +130,384 @@ function actionButton(label, className, handler) {
   return button;
 }
 
-function updateMetrics() {
-  const pending = state.tracks.filter((track) => ["pending_review", "held"].includes(track.status)).length;
-  const ready = state.workspaces.filter((workspace) => workspace.publish_ready && !workspace.publish_approved).length;
-  document.querySelector("#metric-pending").textContent = pending;
-  document.querySelector("#metric-workspaces").textContent = state.workspaces.length;
-  document.querySelector("#metric-ready").textContent = ready;
+function activeWorkspace() {
+  return state.workspaces.find((workspace) => workspace.id === state.selectedWorkspaceId) || null;
+}
+
+function visibleWorkspaces() {
+  return state.workspaces.filter((workspace) => !workspace.hidden);
+}
+
+function ensureSelectedWorkspace() {
+  const visible = visibleWorkspaces();
+  if (visible.some((workspace) => workspace.id === state.selectedWorkspaceId)) return;
+  state.selectedWorkspaceId = visible[0]?.id || "";
 }
 
 function workspaceOptions(selectedId = "") {
-  const defaultOption = `<option value="">Choose playlist workspace</option>`;
-  const options = state.workspaces
+  const defaultOption = `<option value="">Choose workspace</option>`;
+  const options = visibleWorkspaces()
     .map((workspace) => {
       const selected = workspace.id === selectedId ? "selected" : "";
-      return `<option value="${workspace.id}" ${selected}>${workspace.title}</option>`;
+      return `<option value="${workspace.id}" ${selected}>${displayTitle(workspace.title)}</option>`;
     })
     .join("");
   return `${defaultOption}${options}`;
 }
 
-function renderQueue() {
-  const queueTracks = state.tracks.filter((track) => ["pending_review", "held"].includes(track.status));
-  queueGrid.innerHTML = "";
+function pendingTracks(workspaceId = "") {
+  return state.tracks.filter((track) => {
+    if (!["pending_review", "held"].includes(track.status)) return false;
+    if (!workspaceId) return true;
+    return track.metadata_json?.pending_workspace_id === workspaceId;
+  });
+}
 
-  if (!queueTracks.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "큐에 남아 있는 곡이 없습니다.";
-    queueGrid.appendChild(empty);
+function toggleDrawer(forceOpen) {
+  state.drawerOpen = typeof forceOpen === "boolean" ? forceOpen : !state.drawerOpen;
+  utilityDrawer.hidden = !state.drawerOpen;
+  menuToggleButton.setAttribute("aria-expanded", String(state.drawerOpen));
+}
+
+function updateToolbarSummary() {
+  const pending = pendingTracks().length;
+  const visible = visibleWorkspaces();
+  const ready = visible.filter((workspace) => workspace.publish_ready && !workspace.publish_approved).length;
+  toolbarSummaryText.textContent = `Queue ${pending} · Workspaces ${visible.length} · Ready ${ready}`;
+}
+
+function renderTrackWorkspaceOptions() {
+  if (!trackWorkspaceSelect) return;
+  const options = visibleWorkspaces()
+    .map((workspace) => `<option value="${workspace.id}">${displayTitle(workspace.title)}</option>`)
+    .join("");
+  trackWorkspaceSelect.innerHTML = `<option value="">Unassigned Queue</option>${options}`;
+  if (quickUploadWorkspaceSelect) {
+    quickUploadWorkspaceSelect.innerHTML = `<option value="">Choose workspace</option>${options}`;
+  }
+}
+
+function renderQuickUploadFiles() {
+  if (!quickUploadFileList) return;
+  if (!quickUploadFiles.length) {
+    quickUploadFileList.textContent = "No files selected.";
+    return;
+  }
+  quickUploadFileList.textContent = quickUploadFiles.map((file) => file.name).join("\n");
+}
+
+function setQuickUploadFiles(files) {
+  quickUploadFiles = [...files];
+  renderQuickUploadFiles();
+}
+
+async function submitQuickUpload() {
+  if (!quickUploadFiles.length) {
+    setStatus(quickUploadStatus, "파일을 먼저 선택하세요.");
+    return;
+  }
+  if (!quickUploadWorkspaceSelect?.value) {
+    setStatus(quickUploadStatus, "workspace를 먼저 선택하세요.");
     return;
   }
 
-  queueTracks.forEach((track) => {
-    const fragment = queueTemplate.content.cloneNode(true);
-    const card = fragment.querySelector(".queue-card");
-    const image = fragment.querySelector(".track-art");
-    const duration = fragment.querySelector(".track-duration");
-    const title = fragment.querySelector(".track-title");
-    const subtitle = fragment.querySelector(".track-subtitle");
-    const status = fragment.querySelector(".track-status");
-    const audio = fragment.querySelector(".track-audio");
-    const prompt = fragment.querySelector(".track-prompt");
-    const links = fragment.querySelector(".track-links");
-    const actions = fragment.querySelector(".track-actions");
-    const select = fragment.querySelector(".workspace-select");
+  quickUploadSubmitButton.disabled = true;
+  const results = [];
+  try {
+    for (const file of quickUploadFiles) {
+      const form = new FormData();
+      form.append("title", fileStem(file.name));
+      form.append("prompt", "manual quick upload");
+      form.append("duration_seconds", "0");
+      form.append("pending_workspace_id", quickUploadWorkspaceSelect.value);
+      form.append("audio_file", file, file.name);
+      const response = await fetch("/api/tracks/manual-upload", {
+        method: "POST",
+        body: form,
+      });
+      const text = await response.text();
+      let result;
+      try {
+        result = text ? JSON.parse(text) : null;
+      } catch {
+        result = text;
+      }
+      if (!response.ok) {
+        throw new Error(typeof result === "string" ? result : JSON.stringify(result, null, 2));
+      }
+      results.push({ title: result.title, status: result.status });
+    }
+    setStatus(quickUploadStatus, results);
+    setQuickUploadFiles([]);
+    if (quickUploadInput) {
+      quickUploadInput.value = "";
+    }
+    await refresh();
+  } catch (error) {
+    setStatus(quickUploadStatus, error.message);
+  } finally {
+    quickUploadSubmitButton.disabled = false;
+  }
+}
 
-    const imageUrl =
-      track.metadata_json?.image_url ||
-      "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80";
+function selectWorkspace(workspaceId, scrollIntoView = true) {
+  state.selectedWorkspaceId = workspaceId;
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+  if (scrollIntoView && detailPanel && !detailPanel.hidden) {
+    detailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function renderWorkspaceTiles() {
+  workspaceGrid.innerHTML = "";
+
+  const visible = visibleWorkspaces();
+
+  if (!visible.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "먼저 workspace를 하나 만들어 주세요.";
+    workspaceGrid.appendChild(empty);
+    return;
+  }
+
+  visible.forEach((workspace) => {
+    const fragment = workspaceTileTemplate.content.cloneNode(true);
+    const tile = fragment.querySelector(".workspace-tile");
+    const mode = fragment.querySelector(".workspace-mode");
+    const name = fragment.querySelector(".workspace-name");
+    const stateEl = fragment.querySelector(".workspace-state");
+    const copy = fragment.querySelector(".workspace-copy");
+    const approvedStat = fragment.querySelector(".approved-stat");
+    const pendingStat = fragment.querySelector(".pending-stat");
+    const hint = fragment.querySelector(".workspace-hint");
+    const moreButton = fragment.querySelector(".more-button");
+
+    if (workspace.id === state.selectedWorkspaceId) {
+      tile.classList.add("active");
+    }
+
+    mode.textContent = workspace.workspace_mode === "single_track_video" ? "Single Track" : "Playlist";
+    name.textContent = displayTitle(workspace.title, "Untitled Workspace");
+    stateEl.textContent = statusLabel(workspace.workflow_state);
+    copy.textContent = shortText(workspace.description || "Ready to collect approved tracks.", 120);
+    approvedStat.textContent = `${workspace.tracks.length} approved`;
+    pendingStat.textContent = `${pendingTracks(workspace.id).length} in review`;
+
+    hint.textContent = workspace.workspace_mode === "single_track_video"
+      ? "Single release lane"
+      : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
+
+    moreButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectWorkspace(workspace.id);
+    });
+
+    tile.addEventListener("click", () => selectWorkspace(workspace.id, false));
+    workspaceGrid.appendChild(fragment);
+  });
+}
+
+function renderWorkspaceDetail() {
+  const workspace = activeWorkspace();
+  const tracksForReview = workspace ? pendingTracks(workspace.id) : [];
+
+  if (!workspace) {
+    detailPanel.hidden = true;
+    return;
+  }
+
+  detailPanel.hidden = false;
+  detailTitle.textContent = displayTitle(workspace.title, "Workspace");
+  detailMeta.textContent = `${workspace.workspace_mode === "single_track_video" ? "Single Track Video" : "Playlist Mix"} · ${statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved`;
+  queueTitle.textContent = `${displayTitle(workspace.title)} review queue`;
+  approvedTitle.textContent = `${displayTitle(workspace.title)} approved tracks`;
+
+  detailLinks.innerHTML = "";
+  detailActions.innerHTML = "";
+  queueGrid.innerHTML = "";
+  approvedGrid.innerHTML = "";
+
+  if (workspace.output_audio_path) {
+    detailLinks.appendChild(buildLink("Rendered Audio", normalizeMediaUrl(workspace.output_audio_path)));
+  }
+  if (workspace.output_video_path) {
+    detailLinks.appendChild(buildLink("Rendered Video", normalizeMediaUrl(workspace.output_video_path)));
+  }
+  if (workspace.cover_image_path) {
+    detailLinks.appendChild(buildLink("Cover", normalizeMediaUrl(workspace.cover_image_path)));
+  }
+
+  if (workspace.publish_ready && !workspace.publish_approved) {
+    detailActions.appendChild(
+      actionButton("Approve Publish", "action-button primary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/approve-publish`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+            note: "Approved from workspace detail.",
+          }),
+        });
+      })
+    );
+  } else if (workspace.publish_approved && !workspace.youtube_video_id) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "inline-input";
+    input.placeholder = "YouTube video id";
+    const button = actionButton("Mark Uploaded", "action-button secondary-button", async () => {
+      await api(`/api/playlists/${workspace.id}/mark-uploaded`, {
+        method: "POST",
+        body: JSON.stringify({
+          actor: "web-ui",
+          youtube_video_id: input.value || null,
+          note: "Marked uploaded from workspace detail.",
+        }),
+      });
+    });
+    detailActions.appendChild(input);
+    detailActions.appendChild(button);
+  }
+
+  if (!tracksForReview.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "review를 기다리는 곡이 없습니다.";
+    queueGrid.appendChild(empty);
+  } else {
+    tracksForReview.forEach((track) => {
+      const fragment = queueTemplate.content.cloneNode(true);
+      const card = fragment.querySelector(".queue-card");
+      const image = fragment.querySelector(".track-art");
+      const duration = fragment.querySelector(".track-duration");
+      const title = fragment.querySelector(".track-title");
+      const subtitle = fragment.querySelector(".track-subtitle");
+      const status = fragment.querySelector(".track-status");
+      const audio = fragment.querySelector(".track-audio");
+      const prompt = fragment.querySelector(".track-prompt");
+      const links = fragment.querySelector(".track-links");
+      const actions = fragment.querySelector(".track-actions");
+      const select = fragment.querySelector(".workspace-select");
+
+      const imageUrl =
+        track.metadata_json?.image_url ||
+        "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80";
+      const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
+
+      image.src = imageUrl;
+      image.alt = displayTitle(track.title, "Track");
+      duration.textContent = formatDuration(track.duration_seconds);
+      title.textContent = displayTitle(track.title, "Untitled Track");
+      subtitle.textContent = shortText(track.metadata_json?.tags || track.source_track_id || "manual candidate", 64);
+      status.textContent = statusLabel(track.status);
+      status.classList.add(track.status);
+      prompt.textContent = shortText(track.prompt || "Prompt not provided.", 160);
+
+      if (audioUrl) {
+        audio.src = audioUrl;
+      } else {
+        audio.remove();
+      }
+
+      if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
+      if (track.metadata_json?.source_audio_url) links.appendChild(buildLink("Source", track.metadata_json.source_audio_url));
+      if (imageUrl) links.appendChild(buildLink("Cover", imageUrl));
+
+      select.innerHTML = workspaceOptions(workspace.id);
+      select.value = workspace.id;
+
+      actions.appendChild(
+        actionButton("Approve", "pill-action approve", async () => {
+          if (!select.value) {
+            throw new Error("Approve before choosing a workspace.");
+          }
+          await api(`/api/tracks/${track.id}/decisions`, {
+            method: "POST",
+            body: JSON.stringify({
+              decision: "approve",
+              source: "human",
+              actor: "web-ui",
+              rationale: "Approved from workspace detail.",
+              playlist_id: select.value,
+            }),
+          });
+        })
+      );
+      actions.appendChild(
+        actionButton("Hold", "pill-action hold", async () => {
+          await api(`/api/tracks/${track.id}/decisions`, {
+            method: "POST",
+            body: JSON.stringify({
+              decision: "hold",
+              source: "human",
+              actor: "web-ui",
+              rationale: "Held from workspace detail.",
+            }),
+          });
+        })
+      );
+      actions.appendChild(
+        actionButton("Reject", "pill-action reject", async () => {
+          await api(`/api/tracks/${track.id}/decisions`, {
+            method: "POST",
+            body: JSON.stringify({
+              decision: "reject",
+              source: "human",
+              actor: "web-ui",
+              rationale: "Rejected from workspace detail.",
+            }),
+          });
+        })
+      );
+
+      card.dataset.trackId = track.id;
+      queueGrid.appendChild(fragment);
+    });
+  }
+
+  if (!workspace.tracks.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "아직 승인된 곡이 없습니다.";
+    approvedGrid.appendChild(empty);
+    return;
+  }
+
+  workspace.tracks.forEach((track) => {
+    const fragment = approvedCardTemplate.content.cloneNode(true);
+    const title = fragment.querySelector(".approved-title");
+    const meta = fragment.querySelector(".approved-meta");
+    const duration = fragment.querySelector(".approved-duration");
+    const audio = fragment.querySelector(".approved-audio");
+    const links = fragment.querySelector(".approved-links");
+    const actions = fragment.querySelector(".approved-actions");
     const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
 
-    image.src = imageUrl;
-    image.alt = track.title;
+    title.textContent = displayTitle(track.title, "Untitled Track");
+    meta.textContent = shortText(track.tags || "approved track", 80);
     duration.textContent = formatDuration(track.duration_seconds);
-    title.textContent = track.title;
-    subtitle.textContent = track.metadata_json?.tags || track.source_track_id || "manual candidate";
-    status.textContent = track.status.replaceAll("_", " ");
-    status.classList.add(track.status);
-    prompt.textContent = track.prompt || "Prompt not provided.";
 
     if (audioUrl) {
       audio.src = audioUrl;
     } else {
       audio.remove();
     }
-
     if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
-    if (track.metadata_json?.source_audio_url) links.appendChild(buildLink("Source", track.metadata_json.source_audio_url));
-    if (imageUrl) links.appendChild(buildLink("Cover", imageUrl));
-
-    select.innerHTML = workspaceOptions();
-
-    actions.appendChild(
-      actionButton("Approve", "pill-action approve", async () => {
-        if (!select.value) {
-          throw new Error("Approve before choosing a playlist workspace.");
-        }
-        await api(`/api/tracks/${track.id}/decisions`, {
-          method: "POST",
-          body: JSON.stringify({
-            decision: "approve",
-            source: "human",
-            actor: "web-ui",
-            rationale: "Approved from workspace queue.",
-            playlist_id: select.value,
-          }),
-        });
-      })
-    );
     actions.appendChild(
       actionButton("Hold", "pill-action hold", async () => {
-        await api(`/api/tracks/${track.id}/decisions`, {
+        await api(`/api/tracks/${track.id}/return-to-review`, {
           method: "POST",
           body: JSON.stringify({
-            decision: "hold",
-            source: "human",
+            playlist_id: workspace.id,
             actor: "web-ui",
-            rationale: "Held from workspace queue.",
-          }),
-        });
-      })
-    );
-    actions.appendChild(
-      actionButton("Reject", "pill-action reject", async () => {
-        await api(`/api/tracks/${track.id}/decisions`, {
-          method: "POST",
-          body: JSON.stringify({
-            decision: "reject",
-            source: "human",
-            actor: "web-ui",
-            rationale: "Rejected from workspace queue.",
+            rationale: "Returned from approved tracks to awaiting approval.",
           }),
         });
       })
     );
 
-    card.dataset.trackId = track.id;
-    queueGrid.appendChild(fragment);
-  });
-}
-
-function workspaceTrackChip(track) {
-  const chip = document.createElement("div");
-  chip.className = "workspace-track";
-  const title = document.createElement("strong");
-  title.textContent = track.title;
-  const meta = document.createElement("span");
-  meta.textContent = `${formatDuration(track.duration_seconds)}${track.tags ? ` • ${track.tags}` : ""}`;
-  chip.appendChild(title);
-  chip.appendChild(meta);
-  return chip;
-}
-
-function renderWorkspaces() {
-  workspaceGrid.innerHTML = "";
-
-  if (!state.workspaces.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    empty.textContent = "먼저 playlist workspace를 하나 만들어 주세요.";
-    workspaceGrid.appendChild(empty);
-    return;
-  }
-
-  state.workspaces.forEach((workspace) => {
-    const fragment = workspaceTemplate.content.cloneNode(true);
-    const title = fragment.querySelector(".workspace-title");
-    const kicker = fragment.querySelector(".workspace-kicker");
-    const status = fragment.querySelector(".workspace-status");
-    const description = fragment.querySelector(".workspace-description");
-    const progressBar = fragment.querySelector(".workspace-progress-bar");
-    const meta = fragment.querySelector(".workspace-meta");
-    const links = fragment.querySelector(".workspace-links");
-    const note = fragment.querySelector(".workspace-note");
-    const actions = fragment.querySelector(".workspace-actions");
-    const tracks = fragment.querySelector(".workspace-tracks");
-
-    title.textContent = workspace.title;
-    kicker.textContent = workspace.workflow_state.replaceAll("_", " ");
-    status.textContent = workspace.status;
-    status.classList.add(workspace.status);
-    description.textContent = workspace.description || "Description not set.";
-    progressBar.style.width = `${Math.max(workspace.progress_ratio * 100, 2)}%`;
-    meta.textContent = `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)} • ${workspace.tracks.length} tracks`;
-
-    if (workspace.output_audio_path) {
-      links.appendChild(buildLink("Rendered Audio", normalizeMediaUrl(workspace.output_audio_path)));
-    }
-    if (workspace.cover_image_path) {
-      links.appendChild(buildLink("Generated Cover", normalizeMediaUrl(workspace.cover_image_path)));
-    }
-
-    if (workspace.publish_ready && !workspace.publish_approved) {
-      note.textContent = "1시간 분량이 채워졌습니다. Publish 승인 시 cover를 만들고 업로드 단계로 넘깁니다.";
-      actions.appendChild(
-        actionButton("Approve Publish", "primary-button", async () => {
-          await api(`/api/playlists/${workspace.id}/approve-publish`, {
-            method: "POST",
-            body: JSON.stringify({
-              actor: "web-ui",
-              note: "Approved from web workspace.",
-            }),
-          });
-        })
-      );
-    } else if (workspace.publish_approved && !workspace.youtube_video_id) {
-      note.textContent = workspace.note || "Cover와 video asset이 준비되었습니다. 자동 업로드가 꺼져 있거나 인증이 없으면 수동 업로드 후 video id를 기록하세요.";
-      const input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "YouTube video id";
-      const button = actionButton("Mark Uploaded", "secondary-button", async () => {
-        await api(`/api/playlists/${workspace.id}/mark-uploaded`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-            youtube_video_id: input.value || null,
-            note: "Marked uploaded from workspace.",
-          }),
-        });
-      });
-      actions.appendChild(input);
-      actions.appendChild(button);
-    } else if (workspace.youtube_video_id) {
-      note.textContent = `Uploaded as ${workspace.youtube_video_id}`;
-    } else if (workspace.note) {
-      note.textContent = workspace.note;
-    }
-
-    workspace.tracks.forEach((track) => tracks.appendChild(workspaceTrackChip(track)));
-    workspaceGrid.appendChild(fragment);
+    approvedGrid.appendChild(fragment);
   });
 }
 
@@ -311,9 +526,9 @@ function renderYouTubeStatus(youtubeStatus) {
     ? `Token path: ${youtubeStatus.token_path}`
     : youtubeStatus.error
       ? youtubeStatus.error
-    : youtubeStatus.configured
-      ? "Press Connect YouTube once and finish the OAuth flow in your browser."
-      : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
+      : youtubeStatus.configured
+        ? "Press Connect once and finish the OAuth flow in your browser."
+        : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
 }
 
 async function refresh() {
@@ -325,11 +540,13 @@ async function refresh() {
   ]);
   state.tracks = tracks;
   state.workspaces = workspaces;
-  updateMetrics();
+  ensureSelectedWorkspace();
+  updateToolbarSummary();
+  renderTrackWorkspaceOptions();
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
-  renderQueue();
-  renderWorkspaces();
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
 }
 
 trackForm.addEventListener("submit", async (event) => {
@@ -367,8 +584,11 @@ workspaceForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({
         title: form.get("title"),
         target_duration_seconds: Number(form.get("target_duration_seconds")),
+        workspace_mode: form.get("workspace_mode"),
+        auto_publish_when_ready: form.get("auto_publish_when_ready") === "true",
         description: form.get("description"),
         cover_prompt: form.get("cover_prompt"),
+        dreamina_prompt: form.get("dreamina_prompt"),
       }),
     });
     setStatus(workspaceStatus, result);
@@ -378,7 +598,33 @@ workspaceForm.addEventListener("submit", async (event) => {
   }
 });
 
+menuToggleButton.addEventListener("click", () => toggleDrawer());
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
+quickUploadPickButton?.addEventListener("click", () => quickUploadInput?.click());
+quickUploadInput?.addEventListener("change", (event) => {
+  setQuickUploadFiles(event.target.files || []);
+});
+quickUploadSubmitButton?.addEventListener("click", () => {
+  submitQuickUpload().catch((error) => setStatus(quickUploadStatus, error.message));
+});
+
+uploadDropzone?.addEventListener("dragover", (event) => {
+  event.preventDefault();
+  uploadDropzone.classList.add("dragover");
+});
+
+uploadDropzone?.addEventListener("dragleave", () => {
+  uploadDropzone.classList.remove("dragover");
+});
+
+uploadDropzone?.addEventListener("drop", (event) => {
+  event.preventDefault();
+  uploadDropzone.classList.remove("dragover");
+  if (event.dataTransfer?.files?.length) {
+    setQuickUploadFiles(event.dataTransfer.files);
+  }
+});
+
 sessionOpenButton.addEventListener("click", async () => {
   try {
     const result = await api("/api/suno/session/open-login", { method: "POST" });
@@ -388,6 +634,7 @@ sessionOpenButton.addEventListener("click", async () => {
     alert(error.message);
   }
 });
+
 sessionAlertButton.addEventListener("click", async () => {
   try {
     const result = await api("/api/suno/session/notify-expired", { method: "POST" });

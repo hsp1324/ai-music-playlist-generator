@@ -7,44 +7,60 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260424e" />
   </head>
   <body>
     <div class="shell">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">AI Music Workspace</p>
-          <h1>Queue에서 승인하고 playlist workspace로 바로 보냅니다.</h1>
-          <p class="hero-text">
-            Suno에서 만든 곡을 수동으로 넣고, 웹에서 듣고, approve하면서 어느 playlist로 들어갈지 바로 결정합니다.
-            각 playlist가 1시간에 도달하면 publish 승인 상태로 바뀌고, 확인하면 cover가 생성됩니다.
-          </p>
+      <header class="app-header">
+        <p class="app-kicker">AI Music Workspace</p>
+        <h1 class="app-title">Release Board</h1>
+      </header>
+
+      <section class="toolbar" aria-label="Primary toolbar">
+        <button id="menu-toggle-button" class="toolbar-button menu-button" type="button" aria-expanded="false">
+          <span class="menu-icon" aria-hidden="true"></span>
+          <span>Menu</span>
+        </button>
+        <div class="toolbar-summary">
+          <span id="toolbar-summary-text">Queue 0 · Workspaces 0 · Ready 0</span>
         </div>
-        <div class="hero-panel">
-          <div class="metric">
-            <span class="metric-label">Queue</span>
-            <strong id="metric-pending">0</strong>
-          </div>
-          <div class="metric">
-            <span class="metric-label">Workspaces</span>
-            <strong id="metric-workspaces">0</strong>
-          </div>
-          <div class="metric">
-            <span class="metric-label">Ready To Publish</span>
-            <strong id="metric-ready">0</strong>
-          </div>
+        <button id="refresh-button" class="toolbar-button refresh-button" type="button">Refresh</button>
+      </section>
+
+      <section class="quick-upload-panel">
+        <div class="quick-upload-copy">
+          <p class="section-kicker">Quick Upload</p>
+          <h2>Upload Audio Files</h2>
+          <p class="detail-copy">파일명을 제목으로 사용하고, 선택한 workspace의 awaiting approval로 바로 넣습니다.</p>
+        </div>
+        <div id="upload-dropzone" class="upload-dropzone" tabindex="0">
+          <input id="quick-upload-input" type="file" accept="audio/*" multiple hidden />
+          <p class="upload-dropzone-title">Drag & drop audio files</p>
+          <p class="upload-dropzone-copy">or pick files manually</p>
+          <button id="quick-upload-pick-button" class="toolbar-button" type="button">Choose Files</button>
+        </div>
+        <div class="quick-upload-controls">
+          <label>
+            <span>Workspace</span>
+            <select id="quick-upload-workspace-select">
+              <option value="">Choose workspace</option>
+            </select>
+          </label>
+          <button id="quick-upload-submit-button" class="action-button primary-button" type="button">Upload Audio</button>
+          <div id="quick-upload-file-list" class="quick-upload-file-list">No files selected.</div>
+          <pre id="quick-upload-status" class="status-box compact-status">대기 중</pre>
         </div>
       </section>
 
-      <main class="layout">
-        <aside class="sidebar">
-          <section class="panel">
+      <section id="utility-drawer" class="utility-drawer" hidden>
+        <div class="drawer-grid">
+          <section class="drawer-panel">
             <div class="panel-head">
               <p class="section-kicker">Manual Intake</p>
-              <h2>Import Suno Track</h2>
+              <h2>Import Track</h2>
             </div>
             <form id="track-form" class="form-stack" enctype="multipart/form-data">
               <label>
@@ -70,6 +86,12 @@
                 <input name="tags" type="text" value="synthwave, cinematic, neon highway" />
               </label>
               <label>
+                <span>Pending Workspace</span>
+                <select name="pending_workspace_id" id="track-workspace-select">
+                  <option value="">Unassigned Queue</option>
+                </select>
+              </label>
+              <label>
                 <span>Cover Image URL</span>
                 <input name="image_url" type="url" placeholder="https://..." />
               </label>
@@ -81,24 +103,40 @@
                 <span>Audio File</span>
                 <input name="audio_file" type="file" accept="audio/*" />
               </label>
-              <button class="primary-button" type="submit">Add To Queue</button>
+              <button class="action-button primary-button" type="submit">Add To Queue</button>
             </form>
             <pre id="track-status" class="status-box">대기 중</pre>
           </section>
 
-          <section class="panel">
+          <section class="drawer-panel">
             <div class="panel-head">
               <p class="section-kicker">Workspace</p>
-              <h2>Create Playlist</h2>
+              <h2>Create Workspace</h2>
             </div>
             <form id="workspace-form" class="form-stack">
               <label>
-                <span>Playlist Title</span>
+                <span>Title</span>
                 <input name="title" type="text" value="Night Drive Vol. 1" />
               </label>
+              <div class="form-row">
+                <label>
+                  <span>Mode</span>
+                  <select name="workspace_mode">
+                    <option value="playlist" selected>Playlist Mix</option>
+                    <option value="single_track_video">Single Track Video</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Auto Publish</span>
+                  <select name="auto_publish_when_ready">
+                    <option value="false" selected>No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </label>
+              </div>
               <label>
                 <span>Target Seconds</span>
-                <input name="target_duration_seconds" type="number" value="3600" min="60" step="60" />
+                <input name="target_duration_seconds" type="number" value="3600" min="0" step="60" />
               </label>
               <label>
                 <span>Description</span>
@@ -108,59 +146,112 @@
                 <span>Cover Prompt</span>
                 <textarea name="cover_prompt" rows="3">Neon skyline, cinematic road, analog heat, glowing taillights.</textarea>
               </label>
-              <button class="secondary-button" type="submit">Create Workspace</button>
+              <label>
+                <span>Dreamina Prompt</span>
+                <textarea name="dreamina_prompt" rows="3" placeholder="Optional single-track motion prompt"></textarea>
+              </label>
+              <button class="action-button secondary-button" type="submit">Create Workspace</button>
             </form>
             <pre id="workspace-status" class="status-box">아직 생성 안 함</pre>
           </section>
 
-          <section class="panel">
-            <div class="panel-head panel-inline">
-              <div>
-                <p class="section-kicker">YouTube</p>
-                <h2 id="youtube-title">Checking YouTube...</h2>
+          <section class="drawer-panel system-panel">
+            <div class="system-card">
+              <div class="panel-head panel-inline">
+                <div>
+                  <p class="section-kicker">YouTube</p>
+                  <h2 id="youtube-title">Checking YouTube...</h2>
+                </div>
+                <button id="youtube-connect-button" class="action-button secondary-button" type="button">Connect</button>
               </div>
-              <button id="youtube-connect-button" class="secondary-button" type="button">Connect YouTube</button>
+              <p id="youtube-message" class="detail-copy">OAuth 상태를 확인하는 중입니다.</p>
             </div>
-            <p id="youtube-message" class="session-message">OAuth 상태를 확인하는 중입니다.</p>
-          </section>
 
-          <section class="panel">
-            <div class="panel-head panel-inline">
-              <div>
-                <p class="section-kicker">Suno Session</p>
-                <h2 id="session-title">Checking session...</h2>
+            <div class="system-card">
+              <div class="panel-head panel-inline">
+                <div>
+                  <p class="section-kicker">Suno Session</p>
+                  <h2 id="session-title">Checking session...</h2>
+                </div>
               </div>
-              <button id="refresh-button" class="ghost-button" type="button">Refresh</button>
-            </div>
-            <p id="session-message" class="session-message">브라우저 세션 상태를 확인하는 중입니다.</p>
-            <div class="session-actions">
-              <button id="session-open-button" class="ghost-button" type="button">Open Login</button>
-              <button id="session-alert-button" class="ghost-button" type="button">Slack Alert</button>
-            </div>
-          </section>
-        </aside>
-
-        <section class="content">
-          <section class="panel">
-            <div class="panel-head panel-inline">
-              <div>
-                <p class="section-kicker">Review Queue</p>
-                <h2>Approve Into Playlist</h2>
+              <p id="session-message" class="detail-copy">브라우저 세션 상태를 확인하는 중입니다.</p>
+              <div class="system-actions">
+                <button id="session-open-button" class="toolbar-button" type="button">Open Login</button>
+                <button id="session-alert-button" class="toolbar-button" type="button">Slack Alert</button>
               </div>
             </div>
-            <div id="queue-grid" class="queue-grid"></div>
           </section>
+        </div>
+      </section>
 
-          <section class="panel">
-            <div class="panel-head">
-              <p class="section-kicker">Playlist Workspaces</p>
-              <h2>Collecting, Ready, Uploaded</h2>
+      <main class="board-shell">
+        <section class="workspace-section">
+          <div class="section-headline">
+            <div>
+              <p class="section-kicker">Workspaces</p>
+              <h2>Choose A Lane</h2>
             </div>
-            <div id="workspace-grid" class="workspace-grid"></div>
-          </section>
+          </div>
+          <div id="workspace-grid" class="workspace-grid"></div>
+        </section>
+
+        <section id="workspace-detail-panel" class="detail-panel" hidden>
+          <div class="detail-header">
+            <div>
+              <p class="section-kicker">Workspace Detail</p>
+              <h2 id="detail-title">Workspace</h2>
+              <p id="detail-meta" class="detail-copy">Select a workspace to open its board.</p>
+            </div>
+            <div id="detail-actions" class="detail-actions"></div>
+          </div>
+
+          <div id="detail-links" class="detail-links"></div>
+
+          <div class="detail-columns">
+            <section class="detail-column">
+              <div class="detail-column-head">
+                <div>
+                  <p class="section-kicker">Awaiting Approval</p>
+                  <h3 id="queue-title">Review Queue</h3>
+                </div>
+              </div>
+              <div id="queue-grid" class="track-grid"></div>
+            </section>
+
+            <section class="detail-column approved-column">
+              <div class="detail-column-head">
+                <div>
+                  <p class="section-kicker">Approved</p>
+                  <h3 id="approved-title">Approved Tracks</h3>
+                </div>
+              </div>
+              <div id="approved-grid" class="approved-grid"></div>
+            </section>
+          </div>
         </section>
       </main>
     </div>
+
+    <template id="workspace-tile-template">
+      <article class="workspace-tile">
+        <div class="workspace-tile-head">
+          <div>
+            <p class="workspace-mode"></p>
+            <h3 class="workspace-name"></h3>
+          </div>
+          <span class="workspace-state"></span>
+        </div>
+        <p class="workspace-copy"></p>
+        <div class="workspace-stats">
+          <span class="workspace-stat approved-stat"></span>
+          <span class="workspace-stat pending-stat"></span>
+        </div>
+        <div class="workspace-footer">
+          <span class="workspace-hint"></span>
+          <button class="more-button" type="button">More</button>
+        </div>
+      </article>
+    </template>
 
     <template id="queue-card-template">
       <article class="queue-card">
@@ -187,27 +278,21 @@
       </article>
     </template>
 
-    <template id="workspace-card-template">
-      <article class="workspace-card">
-        <div class="workspace-head">
+    <template id="approved-card-template">
+      <article class="approved-card">
+        <div class="approved-main">
           <div>
-            <p class="workspace-kicker"></p>
-            <h3 class="workspace-title"></h3>
+            <h3 class="approved-title"></h3>
+            <p class="approved-meta"></p>
           </div>
-          <span class="workspace-status"></span>
+          <span class="approved-duration"></span>
         </div>
-        <p class="workspace-description"></p>
-        <div class="workspace-progress">
-          <div class="workspace-progress-bar"></div>
-        </div>
-        <p class="workspace-meta"></p>
-        <div class="workspace-links"></div>
-        <div class="workspace-note"></div>
-        <div class="workspace-actions"></div>
-        <div class="workspace-tracks"></div>
+        <audio class="approved-audio" controls preload="none"></audio>
+        <div class="approved-links"></div>
+        <div class="approved-actions"></div>
       </article>
     </template>
 
-    <script src="/assets/app.js" defer></script>
+    <script src="/assets/app.js?v=20260424e" defer></script>
   </body>
 </html>

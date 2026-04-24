@@ -31,16 +31,17 @@ This scaffold provides:
 - Suno browser session status and re-login flow
 - Track intake and decision APIs
 - Multi-playlist web workspaces with per-playlist approval routing
+- Single-track video release mode with automatic publish
 - Playlist build planning
 - `ffmpeg`-based audio concatenation for approved tracks
 - Automatic playlist build when approved local tracks reach the target duration
+- DB-backed background worker for playlist render and publish jobs
 - Publish approval step with generated PNG cover art
 - MCP-callable review engine interface with HTTP fallback to local rules
 
 It does not yet provide:
 
 - Real MCP transport/client integration
-- Background job runner
 
 Those are left as pluggable services so the system can evolve without rewriting the core workflow.
 
@@ -213,7 +214,7 @@ Each imported track is automatically dispatched into the review workflow:
 - `AUTO_APPROVAL_MODE=hybrid`: agent suggestion plus Slack review
 - `AUTO_APPROVAL_MODE=agent`: agent decision only
 
-When `AIMP_AUTO_BUILD_PLAYLISTS=true`, the backend automatically creates the next playlist once enough approved tracks are available. If `AIMP_AUTO_BUILD_RENDER_AUDIO=true`, it also renders the MP3 immediately.
+When `AIMP_AUTO_BUILD_PLAYLISTS=true`, the backend automatically creates the next playlist once enough approved tracks are available. If `AIMP_AUTO_BUILD_RENDER_AUDIO=true`, it queues the MP3 render in the background worker.
 
 ## Web Workspace Flow
 
@@ -224,8 +225,14 @@ The main operating surface is now the web UI.
 3. Approve a queued track into a specific workspace
 4. Keep collecting until the workspace reaches its target duration
 5. Approve publishing from the workspace card
-6. The app generates a local PNG cover and prepares or uploads the YouTube video
+6. The app queues a background publish job that generates a local PNG cover and prepares or uploads the YouTube video
 7. If YouTube is not connected yet, connect it and approve publishing again
+
+You can also create a `single_track_video` workspace:
+
+1. Create a workspace in `single_track_video` mode
+2. Approve one track into that workspace
+3. The background worker renders audio, optionally generates a Dreamina loop clip, and uploads automatically when ready
 
 ## YouTube Automation
 
@@ -250,12 +257,36 @@ AIMP_YOUTUBE_AUTO_UPLOAD_ON_PUBLISH=true
 
 Runtime behavior:
 
-- If the playlist has a rendered local audio file and YouTube is connected, publish approval will:
-  - generate a local cover PNG
-  - render an MP4 from cover + audio
-  - upload the video to YouTube
-  - upload the same cover as the custom thumbnail
+- If the playlist has a rendered local audio file and YouTube is connected, publish approval will queue a background job that:
+  - generates a local cover PNG
+  - renders an MP4 from cover + audio
+  - uploads the video to YouTube
+  - uploads the same cover as the custom thumbnail
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
+
+For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
+
+## Dreamina Loop Video
+
+Dreamina integration is implemented for `useapi.net`'s Dreamina API layer. This is a third-party API wrapper around Dreamina, not an official public Dreamina developer API.
+
+Required setup:
+
+```bash
+AIMP_DREAMINA_PROVIDER_MODE=useapi
+AIMP_DREAMINA_API_TOKEN=...
+AIMP_DREAMINA_ACCOUNT=US:your-dreamina-account@example.com
+AIMP_DREAMINA_VIDEO_MODEL=seedance-1.5-pro
+AIMP_DREAMINA_VIDEO_DURATION_SECONDS=5
+```
+
+When a `single_track_video` workspace is ready and auto-publish is enabled, the worker will:
+
+- generate the cover PNG
+- ask Dreamina for a short loop clip using the workspace or track prompt
+- download the clip locally
+- loop that clip to match the full song duration with `ffmpeg`
+- upload the finished MP4 to YouTube with generated metadata
 
 ## Slack App Setup
 
@@ -557,5 +588,4 @@ pytest
 - download generated audio into local storage before playlist render
 - Slack modal-based regeneration controls
 - duplicate webhook/idempotency handling
-- background jobs
 - real MCP client integration
