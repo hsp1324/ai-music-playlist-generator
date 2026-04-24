@@ -186,6 +186,12 @@ Oracle Always Free deployment guide:
 docs/deploy-oracle-always-free.md
 ```
 
+Google login protection guide:
+
+```text
+docs/google-login-protection.md
+```
+
 Oracle VM runtime status:
 
 ```text

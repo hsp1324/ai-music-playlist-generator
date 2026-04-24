@@ -154,6 +154,27 @@ curl http://127.0.0.1:8000/api/tracks
 curl http://YOUR_DOMAIN_OR_IP/
 ```
 
+## 10. Optional Google login protection
+
+Do not put Google OAuth directly on a raw VM public IP.
+
+Recommended production shape:
+
+1. use the provisional hostname `ai-music.168.107.34.175.sslip.io`
+2. enable HTTPS
+3. install `oauth2-proxy`
+4. put Nginx `auth_request` in front of the FastAPI app
+
+Repo templates for this are included here:
+
+```text
+deploy/oracle/oauth2-proxy-ai-music-playlist-generator.service
+deploy/oracle/oauth2-proxy-ai-music-playlist-generator.cfg
+deploy/oracle/nginx-ai-music-playlist-generator-protected.conf
+deploy/oracle/install-google-login-protection.sh
+docs/google-login-protection.md
+```
+
 ## Operational Notes
 
 ### File storage

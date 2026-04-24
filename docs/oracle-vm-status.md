@@ -89,6 +89,12 @@ The app is deployed and externally reachable at:
 http://168.107.34.175
 ```
 
+Provisional hostname available without buying a domain:
+
+```text
+http://ai-music.168.107.34.175.sslip.io
+```
+
 Internal checks that succeeded:
 
 - `curl http://127.0.0.1:8000/`
@@ -138,7 +144,20 @@ Planned direction:
 
 - do not implement Google auth directly against the raw IP
 - use a domain + HTTPS first
-- then likely place `oauth2-proxy` in front of the app
+- place `oauth2-proxy` in front of the app
+- use Nginx `auth_request` to gate browser access
+
+Repo preparation added:
+
+- `docs/google-login-protection.md`
+- `deploy/oracle/oauth2-proxy-ai-music-playlist-generator.service`
+- `deploy/oracle/oauth2-proxy-ai-music-playlist-generator.cfg`
+- `deploy/oracle/nginx-ai-music-playlist-generator-protected.conf`
+- `deploy/oracle/install-google-login-protection.sh`
+
+Chosen provisional hostname:
+
+- `ai-music.168.107.34.175.sslip.io`
 
 ### 3. HTTPS
 

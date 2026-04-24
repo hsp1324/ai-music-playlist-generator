@@ -167,6 +167,17 @@ The MCP-compatible review abstraction exists, but the real MCP transport/client 
 
 The current UI is functionally aligned with the user's preferred structure, but it is still a practical internal dashboard rather than a polished final product.
 
+### 5. Google login protection in front of the public app
+
+The intended production direction is now documented as:
+
+- domain
+- HTTPS
+- `oauth2-proxy`
+- Nginx `auth_request`
+
+This is prepared in repo deployment templates, but not yet applied on the live VM.
+
 ## Recommended Next Steps
 
 If continuing work from another session, the most useful next tasks are:
@@ -185,11 +196,13 @@ If continuing work from another session, the most useful next tasks are:
    - retry Dreamina jobs
    - retry YouTube uploads
 4. Separate the background worker into its own process for production use
-5. Decide whether Suno automation is still needed, or whether manual intake is the permanent operating model
+5. Put Google login in front of the public app
+6. Decide whether Suno automation is still needed, or whether manual intake is the permanent operating model
 
 ## Important Files
 
 - `README.md`
+- `docs/google-login-protection.md`
 - `app/static/index.html`
 - `app/static/app.js`
 - `app/static/styles.css`

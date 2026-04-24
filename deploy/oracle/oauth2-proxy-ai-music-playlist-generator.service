@@ -1,0 +1,14 @@
+[Unit]
+Description=oauth2-proxy for AI Music Playlist Generator
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+ExecStart=/usr/local/bin/oauth2-proxy --config=/etc/oauth2-proxy-ai-music-playlist-generator.cfg
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
