@@ -63,21 +63,20 @@ if ! command -v oauth2-proxy >/dev/null 2>&1; then
     exit 1
   fi
 
-  version_no_v="${OAUTH2_PROXY_VERSION#v}"
-  archive="oauth2-proxy-${version_no_v}.linux-${oauth_arch}.tar.gz"
+  archive="oauth2-proxy-${OAUTH2_PROXY_VERSION}.linux-${oauth_arch}.tar.gz"
   url="https://github.com/oauth2-proxy/oauth2-proxy/releases/download/${OAUTH2_PROXY_VERSION}/${archive}"
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "${tmpdir}"' EXIT
 
   curl -fsSL "${url}" -o "${tmpdir}/${archive}"
   tar -xzf "${tmpdir}/${archive}" -C "${tmpdir}"
-  install -m 0755 "${tmpdir}/oauth2-proxy-${version_no_v}.linux-${oauth_arch}/oauth2-proxy" /usr/local/bin/oauth2-proxy
+  install -m 0755 "${tmpdir}/oauth2-proxy-${OAUTH2_PROXY_VERSION}.linux-${oauth_arch}/oauth2-proxy" /usr/local/bin/oauth2-proxy
 fi
 
 certbot --nginx -d "${HOSTNAME}" --non-interactive --agree-tos --register-unsafely-without-email
 
 install -m 0644 "${APP_DIR}/deploy/oracle/oauth2-proxy-ai-music-playlist-generator.service" "/etc/systemd/system/${OAUTH2_PROXY_SERVICE}.service"
-install -m 0600 "${APP_DIR}/deploy/oracle/oauth2-proxy-ai-music-playlist-generator.cfg" "${OAUTH2_PROXY_CONFIG}"
+install -o ubuntu -g ubuntu -m 0600 "${APP_DIR}/deploy/oracle/oauth2-proxy-ai-music-playlist-generator.cfg" "${OAUTH2_PROXY_CONFIG}"
 
 python3 - "$OAUTH2_PROXY_CONFIG" "$HOSTNAME" "$ALLOWED_EMAIL_DOMAINS" "$ALLOWED_EMAILS" "$OAUTH2_PROXY_EMAILS_FILE" <<'PY'
 from pathlib import Path
@@ -116,6 +115,7 @@ PY
 
 if [[ -n "${ALLOWED_EMAILS}" ]]; then
   printf '%s\n' "${ALLOWED_EMAILS}" | tr ',' '\n' | sed '/^[[:space:]]*$/d' >"${OAUTH2_PROXY_EMAILS_FILE}"
+  chown ubuntu:ubuntu "${OAUTH2_PROXY_EMAILS_FILE}"
   chmod 600 "${OAUTH2_PROXY_EMAILS_FILE}"
 fi
 
