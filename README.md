@@ -180,6 +180,12 @@ Project handoff/status:
 docs/project-status.md
 ```
 
+Oracle Always Free deployment guide:
+
+```text
+docs/deploy-oracle-always-free.md
+```
+
 ## Suno Session Flow
 
 The web UI now includes a Suno session banner.

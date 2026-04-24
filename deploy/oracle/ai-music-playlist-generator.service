@@ -1,0 +1,16 @@
+[Unit]
+Description=AI Music Playlist Generator
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/ai-music-playlist-generator
+EnvironmentFile=/etc/ai-music-playlist-generator.env
+ExecStart=/bin/bash -lc 'source /opt/ai-music-playlist-generator/.venv/bin/activate && exec uv run uvicorn app.main:app --host 127.0.0.1 --port 8000'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
