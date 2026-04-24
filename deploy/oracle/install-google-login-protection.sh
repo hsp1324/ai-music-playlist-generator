@@ -5,6 +5,7 @@ APP_DIR="${APP_DIR:-/opt/ai-music-playlist-generator}"
 HOSTNAME="${AIMP_AUTH_HOSTNAME:-ai-music.168.107.34.175.sslip.io}"
 APP_ENV_FILE="${APP_ENV_FILE:-/etc/ai-music-playlist-generator.env}"
 OAUTH2_PROXY_CONFIG="${OAUTH2_PROXY_CONFIG:-/etc/oauth2-proxy-ai-music-playlist-generator.cfg}"
+OAUTH2_PROXY_EMAILS_FILE="${OAUTH2_PROXY_EMAILS_FILE:-/etc/oauth2-proxy-ai-music-playlist-generator-authenticated-emails.txt}"
 OAUTH2_PROXY_SERVICE="oauth2-proxy-ai-music-playlist-generator"
 NGINX_SITE="/etc/nginx/sites-available/ai-music-playlist-generator"
 PUBLIC_BASE_URL="https://${HOSTNAME}"
@@ -31,6 +32,7 @@ fi
 export OAUTH2_PROXY_COOKIE_SECRET
 
 ALLOWED_EMAIL_DOMAINS="${ALLOWED_EMAIL_DOMAINS:-*}"
+ALLOWED_EMAILS="${ALLOWED_EMAILS:-}"
 OAUTH2_PROXY_VERSION="${OAUTH2_PROXY_VERSION:-}"
 
 apt-get update
@@ -77,12 +79,12 @@ certbot --nginx -d "${HOSTNAME}" --non-interactive --agree-tos --register-unsafe
 install -m 0644 "${APP_DIR}/deploy/oracle/oauth2-proxy-ai-music-playlist-generator.service" "/etc/systemd/system/${OAUTH2_PROXY_SERVICE}.service"
 install -m 0600 "${APP_DIR}/deploy/oracle/oauth2-proxy-ai-music-playlist-generator.cfg" "${OAUTH2_PROXY_CONFIG}"
 
-python3 - "$OAUTH2_PROXY_CONFIG" "$HOSTNAME" "$ALLOWED_EMAIL_DOMAINS" <<'PY'
+python3 - "$OAUTH2_PROXY_CONFIG" "$HOSTNAME" "$ALLOWED_EMAIL_DOMAINS" "$ALLOWED_EMAILS" "$OAUTH2_PROXY_EMAILS_FILE" <<'PY'
 from pathlib import Path
 import os
 import sys
 
-config_path, hostname, domains = sys.argv[1:]
+config_path, hostname, domains, emails, emails_file = sys.argv[1:]
 client_id = os.environ["GOOGLE_CLIENT_ID"]
 client_secret = os.environ["GOOGLE_CLIENT_SECRET"]
 cookie_secret = os.environ["OAUTH2_PROXY_COOKIE_SECRET"]
@@ -105,8 +107,17 @@ replacements = {
 for source, target in replacements.items():
     text = text.replace(source, target)
 
+email_items = [item.strip() for item in emails.split(",") if item.strip()]
+if email_items:
+    text = text.rstrip() + f'\nauthenticated_emails_file = "{emails_file}"\n'
+
 path.write_text(text)
 PY
+
+if [[ -n "${ALLOWED_EMAILS}" ]]; then
+  printf '%s\n' "${ALLOWED_EMAILS}" | tr ',' '\n' | sed '/^[[:space:]]*$/d' >"${OAUTH2_PROXY_EMAILS_FILE}"
+  chmod 600 "${OAUTH2_PROXY_EMAILS_FILE}"
+fi
 
 install -m 0644 "${APP_DIR}/deploy/oracle/nginx-ai-music-playlist-generator-protected.conf" "${NGINX_SITE}"
 sed -i "s/ai-music\.168\.107\.34\.175\.sslip\.io/${HOSTNAME}/g" "${NGINX_SITE}"

@@ -159,6 +159,11 @@ Chosen provisional hostname:
 
 - `ai-music.168.107.34.175.sslip.io`
 
+Preferred auth policy:
+
+- use `ALLOWED_EMAILS` in the install script for one or more specific Google accounts
+- avoid `ALLOWED_EMAIL_DOMAINS='*'` unless open Google-login access is intentional
+
 ### 3. HTTPS
 
 The VM is currently using plain HTTP by public IP.

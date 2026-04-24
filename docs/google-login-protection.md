@@ -111,9 +111,13 @@ Then run this on the VM from the repo directory:
 ```bash
 sudo GOOGLE_CLIENT_ID='your-client-id' \
   GOOGLE_CLIENT_SECRET='your-client-secret' \
-  ALLOWED_EMAIL_DOMAINS='gmail.com' \
+  ALLOWED_EMAILS='your-account@gmail.com' \
   deploy/oracle/install-google-login-protection.sh
 ```
+
+Use `ALLOWED_EMAILS='first@gmail.com,second@gmail.com'` to allow only specific Google accounts.
+
+Use `ALLOWED_EMAIL_DOMAINS='your-company.com'` to allow a whole Google Workspace domain.
 
 Use `ALLOWED_EMAIL_DOMAINS='*'` only if any Google account should be allowed.
 
