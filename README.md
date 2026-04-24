@@ -186,6 +186,12 @@ Oracle Always Free deployment guide:
 docs/deploy-oracle-always-free.md
 ```
 
+Oracle VM runtime status:
+
+```text
+docs/oracle-vm-status.md
+```
+
 ## Suno Session Flow
 
 The web UI now includes a Suno session banner.
