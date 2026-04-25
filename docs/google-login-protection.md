@@ -187,7 +187,7 @@ sudo systemctl reload nginx
 
 - `/oauth2/` routes to `oauth2-proxy`
 - `/health` stays open for simple liveness checks
-- `/api/slack/events`, `/api/slack/interactions`, and `/api/slack/oauth/callback` stay open for Slack server callbacks
+- `/api/slack/install`, `/api/slack/events`, `/api/slack/interactions`, and `/api/slack/oauth/callback` stay open for Slack install and server callbacks
 - all other requests require a valid Google login
 - authenticated identity is forwarded as headers such as:
   - `X-Forwarded-User`

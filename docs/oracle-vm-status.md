@@ -168,6 +168,7 @@ Slack compatibility:
 
 - Google login protects browser UI routes
 - Slack server callback routes must bypass Google login:
+  - `/api/slack/install`
   - `/api/slack/events`
   - `/api/slack/interactions`
   - `/api/slack/oauth/callback`
