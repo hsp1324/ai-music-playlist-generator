@@ -164,6 +164,14 @@ Preferred auth policy:
 - use `ALLOWED_EMAILS` in the install script for one or more specific Google accounts
 - avoid `ALLOWED_EMAIL_DOMAINS='*'` unless open Google-login access is intentional
 
+Slack compatibility:
+
+- Google login protects browser UI routes
+- Slack server callback routes must bypass Google login:
+  - `/api/slack/events`
+  - `/api/slack/interactions`
+  - `/api/slack/oauth/callback`
+
 ### 3. HTTPS
 
 The VM is currently using plain HTTP by public IP.
