@@ -1,6 +1,5 @@
 import hashlib
 import hmac
-import json
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -78,49 +77,47 @@ class SlackService:
         return hmac.compare_digest(expected, signature)
 
     def build_track_review_blocks(self, track: Track) -> list[dict[str, Any]]:
-        metadata_text = json.dumps(track.metadata_json, ensure_ascii=True, indent=2)
         value_prefix = f"track:{track.id}"
+        metadata = track.metadata_json or {}
+        workspace_title = metadata.get("pending_workspace_title") or metadata.get("pending_workspace_id") or "Unassigned"
         link_buttons: list[dict[str, Any]] = []
         if track.preview_url:
-            link_buttons.append(self._link_button("Preview", track.preview_url))
+            link_buttons.append(self._link_button("Listen", track.preview_url))
         if track.audio_path and track.audio_path.startswith(("http://", "https://")):
-            link_buttons.append(self._link_button("Download", track.audio_path))
-        image_url = track.metadata_json.get("image_url")
+            link_buttons.append(self._link_button("Audio", track.audio_path))
+        image_url = metadata.get("image_url")
         if image_url:
             link_buttons.append(self._link_button("Cover", image_url))
 
         blocks = [
             {
                 "type": "header",
-                "text": {"type": "plain_text", "text": f"Track Review: {track.title}"},
+                "text": {"type": "plain_text", "text": "New Track Review"},
             },
             {
                 "type": "section",
-                "fields": [
-                    {"type": "mrkdwn", "text": f"*Track ID:*\n`{track.id}`"},
-                    {"type": "mrkdwn", "text": f"*Duration:*\n{track.duration_seconds}s"},
-                    {"type": "mrkdwn", "text": f"*Status:*\n`{track.status.value}`"},
-                    {
-                        "type": "mrkdwn",
-                        "text": (
-                            f"*Audio File:*\n`{Path(track.audio_path).name}`"
-                            if track.audio_path and not track.audio_path.startswith(("http://", "https://"))
-                            else "*Audio File:*\nremote only"
-                            if track.audio_path
-                            else "*Audio File:*\nnot provided"
-                        ),
-                    },
-                ],
-            },
-            {
-                "type": "section",
-                "text": {"type": "mrkdwn", "text": f"*Prompt*\n```{track.prompt}```"},
-            },
-            {
-                "type": "section",
-                "text": {"type": "mrkdwn", "text": f"*Metadata*\n```{metadata_text}```"},
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*{track.title}*\n"
+                        f"Workspace: `{workspace_title}`\n"
+                        f"Duration: {self._format_duration(track.duration_seconds)}"
+                    ),
+                },
             },
         ]
+        if track.prompt:
+            blocks.append(
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f"Prompt: {self._short_text(track.prompt, 140)}",
+                        }
+                    ],
+                }
+            )
         if link_buttons:
             blocks.append(
                 {
@@ -133,9 +130,8 @@ class SlackService:
                 "type": "actions",
                 "elements": [
                     self._button("Approve", f"{value_prefix}:approve", style="primary"),
-                    self._button("Reject", f"{value_prefix}:reject", style="danger"),
                     self._button("Hold", f"{value_prefix}:hold"),
-                    self._button("Regenerate", f"{value_prefix}:regenerate"),
+                    self._button("Reject", f"{value_prefix}:reject", style="danger"),
                 ],
             },
         )
@@ -405,3 +401,17 @@ class SlackService:
             "url": url,
             "action_id": f"link:{text.lower()}",
         }
+
+    @staticmethod
+    def _format_duration(seconds: int | None) -> str:
+        if not seconds:
+            return "0:00"
+        minutes, remaining = divmod(round(seconds), 60)
+        return f"{minutes}:{remaining:02d}"
+
+    @staticmethod
+    def _short_text(value: str, max_length: int) -> str:
+        normalized = " ".join(str(value).split())
+        if len(normalized) <= max_length:
+            return normalized
+        return f"{normalized[: max_length - 1].rstrip()}..."

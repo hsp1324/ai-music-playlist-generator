@@ -98,4 +98,4 @@ def test_build_track_review_blocks_include_media_links() -> None:
 
     assert len(actions_blocks) == 2
     link_texts = [element["text"]["text"] for element in actions_blocks[0]["elements"]]
-    assert link_texts == ["Preview", "Cover"]
+    assert link_texts == ["Listen", "Cover"]

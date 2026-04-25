@@ -47,6 +47,9 @@ let quickUploadFiles = [];
 function normalizeMediaUrl(path) {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  const storageMarker = "/storage/";
+  const storageIndex = path.indexOf(storageMarker);
+  if (storageIndex >= 0) return encodeURI(`/media/${path.slice(storageIndex + storageMarker.length)}`);
   if (path.startsWith("storage/")) return encodeURI(`/media/${path.slice("storage/".length)}`);
   return encodeURI(path);
 }
