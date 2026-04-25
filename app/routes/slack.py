@@ -15,7 +15,7 @@ from app.models.slack_installation import SlackInstallation
 from app.models.track import Track
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
-from app.workflows.playlist_automation import maybe_build_auto_playlist
+from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist
 
 router = APIRouter(prefix="/slack", tags=["slack"])
 
@@ -202,12 +202,40 @@ async def slack_interactions(
     )
     db.commit()
     db.refresh(track)
-    await maybe_build_auto_playlist(db, services, trigger=f"slack-decision:{track.id}")
+
+    assigned_workspace_id = None
+    assigned_workspace_title = None
+    assignment_error = None
+    pending_workspace_id = (track.metadata_json or {}).get("pending_workspace_id")
+    if decision == DecisionValue.approve and pending_workspace_id:
+        try:
+            playlist = await assign_track_to_playlist(
+                db,
+                services,
+                track=track,
+                playlist_id=pending_workspace_id,
+                actor=actor,
+            )
+            assigned_workspace_id = playlist.id
+            assigned_workspace_title = playlist.title
+        except ValueError as exc:
+            assignment_error = str(exc)
+            await maybe_build_auto_playlist(db, services, trigger=f"slack-decision:{track.id}")
+    else:
+        await maybe_build_auto_playlist(db, services, trigger=f"slack-decision:{track.id}")
+
+    response_text = f"Recorded `{decision.value}` for track `{track.title}`."
+    if assigned_workspace_title:
+        response_text += f" Assigned to workspace `{assigned_workspace_title}`."
+    elif assignment_error:
+        response_text += f" Workspace assignment failed: {assignment_error}."
 
     return JSONResponse(
         {
-            "text": f"Recorded `{decision.value}` for track `{track.title}`.",
+            "text": response_text,
             "track_status": track.status.value,
+            "assigned_workspace_id": assigned_workspace_id,
+            "assignment_error": assignment_error,
         }
     )
 

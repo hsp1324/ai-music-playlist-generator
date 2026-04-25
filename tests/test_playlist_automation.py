@@ -1,3 +1,4 @@
+import json
 import os
 from uuid import uuid4
 
@@ -335,6 +336,69 @@ def test_workspace_flow_assigns_tracks_and_requests_publish_approval(tmp_path) -
         assert workspace["publish_ready"] is True
         assert workspace["workflow_state"] == "pending_publish_approval"
         assert [track["id"] for track in workspace["tracks"]] == track_ids
+    finally:
+        clear_isolated_client_env()
+
+
+def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        client.app.state.settings.auto_build_playlists = False
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Slack Approval Workspace",
+                "target_duration_seconds": 120,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Slack Approved Track",
+                "prompt": "bright synth hook",
+                "duration_seconds": 120,
+                "audio_path": "https://cdn.example.com/slack-approved.mp3",
+                "metadata": {
+                    "source": "test",
+                    "pending_workspace_id": workspace_id,
+                },
+            },
+        )
+        assert track_response.status_code == 201
+        track_id = track_response.json()["id"]
+
+        interaction_response = client.post(
+            "/api/slack/interactions",
+            data={
+                "payload": json.dumps(
+                    {
+                        "actions": [{"value": f"track:{track_id}:approve"}],
+                        "user": {"id": "U123", "username": "slack-reviewer"},
+                    }
+                )
+            },
+        )
+        assert interaction_response.status_code == 200
+        interaction = interaction_response.json()
+        assert interaction["track_status"] == "approved"
+        assert interaction["assigned_workspace_id"] == workspace_id
+        assert interaction["assignment_error"] is None
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        assert workspaces_response.status_code == 200
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["actual_duration_seconds"] == 120
+        assert [track["id"] for track in workspace["tracks"]] == [track_id]
+
+        track_after = client.get(f"/api/tracks/{track_id}")
+        assert track_after.status_code == 200
+        track = track_after.json()
+        assert track["status"] == "approved"
+        assert track["approvals"][-1]["source"] == "slack"
+        assert track["approvals"][-1]["actor"] == "slack-reviewer"
     finally:
         clear_isolated_client_env()
 
