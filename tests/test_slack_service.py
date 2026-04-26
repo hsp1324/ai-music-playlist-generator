@@ -101,6 +101,31 @@ def test_build_track_review_blocks_include_media_links() -> None:
     assert link_texts == ["Listen", "Cover"]
 
 
+def test_build_track_review_blocks_convert_local_cover_to_public_url() -> None:
+    service = SlackService(Settings(public_base_url="https://music.example.com"))
+    track = Track(
+        id="track-1",
+        title="Local Cover",
+        prompt="",
+        duration_seconds=120,
+        audio_path="storage/tracks/local-cover.mp3",
+        preview_url=None,
+        status=TrackStatus.pending_review,
+        metadata_json={"image_url": "storage/covers/가녀린 날개-cover.jpg"},
+    )
+
+    blocks = service.build_track_review_blocks(track)
+    cover_button = next(
+        element
+        for block in blocks
+        if block["type"] == "actions"
+        for element in block["elements"]
+        if element["text"]["text"] == "Cover"
+    )
+
+    assert cover_button["url"] == "https://music.example.com/media/covers/%EA%B0%80%EB%85%80%EB%A6%B0%20%EB%82%A0%EA%B0%9C-cover.jpg"
+
+
 def test_build_track_decision_blocks_remove_review_buttons() -> None:
     service = SlackService(Settings())
     track = Track(

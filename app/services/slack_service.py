@@ -5,7 +5,7 @@ import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 from typing import Any
 
 import httpx
@@ -96,7 +96,9 @@ class SlackService:
             link_buttons.append(self._link_button("Audio", track.audio_path))
         image_url = metadata.get("image_url")
         if image_url:
-            link_buttons.append(self._link_button("Cover", image_url))
+            cover_url = self._public_media_url(image_url)
+            if cover_url:
+                link_buttons.append(self._link_button("Cover", cover_url))
 
         blocks = [
             {
@@ -162,7 +164,9 @@ class SlackService:
             link_buttons.append(self._link_button("Audio", track.audio_path))
         image_url = metadata.get("image_url")
         if image_url:
-            link_buttons.append(self._link_button("Cover", image_url))
+            cover_url = self._public_media_url(image_url)
+            if cover_url:
+                link_buttons.append(self._link_button("Cover", cover_url))
 
         blocks: list[dict[str, Any]] = [
             {
@@ -667,6 +671,26 @@ class SlackService:
             "url": url,
             "action_id": f"link:{text.lower()}",
         }
+
+    def _public_media_url(self, value: str | None) -> str | None:
+        if not value:
+            return None
+        if value.startswith(("http://", "https://")):
+            return value
+
+        normalized = value
+        storage_marker = "/storage/"
+        storage_index = normalized.find(storage_marker)
+        if storage_index >= 0:
+            normalized = normalized[storage_index + len(storage_marker) :]
+        elif normalized.startswith("storage/"):
+            normalized = normalized[len("storage/") :]
+        elif normalized.startswith("/"):
+            return f"{self.settings.public_base_url.rstrip('/')}{quote(normalized, safe='/')}"
+        else:
+            return None
+
+        return f"{self.settings.public_base_url.rstrip('/')}/media/{quote(normalized, safe='/')}"
 
     @staticmethod
     def _format_duration(seconds: int | None) -> str:
