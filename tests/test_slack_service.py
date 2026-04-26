@@ -123,7 +123,7 @@ def test_build_track_decision_blocks_remove_review_buttons() -> None:
     )
 
     rendered = str(blocks)
-    assert "Track Approved" in rendered
+    assert "Approved" in rendered
     assert "slack-reviewer" in rendered
     button_texts = [
         element["text"]["text"]
@@ -134,3 +134,48 @@ def test_build_track_decision_blocks_remove_review_buttons() -> None:
     assert "Approve" not in button_texts
     assert "Hold" not in button_texts
     assert "Reject" not in button_texts
+
+
+def test_extract_file_share_location_from_complete_upload_payload() -> None:
+    payload = {
+        "files": [
+            {
+                "shares": {
+                    "public": {
+                        "C123": [
+                            {
+                                "ts": "1777000000.000100",
+                            }
+                        ]
+                    }
+                }
+            }
+        ]
+    }
+
+    channel, ts = SlackService._extract_file_share_location(payload, fallback_channel="C999")
+
+    assert channel == "C123"
+    assert ts == "1777000000.000100"
+
+
+def test_extract_file_message_from_history_matches_uploaded_file() -> None:
+    payload = {
+        "ok": True,
+        "messages": [
+            {
+                "ts": "1777000000.000200",
+                "text": "Track review",
+                "files": [{"id": "F123"}],
+            }
+        ],
+    }
+
+    channel, ts = SlackService._extract_file_message_from_history(
+        payload,
+        file_id="F123",
+        channel="C123",
+    )
+
+    assert channel == "C123"
+    assert ts == "1777000000.000200"

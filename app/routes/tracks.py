@@ -16,7 +16,7 @@ from app.schemas.track import TrackCreateRequest, TrackDecisionRequest, TrackRea
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist, return_track_to_workspace_queue
-from app.workflows.review_dispatch import dispatch_track_review
+from app.workflows.review_dispatch import dispatch_track_review, post_track_review_to_slack
 from app.workflows.slack_sync import sync_slack_review_decision
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
@@ -328,42 +328,14 @@ async def create_slack_review(
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
 
-    blocks = services.slack.build_track_review_blocks(track)
-    installation = services.slack_installations.get_active_installation(db)
-    token = installation.bot_token if installation else services.settings.slack_bot_token
-    post_result = await services.slack.post_review_message(
-        track,
-        token=token,
-        channel=services.settings.slack_review_channel_id,
-    )
-
-    if post_result.ok:
-        track.slack_channel_id = post_result.channel
-        track.slack_message_ts = post_result.ts
-        db.add(track)
-        db.commit()
-        db.refresh(track)
-        if (
-            token
-            and track.audio_path
-            and not track.audio_path.startswith(("http://", "https://"))
-            and Path(track.audio_path).exists()
-        ):
-            await services.slack.upload_local_audio_file(
-                file_path=track.audio_path,
-                title=track.title,
-                token=token,
-                channel=post_result.channel or services.settings.slack_review_channel_id,
-                thread_ts=post_result.ts,
-                initial_comment=f"Audio preview for {track.title}",
-            )
+    post_result = await post_track_review_to_slack(db, services, track)
 
     return {
         "track_id": track.id,
         "posted": post_result.ok,
         "channel": post_result.channel,
         "ts": post_result.ts,
-        "blocks": blocks,
+        "blocks": services.slack.build_track_review_blocks(track),
         "raw": post_result.raw,
     }
 

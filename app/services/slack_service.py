@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import hmac
 import time
@@ -32,6 +33,8 @@ class SlackOAuthResult:
 class SlackFileUploadResult:
     ok: bool
     file_id: str | None = None
+    channel: str | None = None
+    ts: str | None = None
     raw: dict[str, Any] | None = None
 
 
@@ -98,7 +101,7 @@ class SlackService:
         blocks = [
             {
                 "type": "header",
-                "text": {"type": "plain_text", "text": "New Track Review"},
+                "text": {"type": "plain_text", "text": "Track Review"},
             },
             {
                 "type": "section",
@@ -106,24 +109,11 @@ class SlackService:
                     "type": "mrkdwn",
                     "text": (
                         f"*{track.title}*\n"
-                        f"Workspace: `{workspace_title}`\n"
-                        f"Duration: {self._format_duration(track.duration_seconds)}"
+                        f"Workspace: `{workspace_title}`"
                     ),
                 },
             },
         ]
-        if track.prompt:
-            blocks.append(
-                {
-                    "type": "context",
-                    "elements": [
-                        {
-                            "type": "mrkdwn",
-                            "text": f"Prompt: {self._short_text(track.prompt, 140)}",
-                        }
-                    ],
-                }
-            )
         if link_buttons:
             blocks.append(
                 {
@@ -177,7 +167,7 @@ class SlackService:
         blocks: list[dict[str, Any]] = [
             {
                 "type": "header",
-                "text": {"type": "plain_text", "text": f"Track {status_label}"},
+                "text": {"type": "plain_text", "text": status_label},
             },
             {
                 "type": "section",
@@ -185,9 +175,7 @@ class SlackService:
                     "type": "mrkdwn",
                     "text": (
                         f"*{track.title}*\n"
-                        f"Status: `{status_label}`\n"
-                        f"Workspace: `{resolved_workspace}`\n"
-                        f"Duration: {self._format_duration(track.duration_seconds)}"
+                        f"Workspace: `{resolved_workspace}`"
                     ),
                 },
             },
@@ -343,6 +331,109 @@ class SlackService:
                 json=payload,
             )
             data = response.json()
+        return SlackUpdateResult(ok=bool(data.get("ok")), raw=data)
+
+    async def post_review_message_with_local_audio(
+        self,
+        track: Track,
+        *,
+        token: str | None = None,
+        channel: str | None = None,
+    ) -> SlackPostResult:
+        auth_token = token or self.settings.slack_bot_token
+        target_channel = channel or self.settings.slack_review_channel_id
+        if not auth_token or not target_channel:
+            return SlackPostResult(ok=False, raw={"reason": "slack_bot_token or slack_review_channel_id missing"})
+        if not track.audio_path:
+            return SlackPostResult(ok=False, raw={"reason": "track_audio_path_missing"})
+
+        marker = f"review:{track.id}"
+        upload_result = await self.upload_local_audio_file(
+            file_path=track.audio_path,
+            title=track.title,
+            token=auth_token,
+            channel=target_channel,
+            initial_comment=f"Track review: {track.title}\n{marker}",
+        )
+        if not upload_result.ok:
+            return SlackPostResult(ok=False, raw={"upload": upload_result.raw})
+
+        message_channel = upload_result.channel or target_channel
+        message_ts = upload_result.ts
+        if not message_ts and upload_result.file_id:
+            message_channel, message_ts = await self.find_uploaded_file_message(
+                file_id=upload_result.file_id,
+                token=auth_token,
+                channel=message_channel,
+                text_marker=marker,
+            )
+
+        if not message_ts:
+            if upload_result.file_id:
+                await self.delete_file(file_id=upload_result.file_id, token=auth_token)
+            return SlackPostResult(
+                ok=False,
+                channel=message_channel,
+                raw={"error": "uploaded_file_message_ts_not_found", "upload": upload_result.raw},
+            )
+
+        update_result = await self.update_review_request_message(
+            track,
+            token=auth_token,
+            channel=message_channel,
+            ts=message_ts,
+        )
+        if not update_result.ok:
+            if upload_result.file_id:
+                await self.delete_file(file_id=upload_result.file_id, token=auth_token)
+            return SlackPostResult(
+                ok=False,
+                channel=message_channel,
+                ts=message_ts,
+                raw={"error": "uploaded_file_message_update_failed", "update": update_result.raw},
+            )
+
+        return SlackPostResult(
+            ok=True,
+            channel=message_channel,
+            ts=message_ts,
+            raw={"upload": upload_result.raw, "update": update_result.raw},
+        )
+
+    async def update_review_request_message(
+        self,
+        track: Track,
+        *,
+        token: str | None = None,
+        channel: str | None = None,
+        ts: str | None = None,
+    ) -> SlackUpdateResult:
+        auth_token = token or self.settings.slack_bot_token
+        target_channel = channel or track.slack_channel_id
+        target_ts = ts or track.slack_message_ts
+        if not auth_token or not target_channel or not target_ts:
+            return SlackUpdateResult(
+                ok=False,
+                raw={"error": "missing_bot_token_channel_or_ts"},
+            )
+
+        payload = {
+            "channel": target_channel,
+            "ts": target_ts,
+            "text": f"Track review requested: {track.title}",
+            "blocks": self.build_track_review_blocks(track),
+        }
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/chat.update",
+                headers={
+                    "Authorization": f"Bearer {auth_token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json=payload,
+            )
+            data = response.json()
             return SlackUpdateResult(ok=bool(data.get("ok")), raw=data)
 
     async def upload_local_audio_file(
@@ -412,11 +503,67 @@ class SlackService:
                 json=completion_payload,
             )
             completion_data = completion_response.json()
+            shared_channel, shared_ts = self._extract_file_share_location(completion_data, fallback_channel=channel)
             return SlackFileUploadResult(
                 ok=bool(completion_data.get("ok")),
                 file_id=file_id,
+                channel=shared_channel,
+                ts=shared_ts,
                 raw=completion_data,
             )
+
+    async def find_uploaded_file_message(
+        self,
+        *,
+        file_id: str,
+        token: str,
+        channel: str,
+        text_marker: str | None = None,
+        attempts: int = 5,
+        delay_seconds: float = 1.0,
+    ) -> tuple[str | None, str | None]:
+        for attempt in range(attempts):
+            if attempt:
+                await asyncio.sleep(delay_seconds)
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    "https://slack.com/api/conversations.history",
+                    headers={"Authorization": f"Bearer {token}"},
+                    data={
+                        "channel": channel,
+                        "limit": "25",
+                    },
+                )
+                data = response.json()
+            found_channel, found_ts = self._extract_file_message_from_history(
+                data,
+                file_id=file_id,
+                channel=channel,
+                text_marker=text_marker,
+            )
+            if found_ts:
+                return found_channel, found_ts
+            if not data.get("ok") and data.get("error") in {"missing_scope", "not_in_channel", "channel_not_found"}:
+                return channel, None
+        return channel, None
+
+    async def delete_file(
+        self,
+        *,
+        file_id: str,
+        token: str | None = None,
+    ) -> dict[str, Any]:
+        auth_token = token or self.settings.slack_bot_token
+        if not auth_token:
+            return {"ok": False, "error": "missing_bot_token"}
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/files.delete",
+                headers={"Authorization": f"Bearer {auth_token}"},
+                data={"file": file_id},
+            )
+            return response.json()
 
     async def publish_app_home(
         self,
@@ -547,3 +694,56 @@ class SlackService:
         if len(normalized) <= max_length:
             return normalized
         return f"{normalized[: max_length - 1].rstrip()}..."
+
+    @staticmethod
+    def _extract_file_share_location(
+        payload: dict[str, Any],
+        *,
+        fallback_channel: str | None,
+    ) -> tuple[str | None, str | None]:
+        files = payload.get("files")
+        if not isinstance(files, list):
+            return fallback_channel, None
+
+        for file_info in files:
+            shares = file_info.get("shares") if isinstance(file_info, dict) else None
+            if not isinstance(shares, dict):
+                continue
+            for share_group in ("public", "private"):
+                channels = shares.get(share_group)
+                if not isinstance(channels, dict):
+                    continue
+                for channel_id, entries in channels.items():
+                    if not isinstance(entries, list) or not entries:
+                        continue
+                    ts = entries[0].get("ts") if isinstance(entries[0], dict) else None
+                    if ts:
+                        return channel_id, ts
+
+        return fallback_channel, None
+
+    @staticmethod
+    def _extract_file_message_from_history(
+        payload: dict[str, Any],
+        *,
+        file_id: str,
+        channel: str | None,
+        text_marker: str | None = None,
+    ) -> tuple[str | None, str | None]:
+        messages = payload.get("messages")
+        if not isinstance(messages, list):
+            return channel, None
+
+        for message in messages:
+            if not isinstance(message, dict):
+                continue
+            files = message.get("files")
+            has_file = (
+                isinstance(files, list)
+                and any(isinstance(file_info, dict) and file_info.get("id") == file_id for file_info in files)
+            )
+            has_marker = bool(text_marker and text_marker in str(message.get("text") or ""))
+            if has_file or has_marker:
+                return channel, message.get("ts")
+
+        return channel, None
