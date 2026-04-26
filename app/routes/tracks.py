@@ -113,6 +113,7 @@ def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | N
     if not source.exists():
         return None
 
+    covers_dir.mkdir(parents=True, exist_ok=True)
     destination = _resolve_upload_destination(covers_dir, f"{source.stem}-cover.jpg")
     try:
         subprocess.run(
@@ -125,8 +126,13 @@ def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | N
                 str(source),
                 "-map",
                 "0:v:0",
+                "-an",
                 "-frames:v",
                 "1",
+                "-c:v",
+                "mjpeg",
+                "-q:v",
+                "2",
                 str(destination),
             ],
             check=True,
@@ -140,6 +146,7 @@ def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | N
 
 
 def _resolve_upload_destination(tracks_dir: Path, original_name: str) -> Path:
+    tracks_dir.mkdir(parents=True, exist_ok=True)
     safe_name = Path(original_name).name.strip()
     if not safe_name:
         safe_name = "upload.mp3"

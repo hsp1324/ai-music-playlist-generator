@@ -516,6 +516,22 @@ audio {
   padding: 16px;
 }
 
+.approved-card-head {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.approved-art {
+  width: 74px;
+  height: 74px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel-muted);
+  object-fit: cover;
+}
+
 .approved-actions {
   justify-content: flex-start;
 }

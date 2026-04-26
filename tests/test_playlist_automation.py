@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -9,6 +10,7 @@ from app.config import get_settings
 from app.db import SessionLocal
 from app.main import create_app
 from app.models.track import Track
+from app.routes.tracks import _extract_embedded_cover
 
 
 def create_isolated_client(tmp_path) -> TestClient:
@@ -110,6 +112,28 @@ def test_manual_upload_deduplicates_original_filename(tmp_path) -> None:
         assert second.json()["audio_path"].endswith("same-name-2.mp3")
     finally:
         clear_isolated_client_env()
+
+
+def test_extract_embedded_cover_uses_stable_jpeg_output(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "cover-source.mp3"
+    source.write_bytes(b"fake-audio")
+    covers_dir = tmp_path / "covers"
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append(args)
+        Path(args[-1]).write_bytes(b"fake-jpeg")
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr("app.routes.tracks.subprocess.run", fake_run)
+
+    result = _extract_embedded_cover(str(source), covers_dir)
+
+    assert result is not None
+    assert result.endswith("cover-source-cover.jpg")
+    assert Path(result).exists()
+    assert "-an" in calls[0]
+    assert calls[0][calls[0].index("-c:v") + 1] == "mjpeg"
 
 
 def test_auto_build_creates_playlist_when_enough_tracks_are_approved(tmp_path) -> None:

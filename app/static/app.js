@@ -91,6 +91,47 @@ function fileStem(filename) {
   return value.replace(/\.[^.]+$/, "") || "Uploaded Track";
 }
 
+const fallbackTrackArtUrl =
+  "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80";
+
+function trackCoverUrl(track) {
+  return normalizeMediaUrl(track?.metadata_json?.image_url || track?.image_url) || fallbackTrackArtUrl;
+}
+
+function trackCoverLabel(track) {
+  return track?.metadata_json?.image_url || track?.image_url ? "커버 있음" : "커버 없음";
+}
+
+function uploadResultLine(track, index) {
+  return `${index + 1}. ${displayTitle(track.title)} | ${statusLabel(track.status)} | ${formatDuration(
+    track.duration_seconds
+  )} | ${trackCoverLabel(track)}`;
+}
+
+function setQuickUploadProgress(total, results, failures, activeFileName = "") {
+  const lines = [];
+  const finished = results.length + failures.length;
+  if (activeFileName) {
+    lines.push(`업로드 중 ${finished + 1}/${total}: ${activeFileName}`);
+  } else {
+    lines.push(`업로드 결과: 성공 ${results.length}/${total}${failures.length ? `, 실패 ${failures.length}` : ""}`);
+  }
+
+  if (results.length) {
+    lines.push("");
+    lines.push("성공");
+    results.forEach((track, index) => lines.push(uploadResultLine(track, index)));
+  }
+
+  if (failures.length) {
+    lines.push("");
+    lines.push("실패");
+    failures.forEach((failure, index) => lines.push(`${index + 1}. ${failure.name} | ${failure.message}`));
+  }
+
+  setTextStatus(quickUploadStatus, lines.join("\n"));
+}
+
 async function api(path, options = {}) {
   const response = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
@@ -128,7 +169,7 @@ function actionButton(label, className, handler) {
     button.disabled = true;
     try {
       await handler();
-      await refresh();
+      await refreshBoard();
     } catch (error) {
       alert(error.message);
       button.disabled = false;
@@ -211,6 +252,9 @@ function renderQuickUploadFiles() {
 function setQuickUploadFiles(files) {
   quickUploadFiles = [...files];
   renderQuickUploadFiles();
+  if (quickUploadFiles.length) {
+    setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. workspace를 선택하고 Upload Audio를 누르세요.`);
+  }
 }
 
 async function submitQuickUpload() {
@@ -225,43 +269,63 @@ async function submitQuickUpload() {
 
   quickUploadSubmitButton.disabled = true;
   const results = [];
+  const failures = [];
   const workspaceId = quickUploadWorkspaceSelect.value;
+  const failedFiles = [];
+  state.selectedWorkspaceId = workspaceId;
   try {
     for (const [index, file] of quickUploadFiles.entries()) {
-      setTextStatus(quickUploadStatus, `Uploading ${index + 1}/${quickUploadFiles.length}: ${file.name}`);
-      const form = new FormData();
-      form.append("title", fileStem(file.name));
-      form.append("prompt", "manual quick upload");
-      form.append("duration_seconds", "0");
-      form.append("pending_workspace_id", workspaceId);
-      form.append("audio_file", file, file.name);
-      const response = await fetch("/api/tracks/manual-upload", {
-        method: "POST",
-        body: form,
-      });
-      const text = await response.text();
-      let result;
+      setQuickUploadProgress(quickUploadFiles.length, results, failures, file.name);
       try {
-        result = text ? JSON.parse(text) : null;
-      } catch {
-        result = text;
+        const form = new FormData();
+        form.append("title", fileStem(file.name));
+        form.append("prompt", "manual quick upload");
+        form.append("duration_seconds", "0");
+        form.append("pending_workspace_id", workspaceId);
+        form.append("audio_file", file, file.name);
+        const response = await fetch("/api/tracks/manual-upload", {
+          method: "POST",
+          body: form,
+        });
+        const text = await response.text();
+        let result;
+        try {
+          result = text ? JSON.parse(text) : null;
+        } catch {
+          result = text;
+        }
+        if (!response.ok) {
+          throw new Error(typeof result === "string" ? result : JSON.stringify(result, null, 2));
+        }
+        results.push(result);
+        setQuickUploadProgress(quickUploadFiles.length, results, failures);
+        refreshBoard().catch(() => {});
+      } catch (error) {
+        failures.push({ name: file.name, message: error.message });
+        failedFiles.push(file);
+        setQuickUploadProgress(quickUploadFiles.length, results, failures);
       }
-      if (!response.ok) {
-        throw new Error(typeof result === "string" ? result : JSON.stringify(result, null, 2));
-      }
-      results.push({ title: result.title, status: result.status });
     }
-    setTextStatus(
-      quickUploadStatus,
-      `업로드 완료: ${results.length}/${quickUploadFiles.length}곡\n${results
-        .map((result) => `- ${result.title}: ${statusLabel(result.status)}`)
-        .join("\n")}\nSlack 알림은 백그라운드에서 전송됩니다.`
-    );
-    setQuickUploadFiles([]);
-    if (quickUploadInput) {
+    await refreshBoard();
+    setQuickUploadProgress(quickUploadFiles.length, results, failures);
+    if (!failures.length) {
+      quickUploadFiles = [];
+      renderQuickUploadFiles();
+      setTextStatus(
+        quickUploadStatus,
+        `${quickUploadStatus.textContent}\n\nworkspace queue에 반영됐습니다. Slack 알림은 백그라운드에서 전송됩니다.`
+      );
+    } else {
+      quickUploadFiles = failedFiles;
+      renderQuickUploadFiles();
+      setTextStatus(
+        quickUploadStatus,
+        `${quickUploadStatus.textContent}\n\n실패한 파일만 목록에 남겼습니다. 다시 Upload Audio를 누르면 재시도합니다.`
+      );
+    }
+    if (quickUploadInput && !failures.length) {
       quickUploadInput.value = "";
     }
-    await refresh();
   } catch (error) {
     setStatus(quickUploadStatus, error.message);
   } finally {
@@ -409,9 +473,7 @@ function renderWorkspaceDetail() {
       const actions = fragment.querySelector(".track-actions");
       const select = fragment.querySelector(".workspace-select");
 
-      const imageUrl =
-        normalizeMediaUrl(track.metadata_json?.image_url) ||
-        "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80";
+      const imageUrl = trackCoverUrl(track);
       const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
 
       image.src = imageUrl;
@@ -495,6 +557,7 @@ function renderWorkspaceDetail() {
 
   workspace.tracks.forEach((track) => {
     const fragment = approvedCardTemplate.content.cloneNode(true);
+    const image = fragment.querySelector(".approved-art");
     const title = fragment.querySelector(".approved-title");
     const meta = fragment.querySelector(".approved-meta");
     const duration = fragment.querySelector(".approved-duration");
@@ -502,7 +565,10 @@ function renderWorkspaceDetail() {
     const links = fragment.querySelector(".approved-links");
     const actions = fragment.querySelector(".approved-actions");
     const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
+    const imageUrl = trackCoverUrl(track);
 
+    image.src = imageUrl;
+    image.alt = displayTitle(track.title, "Track");
     title.textContent = displayTitle(track.title, "Untitled Track");
     meta.textContent = shortText(track.tags || "approved track", 80);
     duration.textContent = formatDuration(track.duration_seconds);
@@ -513,6 +579,7 @@ function renderWorkspaceDetail() {
       audio.remove();
     }
     if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
+    if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
     actions.appendChild(
       actionButton("Hold", "pill-action hold", async () => {
         await api(`/api/tracks/${track.id}/return-to-review`, {
@@ -550,6 +617,24 @@ function renderYouTubeStatus(youtubeStatus) {
         : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
 }
 
+function applyBoardData(tracks, workspaces) {
+  state.tracks = tracks;
+  state.workspaces = workspaces;
+  ensureSelectedWorkspace();
+  updateToolbarSummary();
+  renderTrackWorkspaceOptions();
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+}
+
+async function refreshBoard() {
+  const [tracks, workspaces] = await Promise.all([
+    api("/api/tracks"),
+    api("/api/playlists/workspaces"),
+  ]);
+  applyBoardData(tracks, workspaces);
+}
+
 async function refresh() {
   const [tracks, workspaces, sessionStatus, youtubeStatus] = await Promise.all([
     api("/api/tracks"),
@@ -557,15 +642,9 @@ async function refresh() {
     api("/api/suno/session-status"),
     api("/api/youtube/status"),
   ]);
-  state.tracks = tracks;
-  state.workspaces = workspaces;
-  ensureSelectedWorkspace();
-  updateToolbarSummary();
-  renderTrackWorkspaceOptions();
+  applyBoardData(tracks, workspaces);
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
-  renderWorkspaceTiles();
-  renderWorkspaceDetail();
 }
 
 trackForm.addEventListener("submit", async (event) => {
@@ -586,9 +665,17 @@ trackForm.addEventListener("submit", async (event) => {
     if (!response.ok) {
       throw new Error(typeof result === "string" ? result : JSON.stringify(result, null, 2));
     }
-    setStatus(trackStatus, result);
+    setTextStatus(
+      trackStatus,
+      `추가 완료: ${displayTitle(result.title)}\n상태: ${statusLabel(result.status)}\n길이: ${formatDuration(
+        result.duration_seconds
+      )}\n${trackCoverLabel(result)}`
+    );
+    if (result.metadata_json?.pending_workspace_id) {
+      state.selectedWorkspaceId = result.metadata_json.pending_workspace_id;
+    }
     trackForm.reset();
-    await refresh();
+    await refreshBoard();
   } catch (error) {
     setStatus(trackStatus, error.message);
   }
