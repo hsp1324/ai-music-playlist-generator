@@ -193,6 +193,28 @@ async function reorderApprovedTrack(workspace, currentIndex, direction) {
   });
 }
 
+async function saveApprovedTrackOrder(workspace, trackIds) {
+  await api(`/api/playlists/${workspace.id}/tracks/reorder`, {
+    method: "POST",
+    body: JSON.stringify({
+      track_ids: trackIds,
+      actor: "web-ui",
+    }),
+  });
+}
+
+async function reorderApprovedTrackByDrop(workspace, draggedTrackId, targetTrackId) {
+  if (!draggedTrackId || !targetTrackId || draggedTrackId === targetTrackId) return;
+  const trackIds = workspace.tracks.map((track) => track.id);
+  const fromIndex = trackIds.indexOf(draggedTrackId);
+  const toIndex = trackIds.indexOf(targetTrackId);
+  if (fromIndex < 0 || toIndex < 0) return;
+
+  const [dragged] = trackIds.splice(fromIndex, 1);
+  trackIds.splice(toIndex, 0, dragged);
+  await saveApprovedTrackOrder(workspace, trackIds);
+}
+
 function activeWorkspace() {
   return state.workspaces.find((workspace) => workspace.id === state.selectedWorkspaceId) || null;
 }
@@ -603,6 +625,8 @@ function renderWorkspaceDetail() {
 
   workspace.tracks.forEach((track, index) => {
     const fragment = approvedCardTemplate.content.cloneNode(true);
+    const card = fragment.querySelector(".approved-card");
+    const handle = fragment.querySelector(".drag-handle");
     const image = fragment.querySelector(".approved-art");
     const title = fragment.querySelector(".approved-title");
     const meta = fragment.querySelector(".approved-meta");
@@ -612,6 +636,36 @@ function renderWorkspaceDetail() {
     const actions = fragment.querySelector(".approved-actions");
     const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
     const imageUrl = trackCoverUrl(track);
+
+    card.dataset.trackId = track.id;
+    if (workspace.tracks.length > 1) {
+      card.draggable = true;
+      handle.hidden = false;
+      card.addEventListener("dragstart", (event) => {
+        card.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", track.id);
+      });
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+      });
+      card.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        card.classList.add("drag-over");
+      });
+      card.addEventListener("dragleave", () => {
+        card.classList.remove("drag-over");
+      });
+      card.addEventListener("drop", (event) => {
+        event.preventDefault();
+        card.classList.remove("drag-over");
+        const draggedTrackId = event.dataTransfer.getData("text/plain");
+        reorderApprovedTrackByDrop(workspace, draggedTrackId, track.id)
+          .then(() => refreshBoard())
+          .catch((error) => alert(error.message));
+      });
+    }
 
     image.src = imageUrl;
     image.alt = displayTitle(track.title, "Track");
@@ -627,13 +681,13 @@ function renderWorkspaceDetail() {
     if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
     if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
     if (workspace.tracks.length > 1) {
-      const upButton = actionButton("Move Up", "pill-action reorder", async () => {
+      const upButton = actionButton("Up", "pill-action reorder", async () => {
         await reorderApprovedTrack(workspace, index, -1);
       });
       upButton.disabled = index === 0;
       actions.appendChild(upButton);
 
-      const downButton = actionButton("Move Down", "pill-action reorder", async () => {
+      const downButton = actionButton("Down", "pill-action reorder", async () => {
         await reorderApprovedTrack(workspace, index, 1);
       });
       downButton.disabled = index === workspace.tracks.length - 1;

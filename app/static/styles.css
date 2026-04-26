@@ -520,11 +520,40 @@ audio {
   padding: 16px;
 }
 
+.approved-card[draggable="true"] {
+  cursor: grab;
+}
+
+.approved-card.dragging {
+  cursor: grabbing;
+  opacity: 0.55;
+}
+
+.approved-card.drag-over {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
 .approved-card-head {
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
+  grid-template-columns: auto 74px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
+}
+
+.drag-handle {
+  align-self: stretch;
+  min-width: 42px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--text);
+  cursor: grab;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  writing-mode: vertical-rl;
+  text-transform: uppercase;
 }
 
 .approved-art {
