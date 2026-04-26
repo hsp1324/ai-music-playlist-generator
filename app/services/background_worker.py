@@ -138,6 +138,16 @@ class BackgroundJobWorker:
         if not tracks:
             raise ValueError("Playlist has no tracks to render.")
 
+        meta = dict(playlist.metadata_json or {})
+        meta["workflow_state"] = "rendering"
+        meta["render_ready"] = False
+        meta["note"] = f"Rendering audio for {len(tracks)} approved tracks."
+        playlist.metadata_json = meta
+        playlist.status = PlaylistStatus.building
+        db.add(playlist)
+        db.commit()
+        db.refresh(playlist)
+
         missing = [
             track.id
             for track in tracks
@@ -314,6 +324,7 @@ class BackgroundJobWorker:
             meta = dict(playlist.metadata_json or {})
             if job.type == JobType.build_playlist:
                 playlist.status = PlaylistStatus.draft
+                meta["workflow_state"] = "render_failed"
                 meta["render_ready"] = False
                 meta["render_error"] = error_text
                 meta["note"] = f"Background render failed: {error_text}"

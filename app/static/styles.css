@@ -375,6 +375,34 @@ body {
   margin-bottom: 18px;
 }
 
+.render-status {
+  display: grid;
+  gap: 3px;
+  min-width: min(100%, 360px);
+  padding: 12px 14px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  font-size: 0.86rem;
+}
+
+.render-status span {
+  color: var(--muted);
+}
+
+.render-running,
+.render-queued {
+  background: var(--accent-soft);
+}
+
+.render-succeeded {
+  background: rgba(47, 138, 93, 0.12);
+}
+
+.render-failed {
+  background: rgba(173, 77, 70, 0.12);
+}
+
 .detail-columns {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;

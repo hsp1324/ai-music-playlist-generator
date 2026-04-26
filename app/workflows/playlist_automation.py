@@ -8,7 +8,7 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
-from app.schemas.playlist import PlaylistTrackRead, PlaylistWorkspaceRead
+from app.schemas.playlist import PlaylistJobRead, PlaylistTrackRead, PlaylistWorkspaceRead
 from app.services.registry import ServiceRegistry
 
 
@@ -60,6 +60,29 @@ def _track_payload(track: Track) -> PlaylistTrackRead:
     )
 
 
+def _latest_render_job(playlist: Playlist) -> PlaylistJobRead | None:
+    jobs = [
+        job
+        for job in playlist.jobs
+        if job.type == JobType.build_playlist
+    ]
+    if not jobs:
+        return None
+
+    job = max(jobs, key=lambda candidate: candidate.created_at)
+    result = job.result_json or {}
+    return PlaylistJobRead(
+        id=job.id,
+        status=job.status.value,
+        source=job.source,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        finished_at=job.finished_at,
+        error_text=job.error_text,
+        output_audio_path=result.get("output_audio_path"),
+    )
+
+
 def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
     tracks = [
@@ -93,6 +116,7 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         cover_image_path=meta.get("cover_image_path"),
         youtube_video_id=playlist.youtube_video_id,
         note=meta.get("note"),
+        render_job=_latest_render_job(playlist),
         created_at=playlist.created_at,
         updated_at=playlist.updated_at,
         tracks=tracks,
@@ -102,7 +126,10 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
 def list_playlist_workspaces(db: Session) -> list[Playlist]:
     return db.scalars(
         select(Playlist)
-        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .options(
+            selectinload(Playlist.items).selectinload(PlaylistItem.track),
+            selectinload(Playlist.jobs),
+        )
         .order_by(Playlist.updated_at.desc())
     ).all()
 
@@ -110,7 +137,10 @@ def list_playlist_workspaces(db: Session) -> list[Playlist]:
 def _load_playlist_with_tracks(db: Session, playlist_id: str) -> Playlist | None:
     return db.scalars(
         select(Playlist)
-        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .options(
+            selectinload(Playlist.items).selectinload(PlaylistItem.track),
+            selectinload(Playlist.jobs),
+        )
         .where(Playlist.id == playlist_id)
     ).first()
 

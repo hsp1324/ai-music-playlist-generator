@@ -498,6 +498,8 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         assert queued["status"] == "building"
         assert queued["workflow_state"] == "render_queued"
         assert queued["output_audio_path"] is None
+        assert queued["render_job"]["status"] == "queued"
+        assert queued["render_job"]["source"] == "web:render-audio"
 
         assert drain_background_jobs(client) == 1
 
@@ -505,6 +507,8 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert workspace["output_audio_path"].endswith(".mp3")
         assert workspace["workflow_state"] == "rendered"
+        assert workspace["render_job"]["status"] == "succeeded"
+        assert workspace["render_job"]["output_audio_path"] == workspace["output_audio_path"]
         assert workspace["actual_duration_seconds"] == 120
         assert Path(workspace["output_audio_path"]).exists()
     finally:

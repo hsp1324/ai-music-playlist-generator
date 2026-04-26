@@ -63,6 +63,17 @@ class PlaylistTrackRead(BaseModel):
     tags: str | None = None
 
 
+class PlaylistJobRead(BaseModel):
+    id: str
+    status: str
+    source: str
+    created_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    error_text: str | None = None
+    output_audio_path: str | None = None
+
+
 class PlaylistWorkspaceRead(BaseModel):
     id: str
     title: str
@@ -84,6 +95,7 @@ class PlaylistWorkspaceRead(BaseModel):
     cover_image_path: str | None
     youtube_video_id: str | None
     note: str | None = None
+    render_job: PlaylistJobRead | None = None
     created_at: datetime
     updated_at: datetime
     tracks: list[PlaylistTrackRead]

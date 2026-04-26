@@ -88,6 +88,13 @@ function statusLabel(value) {
   return String(value || "").replaceAll("_", " ");
 }
 
+function formatTimestamp(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
 function fileStem(filename) {
   const value = String(filename || "").trim();
   return value.replace(/\.[^.]+$/, "") || "Uploaded Track";
@@ -226,6 +233,43 @@ function setDropPlacement(card, placement) {
 
 function clearDropPlacement(card) {
   card.classList.remove("drop-before", "drop-after");
+}
+
+function renderJobStatusText(workspace) {
+  const job = workspace.render_job;
+  if (!job) {
+    return workspace.output_audio_path
+      ? "Render complete. No recent job metadata."
+      : "No render has been queued yet.";
+  }
+
+  const status = statusLabel(job.status);
+  if (job.status === "queued") return `Render queued at ${formatTimestamp(job.created_at) || "now"}.`;
+  if (job.status === "running") return `Rendering started ${formatTimestamp(job.started_at) || "just now"}.`;
+  if (job.status === "succeeded") return `Render complete at ${formatTimestamp(job.finished_at) || "recently"}.`;
+  if (job.status === "failed") return `Render failed: ${job.error_text || "unknown error"}`;
+  return `Render job: ${status}`;
+}
+
+function appendRenderStatus(workspace) {
+  const card = document.createElement("div");
+  const job = workspace.render_job;
+  const status = job?.status || (workspace.output_audio_path ? "succeeded" : "idle");
+  card.className = `render-status render-${status}`;
+
+  const title = document.createElement("strong");
+  title.textContent = workspace.output_audio_path
+    ? "Rendered Audio Ready"
+    : workspace.status === "building"
+      ? "Rendering Audio"
+      : "Audio Render";
+
+  const message = document.createElement("span");
+  message.textContent = renderJobStatusText(workspace);
+
+  card.appendChild(title);
+  card.appendChild(message);
+  detailLinks.appendChild(card);
 }
 
 function stopDragAutoScroll() {
@@ -502,6 +546,8 @@ function renderWorkspaceDetail() {
   detailActions.innerHTML = "";
   queueGrid.innerHTML = "";
   approvedGrid.innerHTML = "";
+
+  appendRenderStatus(workspace);
 
   if (workspace.output_audio_path) {
     detailLinks.appendChild(buildLink("Rendered Audio", normalizeMediaUrl(workspace.output_audio_path)));
