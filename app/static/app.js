@@ -65,6 +65,10 @@ function setStatus(el, payload) {
   el.textContent = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
 }
 
+function setTextStatus(el, value) {
+  el.textContent = value;
+}
+
 function displayTitle(value, fallback = "Untitled") {
   if (!value) return fallback;
   const cleaned = String(value).replace(/\s+[a-f0-9]{24,}$/i, "").trim();
@@ -186,7 +190,11 @@ function renderTrackWorkspaceOptions() {
     .join("");
   trackWorkspaceSelect.innerHTML = `<option value="">Unassigned Queue</option>${options}`;
   if (quickUploadWorkspaceSelect) {
+    const currentQuickUploadWorkspace = quickUploadWorkspaceSelect.value;
     quickUploadWorkspaceSelect.innerHTML = `<option value="">Choose workspace</option>${options}`;
+    if (visible.some((workspace) => workspace.id === currentQuickUploadWorkspace)) {
+      quickUploadWorkspaceSelect.value = currentQuickUploadWorkspace;
+    }
   }
 }
 
@@ -216,13 +224,15 @@ async function submitQuickUpload() {
 
   quickUploadSubmitButton.disabled = true;
   const results = [];
+  const workspaceId = quickUploadWorkspaceSelect.value;
   try {
-    for (const file of quickUploadFiles) {
+    for (const [index, file] of quickUploadFiles.entries()) {
+      setTextStatus(quickUploadStatus, `Uploading ${index + 1}/${quickUploadFiles.length}: ${file.name}`);
       const form = new FormData();
       form.append("title", fileStem(file.name));
       form.append("prompt", "manual quick upload");
       form.append("duration_seconds", "0");
-      form.append("pending_workspace_id", quickUploadWorkspaceSelect.value);
+      form.append("pending_workspace_id", workspaceId);
       form.append("audio_file", file, file.name);
       const response = await fetch("/api/tracks/manual-upload", {
         method: "POST",
@@ -240,7 +250,12 @@ async function submitQuickUpload() {
       }
       results.push({ title: result.title, status: result.status });
     }
-    setStatus(quickUploadStatus, results);
+    setTextStatus(
+      quickUploadStatus,
+      `업로드 완료: ${results.length}/${quickUploadFiles.length}곡\n${results
+        .map((result) => `- ${result.title}: ${statusLabel(result.status)}`)
+        .join("\n")}\nSlack 알림은 백그라운드에서 전송됩니다.`
+    );
     setQuickUploadFiles([]);
     if (quickUploadInput) {
       quickUploadInput.value = "";
@@ -394,7 +409,7 @@ function renderWorkspaceDetail() {
       const select = fragment.querySelector(".workspace-select");
 
       const imageUrl =
-        track.metadata_json?.image_url ||
+        normalizeMediaUrl(track.metadata_json?.image_url) ||
         "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80";
       const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
 
@@ -415,7 +430,7 @@ function renderWorkspaceDetail() {
 
       if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
       if (track.metadata_json?.source_audio_url) links.appendChild(buildLink("Source", track.metadata_json.source_audio_url));
-      if (imageUrl) links.appendChild(buildLink("Cover", imageUrl));
+      if (track.metadata_json?.image_url) links.appendChild(buildLink("Cover", imageUrl));
 
       select.innerHTML = workspaceOptions(workspace.id);
       select.value = workspace.id;

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import threading
 import time
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from app.db import SessionLocal
 from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
+from app.models.track import Track
 
 
 def _utcnow():
@@ -84,7 +86,7 @@ class BackgroundJobWorker:
                 select(Job)
                 .where(
                     Job.status == JobStatus.queued,
-                    Job.type.in_([JobType.build_playlist, JobType.upload_youtube]),
+                    Job.type.in_([JobType.build_playlist, JobType.upload_youtube, JobType.sync_slack]),
                 )
                 .order_by(Job.created_at.asc())
             ).first()
@@ -108,6 +110,8 @@ class BackgroundJobWorker:
                     self._process_build_playlist_job(db, job)
                 elif job.type == JobType.upload_youtube:
                     self._process_publish_job(db, job)
+                elif job.type == JobType.sync_slack:
+                    self._process_sync_slack_job(db, job)
                 else:
                     raise ValueError(f"Unsupported background job type: {job.type.value}")
                 job.status = JobStatus.succeeded
@@ -169,6 +173,25 @@ class BackgroundJobWorker:
         )
         if auto_publish_job is not None:
             db.add(auto_publish_job)
+
+    def _process_sync_slack_job(self, db: Session, job: Job) -> None:
+        if not job.track_id:
+            raise ValueError("Slack sync job is missing track_id.")
+
+        track = db.get(Track, job.track_id)
+        if not track:
+            raise ValueError("Track not found for Slack sync job.")
+
+        from app.workflows.review_dispatch import dispatch_track_review
+
+        updated = asyncio.run(dispatch_track_review(db, self.services, track))
+        job.result_json = {
+            **(job.result_json or {}),
+            "track_id": updated.id,
+            "track_status": updated.status.value,
+            "slack_channel_id": updated.slack_channel_id,
+            "slack_message_ts": updated.slack_message_ts,
+        }
 
     def _process_publish_job(self, db: Session, job: Job) -> None:
         playlist = db.scalars(

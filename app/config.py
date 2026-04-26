@@ -94,6 +94,10 @@ class Settings(BaseSettings):
         return self.storage_root / "playlists"
 
     @property
+    def covers_dir(self) -> Path:
+        return self.storage_root / "covers"
+
+    @property
     def temp_dir(self) -> Path:
         return self.storage_root / "tmp"
 
@@ -125,6 +129,7 @@ class Settings(BaseSettings):
         self.storage_root.mkdir(parents=True, exist_ok=True)
         self.tracks_dir.mkdir(parents=True, exist_ok=True)
         self.playlists_dir.mkdir(parents=True, exist_ok=True)
+        self.covers_dir.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         self.browser_dir.mkdir(parents=True, exist_ok=True)
         self.suno_browser_profile_dir.mkdir(parents=True, exist_ok=True)

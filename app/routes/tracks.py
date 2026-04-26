@@ -63,6 +63,19 @@ def _create_track_record(
     return track
 
 
+def _queue_slack_review_job(db: Session, track: Track, *, source: str) -> None:
+    db.add(
+        Job(
+            type=JobType.sync_slack,
+            status=JobStatus.queued,
+            source=source,
+            payload_json={"track_id": track.id, "action": "dispatch_review"},
+            track=track,
+        )
+    )
+    db.commit()
+
+
 def _probe_duration_seconds(audio_path: str | None) -> int | None:
     if not audio_path:
         return None
@@ -90,6 +103,40 @@ def _probe_duration_seconds(audio_path: str | None) -> int | None:
         return None
 
     return max(1, round(value))
+
+
+def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | None:
+    if not audio_path or audio_path.startswith(("http://", "https://")):
+        return None
+
+    source = Path(audio_path)
+    if not source.exists():
+        return None
+
+    destination = _resolve_upload_destination(covers_dir, f"{source.stem}-cover.jpg")
+    try:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-y",
+                "-v",
+                "error",
+                "-i",
+                str(source),
+                "-map",
+                "0:v:0",
+                "-frames:v",
+                "1",
+                str(destination),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    return str(destination) if destination.exists() and destination.stat().st_size > 0 else None
 
 
 def _resolve_upload_destination(tracks_dir: Path, original_name: str) -> Path:
@@ -153,6 +200,7 @@ async def manual_upload_track(
     elif inferred_duration_seconds <= 0:
         inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
 
+    resolved_image_url = image_url or _extract_embedded_cover(audio_path, services.settings.covers_dir)
     payload = TrackCreateRequest(
         title=title,
         prompt=prompt,
@@ -162,14 +210,15 @@ async def manual_upload_track(
         source_track_id=source_track_id,
         metadata={
             "source": "manual-upload",
-            **({"image_url": image_url} if image_url else {}),
+            **({"image_url": resolved_image_url} if resolved_image_url else {}),
             **({"tags": tags} if tags else {}),
             **({"model_score": model_score} if model_score is not None else {}),
             **({"pending_workspace_id": pending_workspace_id} if pending_workspace_id else {}),
         },
     )
     track = _create_track_record(db, payload)
-    track = await dispatch_track_review(db, services, track)
+    _queue_slack_review_job(db, track, source="manual-upload")
+    db.refresh(track)
     return TrackRead.model_validate(track)
 
 
