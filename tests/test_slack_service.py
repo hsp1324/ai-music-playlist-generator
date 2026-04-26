@@ -98,10 +98,10 @@ def test_build_track_review_blocks_include_media_links() -> None:
 
     assert len(actions_blocks) == 2
     link_texts = [element["text"]["text"] for element in actions_blocks[0]["elements"]]
-    assert link_texts == ["Listen", "Cover"]
+    assert link_texts == ["Listen"]
 
 
-def test_build_track_review_blocks_convert_local_cover_to_public_url() -> None:
+def test_build_track_review_blocks_do_not_add_cover_button() -> None:
     service = SlackService(Settings(public_base_url="https://music.example.com"))
     track = Track(
         id="track-1",
@@ -115,15 +115,14 @@ def test_build_track_review_blocks_convert_local_cover_to_public_url() -> None:
     )
 
     blocks = service.build_track_review_blocks(track)
-    cover_button = next(
-        element
+    button_texts = [
+        element["text"]["text"]
         for block in blocks
         if block["type"] == "actions"
         for element in block["elements"]
-        if element["text"]["text"] == "Cover"
-    )
+    ]
 
-    assert cover_button["url"] == "https://music.example.com/media/covers/%EA%B0%80%EB%85%80%EB%A6%B0%20%EB%82%A0%EA%B0%9C-cover.jpg"
+    assert "Cover" not in button_texts
 
 
 def test_build_track_decision_blocks_remove_review_buttons() -> None:
@@ -159,6 +158,8 @@ def test_build_track_decision_blocks_remove_review_buttons() -> None:
     assert "Approve" not in button_texts
     assert "Hold" not in button_texts
     assert "Reject" not in button_texts
+    assert "Revert to Queue" in button_texts
+    assert "Cover" not in button_texts
 
 
 def test_extract_file_share_location_from_complete_upload_payload() -> None:

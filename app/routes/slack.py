@@ -15,7 +15,11 @@ from app.models.slack_installation import SlackInstallation
 from app.models.track import Track
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
-from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist
+from app.workflows.playlist_automation import (
+    assign_track_to_playlist,
+    maybe_build_auto_playlist,
+    return_track_to_workspace_queue,
+)
 from app.workflows.slack_sync import sync_slack_review_decision
 
 router = APIRouter(prefix="/slack", tags=["slack"])
@@ -197,14 +201,79 @@ async def slack_interactions(
 
         return JSONResponse({"text": "Unsupported action."})
 
-    track_id, decision_text = parsed
+    track_id, action_text = parsed
     track = db.get(Track, track_id)
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
 
-    decision = DecisionValue(decision_text)
     user = payload.get("user", {})
     actor = user.get("username") or user.get("name") or user.get("id") or "slack-user"
+
+    clicked_channel, clicked_ts = _interaction_message_target(payload)
+    if clicked_channel and clicked_ts:
+        track.slack_channel_id = clicked_channel
+        track.slack_message_ts = clicked_ts
+        db.add(track)
+        db.commit()
+        db.refresh(track)
+
+    if action_text == "return_to_review":
+        pending_workspace_id = (track.metadata_json or {}).get("pending_workspace_id")
+        if not pending_workspace_id:
+            return JSONResponse(
+                {
+                    "text": f"Could not return `{track.title}` to queue: no workspace is linked.",
+                    "track_status": track.status.value,
+                    "slack_update_ok": False,
+                }
+            )
+
+        apply_track_decision(
+            db,
+            track,
+            decision=DecisionValue.hold,
+            source=DecisionSource.slack,
+            actor=actor,
+            rationale="Returned from approved state to the review queue from Slack.",
+        )
+        db.commit()
+        db.refresh(track)
+
+        assignment_error = None
+        workspace_title = None
+        try:
+            playlist = await return_track_to_workspace_queue(
+                db,
+                services,
+                track=track,
+                playlist_id=pending_workspace_id,
+                actor=actor,
+            )
+            workspace_title = playlist.title
+        except ValueError as exc:
+            assignment_error = str(exc)
+
+        db.refresh(track)
+        response_text = (
+            f"Returned `{track.title}` to the review queue"
+            f"{f' for workspace `{workspace_title}`' if workspace_title else ''}."
+        )
+        if assignment_error:
+            response_text = f"Could not return `{track.title}` to queue: {assignment_error}."
+
+        installation = services.slack_installations.get_active_installation(db)
+        token = installation.bot_token if installation else services.settings.slack_bot_token
+        update_result = await services.slack.update_review_request_message(track, token=token)
+        return JSONResponse(
+            {
+                "text": response_text,
+                "track_status": track.status.value,
+                "assignment_error": assignment_error,
+                "slack_update_ok": update_result.ok,
+            }
+        )
+
+    decision = DecisionValue(action_text)
 
     apply_track_decision(
         db,
@@ -243,14 +312,6 @@ async def slack_interactions(
         response_text += f" Assigned to workspace `{assigned_workspace_title}`."
     elif assignment_error:
         response_text += f" Workspace assignment failed: {assignment_error}."
-
-    clicked_channel, clicked_ts = _interaction_message_target(payload)
-    if clicked_channel and clicked_ts:
-        track.slack_channel_id = clicked_channel
-        track.slack_message_ts = clicked_ts
-        db.add(track)
-        db.commit()
-        db.refresh(track)
 
     slack_update = await sync_slack_review_decision(
         db,

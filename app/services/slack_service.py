@@ -94,11 +94,6 @@ class SlackService:
             link_buttons.append(self._link_button("Listen", track.preview_url))
         if track.audio_path and track.audio_path.startswith(("http://", "https://")):
             link_buttons.append(self._link_button("Audio", track.audio_path))
-        image_url = metadata.get("image_url")
-        if image_url:
-            cover_url = self._public_media_url(image_url)
-            if cover_url:
-                link_buttons.append(self._link_button("Cover", cover_url))
 
         blocks = [
             {
@@ -162,11 +157,6 @@ class SlackService:
             link_buttons.append(self._link_button("Listen", track.preview_url))
         if track.audio_path and track.audio_path.startswith(("http://", "https://")):
             link_buttons.append(self._link_button("Audio", track.audio_path))
-        image_url = metadata.get("image_url")
-        if image_url:
-            cover_url = self._public_media_url(image_url)
-            if cover_url:
-                link_buttons.append(self._link_button("Cover", cover_url))
 
         blocks: list[dict[str, Any]] = [
             {
@@ -207,6 +197,15 @@ class SlackService:
             )
         if link_buttons:
             blocks.append({"type": "actions", "elements": link_buttons})
+        if decision == "approve":
+            blocks.append(
+                {
+                    "type": "actions",
+                    "elements": [
+                        self._button("Revert to Queue", f"track:{track.id}:return_to_review"),
+                    ],
+                }
+            )
         return blocks
 
     def build_app_home_blocks(self, stats: dict[str, int]) -> list[dict[str, Any]]:

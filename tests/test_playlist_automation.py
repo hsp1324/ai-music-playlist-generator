@@ -354,7 +354,18 @@ def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
             updates.append({"track_id": track.id, **kwargs})
             return SimpleNamespace(ok=True, raw={"ok": True})
 
+        request_updates = []
+
+        async def fake_update_review_request_message(track, **kwargs):
+            request_updates.append({"track_id": track.id, **kwargs})
+            return SimpleNamespace(ok=True, raw={"ok": True})
+
+        async def fake_post_review_message(track, **kwargs):
+            return SimpleNamespace(ok=False, raw={"ok": False})
+
+        client.app.state.services.slack.post_review_message = fake_post_review_message
         client.app.state.services.slack.update_review_message = fake_update_review_message
+        client.app.state.services.slack.update_review_request_message = fake_update_review_request_message
 
         workspace_response = client.post(
             "/api/playlists/workspaces",
@@ -418,6 +429,40 @@ def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
         assert track["status"] == "approved"
         assert track["approvals"][-1]["source"] == "slack"
         assert track["approvals"][-1]["actor"] == "slack-reviewer"
+
+        return_response = client.post(
+            "/api/slack/interactions",
+            data={
+                "payload": json.dumps(
+                    {
+                        "actions": [{"value": f"track:{track_id}:return_to_review"}],
+                        "user": {"id": "U123", "username": "slack-reviewer"},
+                        "container": {
+                            "channel_id": "C123",
+                            "message_ts": "1777000000.000300",
+                        },
+                    }
+                )
+            },
+        )
+        assert return_response.status_code == 200
+        returned = return_response.json()
+        assert returned["track_status"] == "pending_review"
+        assert returned["assignment_error"] is None
+        assert returned["slack_update_ok"] is True
+        assert request_updates[-1]["track_id"] == track_id
+
+        workspaces_after_return = client.get("/api/playlists/workspaces")
+        assert workspaces_after_return.status_code == 200
+        workspace_after_return = next(
+            item for item in workspaces_after_return.json() if item["id"] == workspace_id
+        )
+        assert workspace_after_return["actual_duration_seconds"] == 0
+        assert workspace_after_return["tracks"] == []
+
+        track_after_return = client.get(f"/api/tracks/{track_id}")
+        assert track_after_return.status_code == 200
+        assert track_after_return.json()["status"] == "pending_review"
     finally:
         clear_isolated_client_env()
 
