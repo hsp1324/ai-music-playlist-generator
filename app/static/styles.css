@@ -556,24 +556,9 @@ audio {
 
 .approved-card-head {
   display: grid;
-  grid-template-columns: auto 74px minmax(0, 1fr);
+  grid-template-columns: 74px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
-}
-
-.drag-handle {
-  align-self: stretch;
-  min-width: 42px;
-  border: 2px solid var(--line);
-  border-radius: 16px;
-  background: var(--accent-soft);
-  color: var(--text);
-  cursor: grab;
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
-  writing-mode: vertical-rl;
-  text-transform: uppercase;
 }
 
 .approved-art {

@@ -43,6 +43,8 @@ const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
 
 let quickUploadFiles = [];
+let dragScrollFrame = null;
+let dragScrollSpeed = 0;
 
 function normalizeMediaUrl(path) {
   if (!path) return "";
@@ -224,6 +226,42 @@ function setDropPlacement(card, placement) {
 
 function clearDropPlacement(card) {
   card.classList.remove("drop-before", "drop-after");
+}
+
+function stopDragAutoScroll() {
+  dragScrollSpeed = 0;
+  if (dragScrollFrame) {
+    window.cancelAnimationFrame(dragScrollFrame);
+    dragScrollFrame = null;
+  }
+}
+
+function runDragAutoScroll() {
+  if (dragScrollSpeed) {
+    window.scrollBy({ top: dragScrollSpeed, behavior: "auto" });
+    dragScrollFrame = window.requestAnimationFrame(runDragAutoScroll);
+  } else {
+    dragScrollFrame = null;
+  }
+}
+
+function updateDragAutoScroll(event) {
+  const edgeSize = Math.min(140, window.innerHeight * 0.2);
+  const maxSpeed = 22;
+  let nextSpeed = 0;
+
+  if (event.clientY < edgeSize) {
+    nextSpeed = -Math.ceil(((edgeSize - event.clientY) / edgeSize) * maxSpeed);
+  } else if (window.innerHeight - event.clientY < edgeSize) {
+    nextSpeed = Math.ceil(((edgeSize - (window.innerHeight - event.clientY)) / edgeSize) * maxSpeed);
+  }
+
+  dragScrollSpeed = nextSpeed;
+  if (dragScrollSpeed && !dragScrollFrame) {
+    dragScrollFrame = window.requestAnimationFrame(runDragAutoScroll);
+  } else if (!dragScrollSpeed) {
+    stopDragAutoScroll();
+  }
 }
 
 function activeWorkspace() {
@@ -637,7 +675,6 @@ function renderWorkspaceDetail() {
   workspace.tracks.forEach((track, index) => {
     const fragment = approvedCardTemplate.content.cloneNode(true);
     const card = fragment.querySelector(".approved-card");
-    const handle = fragment.querySelector(".drag-handle");
     const image = fragment.querySelector(".approved-art");
     const title = fragment.querySelector(".approved-title");
     const meta = fragment.querySelector(".approved-meta");
@@ -651,7 +688,6 @@ function renderWorkspaceDetail() {
     card.dataset.trackId = track.id;
     if (workspace.tracks.length > 1) {
       card.draggable = true;
-      handle.hidden = false;
       card.addEventListener("dragstart", (event) => {
         card.classList.add("dragging");
         event.dataTransfer.effectAllowed = "move";
@@ -659,10 +695,13 @@ function renderWorkspaceDetail() {
       });
       card.addEventListener("dragend", () => {
         card.classList.remove("dragging");
+        clearDropPlacement(card);
+        stopDragAutoScroll();
       });
       card.addEventListener("dragover", (event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
+        updateDragAutoScroll(event);
         setDropPlacement(card, dropPlacement(card, event));
       });
       card.addEventListener("dragleave", () => {
@@ -670,6 +709,7 @@ function renderWorkspaceDetail() {
       });
       card.addEventListener("drop", (event) => {
         event.preventDefault();
+        stopDragAutoScroll();
         const placement = dropPlacement(card, event);
         clearDropPlacement(card);
         const draggedTrackId = event.dataTransfer.getData("text/plain");
