@@ -99,3 +99,38 @@ def test_build_track_review_blocks_include_media_links() -> None:
     assert len(actions_blocks) == 2
     link_texts = [element["text"]["text"] for element in actions_blocks[0]["elements"]]
     assert link_texts == ["Listen", "Cover"]
+
+
+def test_build_track_decision_blocks_remove_review_buttons() -> None:
+    service = SlackService(Settings())
+    track = Track(
+        id="track-1",
+        title="Night Drive",
+        prompt="synthwave highway",
+        duration_seconds=120,
+        audio_path="https://example.com/night-drive.mp3",
+        preview_url=None,
+        status=TrackStatus.approved,
+        metadata_json={"pending_workspace_title": "summer"},
+    )
+
+    blocks = service.build_track_decision_blocks(
+        track,
+        decision="approve",
+        actor="slack-reviewer",
+        workspace_title="summer",
+        note="Assigned to workspace `summer`.",
+    )
+
+    rendered = str(blocks)
+    assert "Track Approved" in rendered
+    assert "slack-reviewer" in rendered
+    button_texts = [
+        element["text"]["text"]
+        for block in blocks
+        if block["type"] == "actions"
+        for element in block["elements"]
+    ]
+    assert "Approve" not in button_texts
+    assert "Hold" not in button_texts
+    assert "Reject" not in button_texts

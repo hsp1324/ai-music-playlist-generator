@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.enums import DecisionSource, DecisionValue, JobStatus, JobType, TrackStatus
 from app.models.job import Job
+from app.models.playlist import Playlist
 from app.models.track import Track
 from app.schemas.common import MessageResponse
 from app.schemas.track import TrackCreateRequest, TrackDecisionRequest, TrackRead, TrackReturnToReviewRequest
@@ -16,6 +17,7 @@ from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist, return_track_to_workspace_queue
 from app.workflows.review_dispatch import dispatch_track_review
+from app.workflows.slack_sync import sync_slack_review_decision
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
 
@@ -28,6 +30,13 @@ def _create_track_record(
     db: Session,
     payload: TrackCreateRequest,
 ) -> Track:
+    metadata = dict(payload.metadata or {})
+    pending_workspace_id = metadata.get("pending_workspace_id")
+    if pending_workspace_id and not metadata.get("pending_workspace_title"):
+        playlist = db.get(Playlist, pending_workspace_id)
+        if playlist:
+            metadata["pending_workspace_title"] = playlist.title
+
     track = Track(
         title=payload.title,
         prompt=payload.prompt,
@@ -35,7 +44,7 @@ def _create_track_record(
         audio_path=payload.audio_path,
         preview_url=payload.preview_url,
         source_track_id=payload.source_track_id,
-        metadata_json=payload.metadata,
+        metadata_json=metadata,
     )
     db.add(track)
     db.flush()
@@ -207,19 +216,31 @@ async def decide_track(
     )
     db.commit()
     db.refresh(track)
+    assigned_workspace_title = None
     if payload.decision == DecisionValue.approve and payload.playlist_id:
         try:
-            await assign_track_to_playlist(
+            playlist = await assign_track_to_playlist(
                 db,
                 services,
                 track=track,
                 playlist_id=payload.playlist_id,
                 actor=payload.actor,
             )
+            assigned_workspace_title = playlist.title
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif payload.decision == DecisionValue.approve:
         await maybe_build_auto_playlist(db, services, trigger=f"manual-decision:{track.id}")
+
+    await sync_slack_review_decision(
+        db,
+        services,
+        track,
+        decision=payload.decision,
+        actor=payload.actor,
+        workspace_title=assigned_workspace_title,
+        note="Decision submitted from the web dashboard.",
+    )
     return TrackRead.model_validate(track)
 
 
@@ -258,6 +279,14 @@ async def return_track_to_review(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     db.refresh(track)
+    await sync_slack_review_decision(
+        db,
+        services,
+        track,
+        decision=DecisionValue.hold,
+        actor=payload.actor,
+        note="Returned to awaiting approval from the web dashboard.",
+    )
     return TrackRead.model_validate(track)
 
 
@@ -301,9 +330,10 @@ async def create_slack_review(
 
     blocks = services.slack.build_track_review_blocks(track)
     installation = services.slack_installations.get_active_installation(db)
+    token = installation.bot_token if installation else services.settings.slack_bot_token
     post_result = await services.slack.post_review_message(
         track,
-        token=installation.bot_token if installation else services.settings.slack_bot_token,
+        token=token,
         channel=services.settings.slack_review_channel_id,
     )
 
@@ -313,6 +343,20 @@ async def create_slack_review(
         db.add(track)
         db.commit()
         db.refresh(track)
+        if (
+            token
+            and track.audio_path
+            and not track.audio_path.startswith(("http://", "https://"))
+            and Path(track.audio_path).exists()
+        ):
+            await services.slack.upload_local_audio_file(
+                file_path=track.audio_path,
+                title=track.title,
+                token=token,
+                channel=post_result.channel or services.settings.slack_review_channel_id,
+                thread_ts=post_result.ts,
+                initial_comment=f"Audio preview for {track.title}",
+            )
 
     return {
         "track_id": track.id,

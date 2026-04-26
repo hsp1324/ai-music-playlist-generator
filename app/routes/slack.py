@@ -16,6 +16,7 @@ from app.models.track import Track
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist
+from app.workflows.slack_sync import sync_slack_review_decision
 
 router = APIRouter(prefix="/slack", tags=["slack"])
 
@@ -230,12 +231,23 @@ async def slack_interactions(
     elif assignment_error:
         response_text += f" Workspace assignment failed: {assignment_error}."
 
+    slack_update = await sync_slack_review_decision(
+        db,
+        services,
+        track,
+        decision=decision,
+        actor=actor,
+        workspace_title=assigned_workspace_title,
+        note=response_text,
+    )
+
     return JSONResponse(
         {
             "text": response_text,
             "track_status": track.status.value,
             "assigned_workspace_id": assigned_workspace_id,
             "assignment_error": assignment_error,
+            "slack_update": slack_update,
         }
     )
 

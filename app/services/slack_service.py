@@ -35,6 +35,12 @@ class SlackFileUploadResult:
     raw: dict[str, Any] | None = None
 
 
+@dataclass
+class SlackUpdateResult:
+    ok: bool
+    raw: dict[str, Any] | None = None
+
+
 class SlackService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -137,6 +143,80 @@ class SlackService:
         )
         return blocks
 
+    def build_track_decision_blocks(
+        self,
+        track: Track,
+        *,
+        decision: str,
+        actor: str,
+        workspace_title: str | None = None,
+        note: str | None = None,
+    ) -> list[dict[str, Any]]:
+        metadata = track.metadata_json or {}
+        resolved_workspace = (
+            workspace_title
+            or metadata.get("pending_workspace_title")
+            or metadata.get("pending_workspace_id")
+            or "Unassigned"
+        )
+        status_label = {
+            "approve": "Approved",
+            "hold": "On Hold",
+            "reject": "Rejected",
+            "regenerate": "On Hold",
+        }.get(decision, decision.title())
+        link_buttons: list[dict[str, Any]] = []
+        if track.preview_url:
+            link_buttons.append(self._link_button("Listen", track.preview_url))
+        if track.audio_path and track.audio_path.startswith(("http://", "https://")):
+            link_buttons.append(self._link_button("Audio", track.audio_path))
+        image_url = metadata.get("image_url")
+        if image_url:
+            link_buttons.append(self._link_button("Cover", image_url))
+
+        blocks: list[dict[str, Any]] = [
+            {
+                "type": "header",
+                "text": {"type": "plain_text", "text": f"Track {status_label}"},
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f"*{track.title}*\n"
+                        f"Status: `{status_label}`\n"
+                        f"Workspace: `{resolved_workspace}`\n"
+                        f"Duration: {self._format_duration(track.duration_seconds)}"
+                    ),
+                },
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"Decision by `{self._short_text(actor, 80)}`",
+                    }
+                ],
+            },
+        ]
+        if note:
+            blocks.append(
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": self._short_text(note, 180),
+                        }
+                    ],
+                }
+            )
+        if link_buttons:
+            blocks.append({"type": "actions", "elements": link_buttons})
+        return blocks
+
     def build_app_home_blocks(self, stats: dict[str, int]) -> list[dict[str, Any]]:
         return [
             {
@@ -212,6 +292,58 @@ class SlackService:
                 ts=data.get("ts"),
                 raw=data,
             )
+
+    async def update_review_message(
+        self,
+        track: Track,
+        *,
+        decision: str,
+        actor: str,
+        token: str | None = None,
+        channel: str | None = None,
+        ts: str | None = None,
+        workspace_title: str | None = None,
+        note: str | None = None,
+    ) -> SlackUpdateResult:
+        auth_token = token or self.settings.slack_bot_token
+        target_channel = channel or track.slack_channel_id
+        target_ts = ts or track.slack_message_ts
+        if not auth_token or not target_channel or not target_ts:
+            return SlackUpdateResult(
+                ok=False,
+                raw={"error": "missing_bot_token_channel_or_ts"},
+            )
+
+        status_label = {
+            "approve": "approved",
+            "hold": "put on hold",
+            "reject": "rejected",
+            "regenerate": "put on hold",
+        }.get(decision, decision)
+        payload = {
+            "channel": target_channel,
+            "ts": target_ts,
+            "text": f"Track {status_label}: {track.title}",
+            "blocks": self.build_track_decision_blocks(
+                track,
+                decision=decision,
+                actor=actor,
+                workspace_title=workspace_title,
+                note=note,
+            ),
+        }
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/chat.update",
+                headers={
+                    "Authorization": f"Bearer {auth_token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json=payload,
+            )
+            data = response.json()
+            return SlackUpdateResult(ok=bool(data.get("ok")), raw=data)
 
     async def upload_local_audio_file(
         self,

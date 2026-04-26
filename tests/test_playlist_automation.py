@@ -1,11 +1,14 @@
 import json
 import os
+from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
 from app.config import get_settings
+from app.db import SessionLocal
 from app.main import create_app
+from app.models.track import Track
 
 
 def create_isolated_client(tmp_path) -> TestClient:
@@ -399,6 +402,73 @@ def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
         assert track["status"] == "approved"
         assert track["approvals"][-1]["source"] == "slack"
         assert track["approvals"][-1]["actor"] == "slack-reviewer"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_web_decision_updates_existing_slack_review_message(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        client.app.state.settings.auto_build_playlists = False
+        client.app.state.settings.slack_bot_token = "xoxb-test"
+        updates = []
+
+        async def fake_update_review_message(track, **kwargs):
+            updates.append({"track_id": track.id, **kwargs})
+            return SimpleNamespace(ok=True, raw={"ok": True})
+
+        client.app.state.services.slack.update_review_message = fake_update_review_message
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Web Slack Sync Workspace",
+                "target_duration_seconds": 120,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Web Synced Track",
+                "prompt": "warm guitar loop",
+                "duration_seconds": 120,
+                "audio_path": "https://cdn.example.com/web-synced.mp3",
+                "metadata": {
+                    "source": "test",
+                    "pending_workspace_id": workspace_id,
+                },
+            },
+        )
+        assert track_response.status_code == 201
+        track_id = track_response.json()["id"]
+
+        db = SessionLocal()
+        try:
+            track = db.get(Track, track_id)
+            track.slack_channel_id = "C123"
+            track.slack_message_ts = "1777000000.000100"
+            db.add(track)
+            db.commit()
+        finally:
+            db.close()
+
+        decision_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "actor": "web-reviewer",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert decision_response.status_code == 200
+        assert updates
+        assert updates[-1]["track_id"] == track_id
+        assert updates[-1]["decision"] == "approve"
+        assert updates[-1]["actor"] == "web-reviewer"
+        assert updates[-1]["workspace_title"] == "Web Slack Sync Workspace"
     finally:
         clear_isolated_client_env()
 
