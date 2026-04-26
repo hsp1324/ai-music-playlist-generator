@@ -185,7 +185,8 @@ function updateToolbarSummary() {
 
 function renderTrackWorkspaceOptions() {
   if (!trackWorkspaceSelect) return;
-  const options = visibleWorkspaces()
+  const visible = visibleWorkspaces();
+  const options = visible
     .map((workspace) => `<option value="${workspace.id}">${displayTitle(workspace.title)}</option>`)
     .join("");
   trackWorkspaceSelect.innerHTML = `<option value="">Unassigned Queue</option>${options}`;
