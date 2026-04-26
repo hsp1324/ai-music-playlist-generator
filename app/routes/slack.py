@@ -146,11 +146,14 @@ async def slack_interactions(
     services = get_services(request)
     raw_body = await request.body()
     headers = {key.lower(): value for key, value in request.headers.items()}
+    form_data = parse_qs(raw_body.decode("utf-8"))
+
+    if form_data.get("ssl_check", ["0"])[0] == "1":
+        return JSONResponse({"ok": True})
 
     if not services.slack.verify_signature(headers, raw_body):
         raise HTTPException(status_code=401, detail="Invalid Slack signature")
 
-    form_data = parse_qs(raw_body.decode("utf-8"))
     payload_raw = form_data.get("payload", [None])[0]
     if not payload_raw:
         raise HTTPException(status_code=400, detail="Missing Slack payload")
