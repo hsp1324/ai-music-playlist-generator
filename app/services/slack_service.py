@@ -347,57 +347,44 @@ class SlackService:
         if not track.audio_path:
             return SlackPostResult(ok=False, raw={"reason": "track_audio_path_missing"})
 
-        marker = f"review:{track.id}"
         upload_result = await self.upload_local_audio_file(
             file_path=track.audio_path,
             title=track.title,
             token=auth_token,
             channel=target_channel,
-            initial_comment=f"Track review: {track.title}\n{marker}",
+            initial_comment=f"Audio preview: {track.title}",
         )
         if not upload_result.ok:
             return SlackPostResult(ok=False, raw={"upload": upload_result.raw})
 
         message_channel = upload_result.channel or target_channel
-        message_ts = upload_result.ts
-        if not message_ts and upload_result.file_id:
-            message_channel, message_ts = await self.find_uploaded_file_message(
+        if upload_result.file_id:
+            message_channel, _ = await self.find_uploaded_file_message(
                 file_id=upload_result.file_id,
                 token=auth_token,
                 channel=message_channel,
-                text_marker=marker,
+                text_marker=f"Audio preview: {track.title}",
             )
 
-        if not message_ts:
-            if upload_result.file_id:
-                await self.delete_file(file_id=upload_result.file_id, token=auth_token)
-            return SlackPostResult(
-                ok=False,
-                channel=message_channel,
-                raw={"error": "uploaded_file_message_ts_not_found", "upload": upload_result.raw},
-            )
-
-        update_result = await self.update_review_request_message(
+        post_result = await self.post_review_message(
             track,
             token=auth_token,
-            channel=message_channel,
-            ts=message_ts,
+            channel=message_channel or target_channel,
         )
-        if not update_result.ok:
+        if not post_result.ok:
             if upload_result.file_id:
                 await self.delete_file(file_id=upload_result.file_id, token=auth_token)
             return SlackPostResult(
                 ok=False,
-                channel=message_channel,
-                ts=message_ts,
-                raw={"error": "uploaded_file_message_update_failed", "update": update_result.raw},
+                channel=message_channel or target_channel,
+                raw={"error": "review_message_post_failed", "upload": upload_result.raw, "post": post_result.raw},
             )
 
         return SlackPostResult(
             ok=True,
-            channel=message_channel,
-            ts=message_ts,
-            raw={"upload": upload_result.raw, "update": update_result.raw},
+            channel=post_result.channel,
+            ts=post_result.ts,
+            raw={"upload": upload_result.raw, "post": post_result.raw},
         )
 
     async def update_review_request_message(
