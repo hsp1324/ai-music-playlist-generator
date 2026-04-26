@@ -262,23 +262,13 @@ async def slack_interactions(
         note=response_text,
     )
 
-    decision_blocks = services.slack.build_track_decision_blocks(
-        track,
-        decision=decision.value,
-        actor=actor,
-        workspace_title=assigned_workspace_title,
-        note=response_text,
-    )
-
     return JSONResponse(
         {
-            "replace_original": True,
             "text": response_text,
-            "blocks": decision_blocks,
             "track_status": track.status.value,
             "assigned_workspace_id": assigned_workspace_id,
             "assignment_error": assignment_error,
-            "slack_update": slack_update,
+            "slack_update_ok": bool(slack_update and slack_update.get("ok")),
         }
     )
 

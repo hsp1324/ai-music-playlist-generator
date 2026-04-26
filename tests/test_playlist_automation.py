@@ -399,20 +399,10 @@ def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
         )
         assert interaction_response.status_code == 200
         interaction = interaction_response.json()
-        assert interaction["replace_original"] is True
         assert interaction["track_status"] == "approved"
         assert interaction["assigned_workspace_id"] == workspace_id
         assert interaction["assignment_error"] is None
-        assert "Approved" in str(interaction["blocks"])
-        button_texts = [
-            element["text"]["text"]
-            for block in interaction["blocks"]
-            if block["type"] == "actions"
-            for element in block["elements"]
-        ]
-        assert "Approve" not in button_texts
-        assert "Hold" not in button_texts
-        assert "Reject" not in button_texts
+        assert interaction["slack_update_ok"] is True
         assert updates[-1]["channel"] == "C123"
         assert updates[-1]["ts"] == "1777000000.000300"
 
