@@ -878,23 +878,6 @@ audio {
   cursor: grab;
 }
 
-.approved-card[draggable="true"]::before {
-  content: "";
-  position: absolute;
-  left: -2px;
-  top: 18px;
-  bottom: 18px;
-  width: 8px;
-  border: 2px solid var(--line);
-  border-left: 0;
-  border-radius: 0 999px 999px 0;
-  background: repeating-linear-gradient(
-    180deg,
-    var(--accent) 0 5px,
-    var(--accent-2) 5px 10px
-  );
-}
-
 .approved-card.dragging {
   cursor: grabbing;
   opacity: 0.58;
