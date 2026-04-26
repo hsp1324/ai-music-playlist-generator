@@ -107,6 +107,14 @@ def list_playlist_workspaces(db: Session) -> list[Playlist]:
     ).all()
 
 
+def _load_playlist_with_tracks(db: Session, playlist_id: str) -> Playlist | None:
+    return db.scalars(
+        select(Playlist)
+        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .where(Playlist.id == playlist_id)
+    ).first()
+
+
 def create_playlist_workspace(
     db: Session,
     *,
@@ -393,6 +401,105 @@ async def assign_track_to_playlist(
     ).first()
     await _update_publish_state(db, services, playlist, trigger=f"assignment:{track.id}")
     return playlist
+
+
+def reorder_workspace_tracks(
+    db: Session,
+    *,
+    playlist_id: str,
+    track_ids: list[str],
+    actor: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+
+    item_by_track_id = {item.track_id: item for item in playlist.items}
+    if len(track_ids) != len(item_by_track_id) or set(track_ids) != set(item_by_track_id):
+        raise ValueError("Track order must include every approved track exactly once.")
+
+    for index, track_id in enumerate(track_ids, start=1):
+        item = item_by_track_id[track_id]
+        item.order_index = index
+        db.add(item)
+
+    _refresh_playlist_duration(playlist)
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("reorder_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "track_ids": track_ids,
+            "reordered_at": _utcnow().isoformat(),
+        }
+    )
+    meta["reorder_history"] = history
+    meta["render_ready"] = False
+    meta["publish_approved"] = False
+    meta["note"] = "Track order changed. Re-render audio to update the playlist file."
+    meta["workflow_state"] = "render_required" if playlist.items else "collecting"
+    meta.pop("render_error", None)
+    meta.pop("cover_image_path", None)
+    meta.pop("publish_approved_by", None)
+    playlist.metadata_json = meta
+    playlist.output_audio_path = None
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.status = PlaylistStatus.draft
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def queue_workspace_audio_render(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not playlist.items:
+        raise ValueError("Playlist has no approved tracks to render.")
+    if not _all_tracks_renderable(playlist):
+        raise ValueError("All approved tracks must be local audio files before rendering.")
+
+    _refresh_playlist_duration(playlist)
+    active_job = _find_active_playlist_job(db, playlist)
+    meta = _playlist_meta(playlist)
+    meta["render_ready"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "render_queued"
+    meta["note"] = "Playlist audio render queued from the web dashboard."
+    meta.pop("render_error", None)
+    meta.pop("cover_image_path", None)
+    meta.pop("publish_approved_by", None)
+    playlist.metadata_json = meta
+    playlist.output_audio_path = None
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.status = PlaylistStatus.building
+    db.add(playlist)
+
+    if active_job is None:
+        db.add(
+            Job(
+                type=JobType.build_playlist,
+                status=JobStatus.queued,
+                source="web:render-audio",
+                payload_json={
+                    "playlist_id": playlist.id,
+                    "actor": actor,
+                    "trigger": "manual-render",
+                },
+                result_json={},
+                playlist=playlist,
+            )
+        )
+
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
 
 
 async def return_track_to_workspace_queue(

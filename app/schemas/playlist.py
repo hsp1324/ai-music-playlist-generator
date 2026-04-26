@@ -28,6 +28,15 @@ class PlaylistPublishApproveRequest(BaseModel):
     note: str | None = None
 
 
+class PlaylistRenderRequest(BaseModel):
+    actor: str = "web-ui"
+
+
+class PlaylistTrackReorderRequest(BaseModel):
+    track_ids: list[str] = Field(min_length=1)
+    actor: str = "web-ui"
+
+
 class PlaylistUploadMarkRequest(BaseModel):
     youtube_video_id: str | None = None
     output_video_path: str | None = None

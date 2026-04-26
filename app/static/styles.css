@@ -506,6 +506,10 @@ audio {
   color: var(--hold);
 }
 
+.pill-action.reorder {
+  color: var(--accent);
+}
+
 .pill-action.reject {
   color: var(--bad);
 }

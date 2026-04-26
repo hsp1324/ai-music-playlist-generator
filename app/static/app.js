@@ -178,6 +178,21 @@ function actionButton(label, className, handler) {
   return button;
 }
 
+async function reorderApprovedTrack(workspace, currentIndex, direction) {
+  const targetIndex = currentIndex + direction;
+  if (targetIndex < 0 || targetIndex >= workspace.tracks.length) return;
+
+  const trackIds = workspace.tracks.map((track) => track.id);
+  [trackIds[currentIndex], trackIds[targetIndex]] = [trackIds[targetIndex], trackIds[currentIndex]];
+  await api(`/api/playlists/${workspace.id}/tracks/reorder`, {
+    method: "POST",
+    body: JSON.stringify({
+      track_ids: trackIds,
+      actor: "web-ui",
+    }),
+  });
+}
+
 function activeWorkspace() {
   return state.workspaces.find((workspace) => workspace.id === state.selectedWorkspaceId) || null;
 }
@@ -403,7 +418,12 @@ function renderWorkspaceDetail() {
 
   detailPanel.hidden = false;
   detailTitle.textContent = displayTitle(workspace.title, "Workspace");
-  detailMeta.textContent = `${workspace.workspace_mode === "single_track_video" ? "Single Track Video" : "Playlist Mix"} · ${statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved`;
+  const renderState = workspace.output_audio_path
+    ? "rendered"
+    : workspace.status === "building"
+      ? "rendering"
+      : "not rendered";
+  detailMeta.textContent = `${workspace.workspace_mode === "single_track_video" ? "Single Track Video" : "Playlist Mix"} · ${statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved · ${renderState}`;
   queueTitle.textContent = `${displayTitle(workspace.title)} review queue`;
   approvedTitle.textContent = `${displayTitle(workspace.title)} approved tracks`;
 
@@ -420,6 +440,32 @@ function renderWorkspaceDetail() {
   }
   if (workspace.cover_image_path) {
     detailLinks.appendChild(buildLink("Cover", normalizeMediaUrl(workspace.cover_image_path)));
+  }
+
+  if (workspace.tracks.length) {
+    if (workspace.status === "building") {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "action-button secondary-button";
+      button.textContent = "Rendering Audio...";
+      button.disabled = true;
+      detailActions.appendChild(button);
+    } else {
+      detailActions.appendChild(
+        actionButton(
+          workspace.output_audio_path ? "Re-render Audio" : "Render Audio",
+          "action-button secondary-button",
+          async () => {
+            await api(`/api/playlists/${workspace.id}/render-audio`, {
+              method: "POST",
+              body: JSON.stringify({
+                actor: "web-ui",
+              }),
+            });
+          }
+        )
+      );
+    }
   }
 
   if (workspace.publish_ready && !workspace.publish_approved) {
@@ -555,7 +601,7 @@ function renderWorkspaceDetail() {
     return;
   }
 
-  workspace.tracks.forEach((track) => {
+  workspace.tracks.forEach((track, index) => {
     const fragment = approvedCardTemplate.content.cloneNode(true);
     const image = fragment.querySelector(".approved-art");
     const title = fragment.querySelector(".approved-title");
@@ -580,6 +626,19 @@ function renderWorkspaceDetail() {
     }
     if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
     if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
+    if (workspace.tracks.length > 1) {
+      const upButton = actionButton("Move Up", "pill-action reorder", async () => {
+        await reorderApprovedTrack(workspace, index, -1);
+      });
+      upButton.disabled = index === 0;
+      actions.appendChild(upButton);
+
+      const downButton = actionButton("Move Down", "pill-action reorder", async () => {
+        await reorderApprovedTrack(workspace, index, 1);
+      });
+      downButton.disabled = index === workspace.tracks.length - 1;
+      actions.appendChild(downButton);
+    }
     actions.appendChild(
       actionButton("Hold", "pill-action hold", async () => {
         await api(`/api/tracks/${track.id}/return-to-review`, {

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from app.config import get_settings
 from app.db import SessionLocal
 from app.main import create_app
+from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes.tracks import _extract_embedded_cover
 
@@ -363,6 +364,149 @@ def test_workspace_flow_assigns_tracks_and_requests_publish_approval(tmp_path) -
         assert workspace["publish_ready"] is True
         assert workspace["workflow_state"] == "pending_publish_approval"
         assert [track["id"] for track in workspace["tracks"]] == track_ids
+    finally:
+        clear_isolated_client_env()
+
+
+def test_workspace_tracks_can_be_reordered(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Workspace Reorder",
+                "target_duration_seconds": 999,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        track_ids = []
+        for index in range(3):
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"Ordered Track {index}",
+                    "prompt": "sequence test",
+                    "duration_seconds": 60,
+                    "audio_path": f"https://cdn.example.com/ordered-{index}.mp3",
+                    "metadata": {"source": "test"},
+                },
+            )
+            assert track_response.status_code == 201
+            track_id = track_response.json()["id"]
+            track_ids.append(track_id)
+            approve_response = client.post(
+                f"/api/tracks/{track_id}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+
+        stale_output = tmp_path / "old-render.mp3"
+        stale_output.write_bytes(b"old")
+        db = SessionLocal()
+        try:
+            playlist = db.get(Playlist, workspace_id)
+            playlist.output_audio_path = str(stale_output)
+            playlist.metadata_json = {
+                **(playlist.metadata_json or {}),
+                "render_ready": True,
+                "workflow_state": "pending_publish_approval",
+            }
+            db.add(playlist)
+            db.commit()
+        finally:
+            db.close()
+
+        new_order = list(reversed(track_ids))
+        reorder_response = client.post(
+            f"/api/playlists/{workspace_id}/tracks/reorder",
+            json={
+                "track_ids": new_order,
+                "actor": "test-suite",
+            },
+        )
+
+        assert reorder_response.status_code == 200
+        workspace = reorder_response.json()
+        assert [track["id"] for track in workspace["tracks"]] == new_order
+        assert workspace["output_audio_path"] is None
+        assert workspace["workflow_state"] == "render_required"
+        assert workspace["note"] == "Track order changed. Re-render audio to update the playlist file."
+    finally:
+        clear_isolated_client_env()
+
+
+def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes("|".join(track.title for track in tracks).encode("utf-8"))
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Manual Render Workspace",
+                "target_duration_seconds": 999,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        for index in range(2):
+            local_audio = tmp_path / f"render-{index}.mp3"
+            local_audio.write_bytes(b"fake-audio")
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"Renderable Track {index}",
+                    "prompt": "render test",
+                    "duration_seconds": 60,
+                    "audio_path": str(local_audio),
+                    "metadata": {"source": "test"},
+                },
+            )
+            assert track_response.status_code == 201
+            approve_response = client.post(
+                f"/api/tracks/{track_response.json()['id']}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={
+                "actor": "test-suite",
+            },
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert queued["status"] == "building"
+        assert queued["workflow_state"] == "render_queued"
+        assert queued["output_audio_path"] is None
+
+        assert drain_background_jobs(client) == 1
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["output_audio_path"].endswith(".mp3")
+        assert workspace["workflow_state"] == "rendered"
+        assert workspace["actual_duration_seconds"] == 120
+        assert Path(workspace["output_audio_path"]).exists()
     finally:
         clear_isolated_client_env()
 

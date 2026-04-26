@@ -154,6 +154,7 @@ class BackgroundJobWorker:
 
         meta = dict(playlist.metadata_json or {})
         meta["render_ready"] = True
+        meta["workflow_state"] = "pending_publish_approval" if meta.get("publish_ready") else "rendered"
         meta.pop("render_error", None)
         meta["note"] = "Playlist audio render completed in background."
         playlist.metadata_json = meta

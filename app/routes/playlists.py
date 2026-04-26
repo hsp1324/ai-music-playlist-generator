@@ -11,6 +11,8 @@ from app.schemas.playlist import (
     PlaylistBuildRequest,
     PlaylistPublishApproveRequest,
     PlaylistRead,
+    PlaylistRenderRequest,
+    PlaylistTrackReorderRequest,
     PlaylistUploadMarkRequest,
     PlaylistWorkspaceCreateRequest,
     PlaylistWorkspaceRead,
@@ -22,6 +24,8 @@ from app.workflows.playlist_automation import (
     create_playlist_workspace,
     list_available_approved_tracks,
     list_playlist_workspaces,
+    queue_workspace_audio_render,
+    reorder_workspace_tracks,
     serialize_playlist_workspace,
 )
 
@@ -88,6 +92,41 @@ def create_workspace_playlist(
         cover_prompt=payload.cover_prompt,
         dreamina_prompt=payload.dreamina_prompt,
     )
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/tracks/reorder", response_model=PlaylistWorkspaceRead)
+def reorder_workspace_playlist_tracks(
+    playlist_id: str,
+    payload: PlaylistTrackReorderRequest,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = reorder_workspace_tracks(
+            db,
+            playlist_id=playlist_id,
+            track_ids=payload.track_ids,
+            actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/render-audio", response_model=PlaylistWorkspaceRead)
+def render_workspace_playlist_audio(
+    playlist_id: str,
+    payload: PlaylistRenderRequest,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = queue_workspace_audio_render(
+            db,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return serialize_playlist_workspace(playlist)
 
 
