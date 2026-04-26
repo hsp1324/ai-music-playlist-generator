@@ -529,9 +529,29 @@ audio {
   opacity: 0.55;
 }
 
-.approved-card.drag-over {
-  outline: 3px solid var(--accent);
-  outline-offset: 3px;
+.approved-card.drop-before,
+.approved-card.drop-after {
+  position: relative;
+}
+
+.approved-card.drop-before::before,
+.approved-card.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(203, 107, 59, 0.14);
+}
+
+.approved-card.drop-before::before {
+  top: -11px;
+}
+
+.approved-card.drop-after::after {
+  bottom: -11px;
 }
 
 .approved-card-head {

@@ -184,13 +184,7 @@ async function reorderApprovedTrack(workspace, currentIndex, direction) {
 
   const trackIds = workspace.tracks.map((track) => track.id);
   [trackIds[currentIndex], trackIds[targetIndex]] = [trackIds[targetIndex], trackIds[currentIndex]];
-  await api(`/api/playlists/${workspace.id}/tracks/reorder`, {
-    method: "POST",
-    body: JSON.stringify({
-      track_ids: trackIds,
-      actor: "web-ui",
-    }),
-  });
+  await saveApprovedTrackOrder(workspace, trackIds);
 }
 
 async function saveApprovedTrackOrder(workspace, trackIds) {
@@ -203,16 +197,33 @@ async function saveApprovedTrackOrder(workspace, trackIds) {
   });
 }
 
-async function reorderApprovedTrackByDrop(workspace, draggedTrackId, targetTrackId) {
+function dropPlacement(card, event) {
+  const bounds = card.getBoundingClientRect();
+  const midpoint = bounds.top + bounds.height / 2;
+  return event.clientY < midpoint ? "before" : "after";
+}
+
+async function reorderApprovedTrackByDrop(workspace, draggedTrackId, targetTrackId, placement) {
   if (!draggedTrackId || !targetTrackId || draggedTrackId === targetTrackId) return;
   const trackIds = workspace.tracks.map((track) => track.id);
   const fromIndex = trackIds.indexOf(draggedTrackId);
-  const toIndex = trackIds.indexOf(targetTrackId);
-  if (fromIndex < 0 || toIndex < 0) return;
+  const targetIndex = trackIds.indexOf(targetTrackId);
+  if (fromIndex < 0 || targetIndex < 0) return;
 
   const [dragged] = trackIds.splice(fromIndex, 1);
-  trackIds.splice(toIndex, 0, dragged);
+  const targetIndexAfterRemoval = trackIds.indexOf(targetTrackId);
+  const insertIndex = placement === "after" ? targetIndexAfterRemoval + 1 : targetIndexAfterRemoval;
+  trackIds.splice(insertIndex, 0, dragged);
   await saveApprovedTrackOrder(workspace, trackIds);
+}
+
+function setDropPlacement(card, placement) {
+  card.classList.toggle("drop-before", placement === "before");
+  card.classList.toggle("drop-after", placement === "after");
+}
+
+function clearDropPlacement(card) {
+  card.classList.remove("drop-before", "drop-after");
 }
 
 function activeWorkspace() {
@@ -652,16 +663,17 @@ function renderWorkspaceDetail() {
       card.addEventListener("dragover", (event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
-        card.classList.add("drag-over");
+        setDropPlacement(card, dropPlacement(card, event));
       });
       card.addEventListener("dragleave", () => {
-        card.classList.remove("drag-over");
+        clearDropPlacement(card);
       });
       card.addEventListener("drop", (event) => {
         event.preventDefault();
-        card.classList.remove("drag-over");
+        const placement = dropPlacement(card, event);
+        clearDropPlacement(card);
         const draggedTrackId = event.dataTransfer.getData("text/plain");
-        reorderApprovedTrackByDrop(workspace, draggedTrackId, track.id)
+        reorderApprovedTrackByDrop(workspace, draggedTrackId, track.id, placement)
           .then(() => refreshBoard())
           .catch((error) => alert(error.message));
       });
