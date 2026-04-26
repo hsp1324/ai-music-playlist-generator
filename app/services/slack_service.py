@@ -355,6 +355,31 @@ class SlackService:
             title=track.title,
             token=auth_token,
             channel=target_channel,
+            blocks=self.build_track_review_blocks(track),
+        )
+        if upload_result.ok:
+            message_channel = upload_result.channel or target_channel
+            message_ts = upload_result.ts
+            if upload_result.file_id and not message_ts:
+                message_channel, message_ts = await self.find_uploaded_file_message(
+                    file_id=upload_result.file_id,
+                    token=auth_token,
+                    channel=message_channel,
+                    attempts=10,
+                    delay_seconds=1.5,
+                )
+            return SlackPostResult(
+                ok=True,
+                channel=message_channel,
+                ts=message_ts,
+                raw={"upload": upload_result.raw, "mode": "file_with_review_blocks"},
+            )
+
+        upload_result = await self.upload_local_audio_file(
+            file_path=track.audio_path,
+            title=track.title,
+            token=auth_token,
+            channel=target_channel,
             initial_comment=f"Audio preview: {track.title}",
         )
         if not upload_result.ok:
@@ -435,6 +460,7 @@ class SlackService:
         channel: str,
         thread_ts: str | None = None,
         initial_comment: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
     ) -> SlackFileUploadResult:
         path = Path(file_path)
         if not path.exists():
@@ -475,14 +501,14 @@ class SlackService:
                     },
                 )
 
-            completion_payload: dict[str, Any] = {
-                "files": [{"id": file_id, "title": title}],
-                "channel_id": channel,
-            }
-            if thread_ts:
-                completion_payload["thread_ts"] = thread_ts
-            if initial_comment:
-                completion_payload["initial_comment"] = initial_comment
+            completion_payload = self._build_complete_upload_payload(
+                file_id=file_id,
+                title=title,
+                channel=channel,
+                thread_ts=thread_ts,
+                initial_comment=initial_comment,
+                blocks=blocks,
+            )
 
             completion_response = await client.post(
                 "https://slack.com/api/files.completeUploadExternal",
@@ -536,6 +562,28 @@ class SlackService:
             if not data.get("ok") and data.get("error") in {"missing_scope", "not_in_channel", "channel_not_found"}:
                 return channel, None
         return channel, None
+
+    @staticmethod
+    def _build_complete_upload_payload(
+        *,
+        file_id: str,
+        title: str,
+        channel: str,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "files": [{"id": file_id, "title": title}],
+            "channel_id": channel,
+        }
+        if thread_ts:
+            payload["thread_ts"] = thread_ts
+        if initial_comment:
+            payload["initial_comment"] = initial_comment
+        elif blocks:
+            payload["blocks"] = blocks
+        return payload
 
     async def delete_file(
         self,
