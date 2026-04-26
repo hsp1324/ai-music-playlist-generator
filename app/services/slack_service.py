@@ -350,30 +350,31 @@ class SlackService:
         if not track.audio_path:
             return SlackPostResult(ok=False, raw={"reason": "track_audio_path_missing"})
 
-        upload_result = await self.upload_local_audio_file(
-            file_path=track.audio_path,
-            title=track.title,
-            token=auth_token,
-            channel=target_channel,
-            blocks=self.build_track_review_blocks(track),
-        )
-        if upload_result.ok:
-            message_channel = upload_result.channel or target_channel
-            message_ts = upload_result.ts
-            if upload_result.file_id and not message_ts:
-                message_channel, message_ts = await self.find_uploaded_file_message(
-                    file_id=upload_result.file_id,
-                    token=auth_token,
-                    channel=message_channel,
-                    attempts=10,
-                    delay_seconds=1.5,
-                )
-            return SlackPostResult(
-                ok=True,
-                channel=message_channel,
-                ts=message_ts,
-                raw={"upload": upload_result.raw, "mode": "file_with_review_blocks"},
+        if self.settings.slack_single_message_audio_reviews:
+            upload_result = await self.upload_local_audio_file(
+                file_path=track.audio_path,
+                title=track.title,
+                token=auth_token,
+                channel=target_channel,
+                blocks=self.build_track_review_blocks(track),
             )
+            if upload_result.ok:
+                message_channel = upload_result.channel or target_channel
+                message_ts = upload_result.ts
+                if upload_result.file_id and not message_ts:
+                    message_channel, message_ts = await self.find_uploaded_file_message(
+                        file_id=upload_result.file_id,
+                        token=auth_token,
+                        channel=message_channel,
+                        attempts=10,
+                        delay_seconds=1.5,
+                    )
+                return SlackPostResult(
+                    ok=True,
+                    channel=message_channel,
+                    ts=message_ts,
+                    raw={"upload": upload_result.raw, "mode": "file_with_review_blocks"},
+                )
 
         upload_result = await self.upload_local_audio_file(
             file_path=track.audio_path,

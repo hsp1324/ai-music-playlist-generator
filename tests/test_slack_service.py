@@ -5,7 +5,7 @@ from app.models.enums import TrackStatus
 from app.models.slack_installation import SlackInstallation
 from app.models.track import Track
 from app.services.slack_installation_store import SlackInstallationStore
-from app.services.slack_service import SlackFileUploadResult, SlackService
+from app.services.slack_service import SlackFileUploadResult, SlackPostResult, SlackService
 
 
 def test_build_install_url_includes_required_fields() -> None:
@@ -198,7 +198,13 @@ def test_complete_upload_payload_keeps_initial_comment_as_fallback() -> None:
 def test_post_review_message_with_local_audio_uses_single_file_message(tmp_path) -> None:
     audio_path = tmp_path / "single-message.mp3"
     audio_path.write_bytes(b"fake-audio")
-    service = SlackService(Settings(slack_bot_token="xoxb-test", slack_review_channel_id="C123"))
+    service = SlackService(
+        Settings(
+            slack_bot_token="xoxb-test",
+            slack_review_channel_id="C123",
+            slack_single_message_audio_reviews=True,
+        )
+    )
     track = Track(
         id="track-1",
         title="Single Message",
@@ -238,6 +244,55 @@ def test_post_review_message_with_local_audio_uses_single_file_message(tmp_path)
     assert "Approve" in rendered
     assert "Hold" in rendered
     assert "Reject" in rendered
+
+
+def test_post_review_message_with_local_audio_defaults_to_separate_review_message(tmp_path) -> None:
+    audio_path = tmp_path / "two-message.mp3"
+    audio_path.write_bytes(b"fake-audio")
+    service = SlackService(Settings(slack_bot_token="xoxb-test", slack_review_channel_id="C123"))
+    track = Track(
+        id="track-1",
+        title="Two Message",
+        prompt="",
+        duration_seconds=120,
+        audio_path=str(audio_path),
+        status=TrackStatus.pending_review,
+        metadata_json={"pending_workspace_title": "butter-fly"},
+    )
+    upload_call = {}
+
+    async def fake_upload_local_audio_file(**kwargs):
+        upload_call.update(kwargs)
+        return SlackFileUploadResult(
+            ok=True,
+            file_id="F123",
+            channel="C123",
+            ts="1777000000.000300",
+            raw={"ok": True},
+        )
+
+    async def fake_find_uploaded_file_message(**kwargs):
+        return "C123", "1777000000.000300"
+
+    async def fake_post_review_message(track, **kwargs):
+        return SlackPostResult(
+            ok=True,
+            channel="C123",
+            ts="1777000000.000400",
+            raw={"ok": True},
+        )
+
+    service.upload_local_audio_file = fake_upload_local_audio_file
+    service.find_uploaded_file_message = fake_find_uploaded_file_message
+    service.post_review_message = fake_post_review_message
+
+    result = asyncio.run(service.post_review_message_with_local_audio(track))
+
+    assert result.ok is True
+    assert result.channel == "C123"
+    assert result.ts == "1777000000.000400"
+    assert upload_call["initial_comment"] == "Audio preview: Two Message"
+    assert "blocks" not in upload_call
 
 
 def test_extract_file_share_location_from_complete_upload_payload() -> None:

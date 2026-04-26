@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     slack_user_scopes: str = ""
     slack_review_channel_id: str = ""
     slack_enable_signature_verification: bool = False
+    slack_single_message_audio_reviews: bool = False
     public_base_url: str = "http://127.0.0.1:8000"
 
     auto_approval_mode: Literal["human", "hybrid", "agent"] = "human"
