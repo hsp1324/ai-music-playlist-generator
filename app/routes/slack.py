@@ -35,6 +35,16 @@ def _bot_token_for_team(services: ServiceRegistry, db: Session, team_id: str | N
     return installation.bot_token if installation else services.settings.slack_bot_token
 
 
+def _interaction_message_target(payload: dict) -> tuple[str | None, str | None]:
+    container = payload.get("container") or {}
+    channel = payload.get("channel") or {}
+    message = payload.get("message") or {}
+    return (
+        container.get("channel_id") or channel.get("id"),
+        container.get("message_ts") or message.get("ts"),
+    )
+
+
 @router.get("/install")
 async def slack_install(request: Request) -> RedirectResponse:
     services = get_services(request)
@@ -231,6 +241,14 @@ async def slack_interactions(
     elif assignment_error:
         response_text += f" Workspace assignment failed: {assignment_error}."
 
+    clicked_channel, clicked_ts = _interaction_message_target(payload)
+    if clicked_channel and clicked_ts:
+        track.slack_channel_id = clicked_channel
+        track.slack_message_ts = clicked_ts
+        db.add(track)
+        db.commit()
+        db.refresh(track)
+
     slack_update = await sync_slack_review_decision(
         db,
         services,
@@ -241,9 +259,19 @@ async def slack_interactions(
         note=response_text,
     )
 
+    decision_blocks = services.slack.build_track_decision_blocks(
+        track,
+        decision=decision.value,
+        actor=actor,
+        workspace_title=assigned_workspace_title,
+        note=response_text,
+    )
+
     return JSONResponse(
         {
+            "replace_original": True,
             "text": response_text,
+            "blocks": decision_blocks,
             "track_status": track.status.value,
             "assigned_workspace_id": assigned_workspace_id,
             "assignment_error": assignment_error,

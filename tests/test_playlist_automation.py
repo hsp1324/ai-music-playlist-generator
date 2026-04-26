@@ -347,6 +347,15 @@ def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         client.app.state.settings.auto_build_playlists = False
+        client.app.state.settings.slack_bot_token = "xoxb-test"
+        updates = []
+
+        async def fake_update_review_message(track, **kwargs):
+            updates.append({"track_id": track.id, **kwargs})
+            return SimpleNamespace(ok=True, raw={"ok": True})
+
+        client.app.state.services.slack.update_review_message = fake_update_review_message
+
         workspace_response = client.post(
             "/api/playlists/workspaces",
             json={
@@ -380,15 +389,32 @@ def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
                     {
                         "actions": [{"value": f"track:{track_id}:approve"}],
                         "user": {"id": "U123", "username": "slack-reviewer"},
+                        "container": {
+                            "channel_id": "C123",
+                            "message_ts": "1777000000.000300",
+                        },
                     }
                 )
             },
         )
         assert interaction_response.status_code == 200
         interaction = interaction_response.json()
+        assert interaction["replace_original"] is True
         assert interaction["track_status"] == "approved"
         assert interaction["assigned_workspace_id"] == workspace_id
         assert interaction["assignment_error"] is None
+        assert "Approved" in str(interaction["blocks"])
+        button_texts = [
+            element["text"]["text"]
+            for block in interaction["blocks"]
+            if block["type"] == "actions"
+            for element in block["elements"]
+        ]
+        assert "Approve" not in button_texts
+        assert "Hold" not in button_texts
+        assert "Reject" not in button_texts
+        assert updates[-1]["channel"] == "C123"
+        assert updates[-1]["ts"] == "1777000000.000300"
 
         workspaces_response = client.get("/api/playlists/workspaces")
         assert workspaces_response.status_code == 200
