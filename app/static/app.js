@@ -272,6 +272,50 @@ function appendRenderStatus(workspace) {
   detailLinks.appendChild(card);
 }
 
+function appendRenderedAudioPlayer(workspace) {
+  const audioUrl = normalizeMediaUrl(workspace.output_audio_path);
+  if (!audioUrl) return;
+
+  const player = document.createElement("div");
+  player.className = "render-player";
+
+  const art = document.createElement("img");
+  art.className = "render-player-art";
+  art.src = normalizeMediaUrl(workspace.cover_image_path) || fallbackTrackArtUrl;
+  art.alt = `${displayTitle(workspace.title)} cover`;
+
+  const body = document.createElement("div");
+  body.className = "render-player-body";
+
+  const copy = document.createElement("div");
+  copy.className = "render-player-copy";
+
+  const title = document.createElement("strong");
+  title.textContent = "Rendered Mix";
+
+  const meta = document.createElement("span");
+  const trackCount = `${workspace.tracks.length} track${workspace.tracks.length === 1 ? "" : "s"}`;
+  meta.textContent = `${formatDuration(workspace.actual_duration_seconds)} · ${trackCount}`;
+
+  const actions = document.createElement("div");
+  actions.className = "render-player-actions";
+
+  const audio = document.createElement("audio");
+  audio.controls = true;
+  audio.preload = "none";
+  audio.src = audioUrl;
+
+  copy.appendChild(title);
+  copy.appendChild(meta);
+  actions.appendChild(audio);
+  actions.appendChild(buildLink("Open File", audioUrl));
+  body.appendChild(copy);
+  body.appendChild(actions);
+  player.appendChild(art);
+  player.appendChild(body);
+  detailLinks.appendChild(player);
+}
+
 function stopDragAutoScroll() {
   dragScrollSpeed = 0;
   if (dragScrollFrame) {
@@ -351,7 +395,7 @@ function updateToolbarSummary() {
   const pending = pendingTracks().length;
   const visible = visibleWorkspaces();
   const ready = visible.filter((workspace) => workspace.publish_ready && !workspace.publish_approved).length;
-  toolbarSummaryText.textContent = `Queue ${pending} · Workspaces ${visible.length} · Ready ${ready}`;
+  toolbarSummaryText.textContent = `Review ${pending} · Workspaces ${visible.length} · Ready ${ready}`;
 }
 
 function renderTrackWorkspaceOptions() {
@@ -548,15 +592,9 @@ function renderWorkspaceDetail() {
   approvedGrid.innerHTML = "";
 
   appendRenderStatus(workspace);
-
-  if (workspace.output_audio_path) {
-    detailLinks.appendChild(buildLink("Rendered Audio", normalizeMediaUrl(workspace.output_audio_path)));
-  }
+  appendRenderedAudioPlayer(workspace);
   if (workspace.output_video_path) {
     detailLinks.appendChild(buildLink("Rendered Video", normalizeMediaUrl(workspace.output_video_path)));
-  }
-  if (workspace.cover_image_path) {
-    detailLinks.appendChild(buildLink("Cover", normalizeMediaUrl(workspace.cover_image_path)));
   }
 
   if (workspace.tracks.length) {

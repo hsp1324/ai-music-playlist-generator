@@ -3,43 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Music Workspace</title>
+    <title>AI Music Release Console</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260426l" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260426m" />
   </head>
   <body>
     <div class="shell">
       <header class="app-header">
-        <p class="app-kicker">AI Music Workspace</p>
-        <h1 class="app-title">Release Board</h1>
-      </header>
-
-      <section class="toolbar" aria-label="Primary toolbar">
-        <button id="menu-toggle-button" class="toolbar-button menu-button" type="button" aria-expanded="false">
-          <span class="menu-icon" aria-hidden="true"></span>
-          <span>Menu</span>
-        </button>
-        <div class="toolbar-summary">
-          <span id="toolbar-summary-text">Queue 0 · Workspaces 0 · Ready 0</span>
+        <div class="hero-copy">
+          <p class="app-kicker">AI Music Workspace</p>
+          <h1 class="app-title">Release Control Room</h1>
+          <p class="hero-lede">
+            곡을 올리고, Slack 또는 웹에서 승인하고, 최종 순서를 정한 뒤 하나의 플레이리스트로 렌더링합니다.
+          </p>
         </div>
-        <button id="refresh-button" class="toolbar-button refresh-button" type="button">Refresh</button>
-      </section>
+        <section class="toolbar" aria-label="Primary toolbar">
+          <button id="menu-toggle-button" class="toolbar-button menu-button" type="button" aria-expanded="false">
+            <span class="menu-icon" aria-hidden="true"></span>
+            <span>Tools</span>
+          </button>
+          <div class="toolbar-summary">
+            <span id="toolbar-summary-text">Queue 0 · Workspaces 0 · Ready 0</span>
+          </div>
+          <button id="refresh-button" class="toolbar-button refresh-button" type="button">Refresh</button>
+        </section>
+      </header>
 
       <section class="quick-upload-panel">
         <div class="quick-upload-copy">
-          <p class="section-kicker">Quick Upload</p>
-          <h2>Upload Audio Files</h2>
-          <p class="detail-copy">파일명을 제목으로 사용하고, 선택한 workspace의 awaiting approval로 바로 넣습니다.</p>
+          <p class="section-kicker">Intake</p>
+          <h2>새 음악을 검수 큐로 보내기</h2>
+          <p class="detail-copy">파일명을 제목으로 사용하고 선택한 workspace의 review queue와 Slack에 같이 반영합니다.</p>
         </div>
         <div id="upload-dropzone" class="upload-dropzone" tabindex="0">
           <input id="quick-upload-input" type="file" accept="audio/*" multiple hidden />
-          <p class="upload-dropzone-title">Drag & drop audio files</p>
-          <p class="upload-dropzone-copy">or pick files manually</p>
+          <p class="upload-dropzone-title">Drop audio here</p>
+          <p class="upload-dropzone-copy">여러 MP3 파일을 한 번에 올릴 수 있습니다.</p>
           <button id="quick-upload-pick-button" class="toolbar-button" type="button">Choose Files</button>
         </div>
         <div class="quick-upload-controls">
@@ -189,7 +193,7 @@
           <div class="section-headline">
             <div>
               <p class="section-kicker">Workspaces</p>
-              <h2>Choose A Lane</h2>
+              <h2>작업할 릴리즈 선택</h2>
             </div>
           </div>
           <div id="workspace-grid" class="workspace-grid"></div>
@@ -208,6 +212,16 @@
           <div id="detail-links" class="detail-links"></div>
 
           <div class="detail-columns">
+            <section class="detail-column approved-column">
+              <div class="detail-column-head">
+                <div>
+                  <p class="section-kicker">Final Order</p>
+                  <h3 id="approved-title">Approved Tracks</h3>
+                </div>
+              </div>
+              <div id="approved-grid" class="approved-grid"></div>
+            </section>
+
             <section class="detail-column">
               <div class="detail-column-head">
                 <div>
@@ -216,16 +230,6 @@
                 </div>
               </div>
               <div id="queue-grid" class="track-grid"></div>
-            </section>
-
-            <section class="detail-column approved-column">
-              <div class="detail-column-head">
-                <div>
-                  <p class="section-kicker">Approved</p>
-                  <h3 id="approved-title">Approved Tracks</h3>
-                </div>
-              </div>
-              <div id="approved-grid" class="approved-grid"></div>
             </section>
           </div>
         </section>
@@ -296,6 +300,6 @@
       </article>
     </template>
 
-    <script src="/assets/app.js?v=20260426h" defer></script>
+    <script src="/assets/app.js?v=20260426i" defer></script>
   </body>
 </html>
