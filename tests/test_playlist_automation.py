@@ -537,6 +537,14 @@ def test_web_decision_updates_existing_slack_review_message(tmp_path) -> None:
 def test_return_approved_track_to_workspace_queue(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
+        request_updates = []
+
+        async def fake_update_review_request_message(track, **kwargs):
+            request_updates.append({"track_id": track.id, **kwargs})
+            return SimpleNamespace(ok=True, raw={"ok": True})
+
+        client.app.state.services.slack.update_review_request_message = fake_update_review_request_message
+
         workspace_response = client.post(
             "/api/playlists/workspaces",
             json={
@@ -571,6 +579,16 @@ def test_return_approved_track_to_workspace_queue(tmp_path) -> None:
         )
         assert approve_response.status_code == 200
 
+        db = SessionLocal()
+        try:
+            track = db.get(Track, track_id)
+            track.slack_channel_id = "C123"
+            track.slack_message_ts = "1777000000.000200"
+            db.add(track)
+            db.commit()
+        finally:
+            db.close()
+
         hold_response = client.post(
             f"/api/tracks/{track_id}/return-to-review",
             json={
@@ -583,6 +601,9 @@ def test_return_approved_track_to_workspace_queue(tmp_path) -> None:
         held_track = hold_response.json()
         assert held_track["status"] == "pending_review"
         assert held_track["metadata_json"]["pending_workspace_id"] == workspace_id
+        assert request_updates[-1]["track_id"] == track_id
+        assert request_updates[-1]["channel"] == "C123"
+        assert request_updates[-1]["ts"] == "1777000000.000200"
 
         workspaces_response = client.get("/api/playlists/workspaces")
         assert workspaces_response.status_code == 200

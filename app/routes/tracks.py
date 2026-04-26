@@ -17,7 +17,7 @@ from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist, return_track_to_workspace_queue
 from app.workflows.review_dispatch import dispatch_track_review, post_track_review_to_slack
-from app.workflows.slack_sync import sync_slack_review_decision
+from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_review_request
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
 
@@ -328,13 +328,10 @@ async def return_track_to_review(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     db.refresh(track)
-    await sync_slack_review_decision(
+    await sync_slack_review_request(
         db,
         services,
         track,
-        decision=DecisionValue.hold,
-        actor=payload.actor,
-        note="Returned to awaiting approval from the web dashboard.",
     )
     return TrackRead.model_validate(track)
 

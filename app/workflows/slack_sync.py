@@ -31,3 +31,22 @@ async def sync_slack_review_decision(
         note=note,
     )
     return result.raw or {"ok": result.ok}
+
+
+async def sync_slack_review_request(
+    db: Session,
+    services: ServiceRegistry,
+    track: Track,
+) -> dict | None:
+    if not track.slack_channel_id or not track.slack_message_ts:
+        return None
+
+    installation = services.slack_installations.get_active_installation(db)
+    token = installation.bot_token if installation else services.settings.slack_bot_token
+    result = await services.slack.update_review_request_message(
+        track,
+        token=token,
+        channel=track.slack_channel_id,
+        ts=track.slack_message_ts,
+    )
+    return result.raw or {"ok": result.ok}
