@@ -12,6 +12,9 @@ const detailMeta = document.querySelector("#detail-meta");
 const detailActions = document.querySelector("#detail-actions");
 const detailPipeline = document.querySelector("#detail-pipeline");
 const detailLinks = document.querySelector("#detail-links");
+const detailColumns = document.querySelector("#detail-columns");
+const approvedColumn = document.querySelector("#approved-column");
+const queueColumn = document.querySelector("#queue-column");
 const queueGrid = document.querySelector("#queue-grid");
 const approvedGrid = document.querySelector("#approved-grid");
 const queueTitle = document.querySelector("#queue-title");
@@ -100,6 +103,26 @@ function releaseModeLabel(workspace) {
 
 function releaseOptionLabel(workspace) {
   return `${displayTitle(workspace.title)} · ${isSingleRelease(workspace) ? "Single" : "Playlist"}`;
+}
+
+function isReleaseReviewStage(workspace) {
+  const releaseReviewStates = new Set([
+    "metadata_review",
+    "publish_ready",
+    "publish_queued",
+    "ready_for_youtube",
+    "ready_for_youtube_auth",
+    "youtube_upload_failed",
+    "uploaded",
+  ]);
+  return Boolean(
+    workspace?.output_video_path
+    || workspace?.youtube_title
+    || workspace?.metadata_approved
+    || workspace?.publish_approved
+    || workspace?.youtube_video_id
+    || releaseReviewStates.has(workspace?.workflow_state)
+  );
 }
 
 function releasePipeline(workspace) {
@@ -292,6 +315,25 @@ function trackCoverUrl(track) {
 
 function trackCoverLabel(track) {
   return track?.metadata_json?.image_url || track?.image_url ? "커버 있음" : "커버 없음";
+}
+
+function metadataTagsText(workspace) {
+  return (workspace.youtube_tags || []).join(", ");
+}
+
+function parseMetadataTags(value) {
+  return String(value || "")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .slice(0, 15);
+}
+
+function metadataDraftValues() {
+  const title = detailPanel.querySelector('[data-metadata-field="title"]')?.value?.trim();
+  const description = detailPanel.querySelector('[data-metadata-field="description"]')?.value?.trim();
+  const tags = parseMetadataTags(detailPanel.querySelector('[data-metadata-field="tags"]')?.value);
+  return { title, description, tags };
 }
 
 function uploadResultLine(track, index) {
@@ -616,16 +658,80 @@ function appendMetadataDraft(workspace) {
   if (!workspace.youtube_title && !workspace.youtube_description) return;
 
   const card = document.createElement("div");
-  card.className = `metadata-preview ${workspace.metadata_approved ? "approved" : "review"}`;
+  card.className = `metadata-preview metadata-review-panel ${workspace.metadata_approved ? "approved" : "review"}`;
 
-  const title = document.createElement("strong");
-  title.textContent = workspace.metadata_approved ? "Metadata Approved" : "Metadata Review";
+  const header = document.createElement("div");
+  header.className = "metadata-review-header";
+
+  const titleBlock = document.createElement("div");
+
+  const kicker = document.createElement("span");
+  kicker.className = "metadata-kicker";
+  kicker.textContent = workspace.metadata_approved ? "Metadata Approved" : "Metadata Review";
 
   const heading = document.createElement("h3");
   heading.textContent = workspace.youtube_title || "Untitled YouTube Draft";
 
-  const description = document.createElement("p");
-  description.textContent = shortText(workspace.youtube_description || "No description generated.", 260);
+  const summary = document.createElement("p");
+  summary.textContent = workspace.metadata_approved
+    ? "Approved YouTube copy. Final publish can use this title, description, and tags."
+    : "YouTube에 올라갈 제목, 설명, 태그입니다. 여기서 확인하고 필요하면 바로 수정한 뒤 승인하세요.";
+
+  titleBlock.appendChild(kicker);
+  titleBlock.appendChild(heading);
+  titleBlock.appendChild(summary);
+
+  const source = document.createElement("div");
+  source.className = "metadata-source";
+  const sourceCount = `${workspace.tracks.length} track${workspace.tracks.length === 1 ? "" : "s"}`;
+  source.innerHTML = `<span>${releaseModeLabel(workspace)}</span><strong>${formatDuration(workspace.actual_duration_seconds)}</strong><span>${sourceCount}</span>`;
+
+  header.appendChild(titleBlock);
+  header.appendChild(source);
+
+  const fields = document.createElement("div");
+  fields.className = "metadata-fields";
+
+  const titleField = document.createElement("label");
+  titleField.className = "metadata-field title-field";
+  const titleLabel = document.createElement("span");
+  titleLabel.textContent = "YouTube Title";
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.maxLength = 100;
+  titleInput.value = workspace.youtube_title || "";
+  titleInput.readOnly = Boolean(workspace.metadata_approved);
+  titleInput.dataset.metadataField = "title";
+  titleField.appendChild(titleLabel);
+  titleField.appendChild(titleInput);
+
+  const descriptionField = document.createElement("label");
+  descriptionField.className = "metadata-field description-field";
+  const descriptionLabel = document.createElement("span");
+  descriptionLabel.textContent = "YouTube Description";
+  const descriptionInput = document.createElement("textarea");
+  descriptionInput.rows = 10;
+  descriptionInput.value = workspace.youtube_description || "";
+  descriptionInput.readOnly = Boolean(workspace.metadata_approved);
+  descriptionInput.dataset.metadataField = "description";
+  descriptionField.appendChild(descriptionLabel);
+  descriptionField.appendChild(descriptionInput);
+
+  const tagsField = document.createElement("label");
+  tagsField.className = "metadata-field tags-field";
+  const tagsLabel = document.createElement("span");
+  tagsLabel.textContent = "Tags";
+  const tagsInput = document.createElement("input");
+  tagsInput.type = "text";
+  tagsInput.value = metadataTagsText(workspace);
+  tagsInput.readOnly = Boolean(workspace.metadata_approved);
+  tagsInput.dataset.metadataField = "tags";
+  tagsField.appendChild(tagsLabel);
+  tagsField.appendChild(tagsInput);
+
+  fields.appendChild(titleField);
+  fields.appendChild(descriptionField);
+  fields.appendChild(tagsField);
 
   const tags = document.createElement("div");
   tags.className = "metadata-tags";
@@ -635,9 +741,8 @@ function appendMetadataDraft(workspace) {
     tags.appendChild(chip);
   });
 
-  card.appendChild(title);
-  card.appendChild(heading);
-  card.appendChild(description);
+  card.appendChild(header);
+  card.appendChild(fields);
   card.appendChild(tags);
   detailLinks.appendChild(card);
 }
@@ -961,6 +1066,7 @@ function renderWorkspaceDetail() {
 
   if (!workspace) {
     detailPanel.hidden = true;
+    if (detailColumns) detailColumns.hidden = true;
     return;
   }
 
@@ -1108,10 +1214,14 @@ function renderWorkspaceDetail() {
   } else if (workspace.youtube_title && !workspace.metadata_approved) {
     detailActions.appendChild(
       actionButton("Approve Metadata", "action-button primary-button", async () => {
+        const metadata = metadataDraftValues();
         await api(`/api/playlists/${workspace.id}/metadata/approve`, {
           method: "POST",
           body: JSON.stringify({
             actor: "web-ui",
+            title: metadata.title,
+            description: metadata.description,
+            tags: metadata.tags,
             note: "Approved from workspace detail.",
           }),
         });
@@ -1160,6 +1270,20 @@ function renderWorkspaceDetail() {
     });
     detailActions.appendChild(input);
     detailActions.appendChild(button);
+  }
+
+  const showTrackReviewColumns = !isReleaseReviewStage(workspace);
+  if (detailColumns) {
+    detailColumns.hidden = !showTrackReviewColumns;
+  }
+  if (approvedColumn) {
+    approvedColumn.hidden = !showTrackReviewColumns;
+  }
+  if (queueColumn) {
+    queueColumn.hidden = !showTrackReviewColumns;
+  }
+  if (!showTrackReviewColumns) {
+    return;
   }
 
   if (!tracksForReview.length) {
