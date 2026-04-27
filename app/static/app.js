@@ -42,6 +42,7 @@ const youtubeConnectButton = document.querySelector("#youtube-connect-button");
 const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
+const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 
 let quickUploadFiles = [];
 let dragScrollFrame = null;
@@ -700,6 +701,18 @@ function workspaceOptions(selectedId = "") {
   return `${defaultOption}${options}`;
 }
 
+function quickUploadWorkspaceOptions(selectedId = "") {
+  const createSingleSelected = selectedId === QUICK_UPLOAD_NEW_SINGLE_VALUE ? "selected" : "";
+  const createSingleOption = `<option value="${QUICK_UPLOAD_NEW_SINGLE_VALUE}" ${createSingleSelected}>+ New Single Release from this file</option>`;
+  const options = visibleWorkspaces()
+    .map((workspace) => {
+      const selected = workspace.id === selectedId ? "selected" : "";
+      return `<option value="${workspace.id}" ${selected}>${releaseOptionLabel(workspace)}</option>`;
+    })
+    .join("");
+  return `<option value="">Choose release</option>${createSingleOption}${options}`;
+}
+
 function pendingTracks(workspaceId = "") {
   return state.tracks.filter((track) => {
     if (!["pending_review", "held"].includes(track.status)) return false;
@@ -732,8 +745,11 @@ function renderTrackWorkspaceOptions() {
   trackWorkspaceSelect.innerHTML = `<option value="">Unassigned Queue</option>${options}`;
   if (quickUploadWorkspaceSelect) {
     const currentQuickUploadWorkspace = quickUploadWorkspaceSelect.value;
-    quickUploadWorkspaceSelect.innerHTML = `<option value="">Choose workspace</option>${options}`;
-    if (visible.some((workspace) => workspace.id === currentQuickUploadWorkspace)) {
+    quickUploadWorkspaceSelect.innerHTML = quickUploadWorkspaceOptions(currentQuickUploadWorkspace);
+    if (
+      currentQuickUploadWorkspace === QUICK_UPLOAD_NEW_SINGLE_VALUE
+      || visible.some((workspace) => workspace.id === currentQuickUploadWorkspace)
+    ) {
       quickUploadWorkspaceSelect.value = currentQuickUploadWorkspace;
     }
   }
@@ -752,8 +768,27 @@ function setQuickUploadFiles(files) {
   quickUploadFiles = [...files];
   renderQuickUploadFiles();
   if (quickUploadFiles.length) {
-    setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. release를 선택하고 Upload Audio를 누르세요.`);
+    const hint = quickUploadFiles.length === 1
+      ? "기존 release를 선택하거나 '+ New Single Release from this file'을 선택하세요."
+      : "여러 파일은 기존 Playlist Release를 선택하세요.";
+    setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. ${hint}`);
   }
+}
+
+async function createSingleReleaseFromFile(file) {
+  const title = fileStem(file.name);
+  return api("/api/playlists/workspaces", {
+    method: "POST",
+    body: JSON.stringify({
+      title,
+      target_duration_seconds: 1,
+      workspace_mode: "single_track_video",
+      auto_publish_when_ready: false,
+      description: `Single release created from ${file.name}.`,
+      cover_prompt: "",
+      dreamina_prompt: "",
+    }),
+  });
 }
 
 async function submitQuickUpload() {
@@ -765,6 +800,11 @@ async function submitQuickUpload() {
     setStatus(quickUploadStatus, "release를 먼저 선택하세요.");
     return;
   }
+  const createNewSingle = quickUploadWorkspaceSelect.value === QUICK_UPLOAD_NEW_SINGLE_VALUE;
+  if (createNewSingle && quickUploadFiles.length !== 1) {
+    setStatus(quickUploadStatus, "New Single Release는 파일 하나만 선택했을 때 사용할 수 있습니다.");
+    return;
+  }
   const selectedWorkspace = state.workspaces.find((workspace) => workspace.id === quickUploadWorkspaceSelect.value);
   if (isSingleRelease(selectedWorkspace) && quickUploadFiles.length > 1) {
     setStatus(quickUploadStatus, "Single release에는 파일 하나만 올릴 수 있습니다. 여러 곡이면 Playlist release를 선택하세요.");
@@ -774,10 +814,18 @@ async function submitQuickUpload() {
   quickUploadSubmitButton.disabled = true;
   const results = [];
   const failures = [];
-  const workspaceId = quickUploadWorkspaceSelect.value;
+  let workspaceId = quickUploadWorkspaceSelect.value;
   const failedFiles = [];
-  state.selectedWorkspaceId = workspaceId;
   try {
+    if (createNewSingle) {
+      setTextStatus(quickUploadStatus, `Single release 생성 중: ${fileStem(quickUploadFiles[0].name)}`);
+      const workspace = await createSingleReleaseFromFile(quickUploadFiles[0]);
+      workspaceId = workspace.id;
+      state.selectedWorkspaceId = workspaceId;
+      await refreshBoard();
+    } else {
+      state.selectedWorkspaceId = workspaceId;
+    }
     for (const [index, file] of quickUploadFiles.entries()) {
       setQuickUploadProgress(quickUploadFiles.length, results, failures, file.name);
       try {
