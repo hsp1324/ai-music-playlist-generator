@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+import shutil
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -27,6 +31,7 @@ from app.workflows.playlist_automation import (
     approve_playlist_cover,
     approve_playlist_metadata,
     approve_playlist_publish,
+    attach_uploaded_playlist_cover,
     build_playlist_from_tracks,
     create_playlist_workspace,
     generate_playlist_cover,
@@ -41,9 +46,31 @@ from app.workflows.playlist_automation import (
 
 router = APIRouter(prefix="/playlists", tags=["playlists"])
 
+ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
 
 def get_services(request: Request) -> ServiceRegistry:
     return request.app.state.services
+
+
+def _store_cover_upload(upload: UploadFile, destination_dir: Path, playlist_id: str) -> str:
+    if not upload.filename:
+        raise HTTPException(status_code=400, detail="Cover image filename is required.")
+
+    suffix = Path(upload.filename).suffix.lower()
+    if suffix not in ALLOWED_COVER_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Cover image must be jpg, png, or webp.")
+    if upload.content_type and not upload.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Cover upload must be an image file.")
+
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    destination = destination_dir / f"{playlist_id}-cover-upload-{uuid4().hex}{suffix}"
+    with destination.open("wb") as handle:
+        shutil.copyfileobj(upload.file, handle)
+
+    if not destination.exists() or destination.stat().st_size == 0:
+        raise HTTPException(status_code=400, detail="Uploaded cover image is empty.")
+    return str(destination)
 
 
 @router.post("/build", response_model=PlaylistRead, status_code=status.HTTP_201_CREATED)
@@ -157,6 +184,33 @@ def generate_workspace_cover(
             regenerate=payload.regenerate,
         )
     except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/cover/upload", response_model=PlaylistWorkspaceRead)
+def upload_workspace_cover(
+    playlist_id: str,
+    request: Request,
+    actor: str = Form("web-ui"),
+    cover_file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    services = get_services(request)
+    playlist = db.get(Playlist, playlist_id)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    cover_image_path = _store_cover_upload(cover_file, services.settings.playlists_dir, playlist_id)
+    try:
+        playlist = attach_uploaded_playlist_cover(
+            db,
+            playlist_id=playlist_id,
+            actor=actor,
+            cover_image_path=cover_image_path,
+        )
+    except ValueError as exc:
+        Path(cover_image_path).unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return serialize_playlist_workspace(playlist)
 

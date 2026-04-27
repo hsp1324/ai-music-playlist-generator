@@ -339,6 +339,49 @@ async function api(path, options = {}) {
   return data;
 }
 
+async function uploadCoverFile(workspace, file) {
+  const form = new FormData();
+  form.append("actor", "web-ui");
+  form.append("cover_file", file, file.name);
+  const response = await fetch(`/api/playlists/${workspace.id}/cover/upload`, {
+    method: "POST",
+    body: form,
+  });
+  const text = await response.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = text;
+  }
+  if (!response.ok) {
+    throw new Error(typeof data === "string" ? data : JSON.stringify(data, null, 2));
+  }
+  return data;
+}
+
+function pickCoverFile(workspace) {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp";
+    input.addEventListener("change", async () => {
+      const file = input.files?.[0];
+      if (!file) {
+        resolve(null);
+        return;
+      }
+      try {
+        const result = await uploadCoverFile(workspace, file);
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    }, { once: true });
+    input.click();
+  });
+}
+
 function buildLink(label, href) {
   const anchor = document.createElement("a");
   anchor.className = "pill-link";
@@ -933,6 +976,11 @@ function renderWorkspaceDetail() {
 
   if (workspace.output_audio_path && !workspace.cover_image_path) {
     detailActions.appendChild(
+      actionButton("Upload Cover", "action-button primary-button", async () => {
+        await pickCoverFile(workspace);
+      })
+    );
+    detailActions.appendChild(
       actionButton("Generate Cover", "action-button secondary-button", async () => {
         await api(`/api/playlists/${workspace.id}/cover/generate`, {
           method: "POST",
@@ -953,6 +1001,11 @@ function renderWorkspaceDetail() {
             note: "Approved from workspace detail.",
           }),
         });
+      })
+    );
+    detailActions.appendChild(
+      actionButton("Replace Cover", "action-button secondary-button", async () => {
+        await pickCoverFile(workspace);
       })
     );
     detailActions.appendChild(

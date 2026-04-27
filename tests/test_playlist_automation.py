@@ -967,6 +967,90 @@ def test_release_pipeline_generates_cover_video_and_metadata_before_publish(tmp_
         clear_isolated_client_env()
 
 
+def test_cover_image_can_be_uploaded_for_review(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_video(audio_path, cover_image_path, output_path):
+            assert cover_image_path.exists()
+            output_path.write_bytes(b"fake-mp4")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_video = fake_build_video
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Uploaded Cover Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "uploaded-cover-source.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Cover Upload Track",
+                "prompt": "minimal electronic",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        upload_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/upload",
+            data={"actor": "test-suite"},
+            files={"cover_file": ("cover.png", b"fake-png", "image/png")},
+        )
+        assert upload_response.status_code == 200
+        uploaded = upload_response.json()
+        assert uploaded["workflow_state"] == "cover_review"
+        assert uploaded["cover_approved"] is False
+        assert uploaded["cover_image_path"].endswith(".png")
+        assert os.path.exists(uploaded["cover_image_path"])
+
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+        render_video_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_video_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["workflow_state"] == "metadata_review"
+        assert workspace["output_video_path"].endswith(".mp4")
+    finally:
+        clear_isolated_client_env()
+
+
 def test_publish_approval_rejects_incomplete_workspace(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

@@ -324,6 +324,48 @@ def generate_playlist_cover(
     return _load_playlist_with_tracks(db, playlist.id)
 
 
+def attach_uploaded_playlist_cover(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+    cover_image_path: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+        raise ValueError("Rendered audio is required before uploading cover art.")
+    if not Path(cover_image_path).exists():
+        raise ValueError("Uploaded cover image is missing on disk.")
+
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("cover_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "cover_image_path": cover_image_path,
+            "uploaded_at": _utcnow().isoformat(),
+            "source": "manual-upload",
+        }
+    )
+    meta["cover_history"] = history
+    meta["cover_image_path"] = cover_image_path
+    meta["cover_approved"] = False
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "cover_review"
+    meta["note"] = "Cover image uploaded. Review and approve it before rendering video."
+    meta.pop("publish_approved_by", None)
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.ready
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
 def approve_playlist_cover(
     db: Session,
     *,
