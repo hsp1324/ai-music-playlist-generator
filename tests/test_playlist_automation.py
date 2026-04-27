@@ -1231,6 +1231,59 @@ def test_single_release_uses_source_audio_and_uploaded_cover_can_render_video(tm
         clear_isolated_client_env()
 
 
+def test_single_release_promotes_uploaded_candidate_cover_on_approval(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Single Candidate With Cover",
+                "workspace_mode": "single_track_video",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        upload_response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Covered Candidate",
+                "prompt": "single with generated cover",
+                "duration_seconds": "60",
+                "pending_workspace_id": workspace_id,
+            },
+            files={
+                "audio_file": ("covered-candidate.mp3", b"fake-audio", "audio/mpeg"),
+                "cover_file": ("covered-candidate.png", b"fake-cover", "image/png"),
+            },
+        )
+        assert upload_response.status_code == 201
+        track = upload_response.json()
+        assert track["metadata_json"]["cover_source"] == "cover-upload"
+        assert track["metadata_json"]["image_url"].endswith(".png")
+        assert os.path.exists(track["metadata_json"]["image_url"])
+
+        approve_response = client.post(
+            f"/api/tracks/{track['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["workflow_state"] == "cover_review"
+        assert workspace["cover_image_path"] == track["metadata_json"]["image_url"]
+        assert workspace["cover_approved"] is False
+        assert workspace["output_audio_path"].endswith(".mp3")
+    finally:
+        clear_isolated_client_env()
+
+
 def test_publish_approval_rejects_incomplete_workspace(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

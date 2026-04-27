@@ -326,6 +326,40 @@ def _clear_downstream_release_assets(playlist: Playlist, meta: dict) -> None:
     playlist.youtube_video_id = None
 
 
+def _track_cover_path(track: Track) -> str | None:
+    image_url = (track.metadata_json or {}).get("image_url")
+    if not image_url or str(image_url).startswith(("http://", "https://")):
+        return None
+    path = Path(str(image_url))
+    return str(path) if path.exists() else None
+
+
+def _promote_single_release_cover_from_track(playlist: Playlist, track: Track, meta: dict) -> bool:
+    cover_path = _track_cover_path(track)
+    if not cover_path:
+        return False
+
+    history = list(meta.get("cover_history") or [])
+    if not any(item.get("cover_image_path") == cover_path for item in history):
+        history.append(
+            {
+                "actor": "system:track-cover",
+                "track_id": track.id,
+                "cover_image_path": cover_path,
+                "uploaded_at": _utcnow().isoformat(),
+                "source": "track-upload",
+            }
+        )
+    meta["cover_history"] = history
+    meta["cover_image_path"] = cover_path
+    meta["cover_approved"] = False
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "cover_review"
+    meta["note"] = "Single audio and uploaded cover are ready. Review and approve cover next."
+    return True
+
+
 def _promote_single_release_audio(
     playlist: Playlist,
     track: Track,
@@ -362,6 +396,9 @@ def _promote_single_release_audio(
     meta.pop("render_error", None)
     if reset_downstream_assets:
         _clear_downstream_release_assets(playlist, meta)
+    if _promote_single_release_cover_from_track(playlist, track, meta):
+        playlist.output_video_path = None
+        playlist.youtube_video_id = None
     playlist.metadata_json = meta
     return True
 
@@ -790,8 +827,15 @@ async def _update_publish_state(
                 playlist.status = PlaylistStatus.ready
                 meta["render_ready"] = True
                 meta.pop("render_error", None)
-                meta["workflow_state"] = "audio_ready"
-                meta["note"] = meta.get("note") or "Audio render is complete. Generate cover art next."
+                if meta.get("cover_image_path") and not meta.get("cover_approved"):
+                    meta["workflow_state"] = "cover_review"
+                    meta["note"] = meta.get("note") or "Cover image uploaded. Review and approve it before rendering video."
+                elif meta.get("cover_image_path") and meta.get("cover_approved") and not playlist.output_video_path:
+                    meta["workflow_state"] = "video_required"
+                    meta["note"] = meta.get("note") or "Cover approved. Render video next."
+                else:
+                    meta["workflow_state"] = "audio_ready"
+                    meta["note"] = meta.get("note") or "Audio render is complete. Generate cover art next."
                 if _auto_publish_when_ready(playlist) and _final_publish_is_ready(playlist):
                     meta["publish_approved"] = True
                     meta["publish_approved_by"] = "system:auto-publish"

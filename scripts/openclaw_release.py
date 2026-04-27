@@ -98,24 +98,52 @@ def upload_audio_file_to_release(
     title: str,
     prompt: str,
     tags: str,
+    cover_path: Path | None = None,
 ) -> dict[str, Any]:
     content_type = mimetypes.guess_type(str(audio_path))[0] or "audio/mpeg"
+    files: dict[str, tuple[str, Any, str]] = {}
     with audio_path.open("rb") as handle:
-        return request_json(
-            client,
-            "POST",
-            "/tracks/manual-upload",
-            data={
-                "title": title,
-                "prompt": prompt or "OpenClaw generated audio upload",
-                "duration_seconds": "0",
-                "pending_workspace_id": release_id,
-                "tags": tags or "",
-            },
-            files={
-                "audio_file": (audio_path.name, handle, content_type),
-            },
-        )
+        files["audio_file"] = (audio_path.name, handle, content_type)
+        cover_handle = None
+        if cover_path:
+            cover_content_type = mimetypes.guess_type(str(cover_path))[0] or "image/png"
+            cover_handle = cover_path.open("rb")
+            files["cover_file"] = (cover_path.name, cover_handle, cover_content_type)
+        try:
+            return request_json(
+                client,
+                "POST",
+                "/tracks/manual-upload",
+                data={
+                    "title": title,
+                    "prompt": prompt or "OpenClaw generated audio upload",
+                    "duration_seconds": "0",
+                    "pending_workspace_id": release_id,
+                    "tags": tags or "",
+                },
+                files=files,
+            )
+        finally:
+            if cover_handle:
+                cover_handle.close()
+
+
+def resolve_cover_path(value: str | None) -> Path | None:
+    if not value:
+        return None
+    cover_path = Path(value).expanduser().resolve()
+    if not cover_path.exists():
+        raise RuntimeError(f"Cover file does not exist: {cover_path}")
+    if not cover_path.is_file():
+        raise RuntimeError(f"Cover path is not a file: {cover_path}")
+    return cover_path
+
+
+def resolve_candidate_covers(values: list[str]) -> list[Path | None]:
+    covers = [resolve_cover_path(value) for value in values]
+    if len(covers) > 2:
+        raise RuntimeError("A single release can accept at most two candidate covers.")
+    return covers
 
 
 def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
@@ -124,6 +152,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         raise RuntimeError(f"Audio file does not exist: {audio_path}")
     if not audio_path.is_file():
         raise RuntimeError(f"Audio path is not a file: {audio_path}")
+    cover_path = resolve_cover_path(args.cover)
 
     title = args.title or file_stem(audio_path)
     release: dict[str, Any]
@@ -153,6 +182,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         title=title,
         prompt=args.prompt,
         tags=args.tags,
+        cover_path=cover_path,
     )
 
     return {
@@ -169,6 +199,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "id": track["id"],
             "title": track["title"],
             "status": track["status"],
+            "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
         },
         "next": "Review and approve the track in Slack or the web UI.",
     }
@@ -176,8 +207,11 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
 
 def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
+    cover_paths = resolve_candidate_covers(args.cover or [])
     if not 1 <= len(audio_paths) <= 2:
         raise RuntimeError("A single release can accept one or two Suno candidate audio files.")
+    if cover_paths and len(cover_paths) not in {1, len(audio_paths)}:
+        raise RuntimeError("Use either one shared cover or one cover per candidate audio.")
     for audio_path in audio_paths:
         if not audio_path.exists():
             raise RuntimeError(f"Audio file does not exist: {audio_path}")
@@ -197,6 +231,9 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
     tracks = []
     for index, audio_path in enumerate(audio_paths, start=1):
         track_title = args.title[index - 1] if args.title and index <= len(args.title) else file_stem(audio_path)
+        cover_path = None
+        if cover_paths:
+            cover_path = cover_paths[index - 1] if len(cover_paths) == len(audio_paths) else cover_paths[0]
         track = upload_audio_file_to_release(
             client,
             release_id=release["id"],
@@ -204,12 +241,14 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
             title=track_title,
             prompt=args.prompt,
             tags=args.tags,
+            cover_path=cover_path,
         )
         tracks.append(
             {
                 "id": track["id"],
                 "title": track["title"],
                 "status": track["status"],
+                "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
             }
         )
 
@@ -281,6 +320,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--title", default="", help="Track title. Defaults to audio filename stem.")
     audio_parser.add_argument("--prompt", default="", help="Prompt or generation note.")
     audio_parser.add_argument("--tags", default="", help="Comma-separated tags.")
+    audio_parser.add_argument("--cover", default="", help="Optional cover image file to upload with this audio.")
     audio_parser.add_argument("--new-single", action="store_true", help="Create a new Single Release from this audio.")
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
@@ -292,6 +332,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     candidates_parser.add_argument("--audio", action="append", required=True, help="Candidate audio path. Repeat up to two times.")
     candidates_parser.add_argument("--title", action="append", default=[], help="Candidate title. Repeat in the same order as --audio.")
+    candidates_parser.add_argument("--cover", action="append", default=[], help="Optional candidate cover path. Repeat once for a shared cover or once per --audio.")
     candidates_parser.add_argument("--release-title", default="", help="Single release title. Defaults to first audio filename stem.")
     candidates_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by the candidates.")
     candidates_parser.add_argument("--tags", default="", help="Comma-separated tags shared by the candidates.")

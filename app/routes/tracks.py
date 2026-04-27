@@ -25,6 +25,7 @@ from app.workflows.review_dispatch import dispatch_track_review, post_track_revi
 from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_review_request
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
+ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -191,6 +192,24 @@ def _resolve_upload_destination(tracks_dir: Path, original_name: str) -> Path:
     return candidate
 
 
+def _store_cover_upload(upload: UploadFile | None, covers_dir: Path) -> str | None:
+    if not upload or not upload.filename:
+        return None
+
+    suffix = Path(upload.filename).suffix.lower()
+    if suffix not in ALLOWED_COVER_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Cover image must be jpg, png, or webp.")
+    if upload.content_type and not upload.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Cover upload must be an image file.")
+
+    destination = _resolve_upload_destination(covers_dir, upload.filename)
+    with destination.open("wb") as handle:
+        shutil.copyfileobj(upload.file, handle)
+    if not destination.exists() or destination.stat().st_size == 0:
+        raise HTTPException(status_code=400, detail="Uploaded cover image is empty.")
+    return str(destination)
+
+
 @router.post("", response_model=TrackRead, status_code=status.HTTP_201_CREATED)
 async def create_track(
     payload: TrackCreateRequest,
@@ -217,6 +236,7 @@ async def manual_upload_track(
     model_score: float | None = Form(None),
     pending_workspace_id: str | None = Form(None),
     audio_file: UploadFile | None = File(None),
+    cover_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ) -> TrackRead:
     services = get_services(request)
@@ -236,7 +256,8 @@ async def manual_upload_track(
     elif inferred_duration_seconds <= 0:
         inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
 
-    resolved_image_url = image_url or _extract_embedded_cover(audio_path, services.settings.covers_dir)
+    uploaded_cover_path = _store_cover_upload(cover_file, services.settings.covers_dir)
+    resolved_image_url = uploaded_cover_path or image_url or _extract_embedded_cover(audio_path, services.settings.covers_dir)
     payload = TrackCreateRequest(
         title=title,
         prompt=prompt,
@@ -247,6 +268,7 @@ async def manual_upload_track(
         metadata={
             "source": "manual-upload",
             **({"image_url": resolved_image_url} if resolved_image_url else {}),
+            **({"cover_source": "cover-upload"} if uploaded_cover_path else {}),
             **({"tags": tags} if tags else {}),
             **({"model_score": model_score} if model_score is not None else {}),
             **({"pending_workspace_id": pending_workspace_id} if pending_workspace_id else {}),

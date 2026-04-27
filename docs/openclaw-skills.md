@@ -18,6 +18,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 
 - Never approve, reject, render, publish, or upload to YouTube unless the human explicitly asks.
 - OpenClaw creates audio candidates and uploads them to the app review queue.
+- If cover art is ready with the audio, upload the cover in the same command with `--cover`.
 - Human review happens in Slack or the web UI.
 - Single Release means one final song, but it may contain up to two review candidates from Suno.
 - Playlist Release means many candidate songs. The human later approves enough songs, reorders them, renders audio, then continues cover/video/publish.
@@ -44,6 +45,8 @@ Goal:
 - Generate one standalone song/single.
 - If Suno returns two candidates, upload both candidates to one new Single Release.
 - If only one usable candidate exists, upload one candidate to one new Single Release.
+- If candidate cover images exist, upload them with the audio candidates.
+- When the human approves one candidate, its uploaded cover is automatically registered as the release cover. The human still reviews/approves that cover before video rendering.
 - Do not approve, reject, render, publish, or upload to YouTube.
 - Return release.id, release.title, and all uploaded track ids.
 
@@ -54,6 +57,8 @@ scripts/openclaw-release upload-single-candidates \
   --release-title "RELEASE_TITLE" \
   --audio ABSOLUTE_AUDIO_PATH_A \
   --audio ABSOLUTE_AUDIO_PATH_B \
+  --cover ABSOLUTE_COVER_PATH_A \
+  --cover ABSOLUTE_COVER_PATH_B \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
@@ -61,8 +66,11 @@ For one candidate:
 scripts/openclaw-release upload-single-candidates \
   --release-title "RELEASE_TITLE" \
   --audio ABSOLUTE_AUDIO_PATH \
+  --cover ABSOLUTE_COVER_PATH \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
+
+If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order.
 
 Report the command output JSON. The human will approve one candidate in Slack or the web UI.
 ```
@@ -85,6 +93,7 @@ Next: human should approve exactly one candidate or reject both.
 
 - Do not create two separate Single Releases for the two Suno outputs. Both candidates must be in one release.
 - Do not upload more than two candidates to a Single Release.
+- Do not upload cover images separately after this command if they were already uploaded with the candidate audio.
 - If a release already has a selected/approved track, create a new Single Release instead of uploading more candidates to it.
 - If both candidates are rejected later, the app archives the release automatically. Do not manually delete it.
 
@@ -120,6 +129,7 @@ Use the local app API and scripts/openclaw-release.
 Goal:
 - Create or continue one Playlist Release with target_duration_seconds=3600.
 - Generate songs in batches.
+- Upload cover art with each candidate when available.
 - Upload every usable generated audio file to the same Playlist Release review queue.
 - Continue until non-rejected candidate duration for that release is >= 3600 seconds.
 - Prefer aiming for 3900 seconds if the user did not specify an exact stop.
@@ -163,12 +173,13 @@ For every generated audio file:
 scripts/openclaw-release upload-audio \
   --release-id RELEASE_ID \
   --audio ABSOLUTE_AUDIO_PATH \
+  --cover ABSOLUTE_COVER_PATH \
   --title "TRACK_TITLE" \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 ```
 
-Upload both Suno outputs if both are usable. For a playlist, two Suno outputs are two separate playlist candidates, not one single-candidate set.
+Upload both Suno outputs if both are usable. For a playlist, two Suno outputs are two separate playlist candidates, not one single-candidate set. If no cover image exists for a track, omit `--cover`.
 
 ### Check Candidate Duration
 
@@ -229,6 +240,7 @@ Next: human should review/approve tracks, reorder final playlist, then render au
 
 - Keep all generated tracks for the same playlist in one Playlist Release.
 - Do not create a Single Release for playlist candidates.
+- Do not expect playlist track covers to become the final playlist cover automatically. Playlist cover selection stays at the release level.
 - Do not stop at `actual_duration_seconds` unless the user explicitly asks for approved duration only.
 - Do not render playlist audio. The human should choose/reorder first.
 - If candidate duration cannot be calculated, stop and report the uploaded track list and the reason.

@@ -26,7 +26,9 @@ const menuToggleButton = document.querySelector("#menu-toggle-button");
 const utilityDrawer = document.querySelector("#utility-drawer");
 const refreshButton = document.querySelector("#refresh-button");
 const quickUploadInput = document.querySelector("#quick-upload-input");
+const quickUploadCoverInput = document.querySelector("#quick-upload-cover-input");
 const quickUploadPickButton = document.querySelector("#quick-upload-pick-button");
+const quickUploadCoverPickButton = document.querySelector("#quick-upload-cover-pick-button");
 const quickUploadSubmitButton = document.querySelector("#quick-upload-submit-button");
 const quickUploadWorkspaceSelect = document.querySelector("#quick-upload-workspace-select");
 const quickUploadFileList = document.querySelector("#quick-upload-file-list");
@@ -50,6 +52,7 @@ const approvedCardTemplate = document.querySelector("#approved-card-template");
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 
 let quickUploadFiles = [];
+let quickUploadCoverFiles = [];
 let dragScrollFrame = null;
 let dragScrollSpeed = 0;
 
@@ -871,11 +874,23 @@ function renderTrackWorkspaceOptions() {
 
 function renderQuickUploadFiles() {
   if (!quickUploadFileList) return;
-  if (!quickUploadFiles.length) {
+  if (!quickUploadFiles.length && !quickUploadCoverFiles.length) {
     quickUploadFileList.textContent = "No files selected.";
     return;
   }
-  quickUploadFileList.textContent = quickUploadFiles.map((file) => file.name).join("\n");
+  const lines = [];
+  if (quickUploadFiles.length) {
+    lines.push("Audio:");
+    quickUploadFiles.forEach((file, index) => {
+      const cover = matchingQuickUploadCover(file, index);
+      lines.push(`${index + 1}. ${file.name}${cover ? ` + cover ${cover.name}` : ""}`);
+    });
+  }
+  if (quickUploadCoverFiles.length) {
+    lines.push("Covers:");
+    quickUploadCoverFiles.forEach((file, index) => lines.push(`${index + 1}. ${file.name}`));
+  }
+  quickUploadFileList.textContent = lines.join("\n");
 }
 
 function setQuickUploadFiles(files) {
@@ -889,6 +904,31 @@ function setQuickUploadFiles(files) {
         : "3개 이상 파일은 Playlist Release를 선택하세요.";
     setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. ${hint}`);
   }
+}
+
+function setQuickUploadCoverFiles(files) {
+  quickUploadCoverFiles = [...files];
+  renderQuickUploadFiles();
+  if (quickUploadCoverFiles.length) {
+    setTextStatus(
+      quickUploadStatus,
+      `${quickUploadCoverFiles.length}개 cover 준비됨. 파일명이 audio와 같으면 자동 매칭하고, 아니면 같은 순서로 매칭합니다.`
+    );
+  }
+}
+
+function normalizedFileStem(file) {
+  return fileStem(file?.name || "").toLowerCase();
+}
+
+function matchingQuickUploadCover(audioFile, index) {
+  if (!quickUploadCoverFiles.length) return null;
+  const audioStem = normalizedFileStem(audioFile);
+  const sameStem = quickUploadCoverFiles.find((file) => normalizedFileStem(file) === audioStem);
+  if (sameStem) return sameStem;
+  if (quickUploadCoverFiles.length === quickUploadFiles.length) return quickUploadCoverFiles[index] || null;
+  if (quickUploadFiles.length === 1 && quickUploadCoverFiles.length === 1) return quickUploadCoverFiles[0];
+  return null;
 }
 
 async function createSingleReleaseFromFiles(files) {
@@ -953,6 +993,10 @@ async function submitQuickUpload() {
         form.append("duration_seconds", "0");
         form.append("pending_workspace_id", workspaceId);
         form.append("audio_file", file, file.name);
+        const coverFile = matchingQuickUploadCover(file, index);
+        if (coverFile) {
+          form.append("cover_file", coverFile, coverFile.name);
+        }
         const response = await fetch("/api/tracks/manual-upload", {
           method: "POST",
           body: form,
@@ -980,6 +1024,7 @@ async function submitQuickUpload() {
     setQuickUploadProgress(quickUploadFiles.length, results, failures);
     if (!failures.length) {
       quickUploadFiles = [];
+      quickUploadCoverFiles = [];
       renderQuickUploadFiles();
       setTextStatus(
         quickUploadStatus,
@@ -995,6 +1040,9 @@ async function submitQuickUpload() {
     }
     if (quickUploadInput && !failures.length) {
       quickUploadInput.value = "";
+    }
+    if (quickUploadCoverInput && !failures.length) {
+      quickUploadCoverInput.value = "";
     }
   } catch (error) {
     setStatus(quickUploadStatus, error.message);
@@ -1656,8 +1704,12 @@ workspaceForm.addEventListener("submit", async (event) => {
 menuToggleButton.addEventListener("click", () => toggleDrawer());
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
 quickUploadPickButton?.addEventListener("click", () => quickUploadInput?.click());
+quickUploadCoverPickButton?.addEventListener("click", () => quickUploadCoverInput?.click());
 quickUploadInput?.addEventListener("change", (event) => {
   setQuickUploadFiles(event.target.files || []);
+});
+quickUploadCoverInput?.addEventListener("change", (event) => {
+  setQuickUploadCoverFiles(event.target.files || []);
 });
 quickUploadSubmitButton?.addEventListener("click", () => {
   submitQuickUpload().catch((error) => setStatus(quickUploadStatus, error.message));
@@ -1676,7 +1728,9 @@ uploadDropzone?.addEventListener("drop", (event) => {
   event.preventDefault();
   uploadDropzone.classList.remove("dragover");
   if (event.dataTransfer?.files?.length) {
-    setQuickUploadFiles(event.dataTransfer.files);
+    const files = [...event.dataTransfer.files];
+    setQuickUploadFiles(files.filter((file) => file.type.startsWith("audio/")));
+    setQuickUploadCoverFiles(files.filter((file) => file.type.startsWith("image/")));
   }
 });
 
