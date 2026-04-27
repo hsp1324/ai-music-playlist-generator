@@ -10,6 +10,7 @@ const detailPanel = document.querySelector("#workspace-detail-panel");
 const detailTitle = document.querySelector("#detail-title");
 const detailMeta = document.querySelector("#detail-meta");
 const detailActions = document.querySelector("#detail-actions");
+const detailPipeline = document.querySelector("#detail-pipeline");
 const detailLinks = document.querySelector("#detail-links");
 const queueGrid = document.querySelector("#queue-grid");
 const approvedGrid = document.querySelector("#approved-grid");
@@ -86,6 +87,171 @@ function shortText(value, maxLength = 120) {
 
 function statusLabel(value) {
   return String(value || "").replaceAll("_", " ");
+}
+
+function isSingleRelease(workspace) {
+  return workspace?.workspace_mode === "single_track_video";
+}
+
+function releaseModeLabel(workspace) {
+  return isSingleRelease(workspace) ? "Single Release" : "Playlist Release";
+}
+
+function releaseOptionLabel(workspace) {
+  return `${displayTitle(workspace.title)} · ${isSingleRelease(workspace) ? "Single" : "Playlist"}`;
+}
+
+function releasePipeline(workspace) {
+  const workflowState = workspace.workflow_state || "collecting";
+  const hasApprovedAudio = workspace.tracks.length > 0;
+  const hasRenderedAudio = Boolean(workspace.output_audio_path);
+  const hasCover = Boolean(workspace.cover_image_path);
+  const hasVideo = Boolean(workspace.output_video_path);
+  const uploaded = workflowState === "uploaded" || Boolean(workspace.youtube_video_id);
+  const publishQueued = workflowState === "publish_queued";
+  const readyForYouTube = ["ready_for_youtube", "ready_for_youtube_auth"].includes(workflowState);
+  const metadataReady = uploaded || readyForYouTube || workflowState === "youtube_upload_failed";
+
+  const stages = [
+    {
+      key: "audio",
+      label: "Audio",
+      status: "current",
+      detail: isSingleRelease(workspace) ? "한 곡을 approve하고 오디오를 확정하세요." : "곡을 approve하고 최종 순서를 확정하세요.",
+    },
+    {
+      key: "cover",
+      label: "Cover",
+      status: "waiting",
+      detail: "오디오 확정 후 16:9 cover를 준비합니다.",
+    },
+    {
+      key: "video",
+      label: "Video",
+      status: "waiting",
+      detail: "cover와 audio를 합쳐 YouTube용 영상을 만듭니다.",
+    },
+    {
+      key: "metadata",
+      label: "Metadata",
+      status: "waiting",
+      detail: "YouTube 제목, 설명, 태그를 확인합니다.",
+    },
+    {
+      key: "publish",
+      label: "Publish",
+      status: "waiting",
+      detail: "최종 승인 후 YouTube 업로드를 진행합니다.",
+    },
+  ];
+
+  if (uploaded) {
+    return stages.map((stage) => ({
+      ...stage,
+      status: "done",
+      detail: stage.key === "publish" ? "Uploaded to YouTube." : stage.detail,
+    }));
+  }
+
+  if (workflowState === "render_failed") {
+    stages[0].status = "failed";
+    stages[0].detail = workspace.note || "Audio render failed.";
+  } else if (hasRenderedAudio) {
+    stages[0].status = "done";
+    stages[0].detail = isSingleRelease(workspace) ? "Single audio is ready." : "Playlist audio is rendered.";
+  } else if (["render_queued", "rendering"].includes(workflowState) || workspace.status === "building") {
+    stages[0].status = "current";
+    stages[0].detail = "Audio render is running.";
+  } else if (hasApprovedAudio) {
+    stages[0].status = "current";
+    stages[0].detail = isSingleRelease(workspace) ? "Approved track is ready to render." : "Approved tracks are ready to render.";
+  }
+
+  if (hasCover) {
+    stages[1].status = "done";
+    stages[1].detail = "Cover image is ready.";
+  } else if (hasRenderedAudio || publishQueued) {
+    stages[1].status = "current";
+    stages[1].detail = publishQueued ? "Cover and video build is queued." : "Cover image is the next review step.";
+  }
+
+  if (workflowState === "video_build_failed") {
+    stages[2].status = "failed";
+    stages[2].detail = workspace.note || "Video build failed.";
+  } else if (hasVideo) {
+    stages[2].status = "done";
+    stages[2].detail = "Release video is ready.";
+  } else if (hasCover) {
+    stages[2].status = "current";
+    stages[2].detail = "Video render is waiting for cover approval/build.";
+  }
+
+  if (metadataReady) {
+    stages[3].status = "done";
+    stages[3].detail = "YouTube metadata draft is ready.";
+  } else if (hasVideo) {
+    stages[3].status = "current";
+    stages[3].detail = "Review title, description, and tags before publishing.";
+  }
+
+  if (uploaded) {
+    stages[4].status = "done";
+    stages[4].detail = "Uploaded to YouTube.";
+  } else if (workflowState === "youtube_upload_failed") {
+    stages[4].status = "failed";
+    stages[4].detail = workspace.note || "YouTube upload failed.";
+  } else if (readyForYouTube || (workspace.publish_approved && hasVideo)) {
+    stages[4].status = "current";
+    stages[4].detail = workflowState === "ready_for_youtube_auth"
+      ? "Connect YouTube, then publish."
+      : "Ready for final publish check.";
+  }
+
+  let activeSeen = false;
+  return stages.map((stage) => {
+    if (stage.status === "failed" || stage.status === "current") {
+      activeSeen = true;
+      return stage;
+    }
+    if (!activeSeen && stage.status === "waiting") {
+      activeSeen = true;
+      return { ...stage, status: "current" };
+    }
+    return stage;
+  });
+}
+
+function currentPipelineStage(workspace) {
+  const stages = releasePipeline(workspace);
+  return stages.find((stage) => ["failed", "current"].includes(stage.status)) || stages[stages.length - 1];
+}
+
+function renderPipeline(container, workspace, options = {}) {
+  if (!container) return;
+  container.innerHTML = "";
+  const stages = releasePipeline(workspace);
+  const rail = document.createElement("div");
+  rail.className = options.compact ? "pipeline-rail compact-pipeline" : "pipeline-rail";
+
+  stages.forEach((stage) => {
+    const item = document.createElement("div");
+    item.className = `pipeline-step ${stage.status}`;
+
+    const marker = document.createElement("span");
+    marker.className = "pipeline-marker";
+    marker.textContent = stage.status === "done" ? "✓" : stage.status === "failed" ? "!" : "•";
+
+    const label = document.createElement("span");
+    label.className = "pipeline-label";
+    label.textContent = stage.label;
+
+    item.title = stage.detail;
+    item.appendChild(marker);
+    item.appendChild(label);
+    rail.appendChild(item);
+  });
+
+  container.appendChild(rail);
 }
 
 function formatTimestamp(value) {
@@ -246,6 +412,9 @@ function renderJobStatusText(workspace) {
   const status = statusLabel(job.status);
   if (job.status === "queued") return `Render queued at ${formatTimestamp(job.created_at) || "now"}.`;
   if (job.status === "running") return `Rendering started ${formatTimestamp(job.started_at) || "just now"}.`;
+  if (job.status === "succeeded" && !workspace.output_audio_path) {
+    return "Previous render is stale. Render again after the current audio selection is ready.";
+  }
   if (job.status === "succeeded") return `Render complete at ${formatTimestamp(job.finished_at) || "recently"}.`;
   if (job.status === "failed") return `Render failed: ${job.error_text || "unknown error"}`;
   return `Render job: ${status}`;
@@ -260,6 +429,8 @@ function appendRenderStatus(workspace) {
   const title = document.createElement("strong");
   title.textContent = workspace.output_audio_path
     ? "Rendered Audio Ready"
+    : workspace.workflow_state === "render_required"
+      ? "Re-render Required"
     : workspace.status === "building"
       ? "Rendering Audio"
       : "Audio Render";
@@ -371,7 +542,7 @@ function workspaceOptions(selectedId = "") {
   const options = visibleWorkspaces()
     .map((workspace) => {
       const selected = workspace.id === selectedId ? "selected" : "";
-      return `<option value="${workspace.id}" ${selected}>${displayTitle(workspace.title)}</option>`;
+      return `<option value="${workspace.id}" ${selected}>${releaseOptionLabel(workspace)}</option>`;
     })
     .join("");
   return `${defaultOption}${options}`;
@@ -395,14 +566,16 @@ function updateToolbarSummary() {
   const pending = pendingTracks().length;
   const visible = visibleWorkspaces();
   const ready = visible.filter((workspace) => workspace.publish_ready && !workspace.publish_approved).length;
-  toolbarSummaryText.textContent = `Review ${pending} · Workspaces ${visible.length} · Ready ${ready}`;
+  const singles = visible.filter((workspace) => isSingleRelease(workspace)).length;
+  const playlists = visible.length - singles;
+  toolbarSummaryText.textContent = `Review ${pending} · Singles ${singles} · Playlists ${playlists} · Ready ${ready}`;
 }
 
 function renderTrackWorkspaceOptions() {
   if (!trackWorkspaceSelect) return;
   const visible = visibleWorkspaces();
   const options = visible
-    .map((workspace) => `<option value="${workspace.id}">${displayTitle(workspace.title)}</option>`)
+    .map((workspace) => `<option value="${workspace.id}">${releaseOptionLabel(workspace)}</option>`)
     .join("");
   trackWorkspaceSelect.innerHTML = `<option value="">Unassigned Queue</option>${options}`;
   if (quickUploadWorkspaceSelect) {
@@ -427,7 +600,7 @@ function setQuickUploadFiles(files) {
   quickUploadFiles = [...files];
   renderQuickUploadFiles();
   if (quickUploadFiles.length) {
-    setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. workspace를 선택하고 Upload Audio를 누르세요.`);
+    setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. release를 선택하고 Upload Audio를 누르세요.`);
   }
 }
 
@@ -437,7 +610,12 @@ async function submitQuickUpload() {
     return;
   }
   if (!quickUploadWorkspaceSelect?.value) {
-    setStatus(quickUploadStatus, "workspace를 먼저 선택하세요.");
+    setStatus(quickUploadStatus, "release를 먼저 선택하세요.");
+    return;
+  }
+  const selectedWorkspace = state.workspaces.find((workspace) => workspace.id === quickUploadWorkspaceSelect.value);
+  if (isSingleRelease(selectedWorkspace) && quickUploadFiles.length > 1) {
+    setStatus(quickUploadStatus, "Single release에는 파일 하나만 올릴 수 있습니다. 여러 곡이면 Playlist release를 선택하세요.");
     return;
   }
 
@@ -487,7 +665,7 @@ async function submitQuickUpload() {
       renderQuickUploadFiles();
       setTextStatus(
         quickUploadStatus,
-        `${quickUploadStatus.textContent}\n\nworkspace queue에 반영됐습니다. Slack 알림은 백그라운드에서 전송됩니다.`
+        `${quickUploadStatus.textContent}\n\nrelease queue에 반영됐습니다. Slack 알림은 백그라운드에서 전송됩니다.`
       );
     } else {
       quickUploadFiles = failedFiles;
@@ -536,24 +714,33 @@ function renderWorkspaceTiles() {
     const name = fragment.querySelector(".workspace-name");
     const stateEl = fragment.querySelector(".workspace-state");
     const copy = fragment.querySelector(".workspace-copy");
+    const pipeline = fragment.querySelector(".workspace-pipeline");
+    const next = fragment.querySelector(".workspace-next");
     const approvedStat = fragment.querySelector(".approved-stat");
     const pendingStat = fragment.querySelector(".pending-stat");
     const hint = fragment.querySelector(".workspace-hint");
     const moreButton = fragment.querySelector(".more-button");
+    const pendingCount = pendingTracks(workspace.id).length;
+    const currentStage = currentPipelineStage(workspace);
 
     if (workspace.id === state.selectedWorkspaceId) {
       tile.classList.add("active");
     }
 
-    mode.textContent = workspace.workspace_mode === "single_track_video" ? "Single Track" : "Playlist";
-    name.textContent = displayTitle(workspace.title, "Untitled Workspace");
-    stateEl.textContent = statusLabel(workspace.workflow_state);
+    mode.textContent = releaseModeLabel(workspace);
+    name.textContent = displayTitle(workspace.title, "Untitled Release");
+    stateEl.textContent = currentStage?.label || statusLabel(workspace.workflow_state);
+    stateEl.classList.add(currentStage?.status || "current");
     copy.textContent = shortText(workspace.description || "Ready to collect approved tracks.", 120);
-    approvedStat.textContent = `${workspace.tracks.length} approved`;
-    pendingStat.textContent = `${pendingTracks(workspace.id).length} in review`;
+    approvedStat.textContent = isSingleRelease(workspace)
+      ? `${workspace.tracks.length ? "1" : "0"} selected`
+      : `${workspace.tracks.length} approved`;
+    pendingStat.textContent = `${pendingCount} in review`;
+    renderPipeline(pipeline, workspace, { compact: true });
+    next.textContent = currentStage?.detail || "Next action is ready.";
 
     hint.textContent = workspace.workspace_mode === "single_track_video"
-      ? "Single release lane"
+      ? "One approved track"
       : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
 
     moreButton.addEventListener("click", (event) => {
@@ -576,21 +763,29 @@ function renderWorkspaceDetail() {
   }
 
   detailPanel.hidden = false;
-  detailTitle.textContent = displayTitle(workspace.title, "Workspace");
+  detailTitle.textContent = displayTitle(workspace.title, "Release");
   const renderState = workspace.output_audio_path
     ? "rendered"
     : workspace.status === "building"
       ? "rendering"
       : "not rendered";
-  detailMeta.textContent = `${workspace.workspace_mode === "single_track_video" ? "Single Track Video" : "Playlist Mix"} · ${statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved · ${renderState}`;
-  queueTitle.textContent = `${displayTitle(workspace.title)} review queue`;
-  approvedTitle.textContent = `${displayTitle(workspace.title)} approved tracks`;
+  const currentStage = currentPipelineStage(workspace);
+  const pendingCount = tracksForReview.length;
+  detailMeta.textContent = `${releaseModeLabel(workspace)} · ${currentStage?.label || statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved · ${pendingCount} in review · ${renderState}`;
+  queueTitle.textContent = isSingleRelease(workspace)
+    ? `${displayTitle(workspace.title)} candidates`
+    : `${displayTitle(workspace.title)} review queue`;
+  approvedTitle.textContent = isSingleRelease(workspace)
+    ? "Selected Track"
+    : `${displayTitle(workspace.title)} final order`;
 
+  detailPipeline.innerHTML = "";
   detailLinks.innerHTML = "";
   detailActions.innerHTML = "";
   queueGrid.innerHTML = "";
   approvedGrid.innerHTML = "";
 
+  renderPipeline(detailPipeline, workspace);
   appendRenderStatus(workspace);
   appendRenderedAudioPlayer(workspace);
   if (workspace.output_video_path) {
@@ -608,7 +803,11 @@ function renderWorkspaceDetail() {
     } else {
       detailActions.appendChild(
         actionButton(
-          workspace.output_audio_path ? "Re-render Audio" : "Render Audio",
+          workspace.output_audio_path
+            ? "Re-render Audio"
+            : isSingleRelease(workspace)
+              ? "Render Single Audio"
+              : "Render Playlist Audio",
           "action-button secondary-button",
           async () => {
             await api(`/api/playlists/${workspace.id}/render-audio`, {
@@ -657,7 +856,9 @@ function renderWorkspaceDetail() {
   if (!tracksForReview.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "review를 기다리는 곡이 없습니다.";
+    empty.textContent = isSingleRelease(workspace)
+      ? "single candidate가 없습니다. 이 release에 곡 하나를 업로드하세요."
+      : "review를 기다리는 곡이 없습니다.";
     queueGrid.appendChild(empty);
   } else {
     tracksForReview.forEach((track) => {
@@ -751,7 +952,9 @@ function renderWorkspaceDetail() {
   if (!workspace.tracks.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "아직 승인된 곡이 없습니다.";
+    empty.textContent = isSingleRelease(workspace)
+      ? "아직 선택된 single track이 없습니다. queue에서 한 곡을 approve하세요."
+      : "아직 승인된 곡이 없습니다.";
     approvedGrid.appendChild(empty);
     return;
   }
@@ -947,6 +1150,7 @@ workspaceForm.addEventListener("submit", async (event) => {
       }),
     });
     setStatus(workspaceStatus, result);
+    state.selectedWorkspaceId = result.id;
     await refresh();
   } catch (error) {
     setStatus(workspaceStatus, error.message);

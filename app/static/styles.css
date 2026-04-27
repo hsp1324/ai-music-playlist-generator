@@ -500,9 +500,35 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.workspace-state.done,
+.pipeline-step.done .pipeline-marker {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.workspace-state.current,
+.pipeline-step.current .pipeline-marker {
+  background: var(--hold-soft);
+  color: var(--hold);
+}
+
+.workspace-state.failed,
+.pipeline-step.failed .pipeline-marker {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .workspace-copy {
   margin: 0;
   line-height: 1.55;
+}
+
+.workspace-next {
+  margin: -2px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .workspace-stats,
@@ -557,6 +583,101 @@ button:disabled {
 
 .detail-header h2 {
   margin-bottom: 8px;
+}
+
+.detail-pipeline {
+  margin: 0 0 18px;
+}
+
+.pipeline-rail {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pipeline-step {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background: #fffdf8;
+}
+
+.pipeline-step::after {
+  content: "";
+  position: absolute;
+  left: 40px;
+  right: 12px;
+  top: 25px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--line-soft);
+}
+
+.pipeline-marker {
+  position: relative;
+  z-index: 1;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff8ea;
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.pipeline-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pipeline-step.done {
+  background: rgba(47, 125, 88, 0.1);
+}
+
+.pipeline-step.current {
+  background: rgba(241, 181, 71, 0.23);
+}
+
+.pipeline-step.failed {
+  background: rgba(168, 61, 53, 0.12);
+}
+
+.compact-pipeline {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.compact-pipeline .pipeline-step {
+  gap: 0;
+  min-height: 42px;
+  padding: 7px;
+  place-items: center;
+}
+
+.compact-pipeline .pipeline-step::after,
+.compact-pipeline .pipeline-label {
+  display: none;
+}
+
+.compact-pipeline .pipeline-marker {
+  width: 24px;
+  height: 24px;
+  font-size: 0.72rem;
 }
 
 .detail-actions {
@@ -1045,6 +1166,27 @@ select:focus {
 @media (max-width: 980px) {
   .queue-card,
   .queue-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .pipeline-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .pipeline-step {
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .pipeline-step::after {
+    display: none;
+  }
+
+  .compact-pipeline {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .compact-pipeline .pipeline-step {
     grid-template-columns: 1fr;
   }
 }

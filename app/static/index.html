@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260426o" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260427a" />
   </head>
   <body>
     <div class="shell">
@@ -19,7 +19,7 @@
           <p class="app-kicker">AI Music Workspace</p>
           <h1 class="app-title">Release Control Room</h1>
           <p class="hero-lede">
-            곡을 올리고, Slack 또는 웹에서 승인하고, 최종 순서를 정한 뒤 하나의 플레이리스트로 렌더링합니다.
+            Single과 Playlist를 같은 파이프라인에서 관리하고, 각 release가 지금 어느 단계인지 바로 확인합니다.
           </p>
         </div>
         <section class="toolbar" aria-label="Primary toolbar">
@@ -37,8 +37,8 @@
       <section class="quick-upload-panel">
         <div class="quick-upload-copy">
           <p class="section-kicker">Intake</p>
-          <h2>새 음악을 검수 큐로 보내기</h2>
-          <p class="detail-copy">파일명을 제목으로 사용하고 선택한 workspace의 review queue와 Slack에 같이 반영합니다.</p>
+          <h2>새 음악을 release 큐로 보내기</h2>
+          <p class="detail-copy">Single은 한 곡, Playlist는 여러 곡을 검수한 뒤 같은 Cover/Video/YouTube 단계로 이어집니다.</p>
         </div>
         <div id="upload-dropzone" class="upload-dropzone" tabindex="0">
           <input id="quick-upload-input" type="file" accept="audio/*" multiple hidden />
@@ -48,7 +48,7 @@
         </div>
         <div class="quick-upload-controls">
           <label>
-            <span>Workspace</span>
+            <span>Release</span>
             <select id="quick-upload-workspace-select">
               <option value="">Choose workspace</option>
             </select>
@@ -90,7 +90,7 @@
                 <input name="tags" type="text" value="synthwave, cinematic, neon highway" />
               </label>
               <label>
-                <span>Pending Workspace</span>
+            <span>Pending Release</span>
                 <select name="pending_workspace_id" id="track-workspace-select">
                   <option value="">Unassigned Queue</option>
                 </select>
@@ -114,8 +114,8 @@
 
           <section class="drawer-panel">
             <div class="panel-head">
-              <p class="section-kicker">Workspace</p>
-              <h2>Create Workspace</h2>
+              <p class="section-kicker">Release</p>
+              <h2>Create Release</h2>
             </div>
             <form id="workspace-form" class="form-stack">
               <label>
@@ -124,10 +124,10 @@
               </label>
               <div class="form-row">
                 <label>
-                  <span>Mode</span>
+                  <span>Release Type</span>
                   <select name="workspace_mode">
-                    <option value="playlist" selected>Playlist Mix</option>
-                    <option value="single_track_video">Single Track Video</option>
+                    <option value="playlist" selected>Playlist Release</option>
+                    <option value="single_track_video">Single Release</option>
                   </select>
                 </label>
                 <label>
@@ -154,7 +154,7 @@
                 <span>Dreamina Prompt</span>
                 <textarea name="dreamina_prompt" rows="3" placeholder="Optional single-track motion prompt"></textarea>
               </label>
-              <button class="action-button secondary-button" type="submit">Create Workspace</button>
+              <button class="action-button secondary-button" type="submit">Create Release</button>
             </form>
             <pre id="workspace-status" class="status-box">아직 생성 안 함</pre>
           </section>
@@ -192,7 +192,7 @@
         <section class="workspace-section">
           <div class="section-headline">
             <div>
-              <p class="section-kicker">Workspaces</p>
+              <p class="section-kicker">Releases</p>
               <h2>작업할 릴리즈 선택</h2>
             </div>
           </div>
@@ -202,12 +202,14 @@
         <section id="workspace-detail-panel" class="detail-panel" hidden>
           <div class="detail-header">
             <div>
-              <p class="section-kicker">Workspace Detail</p>
-              <h2 id="detail-title">Workspace</h2>
-              <p id="detail-meta" class="detail-copy">Select a workspace to open its board.</p>
+              <p class="section-kicker">Release Detail</p>
+              <h2 id="detail-title">Release</h2>
+              <p id="detail-meta" class="detail-copy">Select a release to open its pipeline.</p>
             </div>
             <div id="detail-actions" class="detail-actions"></div>
           </div>
+
+          <div id="detail-pipeline" class="detail-pipeline"></div>
 
           <div id="detail-links" class="detail-links"></div>
 
@@ -246,6 +248,8 @@
           <span class="workspace-state"></span>
         </div>
         <p class="workspace-copy"></p>
+        <div class="workspace-pipeline"></div>
+        <p class="workspace-next"></p>
         <div class="workspace-stats">
           <span class="workspace-stat approved-stat"></span>
           <span class="workspace-stat pending-stat"></span>
@@ -300,6 +304,6 @@
       </article>
     </template>
 
-    <script src="/assets/app.js?v=20260426i" defer></script>
+    <script src="/assets/app.js?v=20260427a" defer></script>
   </body>
 </html>

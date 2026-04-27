@@ -368,6 +368,65 @@ def test_workspace_flow_assigns_tracks_and_requests_publish_approval(tmp_path) -
         clear_isolated_client_env()
 
 
+def test_single_release_accepts_only_one_approved_track(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Single Lane",
+                "workspace_mode": "single_track_video",
+                "auto_publish_when_ready": False,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        track_ids = []
+        for index in range(2):
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"Single Candidate {index}",
+                    "prompt": "solo release candidate",
+                    "duration_seconds": 180,
+                    "audio_path": f"https://cdn.example.com/single-{index}.mp3",
+                    "metadata": {"source": "test"},
+                },
+            )
+            assert track_response.status_code == 201
+            track_ids.append(track_response.json()["id"])
+
+        first_approve = client.post(
+            f"/api/tracks/{track_ids[0]}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert first_approve.status_code == 200
+
+        second_approve = client.post(
+            f"/api/tracks/{track_ids[1]}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert second_approve.status_code == 400
+        assert "Single release already has an approved track" in second_approve.json()["detail"]
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert [track["id"] for track in workspace["tracks"]] == [track_ids[0]]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_workspace_tracks_can_be_reordered(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

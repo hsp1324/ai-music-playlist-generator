@@ -396,6 +396,9 @@ async def assign_track_to_playlist(
         raise ValueError("Playlist not found")
 
     existing_item = next((item for item in playlist.items if item.track_id == track.id), None)
+    if _workspace_mode(playlist) == "single_track_video" and existing_item is None and playlist.items:
+        raise ValueError("Single release already has an approved track. Return it to review before approving another.")
+
     if existing_item is None:
         order_index = (max((item.order_index for item in playlist.items), default=0) + 1)
         db.add(
@@ -443,6 +446,8 @@ def reorder_workspace_tracks(
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
         raise ValueError("Playlist not found")
+    if _workspace_mode(playlist) == "single_track_video" and len(track_ids) > 1:
+        raise ValueError("Single release can only contain one approved track.")
 
     item_by_track_id = {item.track_id: item for item in playlist.items}
     if len(track_ids) != len(item_by_track_id) or set(track_ids) != set(item_by_track_id):
