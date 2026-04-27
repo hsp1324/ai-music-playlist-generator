@@ -223,6 +223,60 @@ def _all_tracks_renderable(playlist: Playlist) -> bool:
     return bool(tracks) and all(_has_local_audio(track) for track in tracks)
 
 
+def _clear_downstream_release_assets(playlist: Playlist, meta: dict) -> None:
+    meta["cover_approved"] = False
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta.pop("cover_image_path", None)
+    meta.pop("youtube_title", None)
+    meta.pop("youtube_description", None)
+    meta.pop("youtube_tags", None)
+    meta.pop("publish_approved_by", None)
+    meta.pop("video_build_error", None)
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+
+
+def _promote_single_release_audio(
+    playlist: Playlist,
+    track: Track,
+    *,
+    reset_downstream_assets: bool,
+) -> bool:
+    if _workspace_mode(playlist) != "single_track_video":
+        return False
+
+    meta = _playlist_meta(playlist)
+    _refresh_playlist_duration(playlist)
+    if not _has_local_audio(track):
+        playlist.output_audio_path = None
+        playlist.output_video_path = None
+        playlist.youtube_video_id = None
+        playlist.status = PlaylistStatus.draft
+        meta["publish_ready"] = bool(playlist.items)
+        meta["render_ready"] = False
+        meta["workflow_state"] = "pending_audio_source"
+        meta["render_error"] = "Single release audio must be uploaded as a local file before cover/video rendering."
+        meta["note"] = "This single release needs a local uploaded audio file before cover and video steps."
+        playlist.metadata_json = meta
+        return False
+
+    if playlist.output_audio_path != track.audio_path:
+        reset_downstream_assets = True
+
+    playlist.output_audio_path = track.audio_path
+    playlist.status = PlaylistStatus.ready
+    meta["publish_ready"] = True
+    meta["render_ready"] = True
+    meta["workflow_state"] = "audio_ready"
+    meta["note"] = "Single audio is ready. Upload or approve cover next."
+    meta.pop("render_error", None)
+    if reset_downstream_assets:
+        _clear_downstream_release_assets(playlist, meta)
+    playlist.metadata_json = meta
+    return True
+
+
 def _find_active_playlist_job(
     db: Session,
     playlist: Playlist,
@@ -621,12 +675,28 @@ async def _update_publish_state(
 ) -> None:
     meta = _playlist_meta(playlist)
     _refresh_playlist_duration(playlist)
+    if _workspace_mode(playlist) == "single_track_video":
+        tracks = _playlist_tracks(playlist)
+        audio_missing = not playlist.output_audio_path or not Path(playlist.output_audio_path).exists()
+        if len(tracks) == 1 and audio_missing:
+            _promote_single_release_audio(
+                playlist,
+                tracks[0],
+                reset_downstream_assets=False,
+            )
+            meta = _playlist_meta(playlist)
 
     if _publish_is_ready(playlist):
         meta["workflow_state"] = "audio_ready" if playlist.output_audio_path else "pending_audio_render"
         meta["publish_ready"] = True
         meta["publish_ready_trigger"] = trigger
-        if _all_tracks_renderable(playlist):
+        if _workspace_mode(playlist) == "single_track_video" and not playlist.output_audio_path:
+            meta["workflow_state"] = "pending_audio_source"
+            meta["render_ready"] = False
+            meta["render_error"] = "Single release audio must be uploaded as a local file before cover/video rendering."
+            meta["note"] = "This single release needs a local uploaded audio file before cover and video steps."
+            playlist.status = PlaylistStatus.draft
+        elif _all_tracks_renderable(playlist):
             if playlist.output_audio_path and Path(playlist.output_audio_path).exists():
                 playlist.status = PlaylistStatus.ready
                 meta["render_ready"] = True
@@ -726,6 +796,14 @@ async def assign_track_to_playlist(
         }
     )
     meta["assignment_history"] = history
+    if _workspace_mode(playlist) == "single_track_video":
+        _promote_single_release_audio(
+            playlist,
+            track,
+            reset_downstream_assets=existing_item is None,
+        )
+        meta = _playlist_meta(playlist)
+        meta["assignment_history"] = history
     playlist.metadata_json = meta
     db.add(playlist)
     db.commit()
@@ -773,6 +851,22 @@ def reorder_workspace_tracks(
         }
     )
     meta["reorder_history"] = history
+    if _workspace_mode(playlist) == "single_track_video":
+        tracks = _playlist_tracks(playlist)
+        if tracks:
+            _promote_single_release_audio(
+                playlist,
+                tracks[0],
+                reset_downstream_assets=False,
+            )
+            meta = _playlist_meta(playlist)
+            meta["reorder_history"] = history
+            meta["note"] = "Single release keeps the approved source audio directly."
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
+            return _load_playlist_with_tracks(db, playlist.id)
+
     meta["render_ready"] = False
     meta["publish_approved"] = False
     meta["note"] = "Track order changed. Re-render audio to update the playlist file."
@@ -810,6 +904,23 @@ def queue_workspace_audio_render(
         raise ValueError("All approved tracks must be local audio files before rendering.")
 
     _refresh_playlist_duration(playlist)
+    if _workspace_mode(playlist) == "single_track_video":
+        tracks = _playlist_tracks(playlist)
+        if len(tracks) != 1:
+            raise ValueError("Single release must have exactly one approved track.")
+        if not _promote_single_release_audio(
+            playlist,
+            tracks[0],
+            reset_downstream_assets=False,
+        ):
+            raise ValueError("Single release audio must be uploaded as a local file before cover/video rendering.")
+        meta = _playlist_meta(playlist)
+        meta["note"] = "Single release uses the approved source audio directly. Upload or approve cover next."
+        playlist.metadata_json = meta
+        db.add(playlist)
+        db.commit()
+        return _load_playlist_with_tracks(db, playlist.id)
+
     active_job = _find_active_playlist_job(db, playlist)
     meta = _playlist_meta(playlist)
     meta["render_ready"] = False

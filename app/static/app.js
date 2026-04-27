@@ -168,7 +168,9 @@ function releasePipeline(workspace) {
     stages[0].detail = "Audio render is running.";
   } else if (hasApprovedAudio) {
     stages[0].status = "current";
-    stages[0].detail = isSingleRelease(workspace) ? "Approved track is ready to render." : "Approved tracks are ready to render.";
+    stages[0].detail = isSingleRelease(workspace)
+      ? "Use the approved source audio to continue."
+      : "Approved tracks are ready to render.";
   }
 
   if (hasCover && coverApproved) {
@@ -520,7 +522,7 @@ function appendRenderedAudioPlayer(workspace) {
   copy.className = "render-player-copy";
 
   const title = document.createElement("strong");
-  title.textContent = "Rendered Mix";
+  title.textContent = isSingleRelease(workspace) ? "Source Audio" : "Rendered Mix";
 
   const meta = document.createElement("span");
   const trackCount = `${workspace.tracks.length} track${workspace.tracks.length === 1 ? "" : "s"}`;
@@ -537,7 +539,7 @@ function appendRenderedAudioPlayer(workspace) {
   copy.appendChild(title);
   copy.appendChild(meta);
   actions.appendChild(audio);
-  actions.appendChild(buildLink("Open File", audioUrl));
+  actions.appendChild(buildLink(isSingleRelease(workspace) ? "Open Audio" : "Open File", audioUrl));
   body.appendChild(copy);
   body.appendChild(actions);
   player.appendChild(art);
@@ -965,10 +967,10 @@ function renderWorkspaceDetail() {
   detailPanel.hidden = false;
   detailTitle.textContent = displayTitle(workspace.title, "Release");
   const renderState = workspace.output_audio_path
-    ? "rendered"
+    ? isSingleRelease(workspace) ? "audio ready" : "rendered"
     : workspace.status === "building"
       ? "rendering"
-      : "not rendered";
+      : isSingleRelease(workspace) ? "source not ready" : "not rendered";
   const currentStage = currentPipelineStage(workspace);
   const pendingCount = tracksForReview.length;
   detailMeta.textContent = `${releaseModeLabel(workspace)} · ${currentStage?.label || statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved · ${pendingCount} in review · ${renderState}`;
@@ -992,22 +994,23 @@ function renderWorkspaceDetail() {
   appendVideoPreview(workspace);
   appendMetadataDraft(workspace);
 
+  const videoBusy = ["video_queued", "video_rendering"].includes(workspace.workflow_state);
   if (workspace.tracks.length) {
-    if (workspace.status === "building" && !["video_queued", "video_rendering"].includes(workspace.workflow_state)) {
+    if (workspace.status === "building" && !videoBusy) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "action-button secondary-button";
       button.textContent = "Rendering Audio...";
       button.disabled = true;
       detailActions.appendChild(button);
-    } else if (!["video_queued", "video_rendering"].includes(workspace.workflow_state)) {
+    } else if (!videoBusy && (!isSingleRelease(workspace) || !workspace.output_audio_path)) {
       detailActions.appendChild(
         actionButton(
-          workspace.output_audio_path
+          isSingleRelease(workspace)
+            ? "Use Approved Audio"
+            : workspace.output_audio_path
             ? "Re-render Audio"
-            : isSingleRelease(workspace)
-              ? "Render Single Audio"
-              : "Render Playlist Audio",
+            : "Render Playlist Audio",
           "action-button secondary-button",
           async () => {
             await api(`/api/playlists/${workspace.id}/render-audio`, {
@@ -1040,7 +1043,7 @@ function renderWorkspaceDetail() {
     );
   } else if (workspace.cover_image_path && !workspace.cover_approved) {
     detailActions.appendChild(
-      actionButton("Approve Cover", "action-button primary-button", async () => {
+      actionButton("Approve Cover, then Render Video", "action-button primary-button", async () => {
         await api(`/api/playlists/${workspace.id}/cover/approve`, {
           method: "POST",
           body: JSON.stringify({
@@ -1079,7 +1082,7 @@ function renderWorkspaceDetail() {
       detailActions.appendChild(button);
     } else {
       detailActions.appendChild(
-        actionButton("Render Video", "action-button secondary-button", async () => {
+        actionButton("Render Video", "action-button primary-button", async () => {
           await api(`/api/playlists/${workspace.id}/video/render`, {
             method: "POST",
             body: JSON.stringify({
