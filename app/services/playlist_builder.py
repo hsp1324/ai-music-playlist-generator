@@ -8,6 +8,14 @@ from app.config import Settings
 from app.models.track import Track
 
 
+YOUTUBE_STILL_IMAGE_FILTER = (
+    "scale=1280:720:force_original_aspect_ratio=decrease,"
+    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
+    "setsar=1,"
+    "format=yuv420p"
+)
+
+
 @dataclass
 class PlaylistPlan:
     track_ids: list[str]
@@ -18,6 +26,18 @@ class PlaylistPlan:
 class FFMpegPlaylistBuilder:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+
+    def _run_ffmpeg(self, command: list[str]) -> None:
+        try:
+            subprocess.run(command, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as exc:
+            details = (exc.stderr or exc.stdout or "").strip()
+            if details:
+                lines = [line for line in details.splitlines() if line.strip()]
+                details = "\n".join(lines[-8:])
+            else:
+                details = str(exc)
+            raise RuntimeError(f"ffmpeg failed: {details}") from exc
 
     def plan_playlist(self, tracks: list[Track], target_duration_seconds: int) -> PlaylistPlan:
         selected_ids: list[str] = []
@@ -74,7 +94,7 @@ class FFMpegPlaylistBuilder:
         ]
 
         try:
-            subprocess.run(command, check=True, capture_output=True, text=True)
+            self._run_ffmpeg(command)
         finally:
             manifest_path.unlink(missing_ok=True)
 
@@ -104,8 +124,8 @@ class FFMpegPlaylistBuilder:
             "libx264",
             "-tune",
             "stillimage",
-            "-pix_fmt",
-            "yuv420p",
+            "-vf",
+            YOUTUBE_STILL_IMAGE_FILTER,
             "-c:a",
             "aac",
             "-b:a",
@@ -117,7 +137,8 @@ class FFMpegPlaylistBuilder:
             f"mimetype={image_mimetype}",
             str(output_path),
         ]
-        subprocess.run(command, check=True, capture_output=True, text=True)
+        output_path.unlink(missing_ok=True)
+        self._run_ffmpeg(command)
         return output_path
 
     def build_looped_video(self, clip_path: Path, audio_path: Path, output_path: Path) -> Path:
@@ -153,5 +174,6 @@ class FFMpegPlaylistBuilder:
             "+faststart",
             str(output_path),
         ]
-        subprocess.run(command, check=True, capture_output=True, text=True)
+        output_path.unlink(missing_ok=True)
+        self._run_ffmpeg(command)
         return output_path
