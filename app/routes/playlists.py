@@ -9,21 +9,31 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.schemas.playlist import (
     PlaylistBuildRequest,
+    PlaylistCoverApproveRequest,
+    PlaylistCoverGenerateRequest,
+    PlaylistMetadataApproveRequest,
+    PlaylistMetadataGenerateRequest,
     PlaylistPublishApproveRequest,
     PlaylistRead,
     PlaylistRenderRequest,
     PlaylistTrackReorderRequest,
     PlaylistUploadMarkRequest,
+    PlaylistVideoRenderRequest,
     PlaylistWorkspaceCreateRequest,
     PlaylistWorkspaceRead,
 )
 from app.services.registry import ServiceRegistry
 from app.workflows.playlist_automation import (
+    approve_playlist_cover,
+    approve_playlist_metadata,
     approve_playlist_publish,
     build_playlist_from_tracks,
     create_playlist_workspace,
+    generate_playlist_cover,
+    generate_playlist_metadata,
     list_available_approved_tracks,
     list_playlist_workspaces,
+    queue_workspace_video_render,
     queue_workspace_audio_render,
     reorder_workspace_tracks,
     serialize_playlist_workspace,
@@ -124,6 +134,104 @@ def render_workspace_playlist_audio(
             db,
             playlist_id=playlist_id,
             actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/cover/generate", response_model=PlaylistWorkspaceRead)
+def generate_workspace_cover(
+    playlist_id: str,
+    payload: PlaylistCoverGenerateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    services = get_services(request)
+    try:
+        playlist = generate_playlist_cover(
+            db,
+            services,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+            regenerate=payload.regenerate,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/cover/approve", response_model=PlaylistWorkspaceRead)
+def approve_workspace_cover(
+    playlist_id: str,
+    payload: PlaylistCoverApproveRequest,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = approve_playlist_cover(
+            db,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+            approved=payload.approved,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/video/render", response_model=PlaylistWorkspaceRead)
+def render_workspace_video(
+    playlist_id: str,
+    payload: PlaylistVideoRenderRequest,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = queue_workspace_video_render(
+            db,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/metadata/generate", response_model=PlaylistWorkspaceRead)
+def generate_workspace_metadata(
+    playlist_id: str,
+    payload: PlaylistMetadataGenerateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    services = get_services(request)
+    try:
+        playlist = generate_playlist_metadata(
+            db,
+            services,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/metadata/approve", response_model=PlaylistWorkspaceRead)
+def approve_workspace_metadata(
+    playlist_id: str,
+    payload: PlaylistMetadataApproveRequest,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = approve_playlist_metadata(
+            db,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+            title=payload.title,
+            description=payload.description,
+            tags=payload.tags,
+            note=payload.note,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

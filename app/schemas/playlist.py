@@ -28,6 +28,33 @@ class PlaylistPublishApproveRequest(BaseModel):
     note: str | None = None
 
 
+class PlaylistCoverGenerateRequest(BaseModel):
+    actor: str = "web-ui"
+    regenerate: bool = False
+
+
+class PlaylistCoverApproveRequest(BaseModel):
+    actor: str = "web-ui"
+    approved: bool = True
+    note: str | None = None
+
+
+class PlaylistVideoRenderRequest(BaseModel):
+    actor: str = "web-ui"
+
+
+class PlaylistMetadataGenerateRequest(BaseModel):
+    actor: str = "web-ui"
+
+
+class PlaylistMetadataApproveRequest(BaseModel):
+    actor: str = "web-ui"
+    title: str | None = None
+    description: str | None = None
+    tags: list[str] | None = None
+    note: str | None = None
+
+
 class PlaylistRenderRequest(BaseModel):
     actor: str = "web-ui"
 
@@ -90,9 +117,14 @@ class PlaylistWorkspaceRead(BaseModel):
     workflow_state: str
     publish_ready: bool
     publish_approved: bool
+    cover_approved: bool = False
+    metadata_approved: bool = False
     output_audio_path: str | None
     output_video_path: str | None
     cover_image_path: str | None
+    youtube_title: str | None = None
+    youtube_description: str | None = None
+    youtube_tags: list[str] = []
     youtube_video_id: str | None
     note: str | None = None
     render_job: PlaylistJobRead | None = None

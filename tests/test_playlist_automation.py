@@ -38,6 +38,48 @@ def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:
     return processed
 
 
+def prepare_release_for_final_publish(client: TestClient, workspace_id: str) -> dict:
+    cover_response = client.post(
+        f"/api/playlists/{workspace_id}/cover/generate",
+        json={"actor": "test-suite"},
+    )
+    assert cover_response.status_code == 200
+    cover = cover_response.json()
+    assert cover["workflow_state"] == "cover_review"
+    assert cover["cover_image_path"].endswith(".png")
+
+    approve_cover_response = client.post(
+        f"/api/playlists/{workspace_id}/cover/approve",
+        json={"actor": "test-suite", "approved": True},
+    )
+    assert approve_cover_response.status_code == 200
+    assert approve_cover_response.json()["workflow_state"] == "video_required"
+
+    render_video_response = client.post(
+        f"/api/playlists/{workspace_id}/video/render",
+        json={"actor": "test-suite"},
+    )
+    assert render_video_response.status_code == 200
+    assert render_video_response.json()["workflow_state"] == "video_queued"
+    assert drain_background_jobs(client) == 1
+
+    metadata_response = client.get("/api/playlists/workspaces")
+    metadata_ready = next(item for item in metadata_response.json() if item["id"] == workspace_id)
+    assert metadata_ready["workflow_state"] == "metadata_review"
+    assert metadata_ready["output_video_path"].endswith(".mp4")
+    assert metadata_ready["youtube_title"]
+
+    approve_metadata_response = client.post(
+        f"/api/playlists/{workspace_id}/metadata/approve",
+        json={"actor": "test-suite", "note": "metadata approved"},
+    )
+    assert approve_metadata_response.status_code == 200
+    approved = approve_metadata_response.json()
+    assert approved["workflow_state"] == "publish_ready"
+    assert approved["metadata_approved"] is True
+    return approved
+
+
 def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -362,7 +404,7 @@ def test_workspace_flow_assigns_tracks_and_requests_publish_approval(tmp_path) -
         workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert workspace["actual_duration_seconds"] == 240
         assert workspace["publish_ready"] is True
-        assert workspace["workflow_state"] == "pending_publish_approval"
+        assert workspace["workflow_state"] == "pending_audio_render"
         assert [track["id"] for track in workspace["tracks"]] == track_ids
     finally:
         clear_isolated_client_env()
@@ -849,7 +891,7 @@ def test_return_approved_track_to_workspace_queue(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_publish_approval_generates_cover_asset(tmp_path) -> None:
+def test_release_pipeline_generates_cover_video_and_metadata_before_publish(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -900,6 +942,11 @@ def test_publish_approval_generates_cover_asset(tmp_path) -> None:
         assert approve_response.status_code == 200
         assert drain_background_jobs(client) == 1
 
+        staged = prepare_release_for_final_publish(client, workspace_id)
+        assert staged["cover_approved"] is True
+        assert staged["metadata_approved"] is True
+        assert os.path.exists(staged["cover_image_path"])
+
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
             json={
@@ -908,12 +955,8 @@ def test_publish_approval_generates_cover_asset(tmp_path) -> None:
             },
         )
         assert publish_response.status_code == 200
-        queued = publish_response.json()
-        assert queued["publish_approved"] is True
-        assert queued["workflow_state"] == "publish_queued"
-
+        assert publish_response.json()["workflow_state"] == "publish_queued"
         assert drain_background_jobs(client) == 1
-
         workspaces_response = client.get("/api/playlists/workspaces")
         published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert published["workflow_state"] == "ready_for_youtube_auth"
@@ -999,16 +1042,21 @@ def test_publish_approval_reports_video_build_failure(tmp_path) -> None:
         assert approve_response.status_code == 200
         assert drain_background_jobs(client) == 1
 
-        publish_response = client.post(
-            f"/api/playlists/{workspace_id}/approve-publish",
-            json={
-                "actor": "test-suite",
-            },
+        cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/generate",
+            json={"actor": "test-suite"},
         )
-        assert publish_response.status_code == 200
-        queued = publish_response.json()
-        assert queued["workflow_state"] == "publish_queued"
-
+        assert cover_response.status_code == 200
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
         assert drain_background_jobs(client) == 1
 
         workspaces_response = client.get("/api/playlists/workspaces")
@@ -1078,6 +1126,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert approve_response.status_code == 200
         assert drain_background_jobs(client) == 1
 
+        prepare_release_for_final_publish(client, workspace_id)
+
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
             json={
@@ -1086,9 +1136,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             },
         )
         assert publish_response.status_code == 200
-        queued = publish_response.json()
-        assert queued["workflow_state"] == "publish_queued"
-
+        assert publish_response.json()["workflow_state"] == "publish_queued"
         assert drain_background_jobs(client) == 1
 
         workspaces_response = client.get("/api/playlists/workspaces")
@@ -1100,7 +1148,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_single_track_video_mode_auto_publishes_with_dreamina_loop(tmp_path) -> None:
+def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -1175,16 +1223,23 @@ def test_single_track_video_mode_auto_publishes_with_dreamina_loop(tmp_path) -> 
         )
         assert approve_response.status_code == 200
 
-        assert drain_background_jobs(client) == 2
+        assert drain_background_jobs(client) == 1
+        prepare_release_for_final_publish(client, workspace["id"])
 
-        workspaces_response = client.get("/api/playlists/workspaces")
-        published = next(item for item in workspaces_response.json() if item["id"] == workspace["id"])
-        assert published["workflow_state"] == "uploaded"
-        assert published["youtube_video_id"] == "yt-single-123"
-        assert published["output_video_path"].endswith(".mp4")
+        publish_response = client.post(
+            f"/api/playlists/{workspace['id']}/approve-publish",
+            json={
+                "actor": "test-suite",
+                "note": "single ready",
+            },
+        )
+        assert publish_response.status_code == 200
+        assert drain_background_jobs(client) == 1
 
         playlists_response = client.get("/api/playlists")
         playlist = next(item for item in playlists_response.json() if item["id"] == workspace["id"])
+        assert playlist["youtube_video_id"] == "yt-single-123"
+        assert playlist["output_video_path"].endswith(".mp4")
         assert playlist["metadata_json"]["youtube_title"].startswith("Neon Solo")
         assert playlist["metadata_json"]["dreamina_job_id"] == "dreamina-job-1"
     finally:

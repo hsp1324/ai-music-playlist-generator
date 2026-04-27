@@ -106,11 +106,14 @@ function releasePipeline(workspace) {
   const hasApprovedAudio = workspace.tracks.length > 0;
   const hasRenderedAudio = Boolean(workspace.output_audio_path);
   const hasCover = Boolean(workspace.cover_image_path);
+  const coverApproved = Boolean(workspace.cover_approved);
   const hasVideo = Boolean(workspace.output_video_path);
+  const metadataDrafted = Boolean(workspace.youtube_title);
+  const metadataApproved = Boolean(workspace.metadata_approved);
   const uploaded = workflowState === "uploaded" || Boolean(workspace.youtube_video_id);
   const publishQueued = workflowState === "publish_queued";
   const readyForYouTube = ["ready_for_youtube", "ready_for_youtube_auth"].includes(workflowState);
-  const metadataReady = uploaded || readyForYouTube || workflowState === "youtube_upload_failed";
+  const metadataReady = uploaded || metadataApproved || readyForYouTube || workflowState === "youtube_upload_failed";
 
   const stages = [
     {
@@ -167,9 +170,12 @@ function releasePipeline(workspace) {
     stages[0].detail = isSingleRelease(workspace) ? "Approved track is ready to render." : "Approved tracks are ready to render.";
   }
 
-  if (hasCover) {
+  if (hasCover && coverApproved) {
     stages[1].status = "done";
-    stages[1].detail = "Cover image is ready.";
+    stages[1].detail = "Cover image is approved.";
+  } else if (hasCover) {
+    stages[1].status = "current";
+    stages[1].detail = "Review and approve the generated cover.";
   } else if (hasRenderedAudio || publishQueued) {
     stages[1].status = "current";
     stages[1].detail = publishQueued ? "Cover and video build is queued." : "Cover image is the next review step.";
@@ -181,17 +187,22 @@ function releasePipeline(workspace) {
   } else if (hasVideo) {
     stages[2].status = "done";
     stages[2].detail = "Release video is ready.";
-  } else if (hasCover) {
+  } else if (coverApproved || ["video_queued", "video_rendering"].includes(workflowState)) {
     stages[2].status = "current";
-    stages[2].detail = "Video render is waiting for cover approval/build.";
+    stages[2].detail = ["video_queued", "video_rendering"].includes(workflowState)
+      ? "Video render is running."
+      : "Render the YouTube video next.";
   }
 
   if (metadataReady) {
     stages[3].status = "done";
-    stages[3].detail = "YouTube metadata draft is ready.";
+    stages[3].detail = metadataApproved ? "YouTube metadata is approved." : "YouTube metadata draft is ready.";
+  } else if (metadataDrafted) {
+    stages[3].status = "current";
+    stages[3].detail = "Review and approve the YouTube metadata draft.";
   } else if (hasVideo) {
     stages[3].status = "current";
-    stages[3].detail = "Review title, description, and tags before publishing.";
+    stages[3].detail = "Generate title, description, and tags.";
   }
 
   if (uploaded) {
@@ -200,7 +211,10 @@ function releasePipeline(workspace) {
   } else if (workflowState === "youtube_upload_failed") {
     stages[4].status = "failed";
     stages[4].detail = workspace.note || "YouTube upload failed.";
-  } else if (readyForYouTube || (workspace.publish_approved && hasVideo)) {
+  } else if (publishQueued) {
+    stages[4].status = "current";
+    stages[4].detail = "Final publish job is queued.";
+  } else if (readyForYouTube || metadataApproved) {
     stages[4].status = "current";
     stages[4].detail = workflowState === "ready_for_youtube_auth"
       ? "Connect YouTube, then publish."
@@ -485,6 +499,101 @@ function appendRenderedAudioPlayer(workspace) {
   player.appendChild(art);
   player.appendChild(body);
   detailLinks.appendChild(player);
+}
+
+function appendCoverPreview(workspace) {
+  const coverUrl = normalizeMediaUrl(workspace.cover_image_path);
+  if (!coverUrl) return;
+
+  const card = document.createElement("div");
+  card.className = `asset-preview cover-preview ${workspace.cover_approved ? "approved" : "review"}`;
+
+  const image = document.createElement("img");
+  image.src = coverUrl;
+  image.alt = `${displayTitle(workspace.title)} cover`;
+
+  const body = document.createElement("div");
+  body.className = "asset-preview-body";
+
+  const title = document.createElement("strong");
+  title.textContent = workspace.cover_approved ? "Cover Approved" : "Cover Review";
+
+  const copy = document.createElement("span");
+  copy.textContent = "16:9 cover image for the YouTube release.";
+
+  const actions = document.createElement("div");
+  actions.className = "asset-preview-actions";
+  actions.appendChild(buildLink("Open Cover", coverUrl));
+
+  body.appendChild(title);
+  body.appendChild(copy);
+  body.appendChild(actions);
+  card.appendChild(image);
+  card.appendChild(body);
+  detailLinks.appendChild(card);
+}
+
+function appendVideoPreview(workspace) {
+  const videoUrl = normalizeMediaUrl(workspace.output_video_path);
+  if (!videoUrl) return;
+
+  const card = document.createElement("div");
+  card.className = "asset-preview video-preview approved";
+
+  const body = document.createElement("div");
+  body.className = "asset-preview-body";
+
+  const title = document.createElement("strong");
+  title.textContent = "Rendered Video";
+
+  const copy = document.createElement("span");
+  copy.textContent = "Audio and approved cover are combined for YouTube.";
+
+  const video = document.createElement("video");
+  video.controls = true;
+  video.preload = "none";
+  video.src = videoUrl;
+
+  const actions = document.createElement("div");
+  actions.className = "asset-preview-actions";
+  actions.appendChild(buildLink("Open Video", videoUrl));
+
+  body.appendChild(title);
+  body.appendChild(copy);
+  body.appendChild(video);
+  body.appendChild(actions);
+  card.appendChild(body);
+  detailLinks.appendChild(card);
+}
+
+function appendMetadataDraft(workspace) {
+  if (!workspace.youtube_title && !workspace.youtube_description) return;
+
+  const card = document.createElement("div");
+  card.className = `metadata-preview ${workspace.metadata_approved ? "approved" : "review"}`;
+
+  const title = document.createElement("strong");
+  title.textContent = workspace.metadata_approved ? "Metadata Approved" : "Metadata Review";
+
+  const heading = document.createElement("h3");
+  heading.textContent = workspace.youtube_title || "Untitled YouTube Draft";
+
+  const description = document.createElement("p");
+  description.textContent = shortText(workspace.youtube_description || "No description generated.", 260);
+
+  const tags = document.createElement("div");
+  tags.className = "metadata-tags";
+  (workspace.youtube_tags || []).forEach((tag) => {
+    const chip = document.createElement("span");
+    chip.textContent = tag;
+    tags.appendChild(chip);
+  });
+
+  card.appendChild(title);
+  card.appendChild(heading);
+  card.appendChild(description);
+  card.appendChild(tags);
+  detailLinks.appendChild(card);
 }
 
 function stopDragAutoScroll() {
@@ -788,19 +897,19 @@ function renderWorkspaceDetail() {
   renderPipeline(detailPipeline, workspace);
   appendRenderStatus(workspace);
   appendRenderedAudioPlayer(workspace);
-  if (workspace.output_video_path) {
-    detailLinks.appendChild(buildLink("Rendered Video", normalizeMediaUrl(workspace.output_video_path)));
-  }
+  appendCoverPreview(workspace);
+  appendVideoPreview(workspace);
+  appendMetadataDraft(workspace);
 
   if (workspace.tracks.length) {
-    if (workspace.status === "building") {
+    if (workspace.status === "building" && !["video_queued", "video_rendering"].includes(workspace.workflow_state)) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "action-button secondary-button";
       button.textContent = "Rendering Audio...";
       button.disabled = true;
       detailActions.appendChild(button);
-    } else {
+    } else if (!["video_queued", "video_rendering"].includes(workspace.workflow_state)) {
       detailActions.appendChild(
         actionButton(
           workspace.output_audio_path
@@ -822,9 +931,103 @@ function renderWorkspaceDetail() {
     }
   }
 
-  if (workspace.publish_ready && !workspace.publish_approved) {
+  if (workspace.output_audio_path && !workspace.cover_image_path) {
     detailActions.appendChild(
-      actionButton("Approve Publish", "action-button primary-button", async () => {
+      actionButton("Generate Cover", "action-button secondary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/cover/generate`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+          }),
+        });
+      })
+    );
+  } else if (workspace.cover_image_path && !workspace.cover_approved) {
+    detailActions.appendChild(
+      actionButton("Approve Cover", "action-button primary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/cover/approve`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+            approved: true,
+            note: "Approved from workspace detail.",
+          }),
+        });
+      })
+    );
+    detailActions.appendChild(
+      actionButton("Regenerate Cover", "action-button secondary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/cover/generate`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+            regenerate: true,
+          }),
+        });
+      })
+    );
+  }
+
+  if (workspace.cover_approved && !workspace.output_video_path) {
+    if (["video_queued", "video_rendering"].includes(workspace.workflow_state) || workspace.status === "building") {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "action-button secondary-button";
+      button.textContent = "Rendering Video...";
+      button.disabled = true;
+      detailActions.appendChild(button);
+    } else {
+      detailActions.appendChild(
+        actionButton("Render Video", "action-button secondary-button", async () => {
+          await api(`/api/playlists/${workspace.id}/video/render`, {
+            method: "POST",
+            body: JSON.stringify({
+              actor: "web-ui",
+            }),
+          });
+        })
+      );
+    }
+  }
+
+  if (workspace.output_video_path && !workspace.youtube_title) {
+    detailActions.appendChild(
+      actionButton("Generate Metadata", "action-button secondary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/metadata/generate`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+          }),
+        });
+      })
+    );
+  } else if (workspace.youtube_title && !workspace.metadata_approved) {
+    detailActions.appendChild(
+      actionButton("Approve Metadata", "action-button primary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/metadata/approve`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+            note: "Approved from workspace detail.",
+          }),
+        });
+      })
+    );
+    detailActions.appendChild(
+      actionButton("Regenerate Metadata", "action-button secondary-button", async () => {
+        await api(`/api/playlists/${workspace.id}/metadata/generate`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+          }),
+        });
+      })
+    );
+  }
+
+  if (workspace.metadata_approved && !workspace.youtube_video_id) {
+    detailActions.appendChild(
+      actionButton(workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
         await api(`/api/playlists/${workspace.id}/approve-publish`, {
           method: "POST",
           body: JSON.stringify({
@@ -834,7 +1037,9 @@ function renderWorkspaceDetail() {
         });
       })
     );
-  } else if (workspace.publish_approved && !workspace.youtube_video_id) {
+  }
+
+  if (workspace.publish_approved && !workspace.youtube_video_id) {
     const input = document.createElement("input");
     input.type = "text";
     input.className = "inline-input";

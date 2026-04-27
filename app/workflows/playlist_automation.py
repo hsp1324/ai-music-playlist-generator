@@ -39,6 +39,18 @@ def _publish_is_ready(playlist: Playlist) -> bool:
     return playlist.actual_duration_seconds >= playlist.target_duration_seconds
 
 
+def _final_publish_is_ready(playlist: Playlist) -> bool:
+    meta = _playlist_meta(playlist)
+    return bool(
+        playlist.output_audio_path
+        and playlist.output_video_path
+        and meta.get("cover_image_path")
+        and meta.get("cover_approved")
+        and meta.get("youtube_title")
+        and meta.get("metadata_approved")
+    )
+
+
 def _has_local_audio(track: Track) -> bool:
     if not track.audio_path:
         return False
@@ -111,9 +123,14 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         workflow_state=meta.get("workflow_state", "collecting"),
         publish_ready=bool(meta.get("publish_ready")),
         publish_approved=bool(meta.get("publish_approved")),
+        cover_approved=bool(meta.get("cover_approved")),
+        metadata_approved=bool(meta.get("metadata_approved")),
         output_audio_path=playlist.output_audio_path,
         output_video_path=playlist.output_video_path,
         cover_image_path=meta.get("cover_image_path"),
+        youtube_title=meta.get("youtube_title"),
+        youtube_description=meta.get("youtube_description"),
+        youtube_tags=list(meta.get("youtube_tags") or []),
         youtube_video_id=playlist.youtube_video_id,
         note=meta.get("note"),
         render_job=_latest_render_job(playlist),
@@ -161,7 +178,7 @@ def create_playlist_workspace(
         target_duration_seconds = 1
     auto_publish = auto_publish_when_ready
     if auto_publish is None:
-        auto_publish = normalized_mode == "single_track_video"
+        auto_publish = False
 
     playlist = Playlist(
         title=title,
@@ -177,6 +194,8 @@ def create_playlist_workspace(
             "workflow_state": "collecting",
             "publish_ready": False,
             "publish_approved": False,
+            "cover_approved": False,
+            "metadata_approved": False,
         },
     )
     db.add(playlist)
@@ -248,6 +267,246 @@ def _queue_playlist_render_job(
     return job
 
 
+def _find_active_video_job(
+    db: Session,
+    playlist: Playlist,
+) -> Job | None:
+    return db.scalars(
+        select(Job).where(
+            Job.playlist_id == playlist.id,
+            Job.type == JobType.build_video,
+            Job.status.in_([JobStatus.queued, JobStatus.running]),
+        )
+    ).first()
+
+
+def generate_playlist_cover(
+    db: Session,
+    services: ServiceRegistry,
+    *,
+    playlist_id: str,
+    actor: str,
+    regenerate: bool = False,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+        raise ValueError("Rendered audio is required before generating cover art.")
+
+    meta = _playlist_meta(playlist)
+    if meta.get("cover_image_path") and meta.get("cover_approved") and not regenerate:
+        raise ValueError("Cover is already approved. Regenerate only if you want to replace it.")
+
+    cover_image_path = services.cover_art.generate_cover(playlist)
+    history = list(meta.get("cover_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "cover_image_path": cover_image_path,
+            "generated_at": _utcnow().isoformat(),
+        }
+    )
+    meta["cover_history"] = history
+    meta["cover_image_path"] = cover_image_path
+    meta["cover_approved"] = False
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "cover_review"
+    meta["note"] = "Cover image generated. Review and approve it before rendering video."
+    meta.pop("publish_approved_by", None)
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.ready
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def approve_playlist_cover(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+    approved: bool = True,
+    note: str | None = None,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+
+    meta = _playlist_meta(playlist)
+    cover_image_path = meta.get("cover_image_path")
+    if not cover_image_path or not Path(cover_image_path).exists():
+        raise ValueError("Cover image is missing. Generate cover art first.")
+
+    history = list(meta.get("cover_approval_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "approved": approved,
+            "note": note,
+            "decided_at": _utcnow().isoformat(),
+        }
+    )
+    meta["cover_approval_history"] = history
+    meta["cover_approved"] = approved
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "video_required" if approved else "cover_review"
+    meta["note"] = note or (
+        "Cover approved. Render video next." if approved else "Cover returned for review."
+    )
+    meta.pop("publish_approved_by", None)
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.ready
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def queue_workspace_video_render(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+        raise ValueError("Rendered audio is required before rendering video.")
+
+    meta = _playlist_meta(playlist)
+    cover_image_path = meta.get("cover_image_path")
+    if not cover_image_path or not Path(cover_image_path).exists():
+        raise ValueError("Approved cover image is required before rendering video.")
+    if not meta.get("cover_approved"):
+        raise ValueError("Cover image must be approved before rendering video.")
+
+    active_job = _find_active_video_job(db, playlist)
+    meta["workflow_state"] = "video_queued"
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["note"] = "Video render queued from the web dashboard."
+    meta.pop("video_build_error", None)
+    meta.pop("publish_approved_by", None)
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.building
+    db.add(playlist)
+
+    if active_job is None:
+        db.add(
+            Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                payload_json={
+                    "playlist_id": playlist.id,
+                    "actor": actor,
+                    "trigger": "manual-video-render",
+                },
+                result_json={},
+                playlist=playlist,
+            )
+        )
+
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def generate_playlist_metadata(
+    db: Session,
+    services: ServiceRegistry,
+    *,
+    playlist_id: str,
+    actor: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
+        raise ValueError("Rendered video is required before generating metadata.")
+
+    tracks = _playlist_tracks(playlist)
+    youtube_metadata = services.release_metadata.build_youtube_metadata(playlist, tracks)
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("metadata_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "generated_at": _utcnow().isoformat(),
+            "title": youtube_metadata.title,
+        }
+    )
+    meta["metadata_history"] = history
+    meta["youtube_title"] = youtube_metadata.title
+    meta["youtube_description"] = youtube_metadata.description
+    meta["youtube_tags"] = youtube_metadata.tags
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "metadata_review"
+    meta["note"] = "YouTube metadata draft generated. Review and approve it before publishing."
+    meta.pop("publish_approved_by", None)
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.ready
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def approve_playlist_metadata(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+    title: str | None = None,
+    description: str | None = None,
+    tags: list[str] | None = None,
+    note: str | None = None,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
+        raise ValueError("Rendered video is required before approving metadata.")
+
+    meta = _playlist_meta(playlist)
+    if title is not None:
+        meta["youtube_title"] = title[:100]
+    if description is not None:
+        meta["youtube_description"] = description
+    if tags is not None:
+        meta["youtube_tags"] = tags[:15]
+    if not meta.get("youtube_title") or not meta.get("youtube_description"):
+        raise ValueError("YouTube metadata draft is missing. Generate metadata first.")
+
+    history = list(meta.get("metadata_approval_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "note": note,
+            "approved_at": _utcnow().isoformat(),
+        }
+    )
+    meta["metadata_approval_history"] = history
+    meta["metadata_approved"] = True
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "publish_ready"
+    meta["note"] = note or "Metadata approved. Final YouTube publish approval is ready."
+    meta.pop("publish_approved_by", None)
+    playlist.metadata_json = meta
+    playlist.status = PlaylistStatus.ready
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
 def _queue_publish_job(
     db: Session,
     playlist: Playlist,
@@ -304,7 +563,9 @@ def maybe_queue_auto_publish_job(
         return None
     if not _auto_publish_when_ready(playlist):
         return None
-    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+    if not _final_publish_is_ready(playlist):
+        return None
+    if not Path(playlist.output_video_path).exists():
         return None
     return _queue_publish_job(db, playlist, actor=actor, note=note, source=source)
 
@@ -320,7 +581,7 @@ async def _update_publish_state(
     _refresh_playlist_duration(playlist)
 
     if _publish_is_ready(playlist):
-        meta["workflow_state"] = "pending_publish_approval"
+        meta["workflow_state"] = "audio_ready" if playlist.output_audio_path else "pending_audio_render"
         meta["publish_ready"] = True
         meta["publish_ready_trigger"] = trigger
         if _all_tracks_renderable(playlist):
@@ -328,8 +589,9 @@ async def _update_publish_state(
                 playlist.status = PlaylistStatus.ready
                 meta["render_ready"] = True
                 meta.pop("render_error", None)
-                meta["note"] = meta.get("note") or "Playlist audio render is complete."
-                if _auto_publish_when_ready(playlist):
+                meta["workflow_state"] = "audio_ready"
+                meta["note"] = meta.get("note") or "Audio render is complete. Generate cover art next."
+                if _auto_publish_when_ready(playlist) and _final_publish_is_ready(playlist):
                     meta["publish_approved"] = True
                     meta["publish_approved_by"] = "system:auto-publish"
                     meta["workflow_state"] = "publish_queued"
@@ -475,6 +737,11 @@ def reorder_workspace_tracks(
     meta["workflow_state"] = "render_required" if playlist.items else "collecting"
     meta.pop("render_error", None)
     meta.pop("cover_image_path", None)
+    meta.pop("cover_approved", None)
+    meta.pop("metadata_approved", None)
+    meta.pop("youtube_title", None)
+    meta.pop("youtube_description", None)
+    meta.pop("youtube_tags", None)
     meta.pop("publish_approved_by", None)
     playlist.metadata_json = meta
     playlist.output_audio_path = None
@@ -509,6 +776,11 @@ def queue_workspace_audio_render(
     meta["note"] = "Playlist audio render queued from the web dashboard."
     meta.pop("render_error", None)
     meta.pop("cover_image_path", None)
+    meta.pop("cover_approved", None)
+    meta.pop("metadata_approved", None)
+    meta.pop("youtube_title", None)
+    meta.pop("youtube_description", None)
+    meta.pop("youtube_tags", None)
     meta.pop("publish_approved_by", None)
     playlist.metadata_json = meta
     playlist.output_audio_path = None
@@ -588,6 +860,11 @@ async def return_track_to_workspace_queue(
     meta.pop("render_ready", None)
     meta.pop("render_error", None)
     meta.pop("cover_image_path", None)
+    meta.pop("cover_approved", None)
+    meta.pop("metadata_approved", None)
+    meta.pop("youtube_title", None)
+    meta.pop("youtube_description", None)
+    meta.pop("youtube_tags", None)
     playlist.metadata_json = meta
     playlist.output_audio_path = None
     playlist.output_video_path = None
@@ -798,6 +1075,16 @@ def approve_playlist_publish(
     audio_path = Path(playlist.output_audio_path)
     if not audio_path.exists():
         raise ValueError("Rendered playlist audio file is missing on disk.")
+    if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
+        raise ValueError("Rendered video is required before final publish approval.")
+    if not meta.get("cover_image_path") or not Path(meta["cover_image_path"]).exists():
+        raise ValueError("Approved cover image is required before final publish approval.")
+    if not meta.get("cover_approved"):
+        raise ValueError("Cover image must be approved before final publish approval.")
+    if not meta.get("metadata_approved"):
+        raise ValueError("YouTube metadata must be approved before final publish approval.")
+    if not meta.get("youtube_title") or not meta.get("youtube_description"):
+        raise ValueError("YouTube metadata draft is missing before final publish approval.")
 
     _queue_publish_job(
         db,
@@ -805,7 +1092,7 @@ def approve_playlist_publish(
         actor=actor,
         note=(
         f"{note} " if note else ""
-        ) + "Background worker queued cover, video render, and YouTube upload.",
+        ) + "Background worker queued final YouTube upload.",
         source="web",
     )
 

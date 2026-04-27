@@ -86,7 +86,7 @@ class BackgroundJobWorker:
                 select(Job)
                 .where(
                     Job.status == JobStatus.queued,
-                    Job.type.in_([JobType.build_playlist, JobType.upload_youtube, JobType.sync_slack]),
+                    Job.type.in_([JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]),
                 )
                 .order_by(Job.created_at.asc())
             ).first()
@@ -108,6 +108,8 @@ class BackgroundJobWorker:
             try:
                 if job.type == JobType.build_playlist:
                     self._process_build_playlist_job(db, job)
+                elif job.type == JobType.build_video:
+                    self._process_build_video_job(db, job)
                 elif job.type == JobType.upload_youtube:
                     self._process_publish_job(db, job)
                 elif job.type == JobType.sync_slack:
@@ -164,9 +166,9 @@ class BackgroundJobWorker:
 
         meta = dict(playlist.metadata_json or {})
         meta["render_ready"] = True
-        meta["workflow_state"] = "pending_publish_approval" if meta.get("publish_ready") else "rendered"
+        meta["workflow_state"] = "audio_ready" if meta.get("publish_ready") else "rendered"
         meta.pop("render_error", None)
-        meta["note"] = "Playlist audio render completed in background."
+        meta["note"] = "Audio render completed in background. Generate cover art next."
         playlist.metadata_json = meta
         playlist.status = PlaylistStatus.ready if meta.get("publish_ready") else PlaylistStatus.draft
 
@@ -184,6 +186,80 @@ class BackgroundJobWorker:
         )
         if auto_publish_job is not None:
             db.add(auto_publish_job)
+
+    def _process_build_video_job(self, db: Session, job: Job) -> None:
+        playlist = db.scalars(
+            select(Playlist)
+            .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+            .where(Playlist.id == job.playlist_id)
+        ).first()
+        if not playlist:
+            raise ValueError("Playlist not found for video build job.")
+
+        meta = dict(playlist.metadata_json or {})
+        if not playlist.output_audio_path:
+            raise ValueError("Playlist audio has not been rendered yet.")
+        audio_path = Path(playlist.output_audio_path)
+        if not audio_path.exists():
+            raise ValueError("Rendered playlist audio file is missing on disk.")
+        cover_image_path = meta.get("cover_image_path")
+        if not cover_image_path or not Path(cover_image_path).exists():
+            raise ValueError("Approved cover image is missing on disk.")
+        if not meta.get("cover_approved"):
+            raise ValueError("Cover image must be approved before video render.")
+
+        meta["workflow_state"] = "video_rendering"
+        meta["note"] = "Rendering release video."
+        meta.pop("video_build_error", None)
+        playlist.metadata_json = meta
+        playlist.status = PlaylistStatus.building
+        db.add(playlist)
+        db.commit()
+        db.refresh(playlist)
+
+        workspace_mode = str(meta.get("workspace_mode") or "playlist")
+        tracks = [
+            item.track
+            for item in sorted(playlist.items, key=lambda item: item.order_index)
+            if item.track is not None
+        ]
+        video_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp4"
+        if workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
+            loop_prompt = self._build_dreamina_prompt(playlist, tracks)
+            clip_path = Path(self.settings.playlists_dir) / f"{playlist.id}-dreamina.mp4"
+            clip = self.services.dreamina.generate_loop_clip(prompt=loop_prompt)
+            downloaded_clip = self.services.dreamina.download_video(clip.video_url, clip_path)
+            playlist.output_video_path = str(
+                self.services.playlist_builder.build_looped_video(downloaded_clip, audio_path, video_path)
+            )
+            meta["dreamina_job_id"] = clip.job_id
+            meta["dreamina_video_url"] = clip.video_url
+            meta["loop_video_path"] = str(downloaded_clip)
+        else:
+            playlist.output_video_path = str(
+                self.services.playlist_builder.build_video(audio_path, Path(cover_image_path), video_path)
+            )
+
+        youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
+        meta["youtube_title"] = youtube_metadata.title
+        meta["youtube_description"] = youtube_metadata.description
+        meta["youtube_tags"] = youtube_metadata.tags
+        meta["metadata_approved"] = False
+        meta["publish_approved"] = False
+        meta["workflow_state"] = "metadata_review"
+        meta["note"] = "Video render completed. Review YouTube metadata next."
+        playlist.metadata_json = meta
+        playlist.status = PlaylistStatus.ready
+
+        job.result_json = {
+            **(job.result_json or {}),
+            "playlist_id": playlist.id,
+            "cover_image_path": cover_image_path,
+            "output_video_path": playlist.output_video_path,
+            "youtube_title": youtube_metadata.title,
+        }
+        db.add(playlist)
+        db.add(job)
 
     def _process_sync_slack_job(self, db: Session, job: Job) -> None:
         if not job.track_id:
@@ -221,55 +297,25 @@ class BackgroundJobWorker:
             raise ValueError("Playlist has no tracks to publish.")
         if not meta.get("publish_ready") or playlist.actual_duration_seconds < playlist.target_duration_seconds:
             raise ValueError("Playlist has not reached its target duration yet.")
-        if not playlist.output_audio_path:
-            raise ValueError("Playlist audio has not been rendered yet.")
+        if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
+            raise ValueError("Rendered video is required before final YouTube upload.")
+        cover_image_path = meta.get("cover_image_path")
+        if not cover_image_path or not Path(cover_image_path).exists():
+            raise ValueError("Approved cover image is missing on disk.")
+        if not meta.get("cover_approved"):
+            raise ValueError("Cover image must be approved before final YouTube upload.")
+        if not meta.get("metadata_approved"):
+            raise ValueError("YouTube metadata must be approved before final YouTube upload.")
+        title = str(meta.get("youtube_title") or "").strip()
+        description = str(meta.get("youtube_description") or "").strip()
+        tags = list(meta.get("youtube_tags") or [])
+        if not title or not description:
+            raise ValueError("YouTube metadata draft is missing before final YouTube upload.")
 
-        audio_path = Path(playlist.output_audio_path)
-        if not audio_path.exists():
-            raise ValueError("Rendered playlist audio file is missing on disk.")
-
-        cover_image_path = self.services.cover_art.generate_cover(playlist)
-        meta["cover_image_path"] = cover_image_path
         meta["publish_approved"] = True
         meta["publish_approved_by"] = actor
+        meta["workflow_state"] = "publish_queued"
         meta["note"] = note
-        workspace_mode = str(meta.get("workspace_mode") or "playlist")
-        tracks = [
-            item.track
-            for item in sorted(playlist.items, key=lambda item: item.order_index)
-            if item.track is not None
-        ]
-        youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
-        meta["youtube_title"] = youtube_metadata.title
-        meta["youtube_description"] = youtube_metadata.description
-        meta["workflow_state"] = "ready_for_youtube"
-
-        if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
-            try:
-                video_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp4"
-                if workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
-                    loop_prompt = self._build_dreamina_prompt(playlist, tracks)
-                    clip_path = Path(self.settings.playlists_dir) / f"{playlist.id}-dreamina.mp4"
-                    clip = self.services.dreamina.generate_loop_clip(prompt=loop_prompt)
-                    downloaded_clip = self.services.dreamina.download_video(clip.video_url, clip_path)
-                    playlist.output_video_path = str(
-                        self.services.playlist_builder.build_looped_video(downloaded_clip, audio_path, video_path)
-                    )
-                    meta["dreamina_job_id"] = clip.job_id
-                    meta["dreamina_video_url"] = clip.video_url
-                    meta["loop_video_path"] = str(downloaded_clip)
-                else:
-                    playlist.output_video_path = str(
-                        self.services.playlist_builder.build_video(audio_path, Path(cover_image_path), video_path)
-                    )
-            except Exception as exc:  # noqa: BLE001
-                playlist.status = PlaylistStatus.ready
-                meta["workflow_state"] = "video_build_failed"
-                meta["note"] = f"Automatic video build failed: {exc}"
-                meta["video_build_error"] = str(exc)
-                playlist.metadata_json = meta
-                db.add(playlist)
-                raise
 
         if self.settings.youtube_auto_upload_on_publish:
             youtube_status = self.services.youtube.get_status()
@@ -277,9 +323,9 @@ class BackgroundJobWorker:
                 try:
                     result = self.services.youtube.upload_playlist_video(
                         playlist,
-                        title=youtube_metadata.title,
-                        description=youtube_metadata.description,
-                        tags=youtube_metadata.tags,
+                        title=title,
+                        description=description,
+                        tags=tags,
                         thumbnail_path=cover_image_path,
                     )
                     playlist.youtube_video_id = result.video_id
@@ -314,6 +360,7 @@ class BackgroundJobWorker:
             "cover_image_path": cover_image_path,
             "output_video_path": playlist.output_video_path,
             "youtube_video_id": playlist.youtube_video_id,
+            "youtube_title": title,
         }
         db.add(playlist)
         db.add(job)
@@ -328,6 +375,11 @@ class BackgroundJobWorker:
                 meta["render_ready"] = False
                 meta["render_error"] = error_text
                 meta["note"] = f"Background render failed: {error_text}"
+            elif job.type == JobType.build_video:
+                playlist.status = PlaylistStatus.ready
+                meta["workflow_state"] = "video_build_failed"
+                meta["video_build_error"] = error_text
+                meta["note"] = f"Background video render failed: {error_text}"
             elif job.type == JobType.upload_youtube:
                 playlist.status = PlaylistStatus.ready
                 if meta.get("workflow_state") not in {"video_build_failed", "youtube_upload_failed"}:
@@ -349,7 +401,9 @@ class BackgroundJobWorker:
             return None
         if not meta.get("auto_publish_when_ready"):
             return None
-        if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+        if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
+            return None
+        if not meta.get("cover_approved") or not meta.get("metadata_approved"):
             return None
 
         active_job = db.scalars(

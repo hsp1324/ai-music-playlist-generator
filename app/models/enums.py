@@ -36,6 +36,7 @@ class JobType(str, Enum):
     generate_track = "generate_track"
     review_track = "review_track"
     build_playlist = "build_playlist"
+    build_video = "build_video"
     upload_youtube = "upload_youtube"
     sync_slack = "sync_slack"
 
