@@ -67,6 +67,16 @@ The command returns JSON with:
 After this, the track appears in the web/Slack review queue. A human should approve it before render.
 If `--cover` is provided and this is a Single Release, approving the track automatically registers that image as the release cover.
 
+## Web Review Surface
+
+After OpenClaw uploads audio, the web UI shows the selected release as a music-library style list:
+
+- `Awaiting Approval` contains uploaded candidates with cover art, duration, player controls, prompt notes, and approve/hold/reject actions.
+- `Final Order` contains approved tracks in playlist order. Playlist releases can be reordered by drag/drop before audio rendering.
+- Single Releases should end with one approved selected track. Playlist Releases may contain many approved tracks.
+
+OpenClaw should only upload candidate files and report the returned JSON. It should not depend on the UI layout, approve tracks, reorder tracks, render audio/video, or publish unless the human explicitly asks.
+
 ## Upload To Existing Release
 
 First list release ids:

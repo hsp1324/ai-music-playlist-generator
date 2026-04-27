@@ -1506,6 +1506,7 @@ function renderWorkspaceDetail() {
   workspace.tracks.forEach((track, index) => {
     const fragment = approvedCardTemplate.content.cloneNode(true);
     const card = fragment.querySelector(".approved-card");
+    const order = fragment.querySelector(".approved-index");
     const image = fragment.querySelector(".approved-art");
     const title = fragment.querySelector(".approved-title");
     const meta = fragment.querySelector(".approved-meta");
@@ -1517,6 +1518,7 @@ function renderWorkspaceDetail() {
     const imageUrl = trackCoverUrl(track);
 
     card.dataset.trackId = track.id;
+    if (order) order.textContent = String(index + 1).padStart(2, "0");
     if (workspace.tracks.length > 1) {
       card.draggable = true;
       card.addEventListener("dragstart", (event) => {
