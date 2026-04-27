@@ -432,6 +432,20 @@ button:disabled {
   gap: 14px;
 }
 
+.archived-workspace-section {
+  margin-top: 22px;
+}
+
+.compact-headline h3 {
+  margin: 0;
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: clamp(1.25rem, 2vw, 1.8rem);
+}
+
+.archived-workspace-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 320px));
+}
+
 .workspace-tile {
   position: relative;
   display: grid;
@@ -468,6 +482,14 @@ button:disabled {
   background:
     linear-gradient(135deg, rgba(241, 181, 71, 0.55), transparent 48%),
     #fff9eb;
+}
+
+.archived-tile {
+  background:
+    linear-gradient(135deg, rgba(119, 108, 95, 0.14), transparent 52%),
+    #f7efe1;
+  box-shadow: 5px 5px 0 rgba(23, 19, 15, 0.45);
+  opacity: 0.92;
 }
 
 .workspace-tile-head {

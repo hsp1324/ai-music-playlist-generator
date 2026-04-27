@@ -54,6 +54,7 @@ def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, 
                 "title": release["title"],
                 "type": "single" if release["workspace_mode"] == "single_track_video" else "playlist",
                 "workflow_state": release["workflow_state"],
+                "archived": release.get("hidden", False),
                 "tracks": len(release["tracks"]),
             }
             for release in releases
@@ -89,6 +90,34 @@ def create_single_release(client: httpx.Client, title: str, description: str = "
     )
 
 
+def upload_audio_file_to_release(
+    client: httpx.Client,
+    *,
+    release_id: str,
+    audio_path: Path,
+    title: str,
+    prompt: str,
+    tags: str,
+) -> dict[str, Any]:
+    content_type = mimetypes.guess_type(str(audio_path))[0] or "audio/mpeg"
+    with audio_path.open("rb") as handle:
+        return request_json(
+            client,
+            "POST",
+            "/tracks/manual-upload",
+            data={
+                "title": title,
+                "prompt": prompt or "OpenClaw generated audio upload",
+                "duration_seconds": "0",
+                "pending_workspace_id": release_id,
+                "tags": tags or "",
+            },
+            files={
+                "audio_file": (audio_path.name, handle, content_type),
+            },
+        )
+
+
 def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_path = Path(args.audio).expanduser().resolve()
     if not audio_path.exists():
@@ -117,23 +146,14 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
     else:
         raise RuntimeError("Use --new-single, --release-id, or --release-title.")
 
-    content_type = mimetypes.guess_type(str(audio_path))[0] or "audio/mpeg"
-    with audio_path.open("rb") as handle:
-        track = request_json(
-            client,
-            "POST",
-            "/tracks/manual-upload",
-            data={
-                "title": title,
-                "prompt": args.prompt or "OpenClaw generated audio upload",
-                "duration_seconds": "0",
-                "pending_workspace_id": release["id"],
-                "tags": args.tags or "",
-            },
-            files={
-                "audio_file": (audio_path.name, handle, content_type),
-            },
-        )
+    track = upload_audio_file_to_release(
+        client,
+        release_id=release["id"],
+        audio_path=audio_path,
+        title=title,
+        prompt=args.prompt,
+        tags=args.tags,
+    )
 
     return {
         "ok": True,
@@ -151,6 +171,62 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "status": track["status"],
         },
         "next": "Review and approve the track in Slack or the web UI.",
+    }
+
+
+def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
+    if not 1 <= len(audio_paths) <= 2:
+        raise RuntimeError("A single release can accept one or two Suno candidate audio files.")
+    for audio_path in audio_paths:
+        if not audio_path.exists():
+            raise RuntimeError(f"Audio file does not exist: {audio_path}")
+        if not audio_path.is_file():
+            raise RuntimeError(f"Audio path is not a file: {audio_path}")
+
+    release_title = args.release_title or file_stem(audio_paths[0])
+    release = create_single_release(
+        client,
+        release_title,
+        description=(
+            f"Single release candidate set created by OpenClaw from "
+            f"{', '.join(path.name for path in audio_paths)}."
+        ),
+    )
+
+    tracks = []
+    for index, audio_path in enumerate(audio_paths, start=1):
+        track_title = args.title[index - 1] if args.title and index <= len(args.title) else file_stem(audio_path)
+        track = upload_audio_file_to_release(
+            client,
+            release_id=release["id"],
+            audio_path=audio_path,
+            title=track_title,
+            prompt=args.prompt,
+            tags=args.tags,
+        )
+        tracks.append(
+            {
+                "id": track["id"],
+                "title": track["title"],
+                "status": track["status"],
+            }
+        )
+
+    return {
+        "ok": True,
+        "action": "upload-single-candidates",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workspace_mode": release["workspace_mode"],
+            "workflow_state": release["workflow_state"],
+        },
+        "tracks": tracks,
+        "next": (
+            "Human review should approve exactly one candidate. "
+            "If both candidates are rejected, the release is automatically archived and can be restored from the web UI."
+        ),
     }
 
 
@@ -209,6 +285,17 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
     audio_parser.set_defaults(func=upload_audio)
+
+    candidates_parser = subparsers.add_parser(
+        "upload-single-candidates",
+        help="Create a Single Release and upload one or two Suno candidate tracks.",
+    )
+    candidates_parser.add_argument("--audio", action="append", required=True, help="Candidate audio path. Repeat up to two times.")
+    candidates_parser.add_argument("--title", action="append", default=[], help="Candidate title. Repeat in the same order as --audio.")
+    candidates_parser.add_argument("--release-title", default="", help="Single release title. Defaults to first audio filename stem.")
+    candidates_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by the candidates.")
+    candidates_parser.add_argument("--tags", default="", help="Comma-separated tags shared by the candidates.")
+    candidates_parser.set_defaults(func=upload_single_candidates)
 
     cover_parser = subparsers.add_parser("upload-cover", help="Upload a 16:9 cover image for a release.")
     cover_parser.add_argument("--cover", required=True, help="Path to cover image file: jpg, png, or webp.")

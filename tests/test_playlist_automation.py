@@ -469,6 +469,99 @@ def test_single_release_accepts_only_one_approved_track(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_single_release_archives_when_all_candidates_are_rejected_and_can_restore(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Two Candidate Single",
+                "workspace_mode": "single_track_video",
+                "auto_publish_when_ready": False,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        track_ids = []
+        for index in range(2):
+            upload_response = client.post(
+                "/api/tracks/manual-upload",
+                data={
+                    "title": f"Candidate {index + 1}",
+                    "prompt": "suno two-candidate single",
+                    "duration_seconds": "60",
+                    "pending_workspace_id": workspace_id,
+                },
+                files={"audio_file": (f"candidate-{index + 1}.mp3", b"fake-audio", "audio/mpeg")},
+            )
+            assert upload_response.status_code == 201
+            track_ids.append(upload_response.json()["id"])
+
+        third_upload = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Candidate 3",
+                "prompt": "too many candidates",
+                "duration_seconds": "60",
+                "pending_workspace_id": workspace_id,
+            },
+            files={"audio_file": ("candidate-3.mp3", b"fake-audio", "audio/mpeg")},
+        )
+        assert third_upload.status_code == 400
+        assert "at most two" in third_upload.json()["detail"]
+
+        first_reject = client.post(
+            f"/api/tracks/{track_ids[0]}/decisions",
+            json={
+                "decision": "reject",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert first_reject.status_code == 200
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["hidden"] is False
+
+        second_reject = client.post(
+            f"/api/tracks/{track_ids[1]}/decisions",
+            json={
+                "decision": "reject",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert second_reject.status_code == 200
+        workspaces_response = client.get("/api/playlists/workspaces")
+        archived = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert archived["hidden"] is True
+        assert archived["workflow_state"] == "archived"
+        assert "archived" in archived["note"]
+
+        restore_response = client.post(
+            f"/api/playlists/{workspace_id}/archive",
+            json={
+                "actor": "test-suite",
+                "archived": False,
+                "revive_rejected": True,
+            },
+        )
+        assert restore_response.status_code == 200
+        restored = restore_response.json()
+        assert restored["hidden"] is False
+        assert restored["workflow_state"] == "collecting"
+
+        for track_id in track_ids:
+            track_response = client.get(f"/api/tracks/{track_id}")
+            assert track_response.status_code == 200
+            assert track_response.json()["status"] == "pending_review"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_workspace_tracks_can_be_reordered(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

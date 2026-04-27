@@ -13,6 +13,7 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.schemas.playlist import (
     PlaylistBuildRequest,
+    PlaylistArchiveRequest,
     PlaylistCoverApproveRequest,
     PlaylistCoverGenerateRequest,
     PlaylistMetadataApproveRequest,
@@ -42,6 +43,7 @@ from app.workflows.playlist_automation import (
     queue_workspace_audio_render,
     reorder_workspace_tracks,
     serialize_playlist_workspace,
+    set_playlist_workspace_archive_state,
 )
 
 router = APIRouter(prefix="/playlists", tags=["playlists"])
@@ -144,6 +146,25 @@ def reorder_workspace_playlist_tracks(
             playlist_id=playlist_id,
             track_ids=payload.track_ids,
             actor=payload.actor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/archive", response_model=PlaylistWorkspaceRead)
+def archive_workspace_playlist(
+    playlist_id: str,
+    payload: PlaylistArchiveRequest,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = set_playlist_workspace_archive_state(
+            db,
+            playlist_id=playlist_id,
+            actor=payload.actor,
+            archived=payload.archived,
+            revive_rejected=payload.revive_rejected,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

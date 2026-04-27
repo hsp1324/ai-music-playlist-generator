@@ -204,6 +204,86 @@ def create_playlist_workspace(
     return playlist
 
 
+def set_playlist_workspace_archive_state(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+    archived: bool,
+    revive_rejected: bool = True,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("archive_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "archived": archived,
+            "decided_at": _utcnow().isoformat(),
+        }
+    )
+    meta["archive_history"] = history
+    meta["hidden"] = archived
+    if archived:
+        meta["archived_at"] = _utcnow().isoformat()
+        meta["archived_by"] = actor
+        meta["workflow_state"] = "archived"
+        meta["note"] = "Single release archived after all candidates were rejected."
+        playlist.status = PlaylistStatus.draft
+    else:
+        meta.pop("archived_at", None)
+        meta.pop("archived_by", None)
+        if not playlist.items:
+            meta["workflow_state"] = "collecting"
+            meta["publish_ready"] = False
+        meta["note"] = "Release restored from archive."
+        if revive_rejected:
+            for track in _workspace_candidate_tracks(db, playlist.id):
+                if track.status == TrackStatus.rejected:
+                    track.status = TrackStatus.pending_review
+                    track.reviewed_at = None
+                    db.add(track)
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def maybe_archive_rejected_single_workspace(
+    db: Session,
+    *,
+    playlist_id: str | None,
+    actor: str,
+) -> Playlist | None:
+    if not playlist_id:
+        return None
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        return None
+    meta = _playlist_meta(playlist)
+    if _workspace_mode(playlist) != "single_track_video" or meta.get("hidden") or playlist.items:
+        return None
+
+    candidates = _workspace_candidate_tracks(db, playlist.id)
+    if not candidates:
+        return None
+    if any(track.status in {TrackStatus.pending_review, TrackStatus.held, TrackStatus.approved} for track in candidates):
+        return None
+    if not all(track.status == TrackStatus.rejected for track in candidates):
+        return None
+
+    return set_playlist_workspace_archive_state(
+        db,
+        playlist_id=playlist.id,
+        actor=actor,
+        archived=True,
+        revive_rejected=False,
+    )
+
+
 def _refresh_playlist_duration(playlist: Playlist) -> None:
     playlist.actual_duration_seconds = sum(
         max(item.included_duration_seconds, 0) for item in playlist.items
@@ -221,6 +301,15 @@ def _playlist_tracks(playlist: Playlist) -> list[Track]:
 def _all_tracks_renderable(playlist: Playlist) -> bool:
     tracks = _playlist_tracks(playlist)
     return bool(tracks) and all(_has_local_audio(track) for track in tracks)
+
+
+def _workspace_candidate_tracks(db: Session, playlist_id: str) -> list[Track]:
+    tracks = db.scalars(select(Track).order_by(Track.created_at.asc())).all()
+    return [
+        track
+        for track in tracks
+        if (track.metadata_json or {}).get("pending_workspace_id") == playlist_id
+    ]
 
 
 def _clear_downstream_release_assets(playlist: Playlist, meta: dict) -> None:

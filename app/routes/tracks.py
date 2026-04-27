@@ -15,7 +15,12 @@ from app.schemas.common import MessageResponse
 from app.schemas.track import TrackCreateRequest, TrackDecisionRequest, TrackRead, TrackReturnToReviewRequest
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
-from app.workflows.playlist_automation import assign_track_to_playlist, maybe_build_auto_playlist, return_track_to_workspace_queue
+from app.workflows.playlist_automation import (
+    assign_track_to_playlist,
+    maybe_archive_rejected_single_workspace,
+    maybe_build_auto_playlist,
+    return_track_to_workspace_queue,
+)
 from app.workflows.review_dispatch import dispatch_track_review, post_track_review_to_slack
 from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_review_request
 
@@ -74,6 +79,29 @@ def _queue_slack_review_job(db: Session, track: Track, *, source: str) -> None:
         )
     )
     db.commit()
+
+
+def _validate_pending_workspace_upload(db: Session, pending_workspace_id: str | None) -> None:
+    if not pending_workspace_id:
+        return
+    playlist = db.get(Playlist, pending_workspace_id)
+    if not playlist:
+        raise HTTPException(status_code=400, detail="Pending workspace does not exist.")
+    meta = dict(playlist.metadata_json or {})
+    if meta.get("hidden"):
+        raise HTTPException(status_code=400, detail="Pending workspace is archived. Restore it before uploading.")
+    if meta.get("workspace_mode") != "single_track_video":
+        return
+    if playlist.items:
+        raise HTTPException(status_code=400, detail="Single release already has a selected track.")
+
+    candidate_count = 0
+    tracks = db.scalars(select(Track)).all()
+    for track in tracks:
+        if (track.metadata_json or {}).get("pending_workspace_id") == pending_workspace_id:
+            candidate_count += 1
+    if candidate_count >= 2:
+        raise HTTPException(status_code=400, detail="Single release can hold at most two review candidates.")
 
 
 def _probe_duration_seconds(audio_path: str | None) -> int | None:
@@ -192,6 +220,7 @@ async def manual_upload_track(
     db: Session = Depends(get_db),
 ) -> TrackRead:
     services = get_services(request)
+    _validate_pending_workspace_upload(db, pending_workspace_id)
     audio_path = audio_url
     inferred_duration_seconds = duration_seconds
     if not audio_file and not audio_url:
@@ -287,6 +316,13 @@ async def decide_track(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif payload.decision == DecisionValue.approve:
         await maybe_build_auto_playlist(db, services, trigger=f"manual-decision:{track.id}")
+    elif payload.decision == DecisionValue.reject:
+        pending_workspace_id = (track.metadata_json or {}).get("pending_workspace_id")
+        maybe_archive_rejected_single_workspace(
+            db,
+            playlist_id=pending_workspace_id,
+            actor=payload.actor,
+        )
 
     await sync_slack_review_decision(
         db,

@@ -6,6 +6,8 @@ const state = {
 };
 
 const workspaceGrid = document.querySelector("#workspace-grid");
+const archivedWorkspaceSection = document.querySelector("#archived-workspace-section");
+const archivedWorkspaceGrid = document.querySelector("#archived-workspace-grid");
 const detailPanel = document.querySelector("#workspace-detail-panel");
 const detailTitle = document.querySelector("#detail-title");
 const detailMeta = document.querySelector("#detail-meta");
@@ -791,6 +793,10 @@ function visibleWorkspaces() {
   return state.workspaces.filter((workspace) => !workspace.hidden);
 }
 
+function archivedWorkspaces() {
+  return state.workspaces.filter((workspace) => workspace.hidden);
+}
+
 function ensureSelectedWorkspace() {
   const visible = visibleWorkspaces();
   if (visible.some((workspace) => workspace.id === state.selectedWorkspaceId)) return;
@@ -810,7 +816,7 @@ function workspaceOptions(selectedId = "") {
 
 function quickUploadWorkspaceOptions(selectedId = "") {
   const createSingleSelected = selectedId === QUICK_UPLOAD_NEW_SINGLE_VALUE ? "selected" : "";
-  const createSingleOption = `<option value="${QUICK_UPLOAD_NEW_SINGLE_VALUE}" ${createSingleSelected}>+ New Single Release from this file</option>`;
+  const createSingleOption = `<option value="${QUICK_UPLOAD_NEW_SINGLE_VALUE}" ${createSingleSelected}>+ New Single Release from selected candidate(s)</option>`;
   const options = visibleWorkspaces()
     .map((workspace) => {
       const selected = workspace.id === selectedId ? "selected" : "";
@@ -837,10 +843,11 @@ function toggleDrawer(forceOpen) {
 function updateToolbarSummary() {
   const pending = pendingTracks().length;
   const visible = visibleWorkspaces();
+  const archived = archivedWorkspaces().length;
   const ready = visible.filter((workspace) => workspace.publish_ready && !workspace.publish_approved).length;
   const singles = visible.filter((workspace) => isSingleRelease(workspace)).length;
   const playlists = visible.length - singles;
-  toolbarSummaryText.textContent = `Review ${pending} · Singles ${singles} · Playlists ${playlists} · Ready ${ready}`;
+  toolbarSummaryText.textContent = `Review ${pending} · Singles ${singles} · Playlists ${playlists} · Ready ${ready} · Archive ${archived}`;
 }
 
 function renderTrackWorkspaceOptions() {
@@ -877,13 +884,15 @@ function setQuickUploadFiles(files) {
   if (quickUploadFiles.length) {
     const hint = quickUploadFiles.length === 1
       ? "기존 release를 선택하거나 '+ New Single Release from this file'을 선택하세요."
-      : "여러 파일은 기존 Playlist Release를 선택하세요.";
+      : quickUploadFiles.length === 2
+        ? "Suno 후보 2곡은 새 Single Release 후보로 함께 올릴 수 있습니다."
+        : "3개 이상 파일은 Playlist Release를 선택하세요.";
     setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. ${hint}`);
   }
 }
 
-async function createSingleReleaseFromFile(file) {
-  const title = fileStem(file.name);
+async function createSingleReleaseFromFiles(files) {
+  const title = fileStem(files[0].name);
   return api("/api/playlists/workspaces", {
     method: "POST",
     body: JSON.stringify({
@@ -891,7 +900,9 @@ async function createSingleReleaseFromFile(file) {
       target_duration_seconds: 1,
       workspace_mode: "single_track_video",
       auto_publish_when_ready: false,
-      description: `Single release created from ${file.name}.`,
+      description: files.length === 1
+        ? `Single release created from ${files[0].name}.`
+        : `Single release created from ${files.length} Suno candidates: ${files.map((file) => file.name).join(", ")}.`,
       cover_prompt: "",
       dreamina_prompt: "",
     }),
@@ -908,13 +919,13 @@ async function submitQuickUpload() {
     return;
   }
   const createNewSingle = quickUploadWorkspaceSelect.value === QUICK_UPLOAD_NEW_SINGLE_VALUE;
-  if (createNewSingle && quickUploadFiles.length !== 1) {
-    setStatus(quickUploadStatus, "New Single Release는 파일 하나만 선택했을 때 사용할 수 있습니다.");
+  if (createNewSingle && quickUploadFiles.length > 2) {
+    setStatus(quickUploadStatus, "New Single Release는 Suno 후보 기준 최대 2곡까지 올릴 수 있습니다.");
     return;
   }
   const selectedWorkspace = state.workspaces.find((workspace) => workspace.id === quickUploadWorkspaceSelect.value);
-  if (isSingleRelease(selectedWorkspace) && quickUploadFiles.length > 1) {
-    setStatus(quickUploadStatus, "Single release에는 파일 하나만 올릴 수 있습니다. 여러 곡이면 Playlist release를 선택하세요.");
+  if (isSingleRelease(selectedWorkspace) && quickUploadFiles.length + pendingTracks(selectedWorkspace.id).length > 2) {
+    setStatus(quickUploadStatus, "Single release 후보는 최대 2곡입니다. 기존 후보를 먼저 선택하거나 reject하세요.");
     return;
   }
 
@@ -926,7 +937,7 @@ async function submitQuickUpload() {
   try {
     if (createNewSingle) {
       setTextStatus(quickUploadStatus, `Single release 생성 중: ${fileStem(quickUploadFiles[0].name)}`);
-      const workspace = await createSingleReleaseFromFile(quickUploadFiles[0]);
+      const workspace = await createSingleReleaseFromFiles(quickUploadFiles);
       workspaceId = workspace.id;
       state.selectedWorkspaceId = workspaceId;
       await refreshBoard();
@@ -1005,6 +1016,7 @@ function renderWorkspaceTiles() {
   workspaceGrid.innerHTML = "";
 
   const visible = visibleWorkspaces();
+  renderArchivedWorkspaceTiles();
 
   if (!visible.length) {
     const empty = document.createElement("div");
@@ -1057,6 +1069,57 @@ function renderWorkspaceTiles() {
 
     tile.addEventListener("click", () => selectWorkspace(workspace.id, false));
     workspaceGrid.appendChild(fragment);
+  });
+}
+
+function renderArchivedWorkspaceTiles() {
+  if (!archivedWorkspaceSection || !archivedWorkspaceGrid) return;
+  const archived = archivedWorkspaces();
+  archivedWorkspaceSection.hidden = !archived.length;
+  archivedWorkspaceGrid.innerHTML = "";
+  archived.forEach((workspace) => {
+    const fragment = workspaceTileTemplate.content.cloneNode(true);
+    const tile = fragment.querySelector(".workspace-tile");
+    const mode = fragment.querySelector(".workspace-mode");
+    const name = fragment.querySelector(".workspace-name");
+    const stateEl = fragment.querySelector(".workspace-state");
+    const copy = fragment.querySelector(".workspace-copy");
+    const pipeline = fragment.querySelector(".workspace-pipeline");
+    const next = fragment.querySelector(".workspace-next");
+    const approvedStat = fragment.querySelector(".approved-stat");
+    const pendingStat = fragment.querySelector(".pending-stat");
+    const hint = fragment.querySelector(".workspace-hint");
+    const moreButton = fragment.querySelector(".more-button");
+    const rejectedCount = state.tracks.filter(
+      (track) => track.status === "rejected" && track.metadata_json?.pending_workspace_id === workspace.id
+    ).length;
+
+    tile.classList.add("archived-tile");
+    mode.textContent = `${releaseModeLabel(workspace)} · Archived`;
+    name.textContent = displayTitle(workspace.title, "Archived Release");
+    stateEl.textContent = "Archived";
+    stateEl.classList.add("waiting");
+    copy.textContent = shortText(workspace.note || workspace.description || "All candidates were rejected.", 140);
+    pipeline.remove();
+    next.textContent = "Restore하면 rejected 후보가 다시 review queue로 돌아옵니다.";
+    approvedStat.textContent = `${workspace.tracks.length} selected`;
+    pendingStat.textContent = `${rejectedCount} rejected`;
+    hint.textContent = "Archived";
+    moreButton.textContent = "Restore";
+    moreButton.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await api(`/api/playlists/${workspace.id}/archive`, {
+        method: "POST",
+        body: JSON.stringify({
+          actor: "web-ui",
+          archived: false,
+          revive_rejected: true,
+        }),
+      });
+      state.selectedWorkspaceId = workspace.id;
+      await refresh();
+    });
+    archivedWorkspaceGrid.appendChild(fragment);
   });
 }
 

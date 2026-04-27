@@ -17,6 +17,7 @@ from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import (
     assign_track_to_playlist,
+    maybe_archive_rejected_single_workspace,
     maybe_build_auto_playlist,
     return_track_to_workspace_queue,
 )
@@ -289,6 +290,8 @@ async def slack_interactions(
     assigned_workspace_id = None
     assigned_workspace_title = None
     assignment_error = None
+    archive_note = None
+    archived_workspace_title = None
     pending_workspace_id = (track.metadata_json or {}).get("pending_workspace_id")
     if decision == DecisionValue.approve and pending_workspace_id:
         try:
@@ -304,12 +307,23 @@ async def slack_interactions(
         except ValueError as exc:
             assignment_error = str(exc)
             await maybe_build_auto_playlist(db, services, trigger=f"slack-decision:{track.id}")
+    elif decision == DecisionValue.reject:
+        archived = maybe_archive_rejected_single_workspace(
+            db,
+            playlist_id=pending_workspace_id,
+            actor=actor,
+        )
+        if archived:
+            archived_workspace_title = archived.title
+            archive_note = "All single release candidates were rejected; workspace archived."
     else:
         await maybe_build_auto_playlist(db, services, trigger=f"slack-decision:{track.id}")
 
     response_text = f"Recorded `{decision.value}` for track `{track.title}`."
     if assigned_workspace_title:
         response_text += f" Assigned to workspace `{assigned_workspace_title}`."
+    if archive_note:
+        response_text += f" Workspace `{archived_workspace_title}` archived. {archive_note}"
     elif assignment_error:
         response_text += f" Workspace assignment failed: {assignment_error}."
 

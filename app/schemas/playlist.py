@@ -59,6 +59,12 @@ class PlaylistRenderRequest(BaseModel):
     actor: str = "web-ui"
 
 
+class PlaylistArchiveRequest(BaseModel):
+    actor: str = "web-ui"
+    archived: bool = True
+    revive_rejected: bool = True
+
+
 class PlaylistTrackReorderRequest(BaseModel):
     track_ids: list[str] = Field(min_length=1)
     actor: str = "web-ui"
