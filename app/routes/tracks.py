@@ -1,7 +1,9 @@
 import shutil
 import subprocess
+from urllib.parse import unquote, urlparse
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -26,6 +28,7 @@ from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_revi
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+REMOTE_AUDIO_TIMEOUT_SECONDS = 180.0
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -69,6 +72,10 @@ def _create_track_record(
     return track
 
 
+def _is_remote_url(value: str | None) -> bool:
+    return bool(value and value.startswith(("http://", "https://")))
+
+
 def _queue_slack_review_job(db: Session, track: Track, *, source: str) -> None:
     db.add(
         Job(
@@ -108,7 +115,7 @@ def _validate_pending_workspace_upload(db: Session, pending_workspace_id: str | 
 def _probe_duration_seconds(audio_path: str | None) -> int | None:
     if not audio_path:
         return None
-    if audio_path.startswith(("http://", "https://")):
+    if _is_remote_url(audio_path):
         return None
 
     try:
@@ -135,7 +142,7 @@ def _probe_duration_seconds(audio_path: str | None) -> int | None:
 
 
 def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | None:
-    if not audio_path or audio_path.startswith(("http://", "https://")):
+    if not audio_path or _is_remote_url(audio_path):
         return None
 
     source = Path(audio_path)
@@ -192,6 +199,66 @@ def _resolve_upload_destination(tracks_dir: Path, original_name: str) -> Path:
     return candidate
 
 
+def _filename_from_remote_audio_url(audio_url: str, fallback_title: str) -> str:
+    parsed_name = Path(unquote(urlparse(audio_url).path)).name
+    if parsed_name and Path(parsed_name).suffix:
+        return parsed_name
+    safe_title = "".join(
+        char if char.isalnum() or char in {" ", "-", "_", "."} else "-"
+        for char in fallback_title
+    ).strip(" .-_")
+    return f"{safe_title or 'remote-audio'}.mp3"
+
+
+def _cache_remote_audio_url(audio_url: str, tracks_dir: Path, *, title: str) -> str:
+    destination = _resolve_upload_destination(tracks_dir, _filename_from_remote_audio_url(audio_url, title))
+    try:
+        with httpx.Client(timeout=REMOTE_AUDIO_TIMEOUT_SECONDS, follow_redirects=True) as client:
+            with client.stream("GET", audio_url) as response:
+                response.raise_for_status()
+                with destination.open("wb") as output:
+                    for chunk in response.iter_bytes():
+                        if chunk:
+                            output.write(chunk)
+    except httpx.HTTPError as exc:
+        if destination.exists():
+            destination.unlink()
+        raise HTTPException(status_code=400, detail=f"Could not download remote audio URL: {exc}") from exc
+
+    if not destination.exists() or destination.stat().st_size == 0:
+        if destination.exists():
+            destination.unlink()
+        raise HTTPException(status_code=400, detail="Downloaded remote audio is empty.")
+
+    return str(destination)
+
+
+def _cache_payload_remote_audio(payload: TrackCreateRequest, tracks_dir: Path) -> TrackCreateRequest:
+    if not _is_remote_url(payload.audio_path):
+        return payload
+
+    remote_audio_url = payload.audio_path
+    cached_audio_path = _cache_remote_audio_url(remote_audio_url, tracks_dir, title=payload.title)
+    metadata = dict(payload.metadata or {})
+    metadata.setdefault("source_audio_url", remote_audio_url)
+    metadata.setdefault("audio_source", "remote-url-cache")
+    return payload.model_copy(
+        update={
+            "audio_path": cached_audio_path,
+            "metadata": metadata,
+        }
+    )
+
+
+def _remote_audio_cache_disabled_metadata(payload: TrackCreateRequest) -> TrackCreateRequest:
+    if not _is_remote_url(payload.audio_path):
+        return payload
+    metadata = dict(payload.metadata or {})
+    metadata.setdefault("source_audio_url", payload.audio_path)
+    metadata.setdefault("audio_source", "remote-url")
+    return payload.model_copy(update={"metadata": metadata})
+
+
 def _store_cover_upload(upload: UploadFile | None, covers_dir: Path) -> str | None:
     if not upload or not upload.filename:
         return None
@@ -217,6 +284,14 @@ async def create_track(
     db: Session = Depends(get_db),
 ) -> TrackRead:
     services = get_services(request)
+    payload = (
+        _cache_payload_remote_audio(payload, services.settings.tracks_dir)
+        if services.settings.cache_remote_audio_on_intake
+        else _remote_audio_cache_disabled_metadata(payload)
+    )
+    if payload.duration_seconds <= 0:
+        inferred_duration = _probe_duration_seconds(payload.audio_path) or 0
+        payload = payload.model_copy(update={"duration_seconds": inferred_duration})
     track = _create_track_record(db, payload)
     track = await dispatch_track_review(db, services, track)
     return TrackRead.model_validate(track)
@@ -253,6 +328,10 @@ async def manual_upload_track(
         audio_path = str(destination)
         if inferred_duration_seconds <= 0:
             inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
+    elif audio_url and services.settings.cache_remote_audio_on_intake:
+        audio_path = _cache_remote_audio_url(audio_url, services.settings.tracks_dir, title=title)
+        if inferred_duration_seconds <= 0:
+            inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
     elif inferred_duration_seconds <= 0:
         inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
 
@@ -267,6 +346,14 @@ async def manual_upload_track(
         source_track_id=source_track_id,
         metadata={
             "source": "manual-upload",
+            **(
+                {
+                    "source_audio_url": audio_url,
+                    "audio_source": "remote-url-cache" if services.settings.cache_remote_audio_on_intake else "remote-url",
+                }
+                if audio_url and not audio_file
+                else {}
+            ),
             **({"image_url": resolved_image_url} if resolved_image_url else {}),
             **({"cover_source": "cover-upload"} if uploaded_cover_path else {}),
             **({"tags": tags} if tags else {}),

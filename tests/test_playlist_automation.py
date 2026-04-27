@@ -14,10 +14,11 @@ from app.models.track import Track
 from app.routes.tracks import _extract_embedded_cover
 
 
-def create_isolated_client(tmp_path) -> TestClient:
+def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> TestClient:
     os.environ["AIMP_STORAGE_ROOT"] = str(tmp_path / "storage")
     os.environ["AIMP_DATABASE_URL"] = f"sqlite:///{tmp_path / 'app.db'}"
     os.environ["AIMP_WORKER_AUTOSTART"] = "false"
+    os.environ["AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE"] = "true" if cache_remote_audio else "false"
     get_settings.cache_clear()
     return TestClient(create_app())
 
@@ -26,6 +27,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_STORAGE_ROOT", None)
     os.environ.pop("AIMP_DATABASE_URL", None)
     os.environ.pop("AIMP_WORKER_AUTOSTART", None)
+    os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     get_settings.cache_clear()
 
 
@@ -103,6 +105,72 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         assert track["audio_path"].endswith("manual-upload.mp3")
         assert track["metadata_json"]["source"] == "manual-upload"
         assert track["metadata_json"]["model_score"] == 0.87
+    finally:
+        clear_isolated_client_env()
+
+
+def test_manual_upload_audio_url_is_cached_locally(tmp_path, monkeypatch) -> None:
+    try:
+        client = create_isolated_client(tmp_path, cache_remote_audio=True)
+        cached_audio = tmp_path / "storage" / "tracks" / "remote-song.mp3"
+
+        def fake_cache_remote_audio_url(audio_url, tracks_dir, *, title):
+            assert audio_url == "https://cdn.example.com/remote-song.mp3"
+            cached_audio.parent.mkdir(parents=True, exist_ok=True)
+            cached_audio.write_bytes(b"fake-remote-audio")
+            return str(cached_audio)
+
+        monkeypatch.setattr("app.routes.tracks._cache_remote_audio_url", fake_cache_remote_audio_url)
+
+        response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Remote Song",
+                "prompt": "remote suno intake candidate",
+                "duration_seconds": "123",
+                "audio_url": "https://cdn.example.com/remote-song.mp3",
+            },
+        )
+
+        assert response.status_code == 201
+        track = response.json()
+        assert track["audio_path"] == str(cached_audio)
+        assert track["metadata_json"]["source_audio_url"] == "https://cdn.example.com/remote-song.mp3"
+        assert track["metadata_json"]["audio_source"] == "remote-url-cache"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_create_track_audio_url_is_cached_locally(tmp_path, monkeypatch) -> None:
+    try:
+        client = create_isolated_client(tmp_path, cache_remote_audio=True)
+        cached_audio = tmp_path / "storage" / "tracks" / "api-remote.mp3"
+
+        def fake_cache_remote_audio_url(audio_url, tracks_dir, *, title):
+            assert audio_url == "https://cdn.example.com/api-remote.mp3"
+            cached_audio.parent.mkdir(parents=True, exist_ok=True)
+            cached_audio.write_bytes(b"fake-remote-audio")
+            return str(cached_audio)
+
+        monkeypatch.setattr("app.routes.tracks._cache_remote_audio_url", fake_cache_remote_audio_url)
+
+        response = client.post(
+            "/api/tracks",
+            json={
+                "title": "API Remote",
+                "prompt": "api remote intake",
+                "duration_seconds": 123,
+                "audio_path": "https://cdn.example.com/api-remote.mp3",
+                "metadata": {"source": "api-test"},
+            },
+        )
+
+        assert response.status_code == 201
+        track = response.json()
+        assert track["audio_path"] == str(cached_audio)
+        assert track["metadata_json"]["source_audio_url"] == "https://cdn.example.com/api-remote.mp3"
+        assert track["metadata_json"]["audio_source"] == "remote-url-cache"
+        assert track["metadata_json"]["source"] == "api-test"
     finally:
         clear_isolated_client_env()
 

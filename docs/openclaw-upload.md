@@ -87,6 +87,17 @@ Slack review alerts are intended to show a playable audio preview directly in Sl
 
 For the most reliable Slack preview, prefer passing a real local audio file path to `scripts/openclaw-release`. If OpenClaw only has a remote Suno URL, the app can still post a Slack-playable preview as long as the URL is publicly fetchable from the VM.
 
+## Remote Audio Playback Rule
+
+Mobile browsers can stop playback when they stream directly from temporary Suno/CDN URLs. To avoid that, the app now caches remote `audio_url`/`audio_path` values into local VM storage at intake time and serves playback from `/media/...`.
+
+Operational rules for OpenClaw:
+
+- Prefer uploading a local audio file path when possible.
+- If only a remote Suno/CDN URL is available, submit it as `audio_url` or `audio_path`; the app will download it into local storage before creating the track.
+- Do not leave release candidates pointing directly at `cdn1.suno.ai` unless the local cache step fails and the failure is reported to the human.
+- Existing remote-only tracks should be backfilled to local storage before serious mobile review.
+
 ## Upload To Existing Release
 
 First list release ids:
