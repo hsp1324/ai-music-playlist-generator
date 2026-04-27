@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""OpenClaw-friendly helper for uploading generated release assets.
+
+This script is intended to run on the VM next to the FastAPI app. It uses the
+local API by default, bypassing public Google OAuth protection.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import mimetypes
+import os
+import sys
+from pathlib import Path
+from typing import Any
+
+import httpx
+
+
+DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
+
+
+def file_stem(path: Path) -> str:
+    return path.stem.strip() or "Untitled Release"
+
+
+def api_base(value: str | None) -> str:
+    return (value or os.environ.get("AIMP_LOCAL_API_BASE") or DEFAULT_API_BASE).rstrip("/")
+
+
+def print_json(payload: Any) -> None:
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+def request_json(client: httpx.Client, method: str, path: str, **kwargs) -> Any:
+    response = client.request(method, path, **kwargs)
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = response.text
+    if response.is_error:
+        detail = payload.get("detail") if isinstance(payload, dict) else payload
+        raise RuntimeError(f"{response.status_code} {response.reason_phrase}: {detail}")
+    return payload
+
+
+def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
+    releases = request_json(client, "GET", "/playlists/workspaces")
+    return {
+        "releases": [
+            {
+                "id": release["id"],
+                "title": release["title"],
+                "type": "single" if release["workspace_mode"] == "single_track_video" else "playlist",
+                "workflow_state": release["workflow_state"],
+                "tracks": len(release["tracks"]),
+            }
+            for release in releases
+        ]
+    }
+
+
+def find_release_by_title(client: httpx.Client, title: str) -> dict[str, Any]:
+    releases = request_json(client, "GET", "/playlists/workspaces")
+    matches = [release for release in releases if release["title"] == title]
+    if not matches:
+        raise RuntimeError(f"No release found with exact title: {title}")
+    if len(matches) > 1:
+        ids = ", ".join(release["id"] for release in matches)
+        raise RuntimeError(f"Multiple releases share title {title!r}. Use --release-id. Matches: {ids}")
+    return matches[0]
+
+
+def create_single_release(client: httpx.Client, title: str, description: str = "") -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/playlists/workspaces",
+        json={
+            "title": title,
+            "target_duration_seconds": 1,
+            "workspace_mode": "single_track_video",
+            "auto_publish_when_ready": False,
+            "description": description,
+            "cover_prompt": "",
+            "dreamina_prompt": "",
+        },
+    )
+
+
+def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    audio_path = Path(args.audio).expanduser().resolve()
+    if not audio_path.exists():
+        raise RuntimeError(f"Audio file does not exist: {audio_path}")
+    if not audio_path.is_file():
+        raise RuntimeError(f"Audio path is not a file: {audio_path}")
+
+    title = args.title or file_stem(audio_path)
+    release: dict[str, Any]
+    created_release = False
+
+    if args.new_single:
+        release = create_single_release(
+            client,
+            args.release_title or title,
+            description=f"Single release created by OpenClaw from {audio_path.name}.",
+        )
+        created_release = True
+    elif args.release_id:
+        release = request_json(client, "GET", "/playlists/workspaces")
+        release = next((item for item in release if item["id"] == args.release_id), None)
+        if not release:
+            raise RuntimeError(f"No release found with id: {args.release_id}")
+    elif args.release_title:
+        release = find_release_by_title(client, args.release_title)
+    else:
+        raise RuntimeError("Use --new-single, --release-id, or --release-title.")
+
+    content_type = mimetypes.guess_type(str(audio_path))[0] or "audio/mpeg"
+    with audio_path.open("rb") as handle:
+        track = request_json(
+            client,
+            "POST",
+            "/tracks/manual-upload",
+            data={
+                "title": title,
+                "prompt": args.prompt or "OpenClaw generated audio upload",
+                "duration_seconds": "0",
+                "pending_workspace_id": release["id"],
+                "tags": args.tags or "",
+            },
+            files={
+                "audio_file": (audio_path.name, handle, content_type),
+            },
+        )
+
+    return {
+        "ok": True,
+        "action": "upload-audio",
+        "created_release": created_release,
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workspace_mode": release["workspace_mode"],
+            "workflow_state": release["workflow_state"],
+        },
+        "track": {
+            "id": track["id"],
+            "title": track["title"],
+            "status": track["status"],
+        },
+        "next": "Review and approve the track in Slack or the web UI.",
+    }
+
+
+def upload_cover(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    cover_path = Path(args.cover).expanduser().resolve()
+    if not cover_path.exists():
+        raise RuntimeError(f"Cover file does not exist: {cover_path}")
+    if not cover_path.is_file():
+        raise RuntimeError(f"Cover path is not a file: {cover_path}")
+
+    release_id = args.release_id
+    if not release_id and args.release_title:
+        release_id = find_release_by_title(client, args.release_title)["id"]
+    if not release_id:
+        raise RuntimeError("Use --release-id or --release-title.")
+
+    content_type = mimetypes.guess_type(str(cover_path))[0] or "image/png"
+    with cover_path.open("rb") as handle:
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release_id}/cover/upload",
+            data={"actor": args.actor},
+            files={"cover_file": (cover_path.name, handle, content_type)},
+        )
+
+    return {
+        "ok": True,
+        "action": "upload-cover",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "cover_image_path": release["cover_image_path"],
+            "cover_approved": release["cover_approved"],
+        },
+        "next": "Approve the cover in the web UI, then render video.",
+    }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Upload OpenClaw-generated music assets to the local AI Music app.")
+    parser.add_argument("--api-base", default=None, help=f"API base URL. Default: {DEFAULT_API_BASE}")
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    list_parser = subparsers.add_parser("list-releases", help="List visible releases and ids.")
+    list_parser.set_defaults(func=list_releases)
+
+    audio_parser = subparsers.add_parser("upload-audio", help="Upload an audio file to an existing release or new single.")
+    audio_parser.add_argument("--audio", required=True, help="Path to generated audio file.")
+    audio_parser.add_argument("--title", default="", help="Track title. Defaults to audio filename stem.")
+    audio_parser.add_argument("--prompt", default="", help="Prompt or generation note.")
+    audio_parser.add_argument("--tags", default="", help="Comma-separated tags.")
+    audio_parser.add_argument("--new-single", action="store_true", help="Create a new Single Release from this audio.")
+    audio_parser.add_argument("--release-id", default="", help="Existing release id.")
+    audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
+    audio_parser.set_defaults(func=upload_audio)
+
+    cover_parser = subparsers.add_parser("upload-cover", help="Upload a 16:9 cover image for a release.")
+    cover_parser.add_argument("--cover", required=True, help="Path to cover image file: jpg, png, or webp.")
+    cover_parser.add_argument("--release-id", default="", help="Existing release id.")
+    cover_parser.add_argument("--release-title", default="", help="Existing release title.")
+    cover_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
+    cover_parser.set_defaults(func=upload_cover)
+
+    return parser
+
+
+def main() -> int:
+    parser = build_parser()
+    args = parser.parse_args()
+    try:
+        with httpx.Client(base_url=api_base(args.api_base), timeout=120.0) as client:
+            result = args.func(client, args)
+        print_json(result)
+        return 0
+    except Exception as exc:  # noqa: BLE001
+        print_json({"ok": False, "error": str(exc)})
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
