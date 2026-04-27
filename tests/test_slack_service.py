@@ -246,6 +246,53 @@ def test_post_review_message_with_local_audio_uses_single_file_message(tmp_path)
     assert "Reject" in rendered
 
 
+def test_post_review_message_with_remote_audio_uploads_file_preview() -> None:
+    service = SlackService(Settings(slack_bot_token="xoxb-test", slack_review_channel_id="C123"))
+    track = Track(
+        id="track-1",
+        title="Remote Suno Track",
+        prompt="",
+        duration_seconds=120,
+        audio_path="https://cdn1.suno.ai/remote-track.mp3",
+        status=TrackStatus.pending_review,
+        metadata_json={"pending_workspace_title": "sleep tide"},
+    )
+    upload_call = {}
+
+    async def fake_upload_remote_audio_file(**kwargs):
+        upload_call.update(kwargs)
+        return SlackFileUploadResult(
+            ok=True,
+            file_id="F123",
+            channel="C123",
+            ts="1777000000.000300",
+            raw={"ok": True},
+        )
+
+    async def fake_find_uploaded_file_message(**kwargs):
+        return "C123", "1777000000.000300"
+
+    async def fake_post_review_message(track, **kwargs):
+        return SlackPostResult(
+            ok=True,
+            channel="C123",
+            ts="1777000000.000400",
+            raw={"ok": True},
+        )
+
+    service.upload_remote_audio_file = fake_upload_remote_audio_file
+    service.find_uploaded_file_message = fake_find_uploaded_file_message
+    service.post_review_message = fake_post_review_message
+
+    result = asyncio.run(service.post_review_message_with_audio_upload(track))
+
+    assert result.ok is True
+    assert result.channel == "C123"
+    assert result.ts == "1777000000.000400"
+    assert upload_call["audio_url"] == "https://cdn1.suno.ai/remote-track.mp3"
+    assert upload_call["initial_comment"] == "Audio preview: Remote Suno Track"
+
+
 def test_post_review_message_with_local_audio_defaults_to_separate_review_message(tmp_path) -> None:
     audio_path = tmp_path / "two-message.mp3"
     audio_path.write_bytes(b"fake-audio")
@@ -293,6 +340,14 @@ def test_post_review_message_with_local_audio_defaults_to_separate_review_messag
     assert result.ts == "1777000000.000400"
     assert upload_call["initial_comment"] == "Audio preview: Two Message"
     assert "blocks" not in upload_call
+
+
+def test_remote_audio_filename_uses_url_name_or_safe_title() -> None:
+    assert (
+        SlackService._remote_audio_filename("https://cdn1.suno.ai/f007d9a3-9727-4ea4.mp3?download=1", "Sleep Tide")
+        == "f007d9a3-9727-4ea4.mp3"
+    )
+    assert SlackService._remote_audio_filename("https://cdn1.suno.ai/audio", "Sleep Tide 18 A") == "Sleep-Tide-18-A.mp3"
 
 
 def test_extract_file_share_location_from_complete_upload_payload() -> None:

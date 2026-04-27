@@ -77,6 +77,16 @@ After OpenClaw uploads audio, the web UI shows the selected release as a music-l
 
 OpenClaw should only upload candidate files and report the returned JSON. It should not depend on the UI layout, approve tracks, reorder tracks, render audio/video, or publish unless the human explicitly asks.
 
+## Slack Audio Preview Behavior
+
+Slack review alerts are intended to show a playable audio preview directly in Slack:
+
+- Local uploaded files are sent to Slack as audio files.
+- Remote Suno/CDN audio URLs are downloaded by the app server and then sent to Slack as audio files.
+- If Slack upload fails, the app falls back to a normal review message with an audio link so review is not blocked.
+
+For the most reliable Slack preview, prefer passing a real local audio file path to `scripts/openclaw-release`. If OpenClaw only has a remote Suno URL, the app can still post a Slack-playable preview as long as the URL is publicly fetchable from the VM.
+
 ## Upload To Existing Release
 
 First list release ids:

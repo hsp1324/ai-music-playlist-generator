@@ -1,11 +1,12 @@
 import asyncio
 import hashlib
 import hmac
+import re
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, unquote, urlencode, urlparse
 from typing import Any
 
 import httpx
@@ -336,7 +337,7 @@ class SlackService:
             data = response.json()
         return SlackUpdateResult(ok=bool(data.get("ok")), raw=data)
 
-    async def post_review_message_with_local_audio(
+    async def post_review_message_with_audio_upload(
         self,
         track: Track,
         *,
@@ -351,8 +352,8 @@ class SlackService:
             return SlackPostResult(ok=False, raw={"reason": "track_audio_path_missing"})
 
         if self.settings.slack_single_message_audio_reviews:
-            upload_result = await self.upload_local_audio_file(
-                file_path=track.audio_path,
+            upload_result = await self.upload_audio_file(
+                audio_source=track.audio_path,
                 title=track.title,
                 token=auth_token,
                 channel=target_channel,
@@ -376,8 +377,8 @@ class SlackService:
                     raw={"upload": upload_result.raw, "mode": "file_with_review_blocks"},
                 )
 
-        upload_result = await self.upload_local_audio_file(
-            file_path=track.audio_path,
+        upload_result = await self.upload_audio_file(
+            audio_source=track.audio_path,
             title=track.title,
             token=auth_token,
             channel=target_channel,
@@ -415,6 +416,15 @@ class SlackService:
             ts=post_result.ts,
             raw={"upload": upload_result.raw, "post": post_result.raw},
         )
+
+    async def post_review_message_with_local_audio(
+        self,
+        track: Track,
+        *,
+        token: str | None = None,
+        channel: str | None = None,
+    ) -> SlackPostResult:
+        return await self.post_review_message_with_audio_upload(track, token=token, channel=channel)
 
     async def update_review_request_message(
         self,
@@ -467,7 +477,104 @@ class SlackService:
         if not path.exists():
             return SlackFileUploadResult(ok=False, raw={"error": "file_not_found", "path": file_path})
 
-        file_size = path.stat().st_size
+        return await self._upload_audio_bytes(
+            file_bytes=path.read_bytes(),
+            filename=path.name,
+            title=title,
+            token=token,
+            channel=channel,
+            thread_ts=thread_ts,
+            initial_comment=initial_comment,
+            blocks=blocks,
+        )
+
+    async def upload_remote_audio_file(
+        self,
+        *,
+        audio_url: str,
+        title: str,
+        token: str,
+        channel: str,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> SlackFileUploadResult:
+        try:
+            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                response = await client.get(audio_url)
+        except httpx.HTTPError as exc:
+            return SlackFileUploadResult(ok=False, raw={"error": "remote_audio_fetch_failed", "detail": str(exc)})
+
+        if response.status_code != 200:
+            return SlackFileUploadResult(
+                ok=False,
+                raw={
+                    "error": "remote_audio_fetch_failed",
+                    "status_code": response.status_code,
+                    "url": audio_url,
+                },
+            )
+        if not response.content:
+            return SlackFileUploadResult(ok=False, raw={"error": "remote_audio_empty", "url": audio_url})
+
+        return await self._upload_audio_bytes(
+            file_bytes=response.content,
+            filename=self._remote_audio_filename(audio_url, title),
+            title=title,
+            token=token,
+            channel=channel,
+            thread_ts=thread_ts,
+            initial_comment=initial_comment,
+            blocks=blocks,
+        )
+
+    async def upload_audio_file(
+        self,
+        *,
+        audio_source: str,
+        title: str,
+        token: str,
+        channel: str,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> SlackFileUploadResult:
+        optional_args: dict[str, Any] = {}
+        if thread_ts is not None:
+            optional_args["thread_ts"] = thread_ts
+        if initial_comment is not None:
+            optional_args["initial_comment"] = initial_comment
+        if blocks is not None:
+            optional_args["blocks"] = blocks
+        if audio_source.startswith(("http://", "https://")):
+            return await self.upload_remote_audio_file(
+                audio_url=audio_source,
+                title=title,
+                token=token,
+                channel=channel,
+                **optional_args,
+            )
+        return await self.upload_local_audio_file(
+            file_path=audio_source,
+            title=title,
+            token=token,
+            channel=channel,
+            **optional_args,
+        )
+
+    async def _upload_audio_bytes(
+        self,
+        *,
+        file_bytes: bytes,
+        filename: str,
+        title: str,
+        token: str,
+        channel: str,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> SlackFileUploadResult:
+        file_size = len(file_bytes)
         async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
             upload_ticket_response = await client.post(
                 "https://slack.com/api/files.getUploadURLExternal",
@@ -475,7 +582,7 @@ class SlackService:
                     "Authorization": f"Bearer {token}",
                 },
                 data={
-                    "filename": path.name,
+                    "filename": filename,
                     "length": str(file_size),
                 },
             )
@@ -485,7 +592,6 @@ class SlackService:
 
             upload_url = upload_ticket["upload_url"]
             file_id = upload_ticket["file_id"]
-            file_bytes = path.read_bytes()
             binary_upload_response = await client.post(
                 upload_url,
                 headers={"Content-Type": "application/octet-stream"},
@@ -806,3 +912,11 @@ class SlackService:
                 return channel, message.get("ts")
 
         return channel, None
+
+    @classmethod
+    def _remote_audio_filename(cls, audio_url: str, title: str) -> str:
+        parsed_name = Path(unquote(urlparse(audio_url).path)).name
+        if parsed_name and Path(parsed_name).suffix:
+            return parsed_name
+        safe_title = re.sub(r"[^A-Za-z0-9._-]+", "-", title).strip("-._") or "audio"
+        return f"{safe_title}.mp3"

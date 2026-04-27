@@ -9,10 +9,13 @@ from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import maybe_build_auto_playlist
 
 
-def _has_uploadable_local_audio(track: Track) -> bool:
+def _has_slack_uploadable_audio(track: Track) -> bool:
+    if not track.audio_path:
+        return False
+    if track.audio_path.startswith(("http://", "https://")):
+        return True
     return bool(
-        track.audio_path
-        and not track.audio_path.startswith(("http://", "https://"))
+        not track.audio_path.startswith(("http://", "https://"))
         and Path(track.audio_path).exists()
     )
 
@@ -26,8 +29,8 @@ async def post_track_review_to_slack(
     token = installation.bot_token if installation else services.settings.slack_bot_token
     channel = services.settings.slack_review_channel_id
 
-    if token and channel and _has_uploadable_local_audio(track):
-        post_result = await services.slack.post_review_message_with_local_audio(track, token=token, channel=channel)
+    if token and channel and _has_slack_uploadable_audio(track):
+        post_result = await services.slack.post_review_message_with_audio_upload(track, token=token, channel=channel)
         if not post_result.ok:
             post_result = await services.slack.post_review_message(track, token=token, channel=channel)
     else:
