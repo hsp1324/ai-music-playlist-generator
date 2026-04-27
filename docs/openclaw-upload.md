@@ -2,6 +2,8 @@
 
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
+For higher-level OpenClaw skill instructions, including "make one single" and "build a one-hour playlist", see [openclaw-skills.md](openclaw-skills.md).
+
 Run these commands on the Oracle VM from the repo root:
 
 ```bash
