@@ -120,6 +120,14 @@ function resumeDeferredAutoRefresh() {
   }, 750);
 }
 
+function pauseOtherAudioPlayers(activeAudio) {
+  document.querySelectorAll("audio").forEach((audio) => {
+    if (audio !== activeAudio && !audio.paused) {
+      audio.pause();
+    }
+  });
+}
+
 function displayTitle(value, fallback = "Untitled") {
   if (!value) return fallback;
   const cleaned = String(value).replace(/\s+[a-f0-9]{24,}$/i, "").trim();
@@ -1871,6 +1879,11 @@ refresh().catch((error) => {
 
 document.addEventListener("pause", resumeDeferredAutoRefresh, true);
 document.addEventListener("ended", resumeDeferredAutoRefresh, true);
+document.addEventListener("play", (event) => {
+  if (event.target instanceof HTMLAudioElement) {
+    pauseOtherAudioPlayers(event.target);
+  }
+}, true);
 document.addEventListener("visibilitychange", resumeDeferredAutoRefresh);
 
 window.setInterval(() => {
