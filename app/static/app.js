@@ -3,6 +3,8 @@ const state = {
   workspaces: [],
   selectedWorkspaceId: "",
   drawerOpen: false,
+  autoRefreshDeferred: false,
+  autoRefreshInFlight: false,
 };
 
 const workspaceGrid = document.querySelector("#workspace-grid");
@@ -50,6 +52,7 @@ const workspaceTileTemplate = document.querySelector("#workspace-tile-template")
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
+const AUTO_REFRESH_INTERVAL_MS = 15000;
 
 let quickUploadFiles = [];
 let quickUploadCoverFiles = [];
@@ -79,6 +82,35 @@ function setStatus(el, payload) {
 
 function setTextStatus(el, value) {
   el.textContent = value;
+}
+
+function isAudioPlaybackActive() {
+  return [...document.querySelectorAll("audio")].some((audio) => !audio.paused && !audio.ended);
+}
+
+async function autoRefresh() {
+  if (document.hidden || isAudioPlaybackActive()) {
+    state.autoRefreshDeferred = true;
+    return;
+  }
+  if (state.autoRefreshInFlight) return;
+
+  state.autoRefreshInFlight = true;
+  try {
+    await refresh();
+    state.autoRefreshDeferred = false;
+  } finally {
+    state.autoRefreshInFlight = false;
+  }
+}
+
+function resumeDeferredAutoRefresh() {
+  if (!state.autoRefreshDeferred) return;
+  window.setTimeout(() => {
+    if (!document.hidden && !isAudioPlaybackActive()) {
+      autoRefresh().catch(() => {});
+    }
+  }, 750);
 }
 
 function displayTitle(value, fallback = "Untitled") {
@@ -1770,6 +1802,10 @@ refresh().catch((error) => {
   setStatus(trackStatus, error.message);
 });
 
+document.addEventListener("pause", resumeDeferredAutoRefresh, true);
+document.addEventListener("ended", resumeDeferredAutoRefresh, true);
+document.addEventListener("visibilitychange", resumeDeferredAutoRefresh);
+
 window.setInterval(() => {
-  refresh().catch(() => {});
-}, 15000);
+  autoRefresh().catch(() => {});
+}, AUTO_REFRESH_INTERVAL_MS);
