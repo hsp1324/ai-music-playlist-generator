@@ -1,13 +1,20 @@
+const initialReleaseId = new URLSearchParams(window.location.search).get("release") || "";
+
 const state = {
   tracks: [],
   workspaces: [],
-  selectedWorkspaceId: "",
+  selectedWorkspaceId: initialReleaseId,
   drawerOpen: false,
+  releaseFocus: Boolean(initialReleaseId),
   autoRefreshDeferred: false,
   autoRefreshInFlight: false,
 };
 
+const appHeader = document.querySelector(".app-header");
+const quickUploadPanel = document.querySelector(".quick-upload-panel");
+const boardShell = document.querySelector(".board-shell");
 const workspaceGrid = document.querySelector("#workspace-grid");
+const workspaceSection = document.querySelector(".workspace-section");
 const archivedWorkspaceSection = document.querySelector("#archived-workspace-section");
 const archivedWorkspaceGrid = document.querySelector("#archived-workspace-grid");
 const detailPanel = document.querySelector("#workspace-detail-panel");
@@ -140,6 +147,45 @@ function releaseModeLabel(workspace) {
 
 function releaseOptionLabel(workspace) {
   return `${displayTitle(workspace.title)} · ${isSingleRelease(workspace) ? "Single" : "Playlist"}`;
+}
+
+function updateReleaseUrl(releaseId, replace = false) {
+  const url = new URL(window.location.href);
+  if (releaseId) {
+    url.searchParams.set("release", releaseId);
+  } else {
+    url.searchParams.delete("release");
+  }
+  const method = replace ? "replaceState" : "pushState";
+  window.history[method]({ releaseId: releaseId || "" }, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function renderLayoutMode() {
+  document.body.classList.toggle("release-focus-mode", state.releaseFocus);
+  if (appHeader) appHeader.hidden = state.releaseFocus;
+  if (quickUploadPanel) quickUploadPanel.hidden = state.releaseFocus;
+  if (workspaceSection) workspaceSection.hidden = state.releaseFocus;
+  if (utilityDrawer) utilityDrawer.hidden = state.releaseFocus || !state.drawerOpen;
+  if (boardShell) boardShell.classList.toggle("focus-board", state.releaseFocus);
+}
+
+function openWorkspaceFocus(workspaceId, replace = false) {
+  state.selectedWorkspaceId = workspaceId;
+  state.releaseFocus = true;
+  updateReleaseUrl(workspaceId, replace);
+  renderLayoutMode();
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function closeWorkspaceFocus(replace = false) {
+  state.releaseFocus = false;
+  updateReleaseUrl("", replace);
+  renderLayoutMode();
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function isReleaseReviewStage(workspace) {
@@ -835,6 +881,10 @@ function archivedWorkspaces() {
 function ensureSelectedWorkspace() {
   const visible = visibleWorkspaces();
   if (visible.some((workspace) => workspace.id === state.selectedWorkspaceId)) return;
+  if (state.releaseFocus) {
+    state.releaseFocus = false;
+    updateReleaseUrl("", true);
+  }
   state.selectedWorkspaceId = visible[0]?.id || "";
 }
 
@@ -1087,7 +1137,7 @@ function selectWorkspace(workspaceId, scrollIntoView = true) {
   state.selectedWorkspaceId = workspaceId;
   renderWorkspaceTiles();
   renderWorkspaceDetail();
-  if (scrollIntoView && detailPanel && !detailPanel.hidden) {
+  if (scrollIntoView && state.releaseFocus && detailPanel && !detailPanel.hidden) {
     detailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
@@ -1142,12 +1192,13 @@ function renderWorkspaceTiles() {
       ? "One approved track"
       : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
 
+    moreButton.textContent = "Open";
     moreButton.addEventListener("click", (event) => {
       event.stopPropagation();
-      selectWorkspace(workspace.id);
+      openWorkspaceFocus(workspace.id);
     });
 
-    tile.addEventListener("click", () => selectWorkspace(workspace.id, false));
+    tile.addEventListener("click", () => openWorkspaceFocus(workspace.id));
     workspaceGrid.appendChild(fragment);
   });
 }
@@ -1207,7 +1258,7 @@ function renderWorkspaceDetail() {
   const workspace = activeWorkspace();
   const tracksForReview = workspace ? pendingTracks(workspace.id) : [];
 
-  if (!workspace) {
+  if (!workspace || !state.releaseFocus) {
     detailPanel.hidden = true;
     if (detailColumns) detailColumns.hidden = true;
     return;
@@ -1235,6 +1286,13 @@ function renderWorkspaceDetail() {
   detailActions.innerHTML = "";
   queueGrid.innerHTML = "";
   approvedGrid.innerHTML = "";
+
+  const backButton = document.createElement("button");
+  backButton.type = "button";
+  backButton.className = "toolbar-button";
+  backButton.textContent = "All Releases";
+  backButton.addEventListener("click", () => closeWorkspaceFocus());
+  detailActions.appendChild(backButton);
 
   renderPipeline(detailPipeline, workspace);
   appendRenderStatus(workspace);
@@ -1651,6 +1709,7 @@ function applyBoardData(tracks, workspaces) {
   state.tracks = tracks;
   state.workspaces = workspaces;
   ensureSelectedWorkspace();
+  renderLayoutMode();
   updateToolbarSummary();
   renderTrackWorkspaceOptions();
   renderWorkspaceTiles();
@@ -1737,6 +1796,14 @@ workspaceForm.addEventListener("submit", async (event) => {
 
 menuToggleButton.addEventListener("click", () => toggleDrawer());
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
+window.addEventListener("popstate", () => {
+  const releaseId = new URLSearchParams(window.location.search).get("release") || "";
+  state.selectedWorkspaceId = releaseId || state.selectedWorkspaceId;
+  state.releaseFocus = Boolean(releaseId);
+  renderLayoutMode();
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+});
 quickUploadPickButton?.addEventListener("click", () => quickUploadInput?.click());
 quickUploadCoverPickButton?.addEventListener("click", () => quickUploadCoverInput?.click());
 quickUploadInput?.addEventListener("change", (event) => {

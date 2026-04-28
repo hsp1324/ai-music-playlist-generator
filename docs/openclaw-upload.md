@@ -71,6 +71,7 @@ If `--cover` is provided and this is a Single Release, approving the track autom
 
 After OpenClaw uploads audio, the web UI shows the selected release as a music-library style list:
 
+- Clicking a release card opens a focused `?release=...` page instead of scrolling to a lower dashboard panel.
 - `Awaiting Approval` contains uploaded candidates with cover art, duration, player controls, prompt notes, and approve/hold/reject actions.
 - `Final Order` contains approved tracks in playlist order. Playlist releases can be reordered by drag/drop before audio rendering.
 - Single Releases should end with one approved selected track. Playlist Releases may contain many approved tracks.
