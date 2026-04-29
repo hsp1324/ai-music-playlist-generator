@@ -1333,9 +1333,13 @@ def approve_playlist_publish(
     meta = _playlist_meta(playlist)
     if not playlist.items:
         raise ValueError("Playlist has no tracks to publish.")
-    if not meta.get("publish_ready") or (not _publish_is_ready(playlist) and not force_under_target):
+    under_target = not _publish_is_ready(playlist)
+    if not meta.get("publish_ready") and not (force_under_target and under_target):
         raise ValueError("Playlist has not reached its target duration yet.")
-    if force_under_target and not _publish_is_ready(playlist):
+    if under_target and not force_under_target:
+        raise ValueError("Playlist has not reached its target duration yet.")
+    if force_under_target and under_target:
+        meta["publish_ready"] = True
         meta["publish_under_target_confirmed"] = True
         meta["publish_under_target_confirmed_by"] = actor
         meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
