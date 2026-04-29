@@ -11,6 +11,7 @@ import argparse
 import json
 import mimetypes
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -98,7 +99,9 @@ def format_timestamp(seconds: int) -> str:
 def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
     offset = 0
     timeline = []
-    for index, track in enumerate(release.get("tracks") or [], start=1):
+    tracks = release.get("tracks") or []
+    display_titles = display_track_titles(tracks)
+    for index, (track, display_title) in enumerate(zip(tracks, display_titles), start=1):
         duration = max(int(track.get("duration_seconds") or 0), 0)
         timeline.append(
             {
@@ -106,12 +109,50 @@ def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
                 "start_seconds": offset,
                 "start": format_timestamp(offset),
                 "title": track.get("title") or f"Track {index}",
+                "display_title_hint": display_title,
                 "duration_seconds": duration,
                 "duration": format_timestamp(duration),
             }
         )
         offset += duration
     return timeline
+
+
+def display_track_titles(tracks: list[dict[str, Any]]) -> list[str]:
+    base_titles = [clean_track_display_title(track.get("title") or f"Track {index}") for index, track in enumerate(tracks, start=1)]
+    counts: dict[str, int] = {}
+    for title in base_titles:
+        counts[title.lower()] = counts.get(title.lower(), 0) + 1
+
+    seen: dict[str, int] = {}
+    group_variants: dict[str, tuple[str, ...]] = {}
+    variant_sets = [
+        ("Morning", "Evening"),
+        ("Warm", "Soft"),
+        ("Quiet", "Deep"),
+        ("Linen", "Amber"),
+        ("Dawn", "Dusk"),
+        ("Gentle", "Still"),
+    ]
+    display_titles = []
+    for title in base_titles:
+        key = title.lower()
+        seen[key] = seen.get(key, 0) + 1
+        if counts[key] > 1:
+            if key not in group_variants:
+                group_variants[key] = variant_sets[len(group_variants) % len(variant_sets)]
+            variants = group_variants[key]
+            variant = variants[(seen[key] - 1) % len(variants)]
+            display_titles.append(f"{title} - {variant}")
+        else:
+            display_titles.append(title)
+    return display_titles
+
+
+def clean_track_display_title(title: str) -> str:
+    cleaned = str(title or "").strip() or "Untitled Track"
+    cleaned = re.sub(r"\s*(?:[-_]\s*)?\(?[AB]\)?$", "", cleaned, flags=re.IGNORECASE).strip()
+    return cleaned or str(title or "Untitled Track").strip()
 
 
 def create_single_release(client: httpx.Client, title: str, description: str = "") -> dict[str, Any]:
@@ -351,6 +392,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
     timeline = release_timeline(release)
     timestamp_lines = [f"{item['start']} {item['title']}" for item in timeline]
+    display_timestamp_lines = [f"{item['start']} {item['display_title_hint']}" for item in timeline]
     return {
         "ok": True,
         "action": "metadata-context",
@@ -369,10 +411,12 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
         },
         "timeline": timeline,
         "timestamp_lines": timestamp_lines,
+        "display_timestamp_lines": display_timestamp_lines,
         "total_seconds": sum(item["duration_seconds"] for item in timeline),
         "total_duration": format_timestamp(sum(item["duration_seconds"] for item in timeline)),
         "instructions": (
-            "Use timestamp_lines exactly in the YouTube description unless the human asks for a different order. "
+            "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
+            "If you rewrite a displayed title, keep its timestamp fixed. "
             "Write tags as comma-separated plain tags without # symbols."
         ),
     }

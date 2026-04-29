@@ -24,10 +24,12 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Keep the title under 100 characters.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - If the release is a playlist, include a timestamped tracklist from the final order.
-- Always run `scripts/openclaw-release metadata-context` first and use its `timestamp_lines` in the description.
+- Always run `scripts/openclaw-release metadata-context` first and use its timeline in the description.
+- Prefer `display_timestamp_lines` when available. It keeps the same timestamps but removes awkward trailing `A` / `B` labels.
 - Do not guess timestamps. The helper calculates them from the app's final order and track durations.
 - Treat each timestamp as a fixed playback position. If a title is corrected, only change the title text; do not move or swap the timestamp.
 - Do not sort track titles alphabetically or by A/B label in the metadata. The playback order is the source of truth.
+- Do not show trailing `A` / `B` labels in the YouTube description. If two tracks would have the same title after removing A/B, rename the displayed titles naturally so they are unique.
 - If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
 
 ## Metadata Style Prompt
@@ -41,7 +43,9 @@ Read the release title, final track order, durations, and mood.
 First run:
 scripts/openclaw-release metadata-context --release-id RELEASE_ID
 
-Use the returned timestamp_lines exactly for the tracklist.
+Use the returned timestamps exactly for the tracklist.
+Use `display_timestamp_lines` as the starting point when present.
+If a displayed title still ends in A or B, rewrite only the title text so it is natural and unique.
 Write metadata in this shape:
 
 Title:
@@ -84,7 +88,8 @@ Use the returned JSON:
 - `release.title`
 - `release.actual_duration_seconds`
 - `timeline`
-- `timestamp_lines`
+- `display_timestamp_lines`
+- `timestamp_lines` as raw fallback only
 
 Create the description file:
 

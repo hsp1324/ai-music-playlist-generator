@@ -97,7 +97,10 @@ class CodexMetadataService(ReleaseMetadataService):
 
             payload = self._parse_json_output(output_path.read_text(encoding="utf-8"))
             title = str(payload.get("title") or "").strip()
-            description = str(payload.get("description") or "").strip()
+            description = self._clean_description_timestamps(
+                str(payload.get("description") or "").strip(),
+                tracks,
+            )
             tags = self._normalize_tags(payload.get("tags") or [])
             if not title or not description:
                 raise RuntimeError("codex returned empty title or description")
@@ -148,10 +151,12 @@ class CodexMetadataService(ReleaseMetadataService):
                 "  2. One short Korean paragraph about sound, atmosphere, and use cases.",
                 "  3. A heading exactly like: 🎧 Recommended for",
                 "  4. One slash-separated Korean use-case line.",
-                "  5. The timestamp_lines exactly as provided, in the same order.",
+                "  5. A timestamped tracklist using the fixed start times and playback order from timeline.",
                 "  6. One final hashtag line with 5-8 relevant hashtags.",
                 "- For single-track releases, keep the same clean YouTube style but no timestamp list is required unless useful.",
-                "- If timestamp_lines are provided, include those exact lines in the description in the same order.",
+                "- For timestamped tracklists, use each timeline item's start exactly and keep the same row order.",
+                "- Do not show trailing A/B labels in metadata titles. If two tracks share the same base title after removing A/B, rewrite only the displayed title text so each row is unique and natural.",
+                "- Use display_title_hint as a starting point, but you may make the displayed titles more natural while preserving each row's timestamp.",
                 "- Timestamp positions are fixed playback positions. Never swap timestamps between tracks to make titles alphabetical or A/B ordered.",
                 "- If a track title is later corrected, only the title text should change; the timestamp and playback position must stay fixed.",
                 "- Do not invent, remove, rename, or reorder tracks.",
@@ -167,7 +172,8 @@ class CodexMetadataService(ReleaseMetadataService):
         meta = playlist.metadata_json or {}
         timeline = []
         offset = 0
-        for index, track in enumerate(tracks, start=1):
+        display_titles = self._display_track_titles(tracks)
+        for index, (track, display_title) in enumerate(zip(tracks, display_titles), start=1):
             track_meta = track.metadata_json or {}
             duration = max(int(track.duration_seconds or 0), 0)
             timeline.append(
@@ -175,6 +181,7 @@ class CodexMetadataService(ReleaseMetadataService):
                     "index": index,
                     "start": self._format_timestamp(offset),
                     "title": track.title,
+                    "display_title_hint": display_title,
                     "duration_seconds": duration,
                     "duration": self._format_duration(duration),
                     "prompt": track.prompt,
@@ -194,8 +201,38 @@ class CodexMetadataService(ReleaseMetadataService):
                 "default_hashtags": self.settings.youtube_default_hashtags,
             },
             "timeline": timeline,
-            "timestamp_lines": [f"{item['start']} {item['title']}" for item in timeline],
+            "display_timestamp_lines": [f"{item['start']} {item['display_title_hint']}" for item in timeline],
+            "raw_timestamp_lines": [f"{item['start']} {item['title']}" for item in timeline],
         }
+
+    def _clean_description_timestamps(self, description: str, tracks: list[Track]) -> str:
+        display_titles = self._display_track_titles(tracks)
+        offset = 0
+        replacements: dict[str, tuple[str, str]] = {}
+        for track, display_title in zip(tracks, display_titles):
+            start = self._format_timestamp(offset)
+            replacements[start] = (track.title, display_title)
+            offset += max(int(track.duration_seconds or 0), 0)
+
+        cleaned_lines = []
+        for line in description.splitlines():
+            match = re.match(r"^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$", line.strip())
+            if not match:
+                cleaned_lines.append(line)
+                continue
+            start, line_title = match.groups()
+            if start not in replacements:
+                cleaned_lines.append(line)
+                continue
+            original_title, display_title = replacements[start]
+            if line_title.strip() == original_title or self._has_trailing_ab_label(line_title):
+                cleaned_lines.append(f"{start} {display_title}")
+            else:
+                cleaned_lines.append(line)
+        return "\n".join(cleaned_lines).strip()
+
+    def _has_trailing_ab_label(self, title: str) -> bool:
+        return bool(re.search(r"\s*(?:[-_]\s*)?\(?[AB]\)?$", title.strip(), flags=re.IGNORECASE))
 
     def _json_schema(self) -> dict[str, Any]:
         return {

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from app.config import Settings
@@ -119,10 +120,46 @@ class ReleaseMetadataService:
     def _timestamp_lines(self, tracks: list[Track]) -> list[str]:
         offset = 0
         lines = []
-        for track in tracks:
-            lines.append(f"{self._format_timestamp(offset)} {track.title}")
+        display_titles = self._display_track_titles(tracks)
+        for track, display_title in zip(tracks, display_titles):
+            lines.append(f"{self._format_timestamp(offset)} {display_title}")
             offset += max(int(track.duration_seconds or 0), 0)
         return lines
+
+    def _display_track_titles(self, tracks: list[Track]) -> list[str]:
+        base_titles = [self._clean_track_display_title(track.title) for track in tracks]
+        counts: dict[str, int] = {}
+        for title in base_titles:
+            counts[title.lower()] = counts.get(title.lower(), 0) + 1
+
+        seen: dict[str, int] = {}
+        group_variants: dict[str, tuple[str, ...]] = {}
+        variant_sets = [
+            ("Morning", "Evening"),
+            ("Warm", "Soft"),
+            ("Quiet", "Deep"),
+            ("Linen", "Amber"),
+            ("Dawn", "Dusk"),
+            ("Gentle", "Still"),
+        ]
+        display_titles = []
+        for title in base_titles:
+            key = title.lower()
+            seen[key] = seen.get(key, 0) + 1
+            if counts[key] > 1:
+                if key not in group_variants:
+                    group_variants[key] = variant_sets[len(group_variants) % len(variant_sets)]
+                variants = group_variants[key]
+                variant = variants[(seen[key] - 1) % len(variants)]
+                display_titles.append(f"{title} - {variant}")
+            else:
+                display_titles.append(title)
+        return display_titles
+
+    def _clean_track_display_title(self, title: str) -> str:
+        cleaned = str(title or "").strip() or "Untitled Track"
+        cleaned = re.sub(r"\s*(?:[-_]\s*)?\(?[AB]\)?$", "", cleaned, flags=re.IGNORECASE).strip()
+        return cleaned or str(title or "Untitled Track").strip()
 
     def _format_timestamp(self, seconds: int) -> str:
         seconds = max(seconds, 0)
