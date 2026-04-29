@@ -5,13 +5,15 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from PIL import Image
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.main import create_app
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes.tracks import _extract_embedded_cover
+from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 
 
 def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> TestClient:
@@ -1746,6 +1748,20 @@ def test_youtube_status_ignores_invalid_token_file(tmp_path) -> None:
         assert "could not be read" in payload["error"]
     finally:
         clear_isolated_client_env()
+
+
+def test_youtube_thumbnail_upload_is_compressed_under_api_limit(tmp_path) -> None:
+    source = tmp_path / "large-cover.png"
+    image = Image.frombytes("RGB", (1920, 1080), os.urandom(1920 * 1080 * 3))
+    image.save(source, "PNG")
+    assert source.stat().st_size > YOUTUBE_THUMBNAIL_MAX_BYTES
+
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage"))
+
+    prepared = service._prepare_thumbnail_upload(str(source))
+
+    assert prepared.suffix == ".jpg"
+    assert prepared.stat().st_size <= YOUTUBE_THUMBNAIL_MAX_BYTES
 
 
 def test_youtube_connect_redirects_to_authorization_url(tmp_path) -> None:

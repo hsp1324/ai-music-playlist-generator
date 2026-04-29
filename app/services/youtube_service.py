@@ -9,6 +9,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from PIL import Image
 
 from app.config import Settings
 from app.models.playlist import Playlist
@@ -17,6 +18,7 @@ from app.models.playlist import Playlist
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
+YOUTUBE_THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
 
 
 @dataclass
@@ -177,12 +179,37 @@ class YouTubeService:
 
         video_id = response["id"]
         if thumbnail_path and Path(thumbnail_path).exists():
-            youtube.thumbnails().set(
-                videoId=video_id,
-                media_body=MediaFileUpload(thumbnail_path),
-            ).execute()
+            thumbnail_upload_path = self._prepare_thumbnail_upload(thumbnail_path)
+            try:
+                youtube.thumbnails().set(
+                    videoId=video_id,
+                    media_body=MediaFileUpload(str(thumbnail_upload_path)),
+                ).execute()
+            except Exception as exc:  # noqa: BLE001
+                response["thumbnail_upload_error"] = str(exc)
 
         return YouTubeUploadResult(video_id=video_id, response=response)
+
+    def _prepare_thumbnail_upload(self, thumbnail_path: str) -> Path:
+        source = Path(thumbnail_path)
+        if source.stat().st_size <= YOUTUBE_THUMBNAIL_MAX_BYTES:
+            return source
+
+        cache_dir = self.settings.browser_dir / "youtube-thumbnails"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        output = cache_dir / f"{source.stem}-youtube.jpg"
+
+        with Image.open(source) as image:
+            image = image.convert("RGB")
+            for bounds in [(1280, 720), (1024, 576), (854, 480)]:
+                candidate = image.copy()
+                candidate.thumbnail(bounds, Image.Resampling.LANCZOS)
+                for quality in range(90, 34, -5):
+                    candidate.save(output, "JPEG", quality=quality, optimize=True, progressive=True)
+                    if output.stat().st_size <= YOUTUBE_THUMBNAIL_MAX_BYTES:
+                        return output
+
+        raise ValueError("YouTube thumbnail must be 2MB or smaller after compression.")
 
     def _load_credentials(self) -> Credentials:
         token_path = self.settings.youtube_token_path
