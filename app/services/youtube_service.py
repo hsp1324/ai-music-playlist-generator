@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -51,6 +52,10 @@ class YouTubeService:
         api_prefix = self.settings.api_prefix.rstrip("/")
         return f"{base_url}{api_prefix}/youtube/oauth/callback"
 
+    @property
+    def oauth_session_path(self) -> Path:
+        return self.settings.browser_dir / "youtube-oauth-session.json"
+
     def build_authorization_url(self) -> dict[str, Any]:
         client_secrets = Path(self.settings.youtube_client_secrets_path)
         if not client_secrets.exists():
@@ -66,26 +71,46 @@ class YouTubeService:
             include_granted_scopes="true",
             prompt="consent",
         )
+        self.oauth_session_path.parent.mkdir(parents=True, exist_ok=True)
+        self.oauth_session_path.write_text(
+            json.dumps(
+                {
+                    "state": state,
+                    "code_verifier": flow.code_verifier,
+                    "redirect_uri": self.redirect_uri,
+                }
+            ),
+            encoding="utf-8",
+        )
         return {
             "authorization_url": authorization_url,
             "state": state,
             "redirect_uri": self.redirect_uri,
         }
 
-    def exchange_web_code(self, code: str) -> dict[str, Any]:
+    def exchange_web_code(self, code: str, state: str | None = None) -> dict[str, Any]:
         client_secrets = Path(self.settings.youtube_client_secrets_path)
         if not client_secrets.exists():
             raise FileNotFoundError("YouTube client secrets file is not configured.")
+        if not self.oauth_session_path.exists():
+            raise ValueError("YouTube OAuth session is missing. Start Connect YouTube again.")
+
+        session = json.loads(self.oauth_session_path.read_text(encoding="utf-8"))
+        expected_state = session.get("state")
+        if state and expected_state and state != expected_state:
+            raise ValueError("YouTube OAuth state did not match. Start Connect YouTube again.")
 
         flow = Flow.from_client_secrets_file(
             str(client_secrets),
             scopes=[YOUTUBE_UPLOAD_SCOPE],
-            redirect_uri=self.redirect_uri,
+            redirect_uri=session.get("redirect_uri") or self.redirect_uri,
         )
+        flow.code_verifier = session.get("code_verifier")
         flow.fetch_token(code=code)
         credentials = flow.credentials
         self.settings.youtube_token_path.parent.mkdir(parents=True, exist_ok=True)
         self.settings.youtube_token_path.write_text(credentials.to_json(), encoding="utf-8")
+        self.oauth_session_path.unlink(missing_ok=True)
         return self.get_status()
 
     def authenticate_local(self) -> dict[str, Any]:

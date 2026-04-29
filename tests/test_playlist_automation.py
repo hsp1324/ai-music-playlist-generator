@@ -1770,16 +1770,18 @@ def test_youtube_oauth_callback_stores_token_then_returns_to_ui(tmp_path) -> Non
         client = create_isolated_client(tmp_path)
         calls = {}
 
-        def fake_exchange_web_code(code: str) -> dict:
+        def fake_exchange_web_code(code: str, state: str | None = None) -> dict:
             calls["code"] = code
+            calls["state"] = state
             return {"ready": True}
 
         client.app.state.services.youtube.exchange_web_code = fake_exchange_web_code
 
-        response = client.get("/api/youtube/oauth/callback?code=test-code", follow_redirects=False)
+        response = client.get("/api/youtube/oauth/callback?code=test-code&state=test-state", follow_redirects=False)
 
         assert response.status_code == 307
         assert response.headers["location"] == "/?youtube=connected"
         assert calls["code"] == "test-code"
+        assert calls["state"] == "test-state"
     finally:
         clear_isolated_client_env()

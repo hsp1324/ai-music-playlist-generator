@@ -40,7 +40,12 @@ def youtube_connect(request: Request) -> dict:
 
 
 @router.get("/oauth/callback")
-def youtube_oauth_callback(request: Request, code: str | None = None, error: str | None = None) -> RedirectResponse:
+def youtube_oauth_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+) -> RedirectResponse:
     if error:
         raise HTTPException(status_code=400, detail=f"YouTube OAuth failed: {error}")
     if not code:
@@ -48,7 +53,7 @@ def youtube_oauth_callback(request: Request, code: str | None = None, error: str
 
     services = get_services(request)
     try:
-        services.youtube.exchange_web_code(code)
+        services.youtube.exchange_web_code(code, state)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
