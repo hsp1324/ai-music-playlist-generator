@@ -1526,6 +1526,12 @@ function renderWorkspaceDetail() {
   }
 
   if (workspace.publish_approved && !workspace.youtube_video_id) {
+    const manualBox = document.createElement("div");
+    manualBox.className = "manual-upload-box";
+    const label = document.createElement("span");
+    label.textContent = "Manual fallback only";
+    const hint = document.createElement("small");
+    hint.textContent = "자동 YouTube 업로드가 안 될 때만, 이미 직접 올린 영상의 video ID를 입력하세요.";
     const input = document.createElement("input");
     input.type = "text";
     input.className = "inline-input";
@@ -1540,8 +1546,11 @@ function renderWorkspaceDetail() {
         }),
       });
     });
-    detailActions.appendChild(input);
-    detailActions.appendChild(button);
+    manualBox.appendChild(label);
+    manualBox.appendChild(hint);
+    manualBox.appendChild(input);
+    manualBox.appendChild(button);
+    detailActions.appendChild(manualBox);
   }
 
   const showTrackReviewColumns = !isReleaseReviewStage(workspace);
