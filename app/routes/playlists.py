@@ -333,6 +333,7 @@ def approve_publish(
             actor=payload.actor,
             youtube_video_id=payload.youtube_video_id,
             note=payload.note,
+            force_under_target=payload.force_under_target,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

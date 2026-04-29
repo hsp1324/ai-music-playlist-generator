@@ -1502,11 +1502,23 @@ function renderWorkspaceDetail() {
   if (workspace.metadata_approved && !workspace.youtube_video_id) {
     detailActions.appendChild(
       actionButton(workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
+        let forceUnderTarget = false;
+        const underTarget = !isSingleRelease(workspace)
+          && workspace.target_duration_seconds > 0
+          && workspace.actual_duration_seconds < workspace.target_duration_seconds;
+        if (underTarget) {
+          const proceed = window.confirm(
+            `이 playlist는 아직 목표 길이보다 짧습니다.\n\n현재: ${formatDuration(workspace.actual_duration_seconds)}\n목표: ${formatDuration(workspace.target_duration_seconds)}\n\n그래도 YouTube publish를 진행할까요?`
+          );
+          if (!proceed) return;
+          forceUnderTarget = true;
+        }
         await api(`/api/playlists/${workspace.id}/approve-publish`, {
           method: "POST",
           body: JSON.stringify({
             actor: "web-ui",
             note: "Approved from workspace detail.",
+            force_under_target: forceUnderTarget,
           }),
         });
       })

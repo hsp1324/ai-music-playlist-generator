@@ -1453,6 +1453,91 @@ def test_publish_approval_reports_video_build_failure(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_publish_approval_can_force_under_target_playlist(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_video(audio_path, cover_image_path, output_path):
+            output_path.write_bytes(b"fake-mp4")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_video = fake_build_video
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Short Playlist",
+                "target_duration_seconds": 3600,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "short.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Short Track",
+                "prompt": "short playlist",
+                "duration_seconds": 120,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        prepare_release_for_final_publish(client, workspace_id)
+
+        blocked_response = client.post(
+            f"/api/playlists/{workspace_id}/approve-publish",
+            json={"actor": "test-suite"},
+        )
+        assert blocked_response.status_code == 400
+        assert blocked_response.json()["detail"] == "Playlist has not reached its target duration yet."
+
+        forced_response = client.post(
+            f"/api/playlists/{workspace_id}/approve-publish",
+            json={
+                "actor": "test-suite",
+                "note": "publish short playlist",
+                "force_under_target": True,
+            },
+        )
+        assert forced_response.status_code == 200
+        forced = forced_response.json()
+        assert forced["workflow_state"] == "publish_queued"
+
+        assert drain_background_jobs(client) == 1
+        workspaces_response = client.get("/api/playlists/workspaces")
+        published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert published["workflow_state"] == "ready_for_youtube_auth"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

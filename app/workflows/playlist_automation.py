@@ -722,6 +722,7 @@ def approve_playlist_metadata(
     )
     meta["metadata_approval_history"] = history
     meta["metadata_approved"] = True
+    meta["publish_ready"] = True
     meta["publish_approved"] = False
     meta["workflow_state"] = "publish_ready"
     meta["note"] = note or "Metadata approved. Final YouTube publish approval is ready."
@@ -740,6 +741,7 @@ def _queue_publish_job(
     actor: str,
     note: str | None,
     source: str,
+    force_under_target: bool = False,
 ) -> Job | None:
     active_job = db.scalars(
         select(Job).where(
@@ -756,6 +758,8 @@ def _queue_publish_job(
     meta["publish_approved_by"] = actor
     meta["workflow_state"] = "publish_queued"
     meta["note"] = note or "Background worker queued cover, video render, and YouTube upload."
+    if force_under_target:
+        meta["publish_under_target_confirmed"] = True
     playlist.metadata_json = meta
     playlist.status = PlaylistStatus.ready
     db.add(playlist)
@@ -768,6 +772,7 @@ def _queue_publish_job(
             "playlist_id": playlist.id,
             "actor": actor,
             "note": note,
+            "force_under_target": force_under_target,
         },
         result_json={},
         playlist=playlist,
@@ -1318,6 +1323,7 @@ def approve_playlist_publish(
     actor: str,
     youtube_video_id: str | None = None,
     note: str | None = None,
+    force_under_target: bool = False,
 ) -> Playlist:
     playlist = db.scalars(
         select(Playlist)
@@ -1327,8 +1333,12 @@ def approve_playlist_publish(
     meta = _playlist_meta(playlist)
     if not playlist.items:
         raise ValueError("Playlist has no tracks to publish.")
-    if not meta.get("publish_ready") or not _publish_is_ready(playlist):
+    if not meta.get("publish_ready") or (not _publish_is_ready(playlist) and not force_under_target):
         raise ValueError("Playlist has not reached its target duration yet.")
+    if force_under_target and not _publish_is_ready(playlist):
+        meta["publish_under_target_confirmed"] = True
+        meta["publish_under_target_confirmed_by"] = actor
+        meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
     if youtube_video_id:
         playlist.youtube_video_id = youtube_video_id
         playlist.status = PlaylistStatus.uploaded
@@ -1384,6 +1394,7 @@ def approve_playlist_publish(
         f"{note} " if note else ""
         ) + "Background worker queued final YouTube upload.",
         source="web",
+        force_under_target=force_under_target,
     )
 
     db.commit()

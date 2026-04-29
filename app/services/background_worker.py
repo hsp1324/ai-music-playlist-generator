@@ -388,11 +388,18 @@ class BackgroundJobWorker:
         meta = dict(playlist.metadata_json or {})
         actor = (job.payload_json or {}).get("actor") or "background-worker"
         note = (job.payload_json or {}).get("note")
+        force_under_target = bool((job.payload_json or {}).get("force_under_target"))
 
         if not playlist.items:
             raise ValueError("Playlist has no tracks to publish.")
-        if not meta.get("publish_ready") or playlist.actual_duration_seconds < playlist.target_duration_seconds:
+        if not meta.get("publish_ready") or (
+            playlist.actual_duration_seconds < playlist.target_duration_seconds and not force_under_target
+        ):
             raise ValueError("Playlist has not reached its target duration yet.")
+        if force_under_target and playlist.actual_duration_seconds < playlist.target_duration_seconds:
+            meta["publish_under_target_confirmed"] = True
+            meta["publish_under_target_confirmed_by"] = actor
+            meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
         if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
             raise ValueError("Rendered video is required before final YouTube upload.")
         cover_image_path = meta.get("cover_image_path")

@@ -26,6 +26,7 @@ class PlaylistPublishApproveRequest(BaseModel):
     actor: str = "web-ui"
     youtube_video_id: str | None = None
     note: str | None = None
+    force_under_target: bool = False
 
 
 class PlaylistCoverGenerateRequest(BaseModel):
