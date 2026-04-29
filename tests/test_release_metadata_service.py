@@ -79,6 +79,8 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         output_path = Path(cmd[cmd.index("-o") + 1])
         assert "--output-schema" in cmd
         assert "00:00 Cinnamon Keys A" in input
+        assert "🎧 Recommended for" in input
+        assert "do not append 'Official AI Visualizer'" in input
         output_path.write_text(
             json.dumps(
                 {
