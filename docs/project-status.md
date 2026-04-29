@@ -101,6 +101,8 @@ For `single_track_video`, the intended publish path is:
 - Publish/re-upload shows a `Publish Channel` dropdown directly in the release action area
 - Published releases still show the final track list and inline audio players, but review/reorder controls are locked
 - YouTube OAuth now requests both upload and readonly scopes so the app can identify the selected channel after OAuth
+- Cafe/solo-piano playlist metadata now generates a Korean YouTube title, use-case description, timestamped tracklist, and music hashtags
+- Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 
 ### Cover art
 

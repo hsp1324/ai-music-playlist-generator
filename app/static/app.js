@@ -1524,6 +1524,19 @@ function renderWorkspaceDetail() {
         });
       })
     );
+  } else if (workspace.output_video_path && workspace.youtube_title && workspace.metadata_approved) {
+    detailActions.appendChild(
+      actionButton("Regenerate Metadata Draft", "action-button secondary-button", async () => {
+        const proceed = window.confirm("승인된 metadata를 새 초안으로 다시 생성할까요? 다시 승인해야 publish/re-upload할 수 있습니다.");
+        if (!proceed) return;
+        await api(`/api/playlists/${workspace.id}/metadata/generate`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+          }),
+        });
+      })
+    );
   } else if (workspace.youtube_title && !workspace.metadata_approved) {
     detailActions.appendChild(
       actionButton("Approve Metadata", "action-button primary-button", async () => {
