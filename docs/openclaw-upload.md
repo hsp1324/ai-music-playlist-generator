@@ -15,7 +15,7 @@ Do not use the public `https://ai-music...sslip.io` URL from OpenClaw. Public tr
 
 ## Upload A New Single Candidate Set
 
-Use this when Suno/OpenClaw produced one or two candidates for the same single release. Suno usually returns two songs; upload both to the same new Single Release so a human can choose one.
+Use this when Suno/OpenClaw produced one or two candidates for the same single release. Suno usually returns two songs; upload both to the same new Single Release so a human can choose one or approve both.
 
 ```bash
 scripts/openclaw-release upload-single-candidates \
@@ -35,14 +35,14 @@ The command returns JSON with:
 - `tracks[].id`
 - next action
 
-After this, both candidates appear in the web/Slack review queue. A human should approve exactly one candidate to continue the release. If both candidates are rejected, the Single Release is automatically archived instead of deleted. It can be restored from the web UI archive.
+After this, both candidates appear in the web/Slack review queue. A human can approve one candidate, or approve both candidates to combine them into one single-style release audio. If both candidates are rejected, the Single Release is automatically archived instead of deleted. It can be restored from the web UI archive.
 
 Cover behavior:
 
 - `--cover` is optional.
 - Use one `--cover` to share the same cover across all uploaded candidates.
 - Use one `--cover` per `--audio` to upload candidate-specific covers.
-- When a Single Release candidate is approved, its uploaded cover is automatically registered as the release cover. The human only needs to review/approve the cover before rendering video.
+- When a Single Release candidate is approved, its uploaded cover is automatically registered as the release cover. If both candidates are approved, the first available uploaded cover is used as the release cover. The human only needs to review/approve the cover before rendering video.
 
 ## Upload One New Single Candidate
 
@@ -75,7 +75,7 @@ After OpenClaw uploads audio, the web UI shows the selected release as a music-l
 - Clicking a release card opens a focused `?release=...` page instead of scrolling to a lower dashboard panel.
 - `Awaiting Approval` contains uploaded candidates with cover art, duration, player controls, prompt notes, and approve/hold/reject actions.
 - `Final Order` contains approved tracks in playlist order. Playlist releases can be reordered by drag/drop before audio rendering.
-- Single Releases should end with one approved selected track. Playlist Releases may contain many approved tracks.
+- Single Releases can end with one approved selected track, or two approved tracks that are combined into one single-style release audio. Playlist Releases may contain many approved tracks.
 - The web UI defers automatic polling while any audio player is actively playing, so mobile playback is not interrupted by background refresh.
 - Starting one web audio player pauses any other currently playing web audio player.
 

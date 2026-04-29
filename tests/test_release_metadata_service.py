@@ -90,6 +90,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "Never swap timestamps between tracks" in input
         assert "Do not show trailing A/B labels" in input
         assert "display_title_hint" in input
+        assert "write as one song/release" in input
         output_path.write_text(
             json.dumps(
                 {

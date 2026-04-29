@@ -482,9 +482,19 @@ def test_workspace_flow_assigns_tracks_and_requests_publish_approval(tmp_path) -
         clear_isolated_client_env()
 
 
-def test_single_release_accepts_only_one_approved_track(tmp_path) -> None:
+def test_single_release_can_combine_two_approved_tracks(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        rendered_titles = []
+
+        def fake_build_audio(tracks, output_path):
+            rendered_titles.extend(track.title for track in tracks)
+            output_path.write_bytes(b"combined-single-audio")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+
         workspace_response = client.post(
             "/api/playlists/workspaces",
             json={
@@ -498,13 +508,15 @@ def test_single_release_accepts_only_one_approved_track(tmp_path) -> None:
 
         track_ids = []
         for index in range(2):
+            audio_path = tmp_path / f"single-{index}.mp3"
+            audio_path.write_bytes(f"single candidate {index}".encode())
             track_response = client.post(
                 "/api/tracks",
                 json={
                     "title": f"Single Candidate {index}",
                     "prompt": "solo release candidate",
                     "duration_seconds": 180,
-                    "audio_path": f"https://cdn.example.com/single-{index}.mp3",
+                    "audio_path": str(audio_path),
                     "metadata": {"source": "test"},
                 },
             )
@@ -521,6 +533,7 @@ def test_single_release_accepts_only_one_approved_track(tmp_path) -> None:
             },
         )
         assert first_approve.status_code == 200
+        assert drain_background_jobs(client) == 0
 
         second_approve = client.post(
             f"/api/tracks/{track_ids[1]}/decisions",
@@ -531,12 +544,16 @@ def test_single_release_accepts_only_one_approved_track(tmp_path) -> None:
                 "playlist_id": workspace_id,
             },
         )
-        assert second_approve.status_code == 400
-        assert "Single release already has an approved track" in second_approve.json()["detail"]
+        assert second_approve.status_code == 200
+        assert drain_background_jobs(client) == 1
 
         workspaces_response = client.get("/api/playlists/workspaces")
         workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
-        assert [track["id"] for track in workspace["tracks"]] == [track_ids[0]]
+        assert [track["id"] for track in workspace["tracks"]] == track_ids
+        assert workspace["actual_duration_seconds"] == 360
+        assert workspace["workflow_state"] == "audio_ready"
+        assert workspace["output_audio_path"].endswith(f"{workspace_id}.mp3")
+        assert rendered_titles == ["Single Candidate 0", "Single Candidate 1"]
     finally:
         clear_isolated_client_env()
 

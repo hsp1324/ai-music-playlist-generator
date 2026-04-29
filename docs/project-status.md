@@ -57,8 +57,8 @@ Two modes exist:
   - collect approved tracks until target duration
   - then request publish approval
 - `single_track_video`
-  - one approved track is enough
-  - intended for one-song video publishing
+  - one approved track is enough, but two approved candidates can be combined
+  - intended for one-song video publishing, including a two-part single-style release
   - can auto-publish when ready
 
 ### 5. Publish pipeline
@@ -81,8 +81,8 @@ The stall guard is progress-based, not a hard wall-clock timeout. It only fails 
 
 For `single_track_video`, the intended publish path is:
 
-1. approve track into workspace
-2. render audio
+1. approve one or two tracks into workspace
+2. render audio; one approved track uses its source audio directly, two approved tracks render into one combined audio file
 3. generate cover
 4. optionally generate a short Dreamina clip
 5. loop the clip to match the audio

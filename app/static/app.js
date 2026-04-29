@@ -1299,14 +1299,14 @@ function renderWorkspaceTiles() {
     stateEl.classList.add(currentStage?.status || "current");
     copy.textContent = shortText(workspace.description || "Ready to collect approved tracks.", 120);
     approvedStat.textContent = isSingleRelease(workspace)
-      ? `${workspace.tracks.length ? "1" : "0"} selected`
+      ? `${workspace.tracks.length} / 2 selected`
       : `${workspace.tracks.length} approved`;
     pendingStat.textContent = `${pendingCount} in review`;
     renderPipeline(pipeline, workspace, { compact: true });
     next.textContent = currentStage?.detail || "Next action is ready.";
 
     hint.textContent = workspace.workspace_mode === "single_track_video"
-      ? "One approved track"
+      ? "Approve one or both candidates"
       : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
 
     moreButton.textContent = "Open";

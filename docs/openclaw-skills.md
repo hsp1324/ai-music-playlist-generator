@@ -35,7 +35,7 @@ Use this skill when the user asks for one standalone song/single.
 
 ### Goal
 
-Generate one Single Release candidate set. Suno normally returns two candidate songs for one prompt. Upload both candidates into the same Single Release so the human can listen and choose one. If both are bad, the human rejects both; the app archives that release automatically and it can be restored later.
+Generate one Single Release candidate set. Suno normally returns two candidate songs for one prompt. Upload both candidates into the same Single Release so the human can listen and choose one or approve both. If both are approved, the app combines them into one single-style release audio and proceeds like a two-track mini playlist while metadata still treats it as one song. If both are bad, the human rejects both; the app archives that release automatically and it can be restored later.
 
 ### OpenClaw Skill Prompt
 
@@ -50,7 +50,9 @@ Goal:
 - If Suno returns two candidates, upload both candidates to one new Single Release.
 - If only one usable candidate exists, upload one candidate to one new Single Release.
 - If candidate cover images exist, upload them with the audio candidates.
-- When the human approves one candidate, its uploaded cover is automatically registered as the release cover. The human still reviews/approves that cover before video rendering.
+- Clean awkward trailing A/B labels from uploaded candidate titles. If titles become duplicated, make them naturally unique.
+- When the human approves one candidate, its uploaded cover is automatically registered as the release cover. If the human approves both candidates, the two audio files are combined into one release audio.
+- The human still reviews/approves the cover before video rendering.
 - Do not approve, reject, render, publish, or upload to YouTube.
 - Return release.id, release.title, and all uploaded track ids.
 
@@ -76,7 +78,7 @@ scripts/openclaw-release upload-single-candidates \
 
 If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order.
 
-Report the command output JSON. The human will approve one candidate in Slack or the web UI.
+Report the command output JSON. The human will approve one candidate, approve both candidates, or reject both in Slack or the web UI.
 ```
 
 ### Required Output
@@ -90,7 +92,7 @@ release.title: ...
 tracks:
 - ...
 - ...
-Next: human should approve exactly one candidate or reject both.
+Next: human should approve one candidate, approve both candidates to combine them, or reject both.
 ```
 
 ### Safety Checks
@@ -98,7 +100,7 @@ Next: human should approve exactly one candidate or reject both.
 - Do not create two separate Single Releases for the two Suno outputs. Both candidates must be in one release.
 - Do not upload more than two candidates to a Single Release.
 - Do not upload cover images separately after this command if they were already uploaded with the candidate audio.
-- If a release already has a selected/approved track, create a new Single Release instead of uploading more candidates to it.
+- A Single Release can contain at most two approved tracks. If it already has two selected/approved tracks, create a new Single Release instead of uploading more candidates to it.
 - If both candidates are rejected later, the app archives the release automatically. Do not manually delete it.
 
 ## Skill 2: Automatic Private Playlist Publisher

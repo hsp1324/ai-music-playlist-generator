@@ -38,14 +38,17 @@ class ReleaseMetadataService:
 
         if mode == "single_track_video" and tracks:
             track = tracks[0]
-            title = f"{track.title} | {self.settings.youtube_title_suffix}".strip(" |")
+            release_title = playlist.title.strip() if len(tracks) > 1 else track.title
+            title = f"{release_title} | {self.settings.youtube_title_suffix}".strip(" |")
+            prompt_lines = [track.prompt for track in tracks if track.prompt]
+            prompt_summary = " / ".join(prompt_lines[:2]) if prompt_lines else "N/A"
             description = "\n".join(
                 [
-                    f"{track.title}",
+                    release_title,
                     "",
                     description_summary,
                     "",
-                    f"Prompt: {track.prompt or 'N/A'}",
+                    f"Prompt: {prompt_summary}",
                     f"Tags: {', '.join(tags) if tags else 'ai music, visualizer'}",
                     "Visuals: Cover art + Dreamina-generated motion loop.",
                     "",

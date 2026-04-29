@@ -307,6 +307,7 @@ Runtime behavior:
 - OpenClaw can run `scripts/openclaw-release auto-publish-playlist` to upload playlist tracks as approved, render audio/video, approve generated metadata, and publish privately to the connected `Soft Hour Radio` channel.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
+Single releases can approve one candidate directly, or approve two related candidates and combine them into one single-style release audio before cover/video/publish.
 
 ## Dreamina Loop Video
 

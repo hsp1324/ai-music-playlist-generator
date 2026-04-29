@@ -313,9 +313,17 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         ),
     )
 
+    raw_titles = [
+        args.title[index - 1] if args.title and index <= len(args.title) else file_stem(audio_path)
+        for index, audio_path in enumerate(audio_paths, start=1)
+    ]
+    track_titles = display_track_titles(
+        [{"title": title, "duration_seconds": 0} for title in raw_titles]
+    )
+
     tracks = []
     for index, audio_path in enumerate(audio_paths, start=1):
-        track_title = args.title[index - 1] if args.title and index <= len(args.title) else file_stem(audio_path)
+        track_title = track_titles[index - 1]
         cover_path = None
         if cover_paths:
             cover_path = cover_paths[index - 1] if len(cover_paths) == len(audio_paths) else cover_paths[0]
@@ -348,7 +356,8 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         },
         "tracks": tracks,
         "next": (
-            "Human review should approve exactly one candidate. "
+            "Human review can approve one candidate or both candidates. "
+            "If both are approved, the app combines them into one single-style release. "
             "If both candidates are rejected, the release is automatically archived and can be restored from the web UI."
         ),
     }

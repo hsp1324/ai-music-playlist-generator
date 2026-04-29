@@ -100,15 +100,15 @@ def _validate_pending_workspace_upload(db: Session, pending_workspace_id: str | 
         raise HTTPException(status_code=400, detail="Pending workspace is archived. Restore it before uploading.")
     if meta.get("workspace_mode") != "single_track_video":
         return
-    if playlist.items:
-        raise HTTPException(status_code=400, detail="Single release already has a selected track.")
-
     candidate_count = 0
     tracks = db.scalars(select(Track)).all()
     for track in tracks:
-        if (track.metadata_json or {}).get("pending_workspace_id") == pending_workspace_id:
+        if (
+            (track.metadata_json or {}).get("pending_workspace_id") == pending_workspace_id
+            and track.status in {TrackStatus.pending_review, TrackStatus.held}
+        ):
             candidate_count += 1
-    if candidate_count >= 2:
+    if len(playlist.items) + candidate_count >= 2:
         raise HTTPException(status_code=400, detail="Single release can hold at most two review candidates.")
 
 
