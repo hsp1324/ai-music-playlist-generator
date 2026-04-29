@@ -1600,6 +1600,13 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert drain_background_jobs(client) == 1
 
         prepare_release_for_final_publish(client, workspace_id)
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            meta = dict(playlist.metadata_json or {})
+            meta["youtube_upload_error"] = "old thumbnail failure"
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
 
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
@@ -1617,6 +1624,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert published["workflow_state"] == "uploaded"
         assert published["youtube_video_id"] == "yt-auto-123"
         assert published["output_video_path"].endswith(".mp4")
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            assert "youtube_upload_error" not in playlist.metadata_json
     finally:
         clear_isolated_client_env()
 

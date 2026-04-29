@@ -437,6 +437,11 @@ class BackgroundJobWorker:
                     playlist.status = PlaylistStatus.uploaded
                     meta["workflow_state"] = "uploaded"
                     meta["youtube_response"] = result.response
+                    meta.pop("youtube_upload_error", None)
+                    if result.response.get("thumbnail_upload_error"):
+                        meta["youtube_thumbnail_upload_error"] = result.response["thumbnail_upload_error"]
+                    else:
+                        meta.pop("youtube_thumbnail_upload_error", None)
                     for item in playlist.items:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)
