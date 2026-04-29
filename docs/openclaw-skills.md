@@ -138,6 +138,7 @@ Goal:
 - If removing A/B creates duplicate titles, rename the displayed titles naturally so they are unique.
 - Upload all usable tracks to one Playlist Release.
 - Upload tracks as auto-approved, not pending human review.
+- If using `scripts/openclaw-release upload-audio` for individual playlist tracks, do not pass `--pending-review`; playlist uploads auto-approve by default.
 - If a final 16:9 cover image exists, pass it with --cover.
 - If no final cover exists, let the app generate a local draft cover.
 - Render playlist audio.

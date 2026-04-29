@@ -239,7 +239,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         raise RuntimeError(f"Audio path is not a file: {audio_path}")
     cover_path = resolve_cover_path(args.cover)
 
-    title = args.title or file_stem(audio_path)
+    title = clean_track_display_title(args.title or file_stem(audio_path))
     release: dict[str, Any]
     created_release = False
 
@@ -260,6 +260,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
     else:
         raise RuntimeError("Use --new-single, --release-id, or --release-title.")
 
+    auto_approve_playlist = release["workspace_mode"] == "playlist" and not args.pending_review
     track = upload_audio_file_to_release(
         client,
         release_id=release["id"],
@@ -268,12 +269,22 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         prompt=args.prompt,
         tags=args.tags,
         cover_path=cover_path,
+        dispatch_review=not auto_approve_playlist,
     )
+    if auto_approve_playlist:
+        track = approve_track_to_playlist(
+            client,
+            track_id=track["id"],
+            release_id=release["id"],
+            actor=args.actor,
+        )
+        release = get_release(client, release["id"])
 
     return {
         "ok": True,
         "action": "upload-audio",
         "created_release": created_release,
+        "auto_approved": auto_approve_playlist,
         "release": {
             "id": release["id"],
             "title": release["title"],
@@ -286,7 +297,11 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "status": track["status"],
             "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
         },
-        "next": "Review and approve the track in Slack or the web UI.",
+        "next": (
+            "Track uploaded and auto-approved into the playlist."
+            if auto_approve_playlist
+            else "Review and approve the track in Slack or the web UI."
+        ),
     }
 
 
@@ -796,6 +811,8 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--new-single", action="store_true", help="Create a new Single Release from this audio.")
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
+    audio_parser.add_argument("--pending-review", action="store_true", help="For Playlist Releases only, skip the default auto-approve behavior.")
+    audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded when playlist uploads are auto-approved.")
     audio_parser.set_defaults(func=upload_audio)
 
     candidates_parser = subparsers.add_parser(

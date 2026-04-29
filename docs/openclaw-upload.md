@@ -68,6 +68,26 @@ The command returns JSON with:
 After this, the track appears in the web/Slack review queue. A human should approve it before render.
 If `--cover` is provided and this is a Single Release, approving the track automatically registers that image as the release cover.
 
+## Upload One Playlist Track
+
+When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a one-hour playlist does not spam Slack.
+
+```bash
+scripts/openclaw-release upload-audio \
+  --release-id RELEASE_ID \
+  --audio /absolute/path/to/playlist-track.mp3 \
+  --title "Track Title" \
+  --prompt "Short generation prompt or notes" \
+  --tags "ai music, playlist"
+```
+
+The JSON result should include:
+
+- `auto_approved: true`
+- `track.status: approved`
+
+Only use `--pending-review` if the human explicitly asks to review playlist tracks one by one.
+
 ## Web Review Surface
 
 After OpenClaw uploads audio, the web UI shows the selected release as a music-library style list:
@@ -176,7 +196,8 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - Do not upload to YouTube automatically.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
+- For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
-- Do not approve both candidates in a Single Release. The human should approve one or reject both.
+- Single Release candidates are still human-reviewed; the human may approve one candidate, approve both candidates to combine them, or reject both.
 - If both candidates are rejected, the app will archive the release automatically; do not delete files or database rows manually.
 - If three or more songs are ready for one release, use a Playlist Release instead.
