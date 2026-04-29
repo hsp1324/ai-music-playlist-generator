@@ -66,7 +66,7 @@ Two modes exist:
 Background worker handles long-running jobs:
 
 - playlist audio render
-- cover generation
+- local draft cover generation
 - looped video render
 - YouTube upload
 
@@ -85,7 +85,15 @@ For `single_track_video`, the intended publish path is:
 
 - OAuth-based upload is implemented
 - Needs `AIMP_YOUTUBE_CLIENT_SECRETS_PATH`
+- Uses a web OAuth callback at `/api/youtube/oauth/callback`, which fits the deployed VM better than a local desktop-browser OAuth flow
 - Needs one-time `Connect YouTube` action from the web UI
+
+### Cover art
+
+- Manual cover upload is the preferred operator path when final art already exists
+- `Generate Draft Cover` creates a simple local PNG placeholder with Pillow
+- The app does not currently call Codex/OpenAI image generation for covers
+- A generated draft can be replaced from the web UI with `Upload Cover`
 
 ### Dreamina
 

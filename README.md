@@ -249,7 +249,7 @@ The main operating surface is now the web UI.
 3. Approve a queued track into a specific workspace
 4. Keep collecting until the workspace reaches its target duration
 5. Approve publishing from the workspace card
-6. The app queues a background publish job that generates a local PNG cover and prepares or uploads the YouTube video
+6. Upload a 16:9 cover manually, or generate a local draft cover and replace it later if needed
 7. If YouTube is not connected yet, connect it and approve publishing again
 
 You can also create a `single_track_video` workspace:
@@ -258,22 +258,34 @@ You can also create a `single_track_video` workspace:
 2. Approve one track into that workspace
 3. The background worker renders audio, optionally generates a Dreamina loop clip, and uploads automatically when ready
 
+## Cover Art
+
+After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
+
+- `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
+- `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
+- If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
+- For best YouTube output, use a 16:9 image such as `1280x720` or `1920x1080`.
+
 ## YouTube Automation
 
 The app can now upload to YouTube automatically after you approve publishing from the workspace.
 
 Required setup:
 
-1. Create OAuth desktop-app credentials for YouTube Data API v3 in Google Cloud
+1. Create OAuth **Web application** credentials for YouTube Data API v3 in Google Cloud
 2. Save the downloaded JSON somewhere on disk
-3. Set `AIMP_YOUTUBE_CLIENT_SECRETS_PATH` in `.env`
-4. Open the web UI and press `Connect YouTube` once
-5. Finish the OAuth flow in your browser
+3. Add this redirect URI to the OAuth client:
+   `https://ai-music.168.107.34.175.sslip.io/api/youtube/oauth/callback`
+4. Set `AIMP_YOUTUBE_CLIENT_SECRETS_PATH` in `.env`
+5. Open the web UI and press `Connect YouTube` once
+6. Finish the OAuth flow in your browser
 
 Environment variables:
 
 ```bash
 AIMP_YOUTUBE_CLIENT_SECRETS_PATH=/absolute/path/to/client_secrets.json
+AIMP_YOUTUBE_OAUTH_REDIRECT_URI=https://ai-music.168.107.34.175.sslip.io/api/youtube/oauth/callback
 AIMP_YOUTUBE_PRIVACY_STATUS=private
 AIMP_YOUTUBE_CATEGORY_ID=10
 AIMP_YOUTUBE_AUTO_UPLOAD_ON_PUBLISH=true
@@ -282,7 +294,7 @@ AIMP_YOUTUBE_AUTO_UPLOAD_ON_PUBLISH=true
 Runtime behavior:
 
 - If the playlist has a rendered local audio file and YouTube is connected, publish approval will queue a background job that:
-  - generates a local cover PNG
+  - uses the approved cover image
   - renders an MP4 from cover + audio
   - uploads the video to YouTube
   - uploads the same cover as the custom thumbnail

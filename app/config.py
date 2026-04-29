@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     auto_build_title_prefix: str = "Auto Playlist"
 
     youtube_client_secrets_path: str = ""
+    youtube_oauth_redirect_uri: str = ""
     youtube_privacy_status: Literal["private", "unlisted", "public"] = "private"
     youtube_category_id: str = "10"
     youtube_auto_upload_on_publish: bool = True

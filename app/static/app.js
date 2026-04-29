@@ -1340,50 +1340,48 @@ function renderWorkspaceDetail() {
     }
   }
 
-  if (workspace.output_audio_path && !workspace.cover_image_path) {
+  const coverChangeBlocked = ["video_queued", "video_rendering", "youtube_uploading"].includes(workspace.workflow_state);
+  const canManageCover = workspace.output_audio_path && !workspace.youtube_video_id && !coverChangeBlocked;
+  if (canManageCover) {
+    if (workspace.cover_image_path && !workspace.cover_approved) {
+      detailActions.appendChild(
+        actionButton("Approve Cover, then Render Video", "action-button primary-button", async () => {
+          await api(`/api/playlists/${workspace.id}/cover/approve`, {
+            method: "POST",
+            body: JSON.stringify({
+              actor: "web-ui",
+              approved: true,
+              note: "Approved from workspace detail.",
+            }),
+          });
+        })
+      );
+    }
+
     detailActions.appendChild(
-      actionButton("Upload Cover", "action-button primary-button", async () => {
-        await pickCoverFile(workspace);
-      })
+      actionButton(
+        "Upload Cover",
+        workspace.cover_image_path ? "action-button secondary-button" : "action-button primary-button",
+        async () => {
+          await pickCoverFile(workspace);
+        }
+      )
     );
+
     detailActions.appendChild(
-      actionButton("Generate Cover", "action-button secondary-button", async () => {
-        await api(`/api/playlists/${workspace.id}/cover/generate`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-          }),
-        });
-      })
-    );
-  } else if (workspace.cover_image_path && !workspace.cover_approved) {
-    detailActions.appendChild(
-      actionButton("Approve Cover, then Render Video", "action-button primary-button", async () => {
-        await api(`/api/playlists/${workspace.id}/cover/approve`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-            approved: true,
-            note: "Approved from workspace detail.",
-          }),
-        });
-      })
-    );
-    detailActions.appendChild(
-      actionButton("Replace Cover", "action-button secondary-button", async () => {
-        await pickCoverFile(workspace);
-      })
-    );
-    detailActions.appendChild(
-      actionButton("Regenerate Cover", "action-button secondary-button", async () => {
-        await api(`/api/playlists/${workspace.id}/cover/generate`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-            regenerate: true,
-          }),
-        });
-      })
+      actionButton(
+        workspace.cover_image_path ? "Generate New Draft Cover" : "Generate Draft Cover",
+        "action-button secondary-button",
+        async () => {
+          await api(`/api/playlists/${workspace.id}/cover/generate`, {
+            method: "POST",
+            body: JSON.stringify({
+              actor: "web-ui",
+              regenerate: Boolean(workspace.cover_image_path),
+            }),
+          });
+        }
+      )
     );
   }
 
@@ -1709,7 +1707,7 @@ function renderYouTubeStatus(youtubeStatus) {
     : youtubeStatus.error
       ? youtubeStatus.error
       : youtubeStatus.configured
-        ? "Press Connect once and finish the OAuth flow in your browser."
+        ? `Press Connect once and finish OAuth. Redirect URI: ${youtubeStatus.redirect_uri || "not set"}`
         : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
 }
 
@@ -1863,19 +1861,20 @@ sessionAlertButton.addEventListener("click", async () => {
   }
 });
 
-youtubeConnectButton.addEventListener("click", async () => {
-  try {
-    const result = await api("/api/youtube/connect", { method: "POST" });
-    setStatus(workspaceStatus, result);
-    await refresh();
-  } catch (error) {
-    alert(error.message);
-  }
+youtubeConnectButton.addEventListener("click", () => {
+  window.location.href = "/api/youtube/connect";
 });
 
-refresh().catch((error) => {
-  setStatus(trackStatus, error.message);
-});
+refresh()
+  .then(() => {
+    if (new URLSearchParams(window.location.search).get("youtube") === "connected") {
+      setStatus(workspaceStatus, "YouTube connected. You can approve publish again.");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  })
+  .catch((error) => {
+    setStatus(trackStatus, error.message);
+  });
 
 document.addEventListener("pause", resumeDeferredAutoRefresh, true);
 document.addEventListener("ended", resumeDeferredAutoRefresh, true);

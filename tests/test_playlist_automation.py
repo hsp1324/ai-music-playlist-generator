@@ -28,6 +28,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_DATABASE_URL", None)
     os.environ.pop("AIMP_WORKER_AUTOSTART", None)
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
+    os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     get_settings.cache_clear()
 
 
@@ -1656,6 +1657,44 @@ def test_youtube_status_ignores_invalid_token_file(tmp_path) -> None:
         assert payload["configured"] is True
         assert payload["authenticated"] is False
         assert payload["ready"] is False
+        assert payload["redirect_uri"].endswith("/api/youtube/oauth/callback")
         assert "could not be read" in payload["error"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_youtube_connect_redirects_to_authorization_url(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        client.app.state.services.youtube.build_authorization_url = lambda: {
+            "authorization_url": "https://accounts.google.com/o/oauth2/auth?state=test",
+            "state": "test",
+            "redirect_uri": "https://example.com/api/youtube/oauth/callback",
+        }
+
+        response = client.get("/api/youtube/connect", follow_redirects=False)
+
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://accounts.google.com/o/oauth2/auth?state=test"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_youtube_oauth_callback_stores_token_then_returns_to_ui(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        calls = {}
+
+        def fake_exchange_web_code(code: str) -> dict:
+            calls["code"] = code
+            return {"ready": True}
+
+        client.app.state.services.youtube.exchange_web_code = fake_exchange_web_code
+
+        response = client.get("/api/youtube/oauth/callback?code=test-code", follow_redirects=False)
+
+        assert response.status_code == 307
+        assert response.headers["location"] == "/?youtube=connected"
+        assert calls["code"] == "test-code"
     finally:
         clear_isolated_client_env()

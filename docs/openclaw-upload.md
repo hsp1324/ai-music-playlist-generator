@@ -144,6 +144,8 @@ Preferred cover size is 16:9, for example `1280x720` or `1920x1080`.
 
 After upload, the release moves to `cover_review`. A human should approve the cover in the web UI, then render video.
 
+The web UI also has `Generate Draft Cover`, but that only creates a simple local placeholder PNG. It does not call Codex/OpenAI image generation. If OpenClaw creates better cover art elsewhere, upload that file with `upload-cover` or include it with the audio upload command.
+
 ## Suggested OpenClaw Instruction
 
 Give OpenClaw this instruction when it finishes a song:
@@ -172,6 +174,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - Do not call `Approve Publish` automatically.
 - Do not upload to YouTube automatically.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
+- Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
 - Do not approve both candidates in a Single Release. The human should approve one or reject both.
 - If both candidates are rejected, the app will archive the release automatically; do not delete files or database rows manually.

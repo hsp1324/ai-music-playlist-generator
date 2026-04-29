@@ -4,7 +4,7 @@ from typing import Any
 
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -39,8 +39,54 @@ class YouTubeService:
             "ready": ready,
             "client_secrets_path": self.settings.youtube_client_secrets_path or None,
             "token_path": str(self.settings.youtube_token_path),
+            "redirect_uri": self.redirect_uri,
             "error": token_status.get("error"),
         }
+
+    @property
+    def redirect_uri(self) -> str:
+        if self.settings.youtube_oauth_redirect_uri:
+            return self.settings.youtube_oauth_redirect_uri
+        base_url = self.settings.public_base_url.rstrip("/")
+        api_prefix = self.settings.api_prefix.rstrip("/")
+        return f"{base_url}{api_prefix}/youtube/oauth/callback"
+
+    def build_authorization_url(self) -> dict[str, Any]:
+        client_secrets = Path(self.settings.youtube_client_secrets_path)
+        if not client_secrets.exists():
+            raise FileNotFoundError("YouTube client secrets file is not configured.")
+
+        flow = Flow.from_client_secrets_file(
+            str(client_secrets),
+            scopes=[YOUTUBE_UPLOAD_SCOPE],
+            redirect_uri=self.redirect_uri,
+        )
+        authorization_url, state = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+            prompt="consent",
+        )
+        return {
+            "authorization_url": authorization_url,
+            "state": state,
+            "redirect_uri": self.redirect_uri,
+        }
+
+    def exchange_web_code(self, code: str) -> dict[str, Any]:
+        client_secrets = Path(self.settings.youtube_client_secrets_path)
+        if not client_secrets.exists():
+            raise FileNotFoundError("YouTube client secrets file is not configured.")
+
+        flow = Flow.from_client_secrets_file(
+            str(client_secrets),
+            scopes=[YOUTUBE_UPLOAD_SCOPE],
+            redirect_uri=self.redirect_uri,
+        )
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        self.settings.youtube_token_path.parent.mkdir(parents=True, exist_ok=True)
+        self.settings.youtube_token_path.write_text(credentials.to_json(), encoding="utf-8")
+        return self.get_status()
 
     def authenticate_local(self) -> dict[str, Any]:
         client_secrets = Path(self.settings.youtube_client_secrets_path)
