@@ -289,6 +289,9 @@ AIMP_YOUTUBE_OAUTH_REDIRECT_URI=https://ai-music.168.107.34.175.sslip.io/api/you
 AIMP_YOUTUBE_PRIVACY_STATUS=private
 AIMP_YOUTUBE_CATEGORY_ID=10
 AIMP_YOUTUBE_AUTO_UPLOAD_ON_PUBLISH=true
+AIMP_CODEX_METADATA_ENABLED=false
+AIMP_CODEX_METADATA_COMMAND=codex
+AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
 ```
 
 Runtime behavior:
@@ -300,6 +303,7 @@ Runtime behavior:
   - uploads the same cover as the custom thumbnail
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
+- If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
 

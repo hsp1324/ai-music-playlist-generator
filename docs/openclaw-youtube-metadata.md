@@ -10,6 +10,10 @@ OpenClaw should write:
 
 The app stores those values as approved metadata. Later, when the human clicks publish or re-upload, the app sends that exact title, description, and tags to YouTube.
 
+The web UI can also generate a draft from the VM's local Codex CLI when `AIMP_CODEX_METADATA_ENABLED=true`.
+Use `Generate Metadata` or `Regenerate Metadata Draft` in the release action area.
+If Codex is unavailable, times out, or returns invalid JSON, the app falls back to the deterministic template generator and marks the draft with a fallback warning.
+
 ## Rules
 
 - Work in `/opt/ai-music-playlist-generator`.
@@ -22,6 +26,7 @@ The app stores those values as approved metadata. Later, when the human clicks p
 - If the release is a playlist, include a timestamped tracklist from the final order.
 - Always run `scripts/openclaw-release metadata-context` first and use its `timestamp_lines` in the description.
 - Do not guess timestamps. The helper calculates them from the app's final order and track durations.
+- If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
 
 ## Metadata Style Prompt
 

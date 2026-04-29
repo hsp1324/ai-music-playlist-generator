@@ -154,6 +154,8 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         youtube_title=meta.get("youtube_title"),
         youtube_description=meta.get("youtube_description"),
         youtube_tags=list(meta.get("youtube_tags") or []),
+        metadata_provider=meta.get("metadata_provider"),
+        metadata_generation_error=meta.get("metadata_generation_error"),
         youtube_video_id=playlist.youtube_video_id,
         note=meta.get("note"),
         render_job=_latest_render_job(playlist),
@@ -687,16 +689,28 @@ def generate_playlist_metadata(
             "actor": actor,
             "generated_at": _utcnow().isoformat(),
             "title": youtube_metadata.title,
+            "provider": youtube_metadata.provider,
+            "error": youtube_metadata.error,
         }
     )
     meta["metadata_history"] = history
     meta["youtube_title"] = youtube_metadata.title
     meta["youtube_description"] = youtube_metadata.description
     meta["youtube_tags"] = youtube_metadata.tags
+    meta["metadata_provider"] = youtube_metadata.provider
+    if youtube_metadata.error:
+        meta["metadata_generation_error"] = youtube_metadata.error
+    else:
+        meta.pop("metadata_generation_error", None)
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
     meta["workflow_state"] = "metadata_review"
-    meta["note"] = "YouTube metadata draft generated. Review and approve it before publishing."
+    if youtube_metadata.error:
+        meta["note"] = "YouTube metadata draft generated with template fallback. Review before publishing."
+    elif youtube_metadata.provider == "codex":
+        meta["note"] = "YouTube metadata draft generated with Codex. Review and approve it before publishing."
+    else:
+        meta["note"] = "YouTube metadata draft generated. Review and approve it before publishing."
     meta.pop("publish_approved_by", None)
     playlist.metadata_json = meta
     playlist.status = PlaylistStatus.ready

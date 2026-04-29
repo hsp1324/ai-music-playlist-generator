@@ -12,6 +12,8 @@ class YouTubeMetadata:
     title: str
     description: str
     tags: list[str]
+    provider: str = "template"
+    error: str | None = None
 
 
 class ReleaseMetadataService:

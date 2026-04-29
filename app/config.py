@@ -76,6 +76,11 @@ class Settings(BaseSettings):
     youtube_title_suffix: str = "Official AI Visualizer"
     youtube_default_hashtags: str = "#aimusic #visualizer #electronicmusic"
 
+    codex_metadata_enabled: bool = False
+    codex_metadata_command: str = "codex"
+    codex_metadata_model: str = ""
+    codex_metadata_timeout_seconds: int = 180
+
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"
     dreamina_api_token: str = ""

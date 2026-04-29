@@ -1,6 +1,11 @@
+import json
+import subprocess
+from pathlib import Path
+
 from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
+from app.services.codex_metadata_service import CodexMetadataService
 from app.services.release_metadata_service import ReleaseMetadataService
 from app.workflows.playlist_automation import _normalize_youtube_tags
 from scripts.openclaw_release import release_timeline
@@ -54,3 +59,71 @@ def test_openclaw_metadata_context_timeline_uses_final_order() -> None:
 
     assert [item["start"] for item in timeline] == ["00:00", "03:22", "06:50"]
     assert [item["title"] for item in timeline] == ["Cinnamon Keys A", "Cinnamon Keys B", "Feltward Sonata A"]
+
+
+def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
+    settings = Settings(codex_metadata_enabled=True)
+    service = CodexMetadataService(settings, ReleaseMetadataService(settings))
+    playlist = Playlist(
+        id="release-1",
+        title="카페 피아노",
+        actual_duration_seconds=202,
+        target_duration_seconds=3600,
+        metadata_json={"workspace_mode": "playlist", "description": "잔잔한 카페 피아노"},
+    )
+    tracks = [Track(title="Cinnamon Keys A", duration_seconds=202, metadata_json={"tags": "piano,cafe"})]
+
+    monkeypatch.setattr("app.services.codex_metadata_service.shutil.which", lambda command: "/usr/bin/codex")
+
+    def fake_run(cmd, input, **kwargs):
+        output_path = Path(cmd[cmd.index("-o") + 1])
+        assert "--output-schema" in cmd
+        assert "00:00 Cinnamon Keys A" in input
+        output_path.write_text(
+            json.dumps(
+                {
+                    "title": "조용한 카페 피아노",
+                    "description": "잔잔한 피아노입니다.\n\n00:00 Cinnamon Keys A",
+                    "tags": ["Piano", "#CafePiano", "Piano"],
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr("app.services.codex_metadata_service.subprocess.run", fake_run)
+
+    metadata = service.build_youtube_metadata(playlist, tracks)
+
+    assert metadata.provider == "codex"
+    assert metadata.error is None
+    assert metadata.title == "조용한 카페 피아노"
+    assert "00:00 Cinnamon Keys A" in metadata.description
+    assert metadata.tags == ["Piano", "CafePiano"]
+
+
+def test_codex_metadata_service_falls_back_when_cli_fails(monkeypatch) -> None:
+    settings = Settings(codex_metadata_enabled=True)
+    service = CodexMetadataService(settings, ReleaseMetadataService(settings))
+    playlist = Playlist(
+        id="release-1",
+        title="카페 피아노",
+        actual_duration_seconds=202,
+        target_duration_seconds=3600,
+        metadata_json={"workspace_mode": "playlist", "description": "잔잔한 카페 피아노"},
+    )
+    tracks = [Track(title="Cinnamon Keys A", duration_seconds=202, metadata_json={"tags": "piano,cafe"})]
+
+    monkeypatch.setattr("app.services.codex_metadata_service.shutil.which", lambda command: "/usr/bin/codex")
+
+    def fake_run(cmd, input, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=cmd, timeout=kwargs.get("timeout"))
+
+    monkeypatch.setattr("app.services.codex_metadata_service.subprocess.run", fake_run)
+
+    metadata = service.build_youtube_metadata(playlist, tracks)
+
+    assert metadata.provider == "template"
+    assert "Codex metadata generation failed" in (metadata.error or "")
+    assert "00:00 Cinnamon Keys A" in metadata.description

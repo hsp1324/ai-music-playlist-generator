@@ -105,6 +105,7 @@ For `single_track_video`, the intended publish path is:
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
 - OpenClaw can get exact final-order timestamps through `scripts/openclaw-release metadata-context` and should use `timestamp_lines` in YouTube descriptions
+- When `AIMP_CODEX_METADATA_ENABLED=true`, the web `Generate Metadata` / `Regenerate Metadata Draft` actions ask the VM's local Codex CLI to write the YouTube title, description, and tags. The app limits this to one Codex run at a time and falls back to the template generator on CLI failure, timeout, or invalid JSON.
 
 ### Cover art
 
