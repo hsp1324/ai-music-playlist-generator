@@ -138,6 +138,20 @@ function pauseOtherAudioPlayers(activeAudio) {
   });
 }
 
+function playNextAwaitingTrack(currentAudio) {
+  if (!currentAudio?.dataset.autoplayQueue) return;
+  const queueAudios = [...queueGrid.querySelectorAll("audio.track-audio")]
+    .filter((audio) => audio.dataset.autoplayQueue === currentAudio.dataset.autoplayQueue && audio.src);
+  const currentIndex = queueAudios.indexOf(currentAudio);
+  if (currentIndex < 0 || currentIndex >= queueAudios.length - 1) return;
+
+  const nextAudio = queueAudios[currentIndex + 1];
+  window.setTimeout(() => {
+    pauseOtherAudioPlayers(nextAudio);
+    nextAudio.play().catch(() => {});
+  }, 250);
+}
+
 function displayTitle(value, fallback = "Untitled") {
   if (!value) return fallback;
   const cleaned = String(value).replace(/\s+[a-f0-9]{24,}$/i, "").trim();
@@ -1540,7 +1554,7 @@ function renderWorkspaceDetail() {
       : "review를 기다리는 곡이 없습니다.";
     queueGrid.appendChild(empty);
   } else {
-    tracksForReview.forEach((track) => {
+    tracksForReview.forEach((track, index) => {
       const fragment = queueTemplate.content.cloneNode(true);
       const card = fragment.querySelector(".queue-card");
       const image = fragment.querySelector(".track-art");
@@ -1568,6 +1582,9 @@ function renderWorkspaceDetail() {
 
       if (audioUrl) {
         audio.src = audioUrl;
+        audio.dataset.autoplayQueue = workspace.id;
+        audio.dataset.queueIndex = String(index);
+        audio.addEventListener("ended", () => playNextAwaitingTrack(audio));
       } else {
         audio.remove();
       }
