@@ -304,6 +304,7 @@ Runtime behavior:
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
+- OpenClaw can run `scripts/openclaw-release auto-publish-playlist` to upload playlist tracks as approved, render audio/video, approve generated metadata, and publish privately to the connected `Soft Hour Radio` channel.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
 

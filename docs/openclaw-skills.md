@@ -21,10 +21,13 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - If cover art is ready with the audio, upload the cover in the same command with `--cover`.
 - Human review happens in Slack or the web UI.
 - Single Release means one final song, but it may contain up to two review candidates from Suno.
-- Playlist Release means many candidate songs. The human later approves enough songs, reorders them, renders audio, then continues cover/video/publish.
+- Playlist Release normally means automatic private publishing. If the human asks for a playlist production run, upload generated tracks as already approved, render everything, generate/approve metadata, and upload privately to YouTube.
 - Always return the final JSON result and mention `release.id` plus uploaded `track.id` values.
 - If a command fails, stop and report the exact error. Do not retry blindly more than once.
 - For YouTube title/description/tag writing, use [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
+- For playlist publishing, always use the connected YouTube channel `Soft Hour Radio`.
+- YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
+- Do not leave trailing `A` / `B` labels in uploaded playlist track titles. Clean names before upload, and make duplicate base titles unique with natural suffixes.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -98,153 +101,111 @@ Next: human should approve exactly one candidate or reject both.
 - If a release already has a selected/approved track, create a new Single Release instead of uploading more candidates to it.
 - If both candidates are rejected later, the app archives the release automatically. Do not manually delete it.
 
-## Skill 2: One-Hour Playlist Candidate Builder
+## Skill 2: Automatic Private Playlist Publisher
 
-Use this skill when the user asks for a playlist, mix, or approximately one-hour release.
+Use this skill when the user asks for a playlist, mix, compilation, or approximately one-hour release and expects OpenClaw to finish the private YouTube upload.
 
 ### Goal
 
-Create or continue one Playlist Release and generate/upload candidate tracks until the review queue has at least 60 minutes of material. The human will later approve the best tracks and render the final playlist audio.
+Create one Playlist Release, generate enough tracks, upload them as approved tracks, render audio/video, generate and approve metadata, and upload the result privately to YouTube on `Soft Hour Radio`.
+
+The human does not review every playlist track before rendering. The human reviews the final private YouTube upload later and only intervenes if something sounds wrong.
 
 ### Important Duration Rule
 
-Do not rely only on `workspace.actual_duration_seconds`, because that counts approved tracks only. Before human review, most generated tracks are still `pending_review`.
+Playlist uploads are auto-approved, so `workspace.actual_duration_seconds` becomes the source of truth after upload.
 
-For OpenClaw generation progress, count all non-rejected candidate tracks assigned to the playlist:
+Generate enough material before publishing:
 
-- `pending_review`
-- `held`
-- `approved`
-- `uploaded`
-
-Stop generating when that candidate total is at least `3600` seconds. A practical buffer of `3900` seconds is acceptable so the human can reject weaker tracks and still have enough music.
+- Target at least `3600` seconds for a one-hour playlist.
+- A practical buffer of `3900` seconds is acceptable.
+- Do not publish under target unless the human explicitly says a shorter playlist is acceptable.
 
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating a one-hour Playlist Release for the AI Music app.
+You are creating and privately publishing a one-hour Playlist Release for the AI Music app.
 
 Work in /opt/ai-music-playlist-generator on the Oracle VM.
-Use the local app API and scripts/openclaw-release.
+Use scripts/openclaw-release only.
 
 Goal:
-- Create or continue one Playlist Release with target_duration_seconds=3600.
-- Generate songs in batches.
-- Upload cover art with each candidate when available.
-- Upload every usable generated audio file to the same Playlist Release review queue.
-- Continue until non-rejected candidate duration for that release is >= 3600 seconds.
-- Prefer aiming for 3900 seconds if the user did not specify an exact stop.
-- Do not approve, reject, reorder, render, publish, or upload to YouTube.
-- Return release.id, candidate duration total, and uploaded track ids.
+- Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
+- If Suno returns two outputs from one request, use both outputs as separate playlist tracks when both are usable.
+- Before upload, remove awkward trailing A/B labels from track titles.
+- If removing A/B creates duplicate titles, rename the displayed titles naturally so they are unique.
+- Upload all usable tracks to one Playlist Release.
+- Upload tracks as auto-approved, not pending human review.
+- If a final 16:9 cover image exists, pass it with --cover.
+- If no final cover exists, let the app generate a local draft cover.
+- Render playlist audio.
+- Approve the cover.
+- Render video.
+- Generate and approve YouTube metadata.
+- Publish privately to YouTube channel Soft Hour Radio.
+- Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 ```
 
-### Create A New Playlist Release
+### Slack Command Example
 
-If the user did not provide an existing `release.id`, create one:
+If the human gives this instruction through Slack, interpret it as approval to run the full private playlist automation:
 
-```bash
-python - <<'PY'
-import json
-import httpx
-
-payload = {
-    "title": "PLAYLIST_TITLE",
-    "target_duration_seconds": 3600,
-    "workspace_mode": "playlist",
-    "auto_publish_when_ready": False,
-    "description": "One-hour playlist candidate set created by OpenClaw.",
-    "cover_prompt": "",
-    "dreamina_prompt": "",
-}
-
-with httpx.Client(base_url="http://127.0.0.1:8000/api", timeout=30.0) as client:
-    response = client.post("/playlists/workspaces", json=payload)
-    response.raise_for_status()
-    print(json.dumps(response.json(), ensure_ascii=False, indent=2))
-PY
+```text
+카페 피아노 1시간 플레이리스트 만들어서 Soft Hour Radio에 private으로 업로드까지 해줘.
+Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
+마지막 private 업로드가 끝나면 YouTube video id만 알려줘.
 ```
 
-Save the returned `id` as `RELEASE_ID`.
+### Run The Full Automation
 
-### Upload Each Generated Song
-
-For every generated audio file:
+After all generated audio files are ready, run one command:
 
 ```bash
-scripts/openclaw-release upload-audio \
-  --release-id RELEASE_ID \
-  --audio ABSOLUTE_AUDIO_PATH \
-  --cover ABSOLUTE_COVER_PATH \
-  --title "TRACK_TITLE" \
+scripts/openclaw-release auto-publish-playlist \
+  --release-title "PLAYLIST_TITLE" \
+  --description "Short mood/use-case description for metadata generation." \
+  --audio ABSOLUTE_AUDIO_PATH_01 \
+  --audio ABSOLUTE_AUDIO_PATH_02 \
+  --audio ABSOLUTE_AUDIO_PATH_03 \
+  --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
-  --tags "comma, separated, tags"
+  --tags "comma, separated, tags" \
+  --youtube-channel-title "Soft Hour Radio"
 ```
 
-Upload both Suno outputs if both are usable. For a playlist, two Suno outputs are two separate playlist candidates, not one single-candidate set. If no cover image exists for a track, omit `--cover`.
+If no final cover image exists, omit `--cover`; the app will create a local draft cover automatically.
 
-### Check Candidate Duration
+If the run is continuing an existing release, use `--release-id RELEASE_ID` instead of creating a new title.
 
-Use this after each upload batch:
-
-```bash
-python - <<'PY'
-import json
-import httpx
-
-release_id = "RELEASE_ID"
-counted_statuses = {"pending_review", "held", "approved", "uploaded"}
-
-with httpx.Client(base_url="http://127.0.0.1:8000/api", timeout=30.0) as client:
-    tracks = client.get("/tracks").json()
-    workspaces = client.get("/playlists/workspaces").json()
-
-workspace = next(item for item in workspaces if item["id"] == release_id)
-candidates = [
-    track
-    for track in tracks
-    if track["metadata_json"].get("pending_workspace_id") == release_id
-    and track["status"] in counted_statuses
-]
-total_seconds = sum(max(track.get("duration_seconds") or 0, 0) for track in candidates)
-
-print(json.dumps({
-    "release_id": release_id,
-    "title": workspace["title"],
-    "target_seconds": workspace["target_duration_seconds"],
-    "approved_seconds": workspace["actual_duration_seconds"],
-    "candidate_seconds": total_seconds,
-    "candidate_minutes": round(total_seconds / 60, 2),
-    "candidate_count": len(candidates),
-    "remaining_to_3600": max(3600 - total_seconds, 0),
-}, ensure_ascii=False, indent=2))
-PY
-```
-
-Stop when `candidate_seconds >= 3600`, or `candidate_seconds >= 3900` when building a rejection buffer.
+Only use `--force-under-target` if the human explicitly accepted a shorter playlist.
 
 ### Required Output
 
 OpenClaw should finish with:
 
 ```text
-Playlist candidate set uploaded.
+Private playlist upload completed.
 release.id: ...
 release.title: ...
-candidate duration: ... seconds (... minutes)
 uploaded tracks:
 - ...
 - ...
-Next: human should review/approve tracks, reorder final playlist, then render audio in the web UI.
+youtube_video_id: ...
+youtube_channel: Soft Hour Radio
+privacy: private
+Next: human should listen to the private YouTube upload and change visibility to Public only if it is good.
 ```
 
 ### Safety Checks
 
 - Keep all generated tracks for the same playlist in one Playlist Release.
 - Do not create a Single Release for playlist candidates.
-- Do not expect playlist track covers to become the final playlist cover automatically. Playlist cover selection stays at the release level.
-- Do not stop at `actual_duration_seconds` unless the user explicitly asks for approved duration only.
-- Do not render playlist audio. The human should choose/reorder first.
-- If candidate duration cannot be calculated, stop and report the uploaded track list and the reason.
+- Do not use the `MusicSun` channel for playlist publishing unless the human explicitly overrides the channel.
+- Do not upload public. The final upload must be private.
+- Do not publish if YouTube channel `Soft Hour Radio` is not connected.
+- Do not keep A/B in uploaded track titles.
+- Do not create a Slack review message for every playlist track during automatic playlist publishing.
+- If the automation times out while waiting for render/upload, report the exact stage and current release state. Do not start a duplicate publish blindly.
 
 ## Quick Selection Guide
 
@@ -254,11 +215,11 @@ Use `Single Release Candidate Set` when:
 - Suno returns two alternatives for the same prompt.
 - The human needs to choose A or B.
 
-Use `One-Hour Playlist Candidate Builder` when:
+Use `Automatic Private Playlist Publisher` when:
 
 - The user asks for a playlist, mix, compilation, batch, or one-hour release.
 - The goal is many tracks.
-- The stop condition is around 60 minutes of candidate material.
+- The human expects OpenClaw to upload privately to YouTube and review only the final result.
 
 Use `OpenClaw YouTube Metadata Skill` when:
 
@@ -266,5 +227,5 @@ Use `OpenClaw YouTube Metadata Skill` when:
 - The human asks OpenClaw to write YouTube title, description, and tags.
 - The human wants OpenClaw to approve metadata but not publish.
 - The human can alternatively use the web `Generate Metadata` / `Regenerate Metadata Draft` button, which may call the VM's local Codex CLI when enabled.
-- OpenClaw must first run `scripts/openclaw-release metadata-context --release-id RELEASE_ID` and use its `timestamp_lines` exactly.
+- OpenClaw must first run `scripts/openclaw-release metadata-context --release-id RELEASE_ID` and use `display_timestamp_lines` when available.
 - Follow [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).

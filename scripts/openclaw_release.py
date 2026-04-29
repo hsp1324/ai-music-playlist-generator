@@ -13,6 +13,7 @@ import mimetypes
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -181,6 +182,7 @@ def upload_audio_file_to_release(
     prompt: str,
     tags: str,
     cover_path: Path | None = None,
+    dispatch_review: bool = True,
 ) -> dict[str, Any]:
     content_type = mimetypes.guess_type(str(audio_path))[0] or "audio/mpeg"
     files: dict[str, tuple[str, Any, str]] = {}
@@ -202,6 +204,7 @@ def upload_audio_file_to_release(
                     "duration_seconds": "0",
                     "pending_workspace_id": release_id,
                     "tags": tags or "",
+                    "dispatch_review": str(dispatch_review).lower(),
                 },
                 files=files,
             )
@@ -348,6 +351,286 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
             "Human review should approve exactly one candidate. "
             "If both candidates are rejected, the release is automatically archived and can be restored from the web UI."
         ),
+    }
+
+
+def create_playlist_release(
+    client: httpx.Client,
+    *,
+    title: str,
+    target_duration_seconds: int = 3600,
+    description: str = "",
+) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/playlists/workspaces",
+        json={
+            "title": title,
+            "target_duration_seconds": target_duration_seconds,
+            "workspace_mode": "playlist",
+            "auto_publish_when_ready": False,
+            "description": description or "Automatic private playlist release created by OpenClaw.",
+            "cover_prompt": "",
+            "dreamina_prompt": "",
+        },
+    )
+
+
+def get_release(client: httpx.Client, release_id: str) -> dict[str, Any]:
+    releases = request_json(client, "GET", "/playlists/workspaces")
+    release = next((item for item in releases if item["id"] == release_id), None)
+    if not release:
+        raise RuntimeError(f"No release found with id: {release_id}")
+    return release
+
+
+def wait_for_release(
+    client: httpx.Client,
+    release_id: str,
+    *,
+    stage: str,
+    timeout_seconds: int,
+    poll_seconds: float,
+    predicate,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout_seconds
+    failed_states = {
+        "render_failed",
+        "video_build_failed",
+        "publish_failed",
+        "youtube_upload_failed",
+    }
+    last_release = get_release(client, release_id)
+    while time.monotonic() < deadline:
+        last_release = get_release(client, release_id)
+        workflow_state = str(last_release.get("workflow_state") or "")
+        if workflow_state in failed_states:
+            raise RuntimeError(f"{stage} failed: {last_release.get('note') or workflow_state}")
+        if predicate(last_release):
+            return last_release
+        time.sleep(poll_seconds)
+    raise RuntimeError(
+        f"Timed out waiting for {stage}. "
+        f"Last state: {last_release.get('workflow_state')} / {last_release.get('note')}"
+    )
+
+
+def resolve_soft_hour_channel_id(client: httpx.Client, *, title: str, channel_id: str = "") -> str:
+    if channel_id:
+        return channel_id
+    status = request_json(client, "GET", "/youtube/status")
+    channels = status.get("channels") or []
+    match = next((channel for channel in channels if channel.get("title") == title), None)
+    if not match:
+        available = ", ".join(channel.get("title") or channel.get("id") or "unknown" for channel in channels)
+        raise RuntimeError(f"YouTube channel {title!r} is not connected. Available channels: {available}")
+    return str(match["id"])
+
+
+def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id: str, actor: str) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        f"/tracks/{track_id}/decisions",
+        json={
+            "decision": "approve",
+            "source": "agent",
+            "actor": actor,
+            "rationale": "Auto-approved for private playlist publishing.",
+            "playlist_id": release_id,
+        },
+    )
+
+
+def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any], actor: str) -> dict[str, Any]:
+    title = (release.get("youtube_title") or "").strip()
+    description = (release.get("youtube_description") or "").strip()
+    tags = release.get("youtube_tags") or []
+    if not title or not description:
+        raise RuntimeError("Generated metadata is missing title or description.")
+    return request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/metadata/approve",
+        json={
+            "actor": actor,
+            "title": title,
+            "description": description,
+            "tags": tags,
+            "note": "Auto-approved metadata for private YouTube upload.",
+        },
+    )
+
+
+def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
+    if not audio_paths:
+        raise RuntimeError("Use at least one --audio path.")
+    for audio_path in audio_paths:
+        if not audio_path.exists():
+            raise RuntimeError(f"Audio file does not exist: {audio_path}")
+        if not audio_path.is_file():
+            raise RuntimeError(f"Audio path is not a file: {audio_path}")
+    cover_path = resolve_cover_path(args.cover)
+
+    release = (
+        get_release(client, args.release_id)
+        if args.release_id
+        else create_playlist_release(
+            client,
+            title=args.release_title or file_stem(audio_paths[0]),
+            target_duration_seconds=args.target_seconds,
+            description=args.description,
+        )
+    )
+    if release["workspace_mode"] != "playlist":
+        raise RuntimeError("auto-publish-playlist requires a Playlist Release, not a Single Release.")
+
+    raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
+    if args.title and len(args.title) != len(audio_paths):
+        raise RuntimeError("When using --title, provide exactly one --title per --audio.")
+    display_titles = display_track_titles(
+        [{"title": title, "duration_seconds": 0} for title in raw_titles]
+    )
+
+    uploaded_tracks = []
+    for audio_path, track_title in zip(audio_paths, display_titles):
+        track = upload_audio_file_to_release(
+            client,
+            release_id=release["id"],
+            audio_path=audio_path,
+            title=track_title,
+            prompt=args.prompt,
+            tags=args.tags,
+            cover_path=None,
+            dispatch_review=False,
+        )
+        approved = approve_track_to_playlist(
+            client,
+            track_id=track["id"],
+            release_id=release["id"],
+            actor=args.actor,
+        )
+        uploaded_tracks.append(
+            {
+                "id": approved["id"],
+                "title": approved["title"],
+                "status": approved["status"],
+                "duration_seconds": approved["duration_seconds"],
+            }
+        )
+
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/render-audio",
+        json={"actor": args.actor},
+    )
+    release = wait_for_release(
+        client,
+        release["id"],
+        stage="audio render",
+        timeout_seconds=args.wait_timeout_seconds,
+        poll_seconds=args.poll_seconds,
+        predicate=lambda item: bool(item.get("output_audio_path")),
+    )
+
+    if cover_path:
+        content_type = mimetypes.guess_type(str(cover_path))[0] or "image/png"
+        with cover_path.open("rb") as handle:
+            release = request_json(
+                client,
+                "POST",
+                f"/playlists/{release['id']}/cover/upload",
+                data={"actor": args.actor},
+                files={"cover_file": (cover_path.name, handle, content_type)},
+            )
+    else:
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release['id']}/cover/generate",
+            json={"actor": args.actor, "regenerate": False},
+        )
+
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/cover/approve",
+        json={
+            "actor": args.actor,
+            "approved": True,
+            "note": "Auto-approved cover for private playlist publishing.",
+        },
+    )
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/video/render",
+        json={"actor": args.actor},
+    )
+    release = wait_for_release(
+        client,
+        release["id"],
+        stage="video render",
+        timeout_seconds=args.wait_timeout_seconds,
+        poll_seconds=args.poll_seconds,
+        predicate=lambda item: bool(item.get("output_video_path")) and bool(item.get("youtube_title")),
+    )
+
+    if not release.get("youtube_title") or not release.get("youtube_description"):
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release['id']}/metadata/generate",
+            json={"actor": args.actor},
+        )
+    release = approve_generated_metadata(client, release=release, actor=args.actor)
+
+    channel_id = resolve_soft_hour_channel_id(
+        client,
+        title=args.youtube_channel_title,
+        channel_id=args.youtube_channel_id,
+    )
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/approve-publish",
+        json={
+            "actor": args.actor,
+            "youtube_channel_id": channel_id,
+            "note": f"Auto-publish private playlist to {args.youtube_channel_title}.",
+            "force_under_target": args.force_under_target,
+        },
+    )
+    release = wait_for_release(
+        client,
+        release["id"],
+        stage="YouTube private upload",
+        timeout_seconds=args.wait_timeout_seconds,
+        poll_seconds=args.poll_seconds,
+        predicate=lambda item: bool(item.get("youtube_video_id")) or item.get("workflow_state") == "ready_for_youtube_auth",
+    )
+
+    return {
+        "ok": True,
+        "action": "auto-publish-playlist",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "actual_duration_seconds": release["actual_duration_seconds"],
+            "output_audio_path": release.get("output_audio_path"),
+            "output_video_path": release.get("output_video_path"),
+            "youtube_title": release.get("youtube_title"),
+            "youtube_video_id": release.get("youtube_video_id"),
+            "youtube_channel_id": channel_id,
+            "youtube_channel_title": args.youtube_channel_title,
+        },
+        "uploaded_tracks": uploaded_tracks,
+        "privacy": "private (from AIMP_YOUTUBE_PRIVACY_STATUS)",
+        "next": "Listen to the private YouTube upload. If it is good, change visibility to Public in YouTube Studio.",
     }
 
 
@@ -517,6 +800,27 @@ def build_parser() -> argparse.ArgumentParser:
     candidates_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by the candidates.")
     candidates_parser.add_argument("--tags", default="", help="Comma-separated tags shared by the candidates.")
     candidates_parser.set_defaults(func=upload_single_candidates)
+
+    auto_playlist_parser = subparsers.add_parser(
+        "auto-publish-playlist",
+        help="Upload playlist tracks, auto-approve them, render, generate metadata, and private-publish to YouTube.",
+    )
+    auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
+    auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
+    auto_playlist_parser.add_argument("--cover", default="", help="Final 16:9 playlist cover image. If omitted, the app generates a local draft cover.")
+    auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
+    auto_playlist_parser.add_argument("--release-title", default="", help="New Playlist Release title. Defaults to first audio filename stem.")
+    auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
+    auto_playlist_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
+    auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="Soft Hour Radio", help="Connected YouTube channel title. Default: Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
+    auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
+    auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
+    auto_playlist_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")
+    auto_playlist_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for background jobs.")
+    auto_playlist_parser.set_defaults(func=auto_publish_playlist)
 
     cover_parser = subparsers.add_parser("upload-cover", help="Upload a 16:9 cover image for a release.")
     cover_parser.add_argument("--cover", required=True, help="Path to cover image file: jpg, png, or webp.")

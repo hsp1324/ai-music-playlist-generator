@@ -310,6 +310,7 @@ async def manual_upload_track(
     tags: str | None = Form(None),
     model_score: float | None = Form(None),
     pending_workspace_id: str | None = Form(None),
+    dispatch_review: bool = Form(True),
     audio_file: UploadFile | None = File(None),
     cover_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
@@ -362,7 +363,8 @@ async def manual_upload_track(
         },
     )
     track = _create_track_record(db, payload)
-    _queue_slack_review_job(db, track, source="manual-upload")
+    if dispatch_review:
+        _queue_slack_review_job(db, track, source="manual-upload")
     db.refresh(track)
     return TrackRead.model_validate(track)
 
