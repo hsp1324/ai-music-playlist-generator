@@ -8,6 +8,7 @@ const state = {
   releaseFocus: Boolean(initialReleaseId),
   autoRefreshDeferred: false,
   autoRefreshInFlight: false,
+  youtubeStatus: null,
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -1362,6 +1363,11 @@ function renderWorkspaceDetail() {
   appendVideoPreview(workspace);
   appendMetadataDraft(workspace);
 
+  const youtubeReady = Boolean(state.youtubeStatus?.ready);
+  const waitingForYouTubeAuth = workspace.workflow_state === "ready_for_youtube_auth" && !youtubeReady;
+  const releaseLockedForPublish = Boolean(
+    workspace.metadata_approved || workspace.publish_approved || workspace.youtube_video_id
+  );
   const videoBusy = ["video_queued", "video_rendering"].includes(workspace.workflow_state);
   if (workspace.tracks.length) {
     if (workspace.status === "building" && !videoBusy) {
@@ -1371,7 +1377,7 @@ function renderWorkspaceDetail() {
       button.textContent = "Rendering Audio...";
       button.disabled = true;
       detailActions.appendChild(button);
-    } else if (!videoBusy && (!isSingleRelease(workspace) || !workspace.output_audio_path)) {
+    } else if (!releaseLockedForPublish && !videoBusy && (!isSingleRelease(workspace) || !workspace.output_audio_path)) {
       detailActions.appendChild(
         actionButton(
           isSingleRelease(workspace)
@@ -1394,7 +1400,7 @@ function renderWorkspaceDetail() {
   }
 
   const coverChangeBlocked = ["video_queued", "video_rendering", "youtube_uploading"].includes(workspace.workflow_state);
-  const canManageCover = workspace.output_audio_path && !workspace.youtube_video_id && !coverChangeBlocked;
+  const canManageCover = workspace.output_audio_path && !releaseLockedForPublish && !coverChangeBlocked;
   if (canManageCover) {
     if (workspace.cover_image_path && !workspace.cover_approved) {
       detailActions.appendChild(
@@ -1460,7 +1466,7 @@ function renderWorkspaceDetail() {
     }
   }
 
-  if (workspace.output_video_path && !workspace.youtube_title) {
+  if (workspace.output_video_path && !workspace.youtube_title && !workspace.publish_approved) {
     detailActions.appendChild(
       actionButton("Generate Metadata", "action-button secondary-button", async () => {
         await api(`/api/playlists/${workspace.id}/metadata/generate`, {
@@ -1500,36 +1506,46 @@ function renderWorkspaceDetail() {
   }
 
   if (workspace.metadata_approved && !workspace.youtube_video_id) {
-    detailActions.appendChild(
-      actionButton(workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
-        let forceUnderTarget = false;
-        const underTarget = !isSingleRelease(workspace)
-          && workspace.target_duration_seconds > 0
-          && workspace.actual_duration_seconds < workspace.target_duration_seconds;
-        if (underTarget) {
-          const proceed = window.confirm(
-            `이 playlist는 아직 목표 길이보다 짧습니다.\n\n현재: ${formatDuration(workspace.actual_duration_seconds)}\n목표: ${formatDuration(workspace.target_duration_seconds)}\n\n그래도 YouTube publish를 진행할까요?`
-          );
-          if (!proceed) return;
-          forceUnderTarget = true;
-        }
-        await api(`/api/playlists/${workspace.id}/approve-publish`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-            note: "Approved from workspace detail.",
-            force_under_target: forceUnderTarget,
-          }),
-        });
-      })
-    );
+    if (waitingForYouTubeAuth) {
+      detailActions.appendChild(
+        actionButton("Connect YouTube", "action-button primary-button", async () => {
+          window.location.href = "/api/youtube/connect";
+        })
+      );
+    } else {
+      detailActions.appendChild(
+        actionButton(workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
+          let forceUnderTarget = false;
+          const underTarget = !isSingleRelease(workspace)
+            && workspace.target_duration_seconds > 0
+            && workspace.actual_duration_seconds < workspace.target_duration_seconds;
+          if (underTarget) {
+            const proceed = window.confirm(
+              `이 playlist는 아직 목표 길이보다 짧습니다.\n\n현재: ${formatDuration(workspace.actual_duration_seconds)}\n목표: ${formatDuration(workspace.target_duration_seconds)}\n\n그래도 YouTube publish를 진행할까요?`
+            );
+            if (!proceed) return;
+            forceUnderTarget = true;
+          }
+          await api(`/api/playlists/${workspace.id}/approve-publish`, {
+            method: "POST",
+            body: JSON.stringify({
+              actor: "web-ui",
+              note: "Approved from workspace detail.",
+              force_under_target: forceUnderTarget,
+            }),
+          });
+        })
+      );
+    }
   }
 
   if (workspace.publish_approved && !workspace.youtube_video_id) {
-    const manualBox = document.createElement("div");
+    const manualBox = document.createElement("details");
     manualBox.className = "manual-upload-box";
-    const label = document.createElement("span");
-    label.textContent = "Manual fallback only";
+    const summary = document.createElement("summary");
+    summary.textContent = "Manual upload fallback";
+    const content = document.createElement("div");
+    content.className = "manual-upload-content";
     const hint = document.createElement("small");
     hint.textContent = "자동 YouTube 업로드가 안 될 때만, 이미 직접 올린 영상의 video ID를 입력하세요.";
     const input = document.createElement("input");
@@ -1546,10 +1562,11 @@ function renderWorkspaceDetail() {
         }),
       });
     });
-    manualBox.appendChild(label);
-    manualBox.appendChild(hint);
-    manualBox.appendChild(input);
-    manualBox.appendChild(button);
+    content.appendChild(hint);
+    content.appendChild(input);
+    content.appendChild(button);
+    manualBox.appendChild(summary);
+    manualBox.appendChild(content);
     detailActions.appendChild(manualBox);
   }
 
@@ -1774,6 +1791,7 @@ function renderSessionStatus(sessionStatus) {
 }
 
 function renderYouTubeStatus(youtubeStatus) {
+  state.youtubeStatus = youtubeStatus;
   youtubeTitle.textContent = youtubeStatus.ready
     ? "YouTube connected"
     : youtubeStatus.configured
@@ -1814,6 +1832,7 @@ async function refresh() {
     api("/api/suno/session-status"),
     api("/api/youtube/status"),
   ]);
+  state.youtubeStatus = youtubeStatus;
   applyBoardData(tracks, workspaces);
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
