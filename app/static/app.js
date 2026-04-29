@@ -502,43 +502,49 @@ async function api(path, options = {}) {
   return data;
 }
 
-async function selectYouTubeChannelForUpload() {
+async function activateYouTubeChannelForUpload(channelId) {
   const youtubeStatus = state.youtubeStatus || {};
   const channels = youtubeStatus.channels || [];
   if (!channels.length) {
     throw new Error("저장된 YouTube 채널이 없습니다. 먼저 YouTube 카드에서 Connect를 눌러 업로드할 채널을 연결하세요.");
   }
-
-  let channelId = channels[0].id;
-  if (channels.length === 1) {
-    channelId = youtubeStatus.selected_channel_id || channels[0].id;
-  } else {
-    const selectedIndex = Math.max(
-      channels.findIndex((channel) => channel.id === youtubeStatus.selected_channel_id),
-      0
-    );
-    const choices = channels
-      .map((channel, index) => `${index + 1}. ${channel.title || channel.id}${index === selectedIndex ? " (current)" : ""}`)
-      .join("\n");
-    const answer = window.prompt(`업로드할 YouTube 채널 번호를 입력하세요.\n\n${choices}`, String(selectedIndex + 1));
-    if (answer === null) throw new Error("YouTube 업로드가 취소되었습니다.");
-    const choiceIndex = Number.parseInt(answer, 10) - 1;
-    if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= channels.length) {
-      throw new Error("올바른 YouTube 채널 번호를 입력하세요.");
-    }
-    channelId = channels[choiceIndex].id;
+  const resolvedChannelId = channelId || youtubeStatus.selected_channel_id || channels[0].id;
+  if (!channels.some((channel) => channel.id === resolvedChannelId)) {
+    throw new Error("선택한 YouTube 채널을 찾을 수 없습니다. 다시 Connect해서 채널을 연결하세요.");
   }
 
-  if (channelId !== youtubeStatus.selected_channel_id) {
+  if (resolvedChannelId !== youtubeStatus.selected_channel_id) {
     const result = await api("/api/youtube/channels/select", {
       method: "POST",
       body: JSON.stringify({
-        channel_id: channelId,
+        channel_id: resolvedChannelId,
       }),
     });
     renderYouTubeStatus(result);
   }
-  return channelId;
+  return resolvedChannelId;
+}
+
+function buildYouTubeChannelPicker() {
+  const channels = state.youtubeStatus?.channels || [];
+  if (!channels.length) return null;
+
+  const label = document.createElement("label");
+  label.className = "publish-channel-picker";
+  const caption = document.createElement("span");
+  caption.textContent = "Publish Channel";
+  const select = document.createElement("select");
+  select.dataset.role = "publish-channel-select";
+  channels.forEach((channel) => {
+    const option = document.createElement("option");
+    option.value = channel.id;
+    option.textContent = channel.title || channel.id;
+    select.appendChild(option);
+  });
+  select.value = state.youtubeStatus?.selected_channel_id || channels[0].id;
+  label.appendChild(caption);
+  label.appendChild(select);
+  return { element: label, select };
 }
 
 async function uploadCoverFile(workspace, file) {
@@ -1549,6 +1555,7 @@ function renderWorkspaceDetail() {
   if (workspace.metadata_approved) {
     const publishBusy = workspace.workflow_state === "publish_queued";
     const needsYouTubeConnection = !youtubeReady;
+    const connectedYouTubeChannels = state.youtubeStatus?.channels || [];
     if (publishBusy) {
       const button = document.createElement("button");
       button.type = "button";
@@ -1556,16 +1563,20 @@ function renderWorkspaceDetail() {
       button.textContent = workspace.youtube_video_id ? "Re-upload Queued..." : "Publishing...";
       button.disabled = true;
       detailActions.appendChild(button);
-    } else if (waitingForYouTubeAuth || needsYouTubeConnection) {
+    } else if (waitingForYouTubeAuth || needsYouTubeConnection || !connectedYouTubeChannels.length) {
       detailActions.appendChild(
-        actionButton("Connect YouTube", "action-button primary-button", async () => {
+        actionButton("Connect YouTube Channel", "action-button primary-button", async () => {
           window.location.href = `/api/youtube/connect?playlist_id=${encodeURIComponent(workspace.id)}`;
         })
       );
     } else {
+      const channelPicker = buildYouTubeChannelPicker();
+      if (channelPicker) {
+        detailActions.appendChild(channelPicker.element);
+      }
       detailActions.appendChild(
         actionButton(workspace.youtube_video_id ? "Re-upload to YouTube" : workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
-          const youtubeChannelId = await selectYouTubeChannelForUpload();
+          const youtubeChannelId = await activateYouTubeChannelForUpload(channelPicker?.select.value);
           const channel = (state.youtubeStatus?.channels || []).find((item) => item.id === youtubeChannelId);
           const channelTitle = channel?.title || youtubeChannelId;
           if (workspace.youtube_video_id) {

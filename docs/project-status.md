@@ -98,7 +98,7 @@ For `single_track_video`, the intended publish path is:
 - Needs one-time `Connect YouTube` action from the web UI
 - Multiple channels under the same Google account are supported by connecting each channel through OAuth
 - The web UI stores connected YouTube channels and lets the operator choose the active upload channel before publish/re-upload
-- If more than one channel is connected, publish/re-upload asks for the upload channel at button click time
+- Publish/re-upload shows a `Publish Channel` dropdown directly in the release action area
 - YouTube OAuth now requests both upload and readonly scopes so the app can identify the selected channel after OAuth
 
 ### Cover art

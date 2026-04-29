@@ -735,6 +735,23 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.publish-channel-picker {
+  display: grid;
+  min-width: min(320px, 100%);
+}
+
+.publish-channel-picker span {
+  margin-bottom: 5px;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.publish-channel-picker select {
+  min-height: 46px;
+  padding: 8px 12px;
+}
+
 .manual-upload-box {
   flex: 1 1 100%;
   padding: 12px;
