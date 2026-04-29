@@ -152,6 +152,8 @@ class CodexMetadataService(ReleaseMetadataService):
                 "  6. One final hashtag line with 5-8 relevant hashtags.",
                 "- For single-track releases, keep the same clean YouTube style but no timestamp list is required unless useful.",
                 "- If timestamp_lines are provided, include those exact lines in the description in the same order.",
+                "- Timestamp positions are fixed playback positions. Never swap timestamps between tracks to make titles alphabetical or A/B ordered.",
+                "- If a track title is later corrected, only the title text should change; the timestamp and playback position must stay fixed.",
                 "- Do not invent, remove, rename, or reorder tracks.",
                 "- Tags must be plain strings without # symbols, no more than 15 tags.",
                 "- Do not include Markdown code fences.",

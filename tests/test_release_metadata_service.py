@@ -81,6 +81,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "00:00 Cinnamon Keys A" in input
         assert "🎧 Recommended for" in input
         assert "do not append 'Official AI Visualizer'" in input
+        assert "Never swap timestamps between tracks" in input
         output_path.write_text(
             json.dumps(
                 {

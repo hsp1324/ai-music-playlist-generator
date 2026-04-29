@@ -26,6 +26,8 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - If the release is a playlist, include a timestamped tracklist from the final order.
 - Always run `scripts/openclaw-release metadata-context` first and use its `timestamp_lines` in the description.
 - Do not guess timestamps. The helper calculates them from the app's final order and track durations.
+- Treat each timestamp as a fixed playback position. If a title is corrected, only change the title text; do not move or swap the timestamp.
+- Do not sort track titles alphabetically or by A/B label in the metadata. The playback order is the source of truth.
 - If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
 
 ## Metadata Style Prompt
