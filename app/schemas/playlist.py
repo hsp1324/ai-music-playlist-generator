@@ -53,7 +53,7 @@ class PlaylistMetadataApproveRequest(BaseModel):
     actor: str = "web-ui"
     title: str | None = None
     description: str | None = None
-    tags: list[str] | None = None
+    tags: list[str] | str | None = None
     note: str | None = None
 
 

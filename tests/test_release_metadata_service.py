@@ -2,6 +2,7 @@ from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.release_metadata_service import ReleaseMetadataService
+from app.workflows.playlist_automation import _normalize_youtube_tags
 
 
 def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
@@ -28,3 +29,12 @@ def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
     assert "06:50 Feltward Sonata A" in metadata.description
     assert "#Piano #CafePiano #StudyMusic #WorkMusic #RelaxingMusic #SoloPiano" in metadata.description
     assert metadata.tags == ["Piano", "CafePiano", "StudyMusic", "WorkMusic", "RelaxingMusic", "SoloPiano"]
+
+
+def test_metadata_approval_accepts_comma_separated_tags() -> None:
+    assert _normalize_youtube_tags("Piano, #CafePiano, StudyMusic, piano,  WorkMusic ") == [
+        "Piano",
+        "CafePiano",
+        "StudyMusic",
+        "WorkMusic",
+    ]

@@ -103,6 +103,7 @@ For `single_track_video`, the intended publish path is:
 - YouTube OAuth now requests both upload and readonly scopes so the app can identify the selected channel after OAuth
 - Cafe/solo-piano playlist metadata now generates a Korean YouTube title, use-case description, timestamped tracklist, and music hashtags
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
+- OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
 
 ### Cover art
 
@@ -227,6 +228,7 @@ If continuing work from another session, the most useful next tasks are:
 
 - `README.md`
 - `docs/google-login-protection.md`
+- `docs/openclaw-youtube-metadata.md`
 - `app/static/index.html`
 - `app/static/app.js`
 - `app/static/styles.css`

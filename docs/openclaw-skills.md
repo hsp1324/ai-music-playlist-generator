@@ -24,6 +24,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - Playlist Release means many candidate songs. The human later approves enough songs, reorders them, renders audio, then continues cover/video/publish.
 - Always return the final JSON result and mention `release.id` plus uploaded `track.id` values.
 - If a command fails, stop and report the exact error. Do not retry blindly more than once.
+- For YouTube title/description/tag writing, use [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 
 ## Skill 1: Single Release Candidate Set
 
@@ -258,3 +259,10 @@ Use `One-Hour Playlist Candidate Builder` when:
 - The user asks for a playlist, mix, compilation, batch, or one-hour release.
 - The goal is many tracks.
 - The stop condition is around 60 minutes of candidate material.
+
+Use `OpenClaw YouTube Metadata Skill` when:
+
+- The release already has rendered video.
+- The human asks OpenClaw to write YouTube title, description, and tags.
+- The human wants OpenClaw to approve metadata but not publish.
+- Follow [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).

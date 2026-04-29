@@ -306,6 +306,62 @@ def upload_cover(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
     }
 
 
+def read_description(args: argparse.Namespace) -> str:
+    if args.description_file:
+        path = Path(args.description_file).expanduser().resolve()
+        if not path.exists():
+            raise RuntimeError(f"Description file does not exist: {path}")
+        if not path.is_file():
+            raise RuntimeError(f"Description path is not a file: {path}")
+        return path.read_text(encoding="utf-8").strip()
+    return (args.description or "").strip()
+
+
+def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release_id = args.release_id
+    if not release_id and args.release_title:
+        release_id = find_release_by_title(client, args.release_title)["id"]
+    if not release_id:
+        raise RuntimeError("Use --release-id or --release-title.")
+
+    title = (args.title or "").strip()
+    description = read_description(args)
+    tags = (args.tags or "").strip()
+    if not title:
+        raise RuntimeError("--title is required.")
+    if not description:
+        raise RuntimeError("Use --description or --description-file.")
+    if not tags:
+        raise RuntimeError("--tags is required as a comma-separated string.")
+
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release_id}/metadata/approve",
+        json={
+            "actor": args.actor,
+            "title": title,
+            "description": description,
+            "tags": tags,
+            "note": args.note or "Metadata approved from OpenClaw.",
+        },
+    )
+    return {
+        "ok": True,
+        "action": "approve-metadata",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "metadata_approved": release["metadata_approved"],
+            "youtube_title": release["youtube_title"],
+            "youtube_description": release["youtube_description"],
+            "youtube_tags": release["youtube_tags"],
+        },
+        "next": "Human can choose Publish Channel and approve publish/re-upload in the web UI.",
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Upload OpenClaw-generated music assets to the local AI Music app.")
     parser.add_argument("--api-base", default=None, help=f"API base URL. Default: {DEFAULT_API_BASE}")
@@ -344,6 +400,20 @@ def build_parser() -> argparse.ArgumentParser:
     cover_parser.add_argument("--release-title", default="", help="Existing release title.")
     cover_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     cover_parser.set_defaults(func=upload_cover)
+
+    metadata_parser = subparsers.add_parser(
+        "approve-metadata",
+        help="Approve YouTube metadata for a rendered release using OpenClaw-written copy.",
+    )
+    metadata_parser.add_argument("--release-id", default="", help="Existing release id.")
+    metadata_parser.add_argument("--release-title", default="", help="Existing release title.")
+    metadata_parser.add_argument("--title", required=True, help="YouTube title.")
+    metadata_parser.add_argument("--description", default="", help="YouTube description text. Prefer --description-file for multiline copy.")
+    metadata_parser.add_argument("--description-file", default="", help="UTF-8 text file containing the YouTube description.")
+    metadata_parser.add_argument("--tags", required=True, help="Comma-separated YouTube tags, for example: Piano,CafePiano,StudyMusic")
+    metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
+    metadata_parser.add_argument("--note", default="", help="Optional approval note.")
+    metadata_parser.set_defaults(func=approve_metadata)
 
     return parser
 

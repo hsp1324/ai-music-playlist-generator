@@ -24,6 +24,25 @@ def _playlist_meta(playlist: Playlist) -> dict:
     return dict(playlist.metadata_json or {})
 
 
+def _normalize_youtube_tags(tags: list[str] | str) -> list[str]:
+    if isinstance(tags, str):
+        candidates = tags.split(",")
+    else:
+        candidates = tags
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for tag in candidates:
+        value = str(tag).strip().lstrip("#").strip()
+        if not value:
+            continue
+        key = value.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(value)
+    return normalized[:15]
+
+
 def _workspace_mode(playlist: Playlist) -> str:
     return str(_playlist_meta(playlist).get("workspace_mode") or "playlist")
 
@@ -693,7 +712,7 @@ def approve_playlist_metadata(
     actor: str,
     title: str | None = None,
     description: str | None = None,
-    tags: list[str] | None = None,
+    tags: list[str] | str | None = None,
     note: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
@@ -708,7 +727,7 @@ def approve_playlist_metadata(
     if description is not None:
         meta["youtube_description"] = description
     if tags is not None:
-        meta["youtube_tags"] = tags[:15]
+        meta["youtube_tags"] = _normalize_youtube_tags(tags)
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing. Generate metadata first.")
 
