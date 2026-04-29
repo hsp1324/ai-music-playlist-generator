@@ -1505,8 +1505,17 @@ function renderWorkspaceDetail() {
     );
   }
 
-  if (workspace.metadata_approved && !workspace.youtube_video_id) {
-    if (waitingForYouTubeAuth) {
+  if (workspace.metadata_approved) {
+    const publishBusy = workspace.workflow_state === "publish_queued";
+    const needsYouTubeConnection = !youtubeReady;
+    if (publishBusy) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "action-button secondary-button";
+      button.textContent = workspace.youtube_video_id ? "Re-upload Queued..." : "Publishing...";
+      button.disabled = true;
+      detailActions.appendChild(button);
+    } else if (waitingForYouTubeAuth || needsYouTubeConnection) {
       detailActions.appendChild(
         actionButton("Connect YouTube", "action-button primary-button", async () => {
           window.location.href = `/api/youtube/connect?playlist_id=${encodeURIComponent(workspace.id)}`;
@@ -1514,7 +1523,13 @@ function renderWorkspaceDetail() {
       );
     } else {
       detailActions.appendChild(
-        actionButton(workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
+        actionButton(workspace.youtube_video_id ? "Re-upload to YouTube" : workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
+          if (workspace.youtube_video_id) {
+            const proceed = window.confirm(
+              `이미 YouTube에 업로드된 release입니다.\n\n현재 video id: ${workspace.youtube_video_id}\n\n테스트용으로 새 영상을 다시 업로드할까요?`
+            );
+            if (!proceed) return;
+          }
           let forceUnderTarget = false;
           const underTarget = !isSingleRelease(workspace)
             && workspace.target_duration_seconds > 0
@@ -1530,7 +1545,7 @@ function renderWorkspaceDetail() {
             method: "POST",
             body: JSON.stringify({
               actor: "web-ui",
-              note: "Approved from workspace detail.",
+              note: workspace.youtube_video_id ? "Re-upload requested from workspace detail." : "Approved from workspace detail.",
               force_under_target: forceUnderTarget,
             }),
           });

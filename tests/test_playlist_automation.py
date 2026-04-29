@@ -1553,14 +1553,14 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             output_path.write_bytes(b"fake-mp4")
             return output_path
 
-        class UploadResult:
-            video_id = "yt-auto-123"
-            response = {"id": "yt-auto-123"}
-
         services.playlist_builder.build_audio = fake_build_audio
         services.playlist_builder.build_video = fake_build_video
         services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
-        services.youtube.upload_playlist_video = lambda *args, **kwargs: UploadResult()
+        upload_video_ids = ["yt-auto-123"]
+        services.youtube.upload_playlist_video = lambda *args, **kwargs: SimpleNamespace(
+            video_id=upload_video_ids[-1],
+            response={"id": upload_video_ids[-1]},
+        )
 
         workspace_response = client.post(
             "/api/playlists/workspaces",
@@ -1627,6 +1627,24 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
+
+        upload_video_ids.append("yt-auto-456")
+        reupload_response = client.post(
+            f"/api/playlists/{workspace_id}/approve-publish",
+            json={
+                "actor": "test-suite",
+                "note": "re-upload test",
+                "force_under_target": True,
+            },
+        )
+        assert reupload_response.status_code == 200
+        assert reupload_response.json()["workflow_state"] == "publish_queued"
+        assert drain_background_jobs(client) == 1
+
+        reloaded_response = client.get("/api/playlists/workspaces")
+        reuploaded = next(item for item in reloaded_response.json() if item["id"] == workspace_id)
+        assert reuploaded["workflow_state"] == "uploaded"
+        assert reuploaded["youtube_video_id"] == "yt-auto-456"
     finally:
         clear_isolated_client_env()
 
