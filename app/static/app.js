@@ -502,6 +502,45 @@ async function api(path, options = {}) {
   return data;
 }
 
+async function selectYouTubeChannelForUpload() {
+  const youtubeStatus = state.youtubeStatus || {};
+  const channels = youtubeStatus.channels || [];
+  if (!channels.length) {
+    throw new Error("저장된 YouTube 채널이 없습니다. 먼저 YouTube 카드에서 Connect를 눌러 업로드할 채널을 연결하세요.");
+  }
+
+  let channelId = channels[0].id;
+  if (channels.length === 1) {
+    channelId = youtubeStatus.selected_channel_id || channels[0].id;
+  } else {
+    const selectedIndex = Math.max(
+      channels.findIndex((channel) => channel.id === youtubeStatus.selected_channel_id),
+      0
+    );
+    const choices = channels
+      .map((channel, index) => `${index + 1}. ${channel.title || channel.id}${index === selectedIndex ? " (current)" : ""}`)
+      .join("\n");
+    const answer = window.prompt(`업로드할 YouTube 채널 번호를 입력하세요.\n\n${choices}`, String(selectedIndex + 1));
+    if (answer === null) throw new Error("YouTube 업로드가 취소되었습니다.");
+    const choiceIndex = Number.parseInt(answer, 10) - 1;
+    if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= channels.length) {
+      throw new Error("올바른 YouTube 채널 번호를 입력하세요.");
+    }
+    channelId = channels[choiceIndex].id;
+  }
+
+  if (channelId !== youtubeStatus.selected_channel_id) {
+    const result = await api("/api/youtube/channels/select", {
+      method: "POST",
+      body: JSON.stringify({
+        channel_id: channelId,
+      }),
+    });
+    renderYouTubeStatus(result);
+  }
+  return channelId;
+}
+
 async function uploadCoverFile(workspace, file) {
   const form = new FormData();
   form.append("actor", "web-ui");
@@ -1526,9 +1565,12 @@ function renderWorkspaceDetail() {
     } else {
       detailActions.appendChild(
         actionButton(workspace.youtube_video_id ? "Re-upload to YouTube" : workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
+          const youtubeChannelId = await selectYouTubeChannelForUpload();
+          const channel = (state.youtubeStatus?.channels || []).find((item) => item.id === youtubeChannelId);
+          const channelTitle = channel?.title || youtubeChannelId;
           if (workspace.youtube_video_id) {
             const proceed = window.confirm(
-              `이미 YouTube에 업로드된 release입니다.\n\n현재 video id: ${workspace.youtube_video_id}\n\n테스트용으로 새 영상을 다시 업로드할까요?`
+              `이미 YouTube에 업로드된 release입니다.\n\n현재 video id: ${workspace.youtube_video_id}\n업로드 채널: ${channelTitle}\n\n테스트용으로 새 영상을 다시 업로드할까요?`
             );
             if (!proceed) return;
           }
@@ -1549,7 +1591,7 @@ function renderWorkspaceDetail() {
               actor: "web-ui",
               note: workspace.youtube_video_id ? "Re-upload requested from workspace detail." : "Approved from workspace detail.",
               force_under_target: forceUnderTarget,
-              youtube_channel_id: state.youtubeStatus?.selected_channel_id || null,
+              youtube_channel_id: youtubeChannelId,
             }),
           });
         })
