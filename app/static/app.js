@@ -56,6 +56,8 @@ const sessionAlertButton = document.querySelector("#session-alert-button");
 const youtubeTitle = document.querySelector("#youtube-title");
 const youtubeMessage = document.querySelector("#youtube-message");
 const youtubeConnectButton = document.querySelector("#youtube-connect-button");
+const youtubeChannelControls = document.querySelector("#youtube-channel-controls");
+const youtubeChannelSelect = document.querySelector("#youtube-channel-select");
 const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
@@ -1547,6 +1549,7 @@ function renderWorkspaceDetail() {
               actor: "web-ui",
               note: workspace.youtube_video_id ? "Re-upload requested from workspace detail." : "Approved from workspace detail.",
               force_under_target: forceUnderTarget,
+              youtube_channel_id: state.youtubeStatus?.selected_channel_id || null,
             }),
           });
         })
@@ -1807,18 +1810,33 @@ function renderSessionStatus(sessionStatus) {
 
 function renderYouTubeStatus(youtubeStatus) {
   state.youtubeStatus = youtubeStatus;
+  const channels = youtubeStatus.channels || [];
+  const selectedChannelTitle = youtubeStatus.selected_channel_title || "default channel";
   youtubeTitle.textContent = youtubeStatus.ready
-    ? "YouTube connected"
+    ? `YouTube connected: ${selectedChannelTitle}`
     : youtubeStatus.configured
       ? "YouTube not authenticated"
       : "YouTube client secrets missing";
   youtubeMessage.textContent = youtubeStatus.ready
-    ? `Token path: ${youtubeStatus.token_path}`
+    ? `Uploads will use ${selectedChannelTitle}. Connect again to add another channel.`
     : youtubeStatus.error
       ? youtubeStatus.error
       : youtubeStatus.configured
         ? `Press Connect once and finish OAuth. Redirect URI: ${youtubeStatus.redirect_uri || "not set"}`
         : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
+  if (youtubeChannelControls && youtubeChannelSelect) {
+    youtubeChannelControls.hidden = !channels.length;
+    youtubeChannelSelect.innerHTML = "";
+    channels.forEach((channel) => {
+      const option = document.createElement("option");
+      option.value = channel.id;
+      option.textContent = channel.title || channel.id;
+      youtubeChannelSelect.appendChild(option);
+    });
+    if (youtubeStatus.selected_channel_id) {
+      youtubeChannelSelect.value = youtubeStatus.selected_channel_id;
+    }
+  }
 }
 
 function applyBoardData(tracks, workspaces) {
@@ -1975,6 +1993,24 @@ sessionAlertButton.addEventListener("click", async () => {
 youtubeConnectButton.addEventListener("click", () => {
   window.location.href = "/api/youtube/connect";
 });
+
+if (youtubeChannelSelect) {
+  youtubeChannelSelect.addEventListener("change", async () => {
+    if (!youtubeChannelSelect.value) return;
+    try {
+      const result = await api("/api/youtube/channels/select", {
+        method: "POST",
+        body: JSON.stringify({
+          channel_id: youtubeChannelSelect.value,
+        }),
+      });
+      renderYouTubeStatus(result);
+      renderWorkspaceDetail();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
 
 refresh()
   .then(() => {

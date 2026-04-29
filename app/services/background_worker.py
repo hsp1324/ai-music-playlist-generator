@@ -389,6 +389,7 @@ class BackgroundJobWorker:
         actor = (job.payload_json or {}).get("actor") or "background-worker"
         note = (job.payload_json or {}).get("note")
         force_under_target = bool((job.payload_json or {}).get("force_under_target"))
+        youtube_channel_id = (job.payload_json or {}).get("youtube_channel_id") or meta.get("youtube_channel_id")
 
         if not playlist.items:
             raise ValueError("Playlist has no tracks to publish.")
@@ -432,11 +433,15 @@ class BackgroundJobWorker:
                         description=description,
                         tags=tags,
                         thumbnail_path=cover_image_path,
+                        youtube_channel_id=youtube_channel_id,
                     )
                     playlist.youtube_video_id = result.video_id
                     playlist.status = PlaylistStatus.uploaded
                     meta["workflow_state"] = "uploaded"
                     meta["youtube_response"] = result.response
+                    if result.response.get("upload_channel"):
+                        meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
+                        meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
                     meta.pop("youtube_upload_error", None)
                     if result.response.get("thumbnail_upload_error"):
                         meta["youtube_thumbnail_upload_error"] = result.response["thumbnail_upload_error"]

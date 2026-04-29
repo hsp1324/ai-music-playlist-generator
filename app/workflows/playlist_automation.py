@@ -742,6 +742,7 @@ def _queue_publish_job(
     note: str | None,
     source: str,
     force_under_target: bool = False,
+    youtube_channel_id: str | None = None,
 ) -> Job | None:
     active_job = db.scalars(
         select(Job).where(
@@ -758,6 +759,8 @@ def _queue_publish_job(
     meta["publish_approved_by"] = actor
     meta["workflow_state"] = "publish_queued"
     meta["note"] = note or "Background worker queued cover, video render, and YouTube upload."
+    if youtube_channel_id:
+        meta["youtube_channel_id"] = youtube_channel_id
     if force_under_target:
         meta["publish_under_target_confirmed"] = True
     playlist.metadata_json = meta
@@ -773,6 +776,7 @@ def _queue_publish_job(
             "actor": actor,
             "note": note,
             "force_under_target": force_under_target,
+            "youtube_channel_id": youtube_channel_id,
         },
         result_json={},
         playlist=playlist,
@@ -807,6 +811,7 @@ def resume_youtube_publish_after_auth(
     *,
     playlist_id: str,
     actor: str = "youtube-oauth",
+    youtube_channel_id: str | None = None,
 ) -> Playlist | None:
     playlist = db.scalars(
         select(Playlist)
@@ -831,6 +836,7 @@ def resume_youtube_publish_after_auth(
         actor=actor,
         note="YouTube connected. Resuming final upload.",
         force_under_target=bool(meta.get("publish_under_target_confirmed")),
+        youtube_channel_id=youtube_channel_id,
     )
 
 
@@ -1355,6 +1361,7 @@ def approve_playlist_publish(
     playlist: Playlist,
     actor: str,
     youtube_video_id: str | None = None,
+    youtube_channel_id: str | None = None,
     note: str | None = None,
     force_under_target: bool = False,
 ) -> Playlist:
@@ -1393,6 +1400,7 @@ def approve_playlist_publish(
                 "playlist_id": playlist.id,
                 "actor": actor,
                 "note": note,
+                "youtube_channel_id": youtube_channel_id,
             },
             result_json={
                 "youtube_video_id": playlist.youtube_video_id,
@@ -1427,11 +1435,10 @@ def approve_playlist_publish(
         db,
         playlist,
         actor=actor,
-        note=(
-        f"{note} " if note else ""
-        ) + "Background worker queued final YouTube upload.",
+        note=(f"{note} " if note else "") + "Background worker queued final YouTube upload.",
         source="web",
         force_under_target=force_under_target,
+        youtube_channel_id=youtube_channel_id,
     )
 
     db.commit()

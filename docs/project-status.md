@@ -96,6 +96,9 @@ For `single_track_video`, the intended publish path is:
 - Needs `AIMP_YOUTUBE_CLIENT_SECRETS_PATH`
 - Uses a web OAuth callback at `/api/youtube/oauth/callback`, which fits the deployed VM better than a local desktop-browser OAuth flow
 - Needs one-time `Connect YouTube` action from the web UI
+- Multiple channels under the same Google account are supported by connecting each channel through OAuth
+- The web UI stores connected YouTube channels and lets the operator choose the active upload channel before publish/re-upload
+- YouTube OAuth now requests both upload and readonly scopes so the app can identify the selected channel after OAuth
 
 ### Cover art
 
@@ -236,5 +239,5 @@ If continuing work from another session, the most useful next tasks are:
 
 Most recent verified state during this session:
 
-- `uv run pytest -q`
-- result: `27 passed`
+- `.venv/bin/python -m pytest -q`
+- result: `56 passed`

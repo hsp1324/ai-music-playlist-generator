@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -7,6 +8,10 @@ from app.services.registry import ServiceRegistry
 from app.workflows.playlist_automation import resume_youtube_publish_after_auth
 
 router = APIRouter(prefix="/youtube", tags=["youtube"])
+
+
+class YouTubeChannelSelectRequest(BaseModel):
+    channel_id: str
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -47,6 +52,15 @@ def youtube_connect(request: Request, playlist_id: str | None = None) -> dict:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+@router.post("/channels/select")
+def youtube_select_channel(payload: YouTubeChannelSelectRequest, request: Request) -> dict:
+    services = get_services(request)
+    try:
+        return services.youtube.select_channel(payload.channel_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/oauth/callback")
 def youtube_oauth_callback(
     request: Request,
@@ -69,6 +83,7 @@ def youtube_oauth_callback(
                 db,
                 services,
                 playlist_id=playlist_id,
+                youtube_channel_id=result.get("channel_id"),
             )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

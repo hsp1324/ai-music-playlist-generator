@@ -332,6 +332,7 @@ def approve_publish(
             playlist=playlist,
             actor=payload.actor,
             youtube_video_id=payload.youtube_video_id,
+            youtube_channel_id=payload.youtube_channel_id,
             note=payload.note,
             force_under_target=payload.force_under_target,
         )

@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from google.oauth2.credentials import Credentials
 from PIL import Image
 
 from app.config import Settings, get_settings
@@ -1557,10 +1558,19 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         services.playlist_builder.build_video = fake_build_video
         services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
         upload_video_ids = ["yt-auto-123"]
-        services.youtube.upload_playlist_video = lambda *args, **kwargs: SimpleNamespace(
-            video_id=upload_video_ids[-1],
-            response={"id": upload_video_ids[-1]},
-        )
+        upload_channel_ids = []
+
+        def fake_upload_playlist_video(*args, **kwargs):
+            upload_channel_ids.append(kwargs.get("youtube_channel_id"))
+            return SimpleNamespace(
+                video_id=upload_video_ids[-1],
+                response={
+                    "id": upload_video_ids[-1],
+                    "upload_channel": {"id": kwargs.get("youtube_channel_id"), "title": "Main Music"},
+                },
+            )
+
+        services.youtube.upload_playlist_video = fake_upload_playlist_video
 
         workspace_response = client.post(
             "/api/playlists/workspaces",
@@ -1613,6 +1623,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             json={
                 "actor": "test-suite",
                 "note": "auto upload ready",
+                "youtube_channel_id": "UC123",
             },
         )
         assert publish_response.status_code == 200
@@ -1624,9 +1635,11 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert published["workflow_state"] == "uploaded"
         assert published["youtube_video_id"] == "yt-auto-123"
         assert published["output_video_path"].endswith(".mp4")
+        assert upload_channel_ids[-1] == "UC123"
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
+            assert playlist.metadata_json["youtube_channel_id"] == "UC123"
 
         upload_video_ids.append("yt-auto-456")
         reupload_response = client.post(
@@ -1635,6 +1648,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
                 "actor": "test-suite",
                 "note": "re-upload test",
                 "force_under_target": True,
+                "youtube_channel_id": "UC456",
             },
         )
         assert reupload_response.status_code == 200
@@ -1645,6 +1659,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         reuploaded = next(item for item in reloaded_response.json() if item["id"] == workspace_id)
         assert reuploaded["workflow_state"] == "uploaded"
         assert reuploaded["youtube_video_id"] == "yt-auto-456"
+        assert upload_channel_ids[-1] == "UC456"
     finally:
         clear_isolated_client_env()
 
@@ -1792,6 +1807,40 @@ def test_youtube_thumbnail_upload_is_compressed_under_api_limit(tmp_path) -> Non
     assert prepared.stat().st_size <= YOUTUBE_THUMBNAIL_MAX_BYTES
 
 
+def test_youtube_channel_selection_updates_active_channel(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        service = client.app.state.services.youtube
+        secrets_path = tmp_path / "client-secrets.json"
+        secrets_path.write_text("{}", encoding="utf-8")
+        client.app.state.settings.youtube_client_secrets_path = str(secrets_path)
+        token_path = service.channel_tokens_dir / "UC123.json"
+        token_path.parent.mkdir(parents=True, exist_ok=True)
+        credentials = Credentials(
+            token="token",
+            refresh_token="refresh",
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id="client-id",
+            client_secret="client-secret",
+            scopes=["https://www.googleapis.com/auth/youtube.upload"],
+        )
+        token_path.write_text(credentials.to_json(), encoding="utf-8")
+        service._upsert_channel(
+            {"id": "UC123", "title": "Main Music", "thumbnail_url": None},
+            token_path=token_path,
+        )
+
+        response = client.post("/api/youtube/channels/select", json={"channel_id": "UC123"})
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["selected_channel_id"] == "UC123"
+        assert payload["selected_channel_title"] == "Main Music"
+        assert payload["ready"] is True
+    finally:
+        clear_isolated_client_env()
+
+
 def test_youtube_connect_redirects_to_authorization_url(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -1864,11 +1913,19 @@ def test_youtube_oauth_callback_resumes_linked_publish(tmp_path, monkeypatch) ->
         def fake_exchange_web_code(code: str, state: str | None = None) -> dict:
             calls["code"] = code
             calls["state"] = state
-            return {"ready": True, "playlist_id": "playlist-123"}
+            return {"ready": True, "playlist_id": "playlist-123", "channel_id": "UC123"}
 
-        def fake_resume_youtube_publish_after_auth(db, services, *, playlist_id: str, actor: str = "youtube-oauth"):
+        def fake_resume_youtube_publish_after_auth(
+            db,
+            services,
+            *,
+            playlist_id: str,
+            actor: str = "youtube-oauth",
+            youtube_channel_id: str | None = None,
+        ):
             calls["playlist_id"] = playlist_id
             calls["actor"] = actor
+            calls["youtube_channel_id"] = youtube_channel_id
 
         client.app.state.services.youtube.exchange_web_code = fake_exchange_web_code
         monkeypatch.setattr(
@@ -1884,5 +1941,6 @@ def test_youtube_oauth_callback_resumes_linked_publish(tmp_path, monkeypatch) ->
         assert calls["state"] == "test-state"
         assert calls["playlist_id"] == "playlist-123"
         assert calls["actor"] == "youtube-oauth"
+        assert calls["youtube_channel_id"] == "UC123"
     finally:
         clear_isolated_client_env()
