@@ -1402,6 +1402,22 @@ audio {
   color: var(--red);
 }
 
+.approved-lock-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 999px;
+  background: rgba(47, 125, 88, 0.1);
+  color: var(--green);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .approved-card {
   position: relative;
   display: grid;

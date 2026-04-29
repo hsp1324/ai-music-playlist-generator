@@ -1642,27 +1642,28 @@ function renderWorkspaceDetail() {
   }
 
   const showTrackReviewColumns = !isReleaseReviewStage(workspace);
+  const showApprovedTrackList = showTrackReviewColumns || Boolean(workspace.tracks.length);
   if (detailColumns) {
-    detailColumns.hidden = !showTrackReviewColumns;
+    detailColumns.hidden = !showApprovedTrackList && !showTrackReviewColumns;
   }
   if (approvedColumn) {
-    approvedColumn.hidden = !showTrackReviewColumns;
+    approvedColumn.hidden = !showApprovedTrackList;
   }
   if (queueColumn) {
     queueColumn.hidden = !showTrackReviewColumns;
   }
-  if (!showTrackReviewColumns) {
+  if (!showTrackReviewColumns && !showApprovedTrackList) {
     return;
   }
 
-  if (!tracksForReview.length) {
+  if (showTrackReviewColumns && !tracksForReview.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
     empty.textContent = isSingleRelease(workspace)
       ? "single candidate가 없습니다. 이 release에 곡 하나를 업로드하세요."
       : "review를 기다리는 곡이 없습니다.";
     queueGrid.appendChild(empty);
-  } else {
+  } else if (showTrackReviewColumns) {
     tracksForReview.forEach((track, index) => {
       const fragment = queueTemplate.content.cloneNode(true);
       const card = fragment.querySelector(".queue-card");
@@ -1780,7 +1781,7 @@ function renderWorkspaceDetail() {
 
     card.dataset.trackId = track.id;
     if (order) order.textContent = String(index + 1).padStart(2, "0");
-    if (workspace.tracks.length > 1) {
+    if (showTrackReviewColumns && workspace.tracks.length > 1) {
       card.draggable = true;
       card.addEventListener("dragstart", (event) => {
         card.classList.add("dragging");
@@ -1826,7 +1827,7 @@ function renderWorkspaceDetail() {
     }
     if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
     if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
-    if (workspace.tracks.length > 1) {
+    if (showTrackReviewColumns && workspace.tracks.length > 1) {
       const upButton = actionButton("Up", "pill-action reorder", async () => {
         await reorderApprovedTrack(workspace, index, -1);
       });
@@ -1839,18 +1840,25 @@ function renderWorkspaceDetail() {
       downButton.disabled = index === workspace.tracks.length - 1;
       actions.appendChild(downButton);
     }
-    actions.appendChild(
-      actionButton("Hold", "pill-action hold", async () => {
-        await api(`/api/tracks/${track.id}/return-to-review`, {
-          method: "POST",
-          body: JSON.stringify({
-            playlist_id: workspace.id,
-            actor: "web-ui",
-            rationale: "Returned from approved tracks to awaiting approval.",
-          }),
-        });
-      })
-    );
+    if (showTrackReviewColumns) {
+      actions.appendChild(
+        actionButton("Hold", "pill-action hold", async () => {
+          await api(`/api/tracks/${track.id}/return-to-review`, {
+            method: "POST",
+            body: JSON.stringify({
+              playlist_id: workspace.id,
+              actor: "web-ui",
+              rationale: "Returned from approved tracks to awaiting approval.",
+            }),
+          });
+        })
+      );
+    } else {
+      const status = document.createElement("span");
+      status.className = "approved-lock-note";
+      status.textContent = "Published";
+      actions.appendChild(status);
+    }
 
     approvedGrid.appendChild(fragment);
   });
