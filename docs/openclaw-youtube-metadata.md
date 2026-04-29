@@ -20,7 +20,8 @@ The app stores those values as approved metadata. Later, when the human clicks p
 - Keep the title under 100 characters.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - If the release is a playlist, include a timestamped tracklist from the final order.
-- If exact timestamps are available from the app, use them. Otherwise calculate cumulative timestamps from track durations.
+- Always run `scripts/openclaw-release metadata-context` first and use its `timestamp_lines` in the description.
+- Do not guess timestamps. The helper calculates them from the app's final order and track durations.
 
 ## Metadata Style Prompt
 
@@ -30,6 +31,10 @@ Give OpenClaw this prompt:
 You are writing YouTube metadata for an AI music release in the AI Music app.
 
 Read the release title, final track order, durations, and mood.
+First run:
+scripts/openclaw-release metadata-context --release-id RELEASE_ID
+
+Use the returned timestamp_lines exactly for the tracklist.
 Write metadata in this shape:
 
 Title:
@@ -60,6 +65,19 @@ After writing the metadata, approve it with scripts/openclaw-release approve-met
 ```
 
 ## Command
+
+Get release context and exact final-order timestamps:
+
+```bash
+scripts/openclaw-release metadata-context --release-id RELEASE_ID
+```
+
+Use the returned JSON:
+
+- `release.title`
+- `release.actual_duration_seconds`
+- `timeline`
+- `timestamp_lines`
 
 Create the description file:
 

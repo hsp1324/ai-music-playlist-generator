@@ -104,6 +104,7 @@ For `single_track_video`, the intended publish path is:
 - Cafe/solo-piano playlist metadata now generates a Korean YouTube title, use-case description, timestamped tracklist, and music hashtags
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
+- OpenClaw can get exact final-order timestamps through `scripts/openclaw-release metadata-context` and should use `timestamp_lines` in YouTube descriptions
 
 ### Cover art
 

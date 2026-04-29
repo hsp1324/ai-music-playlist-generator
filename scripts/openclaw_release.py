@@ -73,6 +73,47 @@ def find_release_by_title(client: httpx.Client, title: str) -> dict[str, Any]:
     return matches[0]
 
 
+def resolve_release(client: httpx.Client, *, release_id: str = "", release_title: str = "") -> dict[str, Any]:
+    if release_id:
+        releases = request_json(client, "GET", "/playlists/workspaces")
+        release = next((item for item in releases if item["id"] == release_id), None)
+        if not release:
+            raise RuntimeError(f"No release found with id: {release_id}")
+        return release
+    if release_title:
+        return find_release_by_title(client, release_title)
+    raise RuntimeError("Use --release-id or --release-title.")
+
+
+def format_timestamp(seconds: int) -> str:
+    seconds = max(int(seconds or 0), 0)
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    remainder = seconds % 60
+    if hours:
+        return f"{hours}:{minutes:02d}:{remainder:02d}"
+    return f"{minutes:02d}:{remainder:02d}"
+
+
+def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
+    offset = 0
+    timeline = []
+    for index, track in enumerate(release.get("tracks") or [], start=1):
+        duration = max(int(track.get("duration_seconds") or 0), 0)
+        timeline.append(
+            {
+                "index": index,
+                "start_seconds": offset,
+                "start": format_timestamp(offset),
+                "title": track.get("title") or f"Track {index}",
+                "duration_seconds": duration,
+                "duration": format_timestamp(duration),
+            }
+        )
+        offset += duration
+    return timeline
+
+
 def create_single_release(client: httpx.Client, title: str, description: str = "") -> dict[str, Any]:
     return request_json(
         client,
@@ -306,6 +347,37 @@ def upload_cover(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
     }
 
 
+def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    timeline = release_timeline(release)
+    timestamp_lines = [f"{item['start']} {item['title']}" for item in timeline]
+    return {
+        "ok": True,
+        "action": "metadata-context",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workspace_mode": release["workspace_mode"],
+            "workflow_state": release["workflow_state"],
+            "target_duration_seconds": release["target_duration_seconds"],
+            "actual_duration_seconds": release["actual_duration_seconds"],
+            "output_audio_path": release.get("output_audio_path"),
+            "output_video_path": release.get("output_video_path"),
+            "youtube_title": release.get("youtube_title"),
+            "youtube_description": release.get("youtube_description"),
+            "youtube_tags": release.get("youtube_tags"),
+        },
+        "timeline": timeline,
+        "timestamp_lines": timestamp_lines,
+        "total_seconds": sum(item["duration_seconds"] for item in timeline),
+        "total_duration": format_timestamp(sum(item["duration_seconds"] for item in timeline)),
+        "instructions": (
+            "Use timestamp_lines exactly in the YouTube description unless the human asks for a different order. "
+            "Write tags as comma-separated plain tags without # symbols."
+        ),
+    }
+
+
 def read_description(args: argparse.Namespace) -> str:
     if args.description_file:
         path = Path(args.description_file).expanduser().resolve()
@@ -370,6 +442,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_parser = subparsers.add_parser("list-releases", help="List visible releases and ids.")
     list_parser.set_defaults(func=list_releases)
+
+    context_parser = subparsers.add_parser(
+        "metadata-context",
+        help="Return release context and final-order timestamps for OpenClaw YouTube metadata writing.",
+    )
+    context_parser.add_argument("--release-id", default="", help="Existing release id.")
+    context_parser.add_argument("--release-title", default="", help="Existing release title.")
+    context_parser.set_defaults(func=metadata_context)
 
     audio_parser = subparsers.add_parser("upload-audio", help="Upload an audio file to an existing release or new single.")
     audio_parser.add_argument("--audio", required=True, help="Path to generated audio file.")

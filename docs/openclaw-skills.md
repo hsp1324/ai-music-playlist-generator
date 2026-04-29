@@ -265,4 +265,5 @@ Use `OpenClaw YouTube Metadata Skill` when:
 - The release already has rendered video.
 - The human asks OpenClaw to write YouTube title, description, and tags.
 - The human wants OpenClaw to approve metadata but not publish.
+- OpenClaw must first run `scripts/openclaw-release metadata-context --release-id RELEASE_ID` and use its `timestamp_lines` exactly.
 - Follow [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).

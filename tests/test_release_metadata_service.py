@@ -3,6 +3,7 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.release_metadata_service import ReleaseMetadataService
 from app.workflows.playlist_automation import _normalize_youtube_tags
+from scripts.openclaw_release import release_timeline
 
 
 def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
@@ -38,3 +39,18 @@ def test_metadata_approval_accepts_comma_separated_tags() -> None:
         "StudyMusic",
         "WorkMusic",
     ]
+
+
+def test_openclaw_metadata_context_timeline_uses_final_order() -> None:
+    timeline = release_timeline(
+        {
+            "tracks": [
+                {"title": "Cinnamon Keys A", "duration_seconds": 202},
+                {"title": "Cinnamon Keys B", "duration_seconds": 208},
+                {"title": "Feltward Sonata A", "duration_seconds": 225},
+            ]
+        }
+    )
+
+    assert [item["start"] for item in timeline] == ["00:00", "03:22", "06:50"]
+    assert [item["title"] for item in timeline] == ["Cinnamon Keys A", "Cinnamon Keys B", "Feltward Sonata A"]
