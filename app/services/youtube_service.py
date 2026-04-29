@@ -1,4 +1,5 @@
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -68,7 +69,7 @@ class YouTubeService:
         )
         authorization_url, state = flow.authorization_url(
             access_type="offline",
-            include_granted_scopes="true",
+            include_granted_scopes="false",
             prompt="consent",
         )
         self.oauth_session_path.parent.mkdir(parents=True, exist_ok=True)
@@ -106,7 +107,18 @@ class YouTubeService:
             redirect_uri=session.get("redirect_uri") or self.redirect_uri,
         )
         flow.code_verifier = session.get("code_verifier")
-        flow.fetch_token(code=code)
+        # The same Google OAuth client is also used by oauth2-proxy for login.
+        # Google can return those harmless OIDC scopes with the YouTube scope,
+        # so keep oauthlib from rejecting the callback solely for extra scopes.
+        previous_relax_scope = os.environ.get("OAUTHLIB_RELAX_TOKEN_SCOPE")
+        os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
+        try:
+            flow.fetch_token(code=code)
+        finally:
+            if previous_relax_scope is None:
+                os.environ.pop("OAUTHLIB_RELAX_TOKEN_SCOPE", None)
+            else:
+                os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = previous_relax_scope
         credentials = flow.credentials
         self.settings.youtube_token_path.parent.mkdir(parents=True, exist_ok=True)
         self.settings.youtube_token_path.write_text(credentials.to_json(), encoding="utf-8")
