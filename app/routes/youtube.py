@@ -1,7 +1,10 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
 
+from app.db import get_db
 from app.services.registry import ServiceRegistry
+from app.workflows.playlist_automation import resume_youtube_publish_after_auth
 
 router = APIRouter(prefix="/youtube", tags=["youtube"])
 
@@ -17,10 +20,13 @@ def youtube_status(request: Request) -> dict:
 
 
 @router.get("/connect")
-def youtube_connect_redirect(request: Request) -> RedirectResponse:
+def youtube_connect_redirect(request: Request, playlist_id: str | None = None) -> RedirectResponse:
     services = get_services(request)
     try:
-        payload = services.youtube.build_authorization_url()
+        if playlist_id:
+            payload = services.youtube.build_authorization_url(playlist_id=playlist_id)
+        else:
+            payload = services.youtube.build_authorization_url()
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001
@@ -29,9 +35,11 @@ def youtube_connect_redirect(request: Request) -> RedirectResponse:
 
 
 @router.post("/connect")
-def youtube_connect(request: Request) -> dict:
+def youtube_connect(request: Request, playlist_id: str | None = None) -> dict:
     services = get_services(request)
     try:
+        if playlist_id:
+            return services.youtube.build_authorization_url(playlist_id=playlist_id)
         return services.youtube.build_authorization_url()
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -45,6 +53,7 @@ def youtube_oauth_callback(
     code: str | None = None,
     state: str | None = None,
     error: str | None = None,
+    db: Session = Depends(get_db),
 ) -> RedirectResponse:
     if error:
         raise HTTPException(status_code=400, detail=f"YouTube OAuth failed: {error}")
@@ -53,7 +62,14 @@ def youtube_oauth_callback(
 
     services = get_services(request)
     try:
-        services.youtube.exchange_web_code(code, state)
+        result = services.youtube.exchange_web_code(code, state)
+        playlist_id = result.get("playlist_id")
+        if result.get("ready") and playlist_id:
+            resume_youtube_publish_after_auth(
+                db,
+                services,
+                playlist_id=playlist_id,
+            )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001

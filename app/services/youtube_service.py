@@ -57,7 +57,7 @@ class YouTubeService:
     def oauth_session_path(self) -> Path:
         return self.settings.browser_dir / "youtube-oauth-session.json"
 
-    def build_authorization_url(self) -> dict[str, Any]:
+    def build_authorization_url(self, playlist_id: str | None = None) -> dict[str, Any]:
         client_secrets = Path(self.settings.youtube_client_secrets_path)
         if not client_secrets.exists():
             raise FileNotFoundError("YouTube client secrets file is not configured.")
@@ -73,20 +73,19 @@ class YouTubeService:
             prompt="consent",
         )
         self.oauth_session_path.parent.mkdir(parents=True, exist_ok=True)
-        self.oauth_session_path.write_text(
-            json.dumps(
-                {
-                    "state": state,
-                    "code_verifier": flow.code_verifier,
-                    "redirect_uri": self.redirect_uri,
-                }
-            ),
-            encoding="utf-8",
-        )
+        session_payload = {
+            "state": state,
+            "code_verifier": flow.code_verifier,
+            "redirect_uri": self.redirect_uri,
+        }
+        if playlist_id:
+            session_payload["playlist_id"] = playlist_id
+        self.oauth_session_path.write_text(json.dumps(session_payload), encoding="utf-8")
         return {
             "authorization_url": authorization_url,
             "state": state,
             "redirect_uri": self.redirect_uri,
+            "playlist_id": playlist_id,
         }
 
     def exchange_web_code(self, code: str, state: str | None = None) -> dict[str, Any]:
@@ -120,10 +119,14 @@ class YouTubeService:
             else:
                 os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = previous_relax_scope
         credentials = flow.credentials
+        playlist_id = session.get("playlist_id")
         self.settings.youtube_token_path.parent.mkdir(parents=True, exist_ok=True)
         self.settings.youtube_token_path.write_text(credentials.to_json(), encoding="utf-8")
         self.oauth_session_path.unlink(missing_ok=True)
-        return self.get_status()
+        status = self.get_status()
+        if playlist_id:
+            status["playlist_id"] = playlist_id
+        return status
 
     def authenticate_local(self) -> dict[str, Any]:
         client_secrets = Path(self.settings.youtube_client_secrets_path)

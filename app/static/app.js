@@ -1509,7 +1509,7 @@ function renderWorkspaceDetail() {
     if (waitingForYouTubeAuth) {
       detailActions.appendChild(
         actionButton("Connect YouTube", "action-button primary-button", async () => {
-          window.location.href = "/api/youtube/connect";
+          window.location.href = `/api/youtube/connect?playlist_id=${encodeURIComponent(workspace.id)}`;
         })
       );
     } else {

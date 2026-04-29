@@ -801,6 +801,39 @@ def maybe_queue_auto_publish_job(
     return _queue_publish_job(db, playlist, actor=actor, note=note, source=source)
 
 
+def resume_youtube_publish_after_auth(
+    db: Session,
+    services: ServiceRegistry,
+    *,
+    playlist_id: str,
+    actor: str = "youtube-oauth",
+) -> Playlist | None:
+    playlist = db.scalars(
+        select(Playlist)
+        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .where(Playlist.id == playlist_id)
+    ).first()
+    if not playlist:
+        return None
+
+    meta = _playlist_meta(playlist)
+    if playlist.youtube_video_id or not meta.get("publish_approved"):
+        return playlist
+    if meta.get("workflow_state") not in {"ready_for_youtube_auth", "youtube_upload_failed", "ready_for_youtube"}:
+        return playlist
+    if not _final_publish_is_ready(playlist):
+        return playlist
+
+    return approve_playlist_publish(
+        db,
+        services,
+        playlist=playlist,
+        actor=actor,
+        note="YouTube connected. Resuming final upload.",
+        force_under_target=bool(meta.get("publish_under_target_confirmed")),
+    )
+
+
 async def _update_publish_state(
     db: Session,
     services: ServiceRegistry,

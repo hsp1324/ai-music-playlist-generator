@@ -1765,6 +1765,31 @@ def test_youtube_connect_redirects_to_authorization_url(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_youtube_connect_can_remember_playlist_context(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        calls = {}
+
+        def fake_build_authorization_url(playlist_id: str | None = None) -> dict:
+            calls["playlist_id"] = playlist_id
+            return {
+                "authorization_url": "https://accounts.google.com/o/oauth2/auth?state=test",
+                "state": "test",
+                "redirect_uri": "https://example.com/api/youtube/oauth/callback",
+                "playlist_id": playlist_id,
+            }
+
+        client.app.state.services.youtube.build_authorization_url = fake_build_authorization_url
+
+        response = client.get("/api/youtube/connect?playlist_id=playlist-123", follow_redirects=False)
+
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://accounts.google.com/o/oauth2/auth?state=test"
+        assert calls["playlist_id"] == "playlist-123"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_youtube_oauth_callback_stores_token_then_returns_to_ui(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -1783,5 +1808,37 @@ def test_youtube_oauth_callback_stores_token_then_returns_to_ui(tmp_path) -> Non
         assert response.headers["location"] == "/?youtube=connected"
         assert calls["code"] == "test-code"
         assert calls["state"] == "test-state"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_youtube_oauth_callback_resumes_linked_publish(tmp_path, monkeypatch) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        calls = {}
+
+        def fake_exchange_web_code(code: str, state: str | None = None) -> dict:
+            calls["code"] = code
+            calls["state"] = state
+            return {"ready": True, "playlist_id": "playlist-123"}
+
+        def fake_resume_youtube_publish_after_auth(db, services, *, playlist_id: str, actor: str = "youtube-oauth"):
+            calls["playlist_id"] = playlist_id
+            calls["actor"] = actor
+
+        client.app.state.services.youtube.exchange_web_code = fake_exchange_web_code
+        monkeypatch.setattr(
+            "app.routes.youtube.resume_youtube_publish_after_auth",
+            fake_resume_youtube_publish_after_auth,
+        )
+
+        response = client.get("/api/youtube/oauth/callback?code=test-code&state=test-state", follow_redirects=False)
+
+        assert response.status_code == 307
+        assert response.headers["location"] == "/?youtube=connected"
+        assert calls["code"] == "test-code"
+        assert calls["state"] == "test-state"
+        assert calls["playlist_id"] == "playlist-123"
+        assert calls["actor"] == "youtube-oauth"
     finally:
         clear_isolated_client_env()
