@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     storage_root: Path = Path("storage")
 
     ffmpeg_binary: str = "ffmpeg"
+    ffmpeg_stall_timeout_seconds: int = 900
     playlist_target_minutes: int = 60
     crossfade_seconds: float = 2.0
 

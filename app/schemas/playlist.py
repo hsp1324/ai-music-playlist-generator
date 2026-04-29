@@ -98,6 +98,7 @@ class PlaylistTrackRead(BaseModel):
 
 class PlaylistJobRead(BaseModel):
     id: str
+    type: str
     status: str
     source: str
     created_at: datetime
@@ -105,6 +106,8 @@ class PlaylistJobRead(BaseModel):
     finished_at: datetime | None = None
     error_text: str | None = None
     output_audio_path: str | None = None
+    output_video_path: str | None = None
+    progress: dict[str, Any] | None = None
 
 
 class PlaylistWorkspaceRead(BaseModel):

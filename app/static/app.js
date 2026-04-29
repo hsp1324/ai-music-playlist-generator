@@ -83,6 +83,16 @@ function formatDuration(seconds) {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
+function formatLongDuration(seconds) {
+  if (!Number.isFinite(Number(seconds))) return "";
+  const total = Math.max(Math.round(Number(seconds)), 0);
+  const hours = Math.floor(total / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours) return `${hours}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
 function setStatus(el, payload) {
   el.textContent = typeof payload === "string" ? payload : JSON.stringify(payload, null, 2);
 }
@@ -604,11 +614,30 @@ function renderJobStatusText(workspace) {
 
   const status = statusLabel(job.status);
   if (job.status === "queued") return `Render queued at ${formatTimestamp(job.created_at) || "now"}.`;
-  if (job.status === "running") return `Rendering started ${formatTimestamp(job.started_at) || "just now"}.`;
+  if (job.status === "running") {
+    const progress = job.progress || {};
+    const message = progress.message || "";
+    const percent = Number(progress.percent);
+    const processed = Number(progress.processed_seconds);
+    const total = Number(progress.total_seconds);
+    const eta = Number(progress.eta_seconds);
+    const parts = [];
+    if (message) parts.push(message);
+    if (!message && Number.isFinite(percent)) parts.push(`${job.type === "build_video" ? "Video" : "Audio"} rendering ${percent.toFixed(1)}%.`);
+    if (Number.isFinite(processed) && Number.isFinite(total) && total > 0) {
+      parts.push(`${formatLongDuration(processed)} / ${formatLongDuration(total)}`);
+    }
+    if (Number.isFinite(eta)) parts.push(`ETA ${formatLongDuration(eta)}`);
+    if (parts.length) return parts.join(" · ");
+    return `Rendering started ${formatTimestamp(job.started_at) || "just now"}.`;
+  }
   if (job.status === "succeeded" && !workspace.output_audio_path) {
     return "Previous render is stale. Render again after the current audio selection is ready.";
   }
-  if (job.status === "succeeded") return `Render complete at ${formatTimestamp(job.finished_at) || "recently"}.`;
+  if (job.status === "succeeded") {
+    const kind = job.type === "build_video" ? "Video" : "Audio";
+    return `${kind} render complete at ${formatTimestamp(job.finished_at) || "recently"}.`;
+  }
   if (job.status === "failed") return `Render failed: ${job.error_text || "unknown error"}`;
   return `Render job: ${status}`;
 }
@@ -618,15 +647,25 @@ function appendRenderStatus(workspace) {
   const job = workspace.render_job;
   const status = job?.status || (workspace.output_audio_path ? "succeeded" : "idle");
   card.className = `render-status render-${status}`;
+  const progressRatio = Number(job?.progress?.progress_ratio);
+  if (Number.isFinite(progressRatio)) {
+    card.style.setProperty("--render-progress", `${Math.max(0, Math.min(progressRatio, 1)) * 100}%`);
+  } else if (status === "running") {
+    card.style.setProperty("--render-progress", "42%");
+  } else if (status === "succeeded") {
+    card.style.setProperty("--render-progress", "100%");
+  }
 
   const title = document.createElement("strong");
-  title.textContent = workspace.output_audio_path
-    ? "Rendered Audio Ready"
-    : workspace.workflow_state === "render_required"
-      ? "Re-render Required"
-    : workspace.status === "building"
-      ? "Rendering Audio"
-      : "Audio Render";
+  title.textContent = job?.type === "build_video"
+    ? status === "succeeded" ? "Video Rendered" : "Rendering Video"
+    : workspace.output_audio_path
+      ? "Rendered Audio Ready"
+      : workspace.workflow_state === "render_required"
+        ? "Re-render Required"
+      : workspace.status === "building"
+        ? "Rendering Audio"
+        : "Audio Render";
 
   const message = document.createElement("span");
   message.textContent = renderJobStatusText(workspace);

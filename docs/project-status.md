@@ -70,6 +70,15 @@ Background worker handles long-running jobs:
 - looped video render
 - YouTube upload
 
+Long video render jobs now expose ffmpeg progress through the workspace API:
+
+- percent complete
+- rendered media time vs total duration
+- ETA when ffmpeg speed is available
+- output file size heartbeat
+
+The stall guard is progress-based, not a hard wall-clock timeout. It only fails a render if ffmpeg stops reporting progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
+
 For `single_track_video`, the intended publish path is:
 
 1. approve track into workspace

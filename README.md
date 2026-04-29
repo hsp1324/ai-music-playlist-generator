@@ -299,6 +299,7 @@ Runtime behavior:
   - uploads the video to YouTube
   - uploads the same cover as the custom thumbnail
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
+- Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
 

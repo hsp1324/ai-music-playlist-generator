@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import threading
 import time
 from dataclasses import dataclass
@@ -211,6 +212,16 @@ class BackgroundJobWorker:
         meta["workflow_state"] = "video_rendering"
         meta["note"] = "Rendering release video."
         meta.pop("video_build_error", None)
+        meta["video_render_progress"] = {
+            "stage": "video_render",
+            "progress_ratio": 0.0,
+            "percent": 0.0,
+            "processed_seconds": 0.0,
+            "total_seconds": playlist.actual_duration_seconds or None,
+            "eta_seconds": None,
+            "message": "Video render started.",
+            "updated_at": _utcnow().isoformat(),
+        }
         playlist.metadata_json = meta
         playlist.status = PlaylistStatus.building
         db.add(playlist)
@@ -224,20 +235,36 @@ class BackgroundJobWorker:
             if item.track is not None
         ]
         video_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp4"
+        progress_callback = self._build_video_progress_callback(db, job, playlist)
+        total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
         if workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
             loop_prompt = self._build_dreamina_prompt(playlist, tracks)
             clip_path = Path(self.settings.playlists_dir) / f"{playlist.id}-dreamina.mp4"
             clip = self.services.dreamina.generate_loop_clip(prompt=loop_prompt)
             downloaded_clip = self.services.dreamina.download_video(clip.video_url, clip_path)
             playlist.output_video_path = str(
-                self.services.playlist_builder.build_looped_video(downloaded_clip, audio_path, video_path)
+                self._call_builder_with_progress(
+                    self.services.playlist_builder.build_looped_video,
+                    downloaded_clip,
+                    audio_path,
+                    video_path,
+                    progress_callback=progress_callback,
+                    total_duration_seconds=total_duration_seconds,
+                )
             )
             meta["dreamina_job_id"] = clip.job_id
             meta["dreamina_video_url"] = clip.video_url
             meta["loop_video_path"] = str(downloaded_clip)
         else:
             playlist.output_video_path = str(
-                self.services.playlist_builder.build_video(audio_path, Path(cover_image_path), video_path)
+                self._call_builder_with_progress(
+                    self.services.playlist_builder.build_video,
+                    audio_path,
+                    Path(cover_image_path),
+                    video_path,
+                    progress_callback=progress_callback,
+                    total_duration_seconds=total_duration_seconds,
+                )
             )
 
         youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
@@ -248,6 +275,16 @@ class BackgroundJobWorker:
         meta["publish_approved"] = False
         meta["workflow_state"] = "metadata_review"
         meta["note"] = "Video render completed. Review YouTube metadata next."
+        meta["video_render_progress"] = {
+            **dict(meta.get("video_render_progress") or {}),
+            "stage": "video_render",
+            "progress_ratio": 1.0,
+            "percent": 100.0,
+            "eta_seconds": 0,
+            "status": "end",
+            "message": "Video render completed.",
+            "updated_at": _utcnow().isoformat(),
+        }
         playlist.metadata_json = meta
         playlist.status = PlaylistStatus.ready
 
@@ -257,9 +294,68 @@ class BackgroundJobWorker:
             "cover_image_path": cover_image_path,
             "output_video_path": playlist.output_video_path,
             "youtube_title": youtube_metadata.title,
+            "progress": meta["video_render_progress"],
         }
         db.add(playlist)
         db.add(job)
+
+    @staticmethod
+    def _call_builder_with_progress(builder_method, *args, progress_callback, total_duration_seconds):
+        signature = inspect.signature(builder_method)
+        if "progress_callback" not in signature.parameters:
+            return builder_method(*args)
+        return builder_method(
+            *args,
+            progress_callback=progress_callback,
+            total_duration_seconds=total_duration_seconds,
+        )
+
+    @staticmethod
+    def _build_video_progress_callback(db: Session, job: Job, playlist: Playlist):
+        def callback(progress: dict) -> None:
+            payload = {
+                **progress,
+                "message": BackgroundJobWorker._format_video_progress_message(progress),
+                "updated_at": _utcnow().isoformat(),
+            }
+            job.result_json = {
+                **(job.result_json or {}),
+                "playlist_id": playlist.id,
+                "progress": payload,
+            }
+            meta = dict(playlist.metadata_json or {})
+            meta["video_render_progress"] = payload
+            meta["note"] = payload["message"]
+            playlist.metadata_json = meta
+            db.add(job)
+            db.add(playlist)
+            db.commit()
+
+        return callback
+
+    @staticmethod
+    def _format_video_progress_message(progress: dict) -> str:
+        percent = progress.get("percent")
+        processed = progress.get("processed_seconds")
+        total = progress.get("total_seconds")
+        eta = progress.get("eta_seconds")
+        pieces = ["Rendering release video"]
+        if isinstance(percent, (int, float)):
+            pieces.append(f"{percent:.1f}%")
+        if isinstance(processed, (int, float)) and isinstance(total, (int, float)) and total > 0:
+            pieces.append(f"{BackgroundJobWorker._format_seconds(processed)} / {BackgroundJobWorker._format_seconds(total)}")
+        if isinstance(eta, (int, float)):
+            pieces.append(f"about {BackgroundJobWorker._format_seconds(eta)} remaining")
+        return " · ".join(pieces) + "."
+
+    @staticmethod
+    def _format_seconds(seconds: int | float) -> str:
+        total = max(int(seconds), 0)
+        hours, remainder = divmod(total, 3600)
+        minutes, secs = divmod(remainder, 60)
+        if hours:
+            return f"{hours}:{minutes:02d}:{secs:02d}"
+        return f"{minutes}:{secs:02d}"
 
     def _process_sync_slack_job(self, db: Session, job: Job) -> None:
         if not job.track_id:
@@ -380,6 +476,12 @@ class BackgroundJobWorker:
                 meta["workflow_state"] = "video_build_failed"
                 meta["video_build_error"] = error_text
                 meta["note"] = f"Background video render failed: {error_text}"
+                meta["video_render_progress"] = {
+                    **dict(meta.get("video_render_progress") or {}),
+                    "status": "failed",
+                    "message": meta["note"],
+                    "updated_at": _utcnow().isoformat(),
+                }
             elif job.type == JobType.upload_youtube:
                 playlist.status = PlaylistStatus.ready
                 if meta.get("workflow_state") not in {"video_build_failed", "youtube_upload_failed"}:

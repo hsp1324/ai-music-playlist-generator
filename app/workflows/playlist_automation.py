@@ -76,15 +76,17 @@ def _latest_render_job(playlist: Playlist) -> PlaylistJobRead | None:
     jobs = [
         job
         for job in playlist.jobs
-        if job.type == JobType.build_playlist
+        if job.type in {JobType.build_playlist, JobType.build_video}
     ]
     if not jobs:
         return None
 
-    job = max(jobs, key=lambda candidate: candidate.created_at)
+    active_jobs = [job for job in jobs if job.status in {JobStatus.queued, JobStatus.running}]
+    job = max(active_jobs or jobs, key=lambda candidate: candidate.created_at)
     result = job.result_json or {}
     return PlaylistJobRead(
         id=job.id,
+        type=job.type.value,
         status=job.status.value,
         source=job.source,
         created_at=job.created_at,
@@ -92,6 +94,8 @@ def _latest_render_job(playlist: Playlist) -> PlaylistJobRead | None:
         finished_at=job.finished_at,
         error_text=job.error_text,
         output_audio_path=result.get("output_audio_path"),
+        output_video_path=result.get("output_video_path"),
+        progress=result.get("progress"),
     )
 
 

@@ -1,8 +1,11 @@
 import subprocess
+import time
 from dataclasses import dataclass
 from mimetypes import guess_type
 from pathlib import Path
+from selectors import EVENT_READ, DefaultSelector
 from tempfile import NamedTemporaryFile
+from typing import Any, Callable
 
 from app.config import Settings
 from app.models.track import Track
@@ -38,6 +41,154 @@ class FFMpegPlaylistBuilder:
             else:
                 details = str(exc)
             raise RuntimeError(f"ffmpeg failed: {details}") from exc
+
+    def _run_ffmpeg_with_progress(
+        self,
+        command: list[str],
+        *,
+        output_path: Path,
+        total_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+        if process.stdout is None or process.stderr is None:
+            raise RuntimeError("ffmpeg progress pipes could not be opened.")
+
+        selector = DefaultSelector()
+        selector.register(process.stdout, EVENT_READ, "stdout")
+        selector.register(process.stderr, EVENT_READ, "stderr")
+
+        started = time.monotonic()
+        last_activity = started
+        last_emit = 0.0
+        last_output_size = output_path.stat().st_size if output_path.exists() else 0
+        stderr_lines: list[str] = []
+        progress_values: dict[str, str] = {}
+        processed_seconds = 0.0
+        total_seconds = float(total_duration_seconds or 0)
+        killed_for_stall = False
+
+        def parse_processed_seconds(key: str, value: str) -> float | None:
+            if key in {"out_time_ms", "out_time_us"}:
+                try:
+                    return max(float(value) / 1_000_000, 0.0)
+                except ValueError:
+                    return None
+            if key != "out_time":
+                return None
+            try:
+                hours, minutes, seconds = value.split(":")
+                return (int(hours) * 3600) + (int(minutes) * 60) + float(seconds)
+            except ValueError:
+                return None
+
+        def parse_speed(value: str | None) -> float | None:
+            if not value:
+                return None
+            try:
+                return float(value.rstrip("x"))
+            except ValueError:
+                return None
+
+        def emit(force: bool = False) -> None:
+            nonlocal last_emit
+            if progress_callback is None:
+                return
+            now = time.monotonic()
+            if not force and now - last_emit < 2:
+                return
+            last_emit = now
+            output_size = output_path.stat().st_size if output_path.exists() else 0
+            speed = parse_speed(progress_values.get("speed"))
+            ratio = min(processed_seconds / total_seconds, 1.0) if total_seconds > 0 else 0.0
+            eta_seconds = None
+            if ratio > 0 and ratio < 1:
+                if speed and speed > 0:
+                    eta_seconds = max((total_seconds - processed_seconds) / speed, 0.0)
+                else:
+                    elapsed = max(now - started, 0.1)
+                    eta_seconds = max(elapsed * (1 - ratio) / ratio, 0.0)
+            progress_callback(
+                {
+                    "stage": "video_render",
+                    "progress_ratio": ratio,
+                    "percent": round(ratio * 100, 1),
+                    "processed_seconds": round(processed_seconds, 1),
+                    "total_seconds": round(total_seconds, 1) if total_seconds else None,
+                    "eta_seconds": round(eta_seconds, 1) if eta_seconds is not None else None,
+                    "elapsed_seconds": round(now - started, 1),
+                    "speed": speed,
+                    "frame": progress_values.get("frame"),
+                    "output_size_bytes": output_size,
+                    "status": progress_values.get("progress") or "running",
+                }
+            )
+
+        try:
+            while True:
+                if process.poll() is not None:
+                    break
+
+                if not selector.get_map():
+                    time.sleep(0.2)
+                    continue
+
+                events = selector.select(timeout=1)
+                if not events:
+                    output_size = output_path.stat().st_size if output_path.exists() else 0
+                    if output_size != last_output_size:
+                        last_output_size = output_size
+                        last_activity = time.monotonic()
+                        emit()
+                    elif time.monotonic() - last_activity > self.settings.ffmpeg_stall_timeout_seconds:
+                        killed_for_stall = True
+                        process.kill()
+                        break
+                    continue
+
+                for key, _ in events:
+                    stream = key.fileobj
+                    line = stream.readline()
+                    if line == "":
+                        selector.unregister(stream)
+                        continue
+                    line = line.strip()
+                    if not line:
+                        continue
+                    last_activity = time.monotonic()
+                    if key.data == "stderr":
+                        stderr_lines.append(line)
+                        stderr_lines = stderr_lines[-12:]
+                        continue
+
+                    if "=" not in line:
+                        continue
+                    name, value = line.split("=", 1)
+                    progress_values[name] = value
+                    parsed_seconds = parse_processed_seconds(name, value)
+                    if parsed_seconds is not None:
+                        processed_seconds = max(processed_seconds, parsed_seconds)
+                        emit()
+                    elif name == "progress":
+                        emit(force=value == "end")
+        finally:
+            selector.close()
+
+        return_code = process.wait()
+        if killed_for_stall:
+            raise RuntimeError(
+                "ffmpeg stalled without progress or output file growth for "
+                f"{self.settings.ffmpeg_stall_timeout_seconds} seconds."
+            )
+        if return_code != 0:
+            details = "\n".join(line for line in stderr_lines[-8:] if line.strip())
+            raise RuntimeError(f"ffmpeg failed: {details or f'exit code {return_code}'}")
 
     def plan_playlist(self, tracks: list[Track], target_duration_seconds: int) -> PlaylistPlan:
         selected_ids: list[str] = []
@@ -100,7 +251,15 @@ class FFMpegPlaylistBuilder:
 
         return output_path
 
-    def build_video(self, audio_path: Path, cover_image_path: Path, output_path: Path) -> Path:
+    def build_video(
+        self,
+        audio_path: Path,
+        cover_image_path: Path,
+        output_path: Path,
+        *,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
+        total_duration_seconds: int | float | None = None,
+    ) -> Path:
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file does not exist: {audio_path}")
         if not cover_image_path.exists():
@@ -112,6 +271,10 @@ class FFMpegPlaylistBuilder:
         command = [
             self.settings.ffmpeg_binary,
             "-y",
+            "-hide_banner",
+            "-nostats",
+            "-progress",
+            "pipe:1",
             "-loop",
             "1",
             "-framerate",
@@ -138,10 +301,23 @@ class FFMpegPlaylistBuilder:
             str(output_path),
         ]
         output_path.unlink(missing_ok=True)
-        self._run_ffmpeg(command)
+        self._run_ffmpeg_with_progress(
+            command,
+            output_path=output_path,
+            total_duration_seconds=total_duration_seconds,
+            progress_callback=progress_callback,
+        )
         return output_path
 
-    def build_looped_video(self, clip_path: Path, audio_path: Path, output_path: Path) -> Path:
+    def build_looped_video(
+        self,
+        clip_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        *,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
+        total_duration_seconds: int | float | None = None,
+    ) -> Path:
         if not clip_path.exists():
             raise FileNotFoundError(f"Loop clip does not exist: {clip_path}")
         if not audio_path.exists():
@@ -151,6 +327,10 @@ class FFMpegPlaylistBuilder:
         command = [
             self.settings.ffmpeg_binary,
             "-y",
+            "-hide_banner",
+            "-nostats",
+            "-progress",
+            "pipe:1",
             "-stream_loop",
             "-1",
             "-i",
@@ -175,5 +355,10 @@ class FFMpegPlaylistBuilder:
             str(output_path),
         ]
         output_path.unlink(missing_ok=True)
-        self._run_ffmpeg(command)
+        self._run_ffmpeg_with_progress(
+            command,
+            output_path=output_path,
+            total_duration_seconds=total_duration_seconds,
+            progress_callback=progress_callback,
+        )
         return output_path

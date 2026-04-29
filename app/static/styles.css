@@ -743,6 +743,8 @@ button:disabled {
 }
 
 .render-status {
+  --render-progress: 0%;
+  --render-progress-color: var(--line);
   position: relative;
   display: grid;
   gap: 6px;
@@ -763,7 +765,9 @@ button:disabled {
   height: 8px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
-  background: var(--panel-muted);
+  background:
+    linear-gradient(90deg, var(--render-progress-color) 0 var(--render-progress), transparent var(--render-progress) 100%),
+    var(--panel-muted);
 }
 
 .render-status strong {
@@ -788,8 +792,9 @@ button:disabled {
 
 .render-queued::after,
 .render-running::after {
+  --render-progress-color: var(--accent);
   background:
-    linear-gradient(90deg, var(--accent) 0 42%, transparent 42%),
+    linear-gradient(90deg, var(--accent) 0 var(--render-progress), transparent var(--render-progress) 100%),
     repeating-linear-gradient(45deg, rgba(23, 19, 15, 0.18) 0 8px, transparent 8px 16px),
     #fff8ea;
   animation: renderPulse 1.2s linear infinite;
@@ -800,7 +805,8 @@ button:disabled {
 }
 
 .render-succeeded::after {
-  background: linear-gradient(90deg, var(--green) 0 100%, transparent 0);
+  --render-progress-color: var(--green);
+  background: linear-gradient(90deg, var(--green) 0 var(--render-progress), transparent var(--render-progress) 100%);
 }
 
 .render-failed {
@@ -808,7 +814,8 @@ button:disabled {
 }
 
 .render-failed::after {
-  background: linear-gradient(90deg, var(--red) 0 100%, transparent 0);
+  --render-progress-color: var(--red);
+  background: linear-gradient(90deg, var(--red) 0 var(--render-progress), transparent var(--render-progress) 100%);
 }
 
 .render-player {
