@@ -237,7 +237,21 @@ class BackgroundJobWorker:
         video_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp4"
         progress_callback = self._build_video_progress_callback(db, job, playlist)
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
-        if workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
+        loop_video_path = str(meta.get("loop_video_path") or "").strip()
+        if loop_video_path and Path(loop_video_path).exists():
+            playlist.output_video_path = str(
+                self._call_builder_with_progress(
+                    self.services.playlist_builder.build_looped_video,
+                    Path(loop_video_path),
+                    audio_path,
+                    video_path,
+                    smooth_loop=bool(meta.get("loop_video_smooth", True)),
+                    progress_callback=progress_callback,
+                    total_duration_seconds=total_duration_seconds,
+                )
+            )
+            meta["loop_video_render_mode"] = "smooth-pingpong" if meta.get("loop_video_smooth", True) else "hard-loop"
+        elif workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
             loop_prompt = self._build_dreamina_prompt(playlist, tracks)
             clip_path = Path(self.settings.playlists_dir) / f"{playlist.id}-dreamina.mp4"
             clip = self.services.dreamina.generate_loop_clip(prompt=loop_prompt)
@@ -248,6 +262,7 @@ class BackgroundJobWorker:
                     downloaded_clip,
                     audio_path,
                     video_path,
+                    smooth_loop=True,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -255,6 +270,9 @@ class BackgroundJobWorker:
             meta["dreamina_job_id"] = clip.job_id
             meta["dreamina_video_url"] = clip.video_url
             meta["loop_video_path"] = str(downloaded_clip)
+            meta["loop_video_source"] = "dreamina-useapi"
+            meta["loop_video_smooth"] = True
+            meta["loop_video_render_mode"] = "smooth-pingpong"
         else:
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
@@ -300,15 +318,17 @@ class BackgroundJobWorker:
         db.add(job)
 
     @staticmethod
-    def _call_builder_with_progress(builder_method, *args, progress_callback, total_duration_seconds):
+    def _call_builder_with_progress(builder_method, *args, progress_callback, total_duration_seconds, **kwargs):
         signature = inspect.signature(builder_method)
-        if "progress_callback" not in signature.parameters:
-            return builder_method(*args)
-        return builder_method(
-            *args,
-            progress_callback=progress_callback,
-            total_duration_seconds=total_duration_seconds,
-        )
+        supported_kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key in signature.parameters
+        }
+        if "progress_callback" in signature.parameters:
+            supported_kwargs["progress_callback"] = progress_callback
+            supported_kwargs["total_duration_seconds"] = total_duration_seconds
+        return builder_method(*args, **supported_kwargs)
 
     @staticmethod
     def _build_video_progress_callback(db: Session, job: Job, playlist: Playlist):

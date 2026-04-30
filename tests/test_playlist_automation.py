@@ -1233,6 +1233,103 @@ def test_cover_image_can_be_uploaded_for_review(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_looped_video(clip_path, audio_path, output_path, *, smooth_loop=True, **_kwargs):
+            assert clip_path.exists()
+            assert clip_path.name.endswith(".mp4")
+            assert audio_path.exists()
+            assert smooth_loop is True
+            output_path.write_bytes(b"fake-looped-mp4")
+            return output_path
+
+        def fake_build_video(*_args, **_kwargs):
+            raise AssertionError("still-image video renderer should not be used when loop video is uploaded")
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_looped_video = fake_build_looped_video
+        services.playlist_builder.build_video = fake_build_video
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Loop Video Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "source.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Loop Track",
+                "prompt": "ambient loop visual",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/upload",
+            data={"actor": "test-suite"},
+            files={"cover_file": ("cover.png", b"fake-png", "image/png")},
+        )
+        assert cover_response.status_code == 200
+        loop_response = client.post(
+            f"/api/playlists/{workspace_id}/loop-video/upload",
+            data={"actor": "test-suite", "smooth_loop": "true"},
+            files={"loop_video_file": ("dreamina-loop.mp4", b"fake-mp4", "video/mp4")},
+        )
+        assert loop_response.status_code == 200
+        loop_payload = loop_response.json()
+        assert loop_payload["loop_video_path"].endswith(".mp4")
+        assert loop_payload["loop_video_source"] == "manual-upload"
+        assert loop_payload["loop_video_smooth"] is True
+
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+        render_video_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_video_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["workflow_state"] == "metadata_review"
+        assert workspace["output_video_path"].endswith(".mp4")
+        assert workspace["loop_video_path"].endswith(".mp4")
+    finally:
+        clear_isolated_client_env()
+
+
 def test_single_release_uses_source_audio_and_uploaded_cover_can_render_video(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -1690,7 +1787,8 @@ def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> 
             output_path.write_bytes(b"fake-mp3")
             return output_path
 
-        def fake_build_looped_video(clip_path, audio_path, output_path):
+        def fake_build_looped_video(clip_path, audio_path, output_path, *, smooth_loop=True, **_kwargs):
+            assert smooth_loop is True
             output_path.write_bytes(b"fake-looped-mp4")
             return output_path
 

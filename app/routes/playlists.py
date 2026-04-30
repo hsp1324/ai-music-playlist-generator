@@ -33,6 +33,7 @@ from app.workflows.playlist_automation import (
     approve_playlist_metadata,
     approve_playlist_publish,
     attach_uploaded_playlist_cover,
+    attach_uploaded_loop_video,
     attach_uploaded_playlist_thumbnail,
     build_playlist_from_tracks,
     create_playlist_workspace,
@@ -50,6 +51,7 @@ from app.workflows.playlist_automation import (
 router = APIRouter(prefix="/playlists", tags=["playlists"])
 
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_LOOP_VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -82,6 +84,28 @@ def _store_cover_upload(upload: UploadFile, destination_dir: Path, playlist_id: 
 
 def _store_thumbnail_upload(upload: UploadFile, destination_dir: Path, playlist_id: str) -> str:
     return _store_image_upload(upload, destination_dir, playlist_id, asset_name="thumbnail")
+
+
+def _store_loop_video_upload(upload: UploadFile, destination_dir: Path, playlist_id: str) -> str:
+    if not upload.filename:
+        raise HTTPException(status_code=400, detail="Loop video filename is required.")
+
+    suffix = Path(upload.filename).suffix.lower()
+    if suffix not in ALLOWED_LOOP_VIDEO_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Loop video must be mp4, mov, m4v, or webm.")
+    if upload.content_type and not (
+        upload.content_type.startswith("video/") or upload.content_type == "application/octet-stream"
+    ):
+        raise HTTPException(status_code=400, detail="Loop video upload must be a video file.")
+
+    destination_dir.mkdir(parents=True, exist_ok=True)
+    destination = destination_dir / f"{playlist_id}-loop-video-upload-{uuid4().hex}{suffix}"
+    with destination.open("wb") as handle:
+        shutil.copyfileobj(upload.file, handle)
+
+    if not destination.exists() or destination.stat().st_size == 0:
+        raise HTTPException(status_code=400, detail="Uploaded loop video is empty.")
+    return str(destination)
 
 
 @router.post("/build", response_model=PlaylistRead, status_code=status.HTTP_201_CREATED)
@@ -268,6 +292,35 @@ def upload_workspace_thumbnail(
         )
     except ValueError as exc:
         Path(thumbnail_path).unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/loop-video/upload", response_model=PlaylistWorkspaceRead)
+def upload_workspace_loop_video(
+    playlist_id: str,
+    request: Request,
+    actor: str = Form("web-ui"),
+    smooth_loop: bool = Form(True),
+    loop_video_file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    services = get_services(request)
+    playlist = db.get(Playlist, playlist_id)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+
+    loop_video_path = _store_loop_video_upload(loop_video_file, services.settings.playlists_dir, playlist_id)
+    try:
+        playlist = attach_uploaded_loop_video(
+            db,
+            playlist_id=playlist_id,
+            actor=actor,
+            loop_video_path=loop_video_path,
+            smooth_loop=smooth_loop,
+        )
+    except ValueError as exc:
+        Path(loop_video_path).unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return serialize_playlist_workspace(playlist)
 

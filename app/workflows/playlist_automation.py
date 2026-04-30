@@ -146,6 +146,18 @@ def _youtube_thumbnail_source(meta: dict) -> str | None:
     return None
 
 
+def _loop_video_source(meta: dict) -> str | None:
+    loop_video_path = meta.get("loop_video_path")
+    if not loop_video_path:
+        return None
+    if meta.get("loop_video_source"):
+        return str(meta["loop_video_source"])
+    for entry in reversed(list(meta.get("loop_video_history") or [])):
+        if entry.get("loop_video_path") == loop_video_path and entry.get("source"):
+            return str(entry["source"])
+    return None
+
+
 def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
     tracks = [
@@ -180,6 +192,9 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         output_video_path=playlist.output_video_path,
         cover_image_path=meta.get("cover_image_path"),
         cover_source=_cover_source(meta),
+        loop_video_path=meta.get("loop_video_path"),
+        loop_video_source=_loop_video_source(meta),
+        loop_video_smooth=bool(meta.get("loop_video_smooth", True)),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
@@ -691,6 +706,51 @@ def attach_uploaded_playlist_thumbnail(
     meta["youtube_thumbnail_path"] = thumbnail_path
     meta["youtube_thumbnail_source"] = "manual-upload"
     meta.pop("youtube_thumbnail_upload_error", None)
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def attach_uploaded_loop_video(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+    loop_video_path: str,
+    smooth_loop: bool = True,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not Path(loop_video_path).exists():
+        raise ValueError("Uploaded loop video is missing on disk.")
+
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("loop_video_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "loop_video_path": loop_video_path,
+            "uploaded_at": _utcnow().isoformat(),
+            "source": "manual-upload",
+            "smooth_loop": smooth_loop,
+        }
+    )
+    meta["loop_video_history"] = history
+    meta["loop_video_path"] = loop_video_path
+    meta["loop_video_source"] = "manual-upload"
+    meta["loop_video_smooth"] = smooth_loop
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    if playlist.output_video_path:
+        playlist.output_video_path = None
+        playlist.youtube_video_id = None
+        if playlist.output_audio_path and meta.get("cover_approved"):
+            meta["workflow_state"] = "video_required"
+        meta["note"] = "Loop video uploaded. Re-render video before publishing."
+    else:
+        meta["note"] = "Loop video uploaded. It will be used during video render."
     playlist.metadata_json = meta
     db.add(playlist)
     db.commit()

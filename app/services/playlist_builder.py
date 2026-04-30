@@ -17,6 +17,13 @@ YOUTUBE_STILL_IMAGE_FILTER = (
     "setsar=1,"
     "format=yuv420p"
 )
+YOUTUBE_LOOP_VIDEO_FILTER = (
+    "scale=1280:720:force_original_aspect_ratio=decrease,"
+    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
+    "setsar=1,"
+    "fps=30,"
+    "format=yuv420p"
+)
 
 
 @dataclass
@@ -315,6 +322,7 @@ class FFMpegPlaylistBuilder:
         audio_path: Path,
         output_path: Path,
         *,
+        smooth_loop: bool = True,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -324,6 +332,11 @@ class FFMpegPlaylistBuilder:
             raise FileNotFoundError(f"Audio file does not exist: {audio_path}")
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        loop_source_path = clip_path
+        loop_unit_path: Path | None = None
+        if smooth_loop:
+            loop_unit_path = self._build_pingpong_loop_unit(clip_path, output_path)
+            loop_source_path = loop_unit_path
         command = [
             self.settings.ffmpeg_binary,
             "-y",
@@ -334,7 +347,7 @@ class FFMpegPlaylistBuilder:
             "-stream_loop",
             "-1",
             "-i",
-            str(clip_path),
+            str(loop_source_path),
             "-i",
             str(audio_path),
             "-map",
@@ -355,10 +368,44 @@ class FFMpegPlaylistBuilder:
             str(output_path),
         ]
         output_path.unlink(missing_ok=True)
-        self._run_ffmpeg_with_progress(
-            command,
-            output_path=output_path,
-            total_duration_seconds=total_duration_seconds,
-            progress_callback=progress_callback,
-        )
+        try:
+            self._run_ffmpeg_with_progress(
+                command,
+                output_path=output_path,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
+        finally:
+            if loop_unit_path:
+                loop_unit_path.unlink(missing_ok=True)
         return output_path
+
+    def _build_pingpong_loop_unit(self, clip_path: Path, output_path: Path) -> Path:
+        loop_unit_path = output_path.with_name(f"{output_path.stem}-loop-unit.mp4")
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(clip_path),
+            "-filter_complex",
+            (
+                f"[0:v]{YOUTUBE_LOOP_VIDEO_FILTER},split=2[forward][reverse];"
+                "[reverse]reverse[backward];"
+                "[forward][backward]concat=n=2:v=1:a=0[loopv]"
+            ),
+            "-map",
+            "[loopv]",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            str(loop_unit_path),
+        ]
+        loop_unit_path.unlink(missing_ok=True)
+        self._run_ffmpeg(command)
+        return loop_unit_path

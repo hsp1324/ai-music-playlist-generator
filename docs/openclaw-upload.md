@@ -99,6 +99,21 @@ For full automatic playlist publishing, two final 16:9 images are required.
 
 Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles.
 
+Optional moving visual:
+
+- `--loop-video /absolute/path/to/dreamina-loop.mp4`: 5-15 second Dreamina/Seedance visual clip. The app repeats it during video render.
+- OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
+- The app uses smooth ping-pong looping by default so the clip reverses back to the first frame instead of hard-cutting at the boundary.
+- Use `--hard-loop-video` only if the clip is already a perfect seamless loop and direct repeat is preferred.
+
+Dreamina/Seedance loop prompt guidance:
+
+- Ask for a seamless ambient visual loop.
+- Use slow camera movement, stable composition, no hard cuts, no text, no subtitles, no logos, and no people unless specifically requested.
+- Include `start and end frames match` or equivalent wording.
+- Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
+- If the model outputs audio, ignore it; the app uses the rendered playlist audio.
+
 Thumbnail text rules for OpenClaw:
 
 - Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
@@ -217,6 +232,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
+- If OpenClaw creates a Dreamina/Seedance loop clip, pass it as `--loop-video`. The app handles smooth repeat and long video rendering.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.

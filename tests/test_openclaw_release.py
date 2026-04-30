@@ -26,6 +26,8 @@ def _auto_publish_args(audio_path: str, **overrides):
         "allow_generated_draft_cover": False,
         "thumbnail": "",
         "allow_cover_as_thumbnail": False,
+        "loop_video": "",
+        "hard_loop_video": False,
     }
     values.update(overrides)
     return SimpleNamespace(**values)

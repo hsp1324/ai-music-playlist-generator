@@ -134,6 +134,9 @@ class PlaylistWorkspaceRead(BaseModel):
     output_video_path: str | None
     cover_image_path: str | None
     cover_source: str | None = None
+    loop_video_path: str | None = None
+    loop_video_source: str | None = None
+    loop_video_smooth: bool = True
     youtube_thumbnail_path: str | None = None
     youtube_thumbnail_source: str | None = None
     youtube_title: str | None = None

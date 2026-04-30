@@ -263,7 +263,7 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover and a separate 16:9 YouTube thumbnail with readable text. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover and a separate 16:9 YouTube thumbnail with readable text. They can also include a short Dreamina/Seedance MP4 with `--loop-video`; the app repeats that clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
 - For best YouTube output, use a 16:9 image such as `1280x720` or `1920x1080`.
@@ -324,13 +324,27 @@ AIMP_DREAMINA_VIDEO_MODEL=seedance-1.5-pro
 AIMP_DREAMINA_VIDEO_DURATION_SECONDS=5
 ```
 
-When a `single_track_video` workspace is ready and auto-publish is enabled, the worker will:
+When a `single_track_video` workspace is ready and auto-publish is enabled, the worker can:
 
 - generate the cover PNG
 - ask Dreamina for a short loop clip using the workspace or track prompt
 - download the clip locally
 - loop that clip to match the full song duration with `ffmpeg`
 - upload the finished MP4 to YouTube with generated metadata
+
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Upload it with:
+
+```bash
+scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
+```
+
+For full playlist automation, pass it directly:
+
+```bash
+scripts/openclaw-release auto-publish-playlist ... --loop-video /absolute/path/to/clip.mp4
+```
+
+The app repeats short clips with smooth ping-pong looping by default, so OpenClaw should upload only the short 5-15 second source clip, not a one-hour rendered video.
 
 ## Slack App Setup
 

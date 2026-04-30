@@ -185,6 +185,10 @@ def resolve_thumbnail_path(value: str | None) -> Path | None:
     return resolve_image_path(value, label="Thumbnail")
 
 
+def resolve_loop_video_path(value: str | None) -> Path | None:
+    return resolve_image_path(value, label="Loop video")
+
+
 def resolve_image_path(value: str | None, *, label: str) -> Path | None:
     if not value:
         return None
@@ -484,6 +488,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             raise RuntimeError(f"Audio path is not a file: {audio_path}")
     cover_path = resolve_cover_path(args.cover)
     thumbnail_path = resolve_thumbnail_path(args.thumbnail)
+    loop_video_path = resolve_loop_video_path(args.loop_video)
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-playlist requires --cover when creating a new Playlist Release. "
@@ -520,6 +525,20 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first. "
             "Only pass --allow-cover-as-thumbnail if the human explicitly wants to reuse the video cover as the YouTube thumbnail."
         )
+
+    if loop_video_path:
+        content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
+        with loop_video_path.open("rb") as handle:
+            release = request_json(
+                client,
+                "POST",
+                f"/playlists/{release['id']}/loop-video/upload",
+                data={
+                    "actor": args.actor,
+                    "smooth_loop": str(not args.hard_loop_video).lower(),
+                },
+                files={"loop_video_file": (loop_video_path.name, handle, content_type)},
+            )
 
     raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
     if args.title and len(args.title) != len(audio_paths):
@@ -678,6 +697,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "actual_duration_seconds": release["actual_duration_seconds"],
             "output_audio_path": release.get("output_audio_path"),
             "output_video_path": release.get("output_video_path"),
+            "loop_video_path": release.get("loop_video_path"),
             "youtube_thumbnail_path": release.get("youtube_thumbnail_path"),
             "youtube_title": release.get("youtube_title"),
             "youtube_video_id": release.get("youtube_video_id"),
@@ -754,6 +774,40 @@ def upload_thumbnail(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "youtube_thumbnail_source": release.get("youtube_thumbnail_source"),
         },
         "next": "Use this thumbnail for the next YouTube publish/re-upload.",
+    }
+
+
+def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release_id = release["id"]
+    loop_video_path = resolve_loop_video_path(args.loop_video)
+    if not loop_video_path:
+        raise RuntimeError("Use --loop-video.")
+
+    content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
+    with loop_video_path.open("rb") as handle:
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release_id}/loop-video/upload",
+            data={
+                "actor": args.actor,
+                "smooth_loop": str(not args.hard_loop).lower(),
+            },
+            files={"loop_video_file": (loop_video_path.name, handle, content_type)},
+        )
+    return {
+        "ok": True,
+        "action": "upload-loop-video",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "loop_video_path": release.get("loop_video_path"),
+            "loop_video_source": release.get("loop_video_source"),
+            "loop_video_smooth": release.get("loop_video_smooth"),
+        },
+        "next": "This loop clip will be repeated during the next video render.",
     }
 
 
@@ -897,6 +951,8 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
     auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Optional 5-15 second visual loop clip generated by Dreamina/Seedance. The app repeats it during video render.")
+    auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct repeat instead of the default smooth ping-pong loop render.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
     auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
@@ -926,6 +982,14 @@ def build_parser() -> argparse.ArgumentParser:
     thumbnail_parser.add_argument("--release-title", default="", help="Existing release title.")
     thumbnail_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     thumbnail_parser.set_defaults(func=upload_thumbnail)
+
+    loop_video_parser = subparsers.add_parser("upload-loop-video", help="Upload a short visual loop clip for a release.")
+    loop_video_parser.add_argument("--loop-video", required=True, help="Path to 5-15 second loop video: mp4, mov, m4v, or webm.")
+    loop_video_parser.add_argument("--release-id", default="", help="Existing release id.")
+    loop_video_parser.add_argument("--release-title", default="", help="Existing release title.")
+    loop_video_parser.add_argument("--hard-loop", action="store_true", help="Use direct repeat instead of the default smooth ping-pong loop render.")
+    loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
+    loop_video_parser.set_defaults(func=upload_loop_video)
 
     metadata_parser = subparsers.add_parser(
         "approve-metadata",
