@@ -97,7 +97,7 @@ For full automatic playlist publishing, two final 16:9 images are required.
 - `--cover /absolute/path/to/video-cover.png`: clean playback visual used inside the rendered video. Use little or no text because viewers will see it for the full video.
 - `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. Include short readable text and a small brand mark for the selected channel.
 
-Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles.
+Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles. The thumbnail is for clicks and should have text; the cover is the clean still-image fallback for video rendering and should not have text.
 
 Optional moving visual:
 
@@ -105,6 +105,7 @@ Optional moving visual:
 - OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
 - The app uses smooth crossfade ping-pong looping by default. It trims/pads the source to 8 seconds, reverses it back toward the first frame, and uses a short fade transition so the join feels like a dissolve instead of a sudden jump.
 - Use `--hard-loop-video` only if the clip is already a perfect seamless loop and direct repeat is preferred.
+- If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or text cover as the moving video visual.
 
 Dreamina/Seedance loop prompt guidance:
 
@@ -244,6 +245,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - If OpenClaw creates a Dreamina/Seedance loop clip, pass the 8 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
+- Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text; `--cover` and `--loop-video` should be clean visuals without text.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.

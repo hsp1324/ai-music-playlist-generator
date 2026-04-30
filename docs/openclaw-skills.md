@@ -37,6 +37,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - `cover`: clean video visual shown during playback. It should look good for the full video duration and should have no or minimal text.
 - `thumbnail`: YouTube click thumbnail. It should include short readable text such as `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `TOKYO NIGHT`, `CITY POP`, `1 HOUR`, plus a small brand mark for the selected channel.
 - If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 8 second MP4 and pass it with `--loop-video`. The app will repeat it smoothly during final video render. OpenClaw should not render a one-hour video itself.
+- Keep these assets separate: `--thumbnail` is the click image with text, `--cover` is the clean fallback visual, and `--loop-video` is the 8 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -156,6 +157,7 @@ Goal:
 - Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`.
 - Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`.
 - Optionally generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
+- The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text; the cover and loop video should not contain text, subtitles, lyrics, logos, or UI elements.
 - For loop clips, prompt Dreamina/Seedance for `exactly 8 seconds`, `seamless loop`, `slow camera motion`, `start and end frames match`, `no text`, `no subtitles`, and `no hard cuts`.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.

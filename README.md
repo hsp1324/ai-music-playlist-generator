@@ -298,10 +298,11 @@ AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
 Runtime behavior:
 
 - If the playlist has a rendered local audio file and YouTube is connected, publish approval will queue a background job that:
-  - uses the approved cover image
-  - renders an MP4 from cover + audio
+  - uses the approved clean cover image as the still visual fallback
+  - uses the uploaded 8 second loop video as the moving visual when `--loop-video` is provided
+  - renders the final MP4 from audio plus either the loop video or the clean cover fallback
   - uploads the video to YouTube
-  - uploads the same cover as the custom thumbnail
+  - uploads the separate text-based YouTube thumbnail as the custom thumbnail
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
