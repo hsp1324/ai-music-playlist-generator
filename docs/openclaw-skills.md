@@ -29,6 +29,9 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
 - Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
+- Full playlist publishing needs two 16:9 images:
+- `cover`: clean video visual shown during playback. It should look good for the full video duration and should have no or minimal text.
+- `thumbnail`: YouTube click thumbnail. It should include short readable text such as `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `1 HOUR`, plus a small `Soft Hour Radio` brand mark.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -142,7 +145,9 @@ Goal:
 - Upload tracks as auto-approved, not pending human review.
 - If using `scripts/openclaw-release upload-audio` for individual playlist tracks, do not pass `--pending-review`; playlist uploads auto-approve by default.
 - A final 16:9 cover image is required before YouTube upload.
+- A separate YouTube thumbnail image with readable text is required before YouTube upload.
 - Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`.
+- Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
 - Approve the cover.
@@ -177,12 +182,13 @@ scripts/openclaw-release auto-publish-playlist \
   --audio ABSOLUTE_AUDIO_PATH_03 \
   --title "INDEPENDENT_TRACK_TITLE_03" \
   --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH \
+  --thumbnail ABSOLUTE_YOUTUBE_THUMBNAIL_IMAGE_PATH \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags" \
   --youtube-channel-title "Soft Hour Radio"
 ```
 
-Do not omit `--cover` for a full private publish run. If final cover art is not ready, stop after audio upload/render and report that cover art is required. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
+Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
 If the run is continuing an existing release, use `--release-id RELEASE_ID` instead of creating a new title.
 
@@ -213,7 +219,9 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not upload public. The final upload must be private.
 - Do not publish if YouTube channel `Soft Hour Radio` is not connected.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
+- Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
 - Do not use `--allow-generated-draft-cover` unless the human explicitly says a placeholder cover is acceptable for this upload.
+- Do not use `--allow-cover-as-thumbnail` unless the human explicitly says one image is acceptable for both the video visual and YouTube thumbnail.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from scripts.openclaw_release import auto_publish_playlist, release_has_uploaded_cover
+from scripts.openclaw_release import auto_publish_playlist, release_has_uploaded_cover, release_has_uploaded_thumbnail
 
 
 def _auto_publish_args(audio_path: str, **overrides):
@@ -24,6 +24,8 @@ def _auto_publish_args(audio_path: str, **overrides):
         "wait_timeout_seconds": 1,
         "poll_seconds": 0.01,
         "allow_generated_draft_cover": False,
+        "thumbnail": "",
+        "allow_cover_as_thumbnail": False,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -43,6 +45,16 @@ def test_release_has_uploaded_cover_requires_manual_upload_source() -> None:
         }
     )
     assert not release_has_uploaded_cover({"cover_image_path": "/tmp/unknown.png"})
+
+
+def test_release_has_uploaded_thumbnail_requires_manual_upload_source() -> None:
+    assert release_has_uploaded_thumbnail(
+        {
+            "youtube_thumbnail_path": "/tmp/thumb.png",
+            "youtube_thumbnail_source": "manual-upload",
+        }
+    )
+    assert not release_has_uploaded_thumbnail({"youtube_thumbnail_path": "/tmp/thumb.png"})
 
 
 def test_auto_publish_playlist_requires_final_cover_before_side_effects(tmp_path) -> None:
@@ -75,6 +87,38 @@ def test_auto_publish_playlist_requires_final_cover_before_side_effects(tmp_path
     assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
 
 
+def test_auto_publish_playlist_requires_thumbnail_before_side_effects(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "release-1",
+                        "title": "Playlist",
+                        "workspace_mode": "playlist",
+                        "cover_image_path": "/tmp/final-cover.png",
+                        "cover_source": "manual-upload",
+                        "youtube_thumbnail_path": None,
+                        "youtube_thumbnail_source": None,
+                    }
+                ],
+            )
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires a YouTube thumbnail image"):
+        auto_publish_playlist(client, _auto_publish_args(str(audio_path)))
+
+    assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
+
+
 def test_auto_publish_playlist_requires_cover_before_creating_new_release(tmp_path) -> None:
     audio_path = tmp_path / "track.mp3"
     audio_path.write_bytes(b"fake mp3")
@@ -93,6 +137,33 @@ def test_auto_publish_playlist_requires_cover_before_creating_new_release(tmp_pa
                 str(audio_path),
                 release_id="",
                 release_title="New Playlist",
+            ),
+        )
+
+    assert requested_paths == []
+
+
+def test_auto_publish_playlist_requires_thumbnail_before_creating_new_release(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    cover_path = tmp_path / "cover.png"
+    cover_path.write_bytes(b"fake cover")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires --thumbnail"):
+        auto_publish_playlist(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="New Playlist",
+                cover=str(cover_path),
             ),
         )
 

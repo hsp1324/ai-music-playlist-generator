@@ -263,7 +263,7 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 cover image. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover and a separate 16:9 YouTube thumbnail with readable text. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
 - For best YouTube output, use a 16:9 image such as `1280x720` or `1920x1080`.

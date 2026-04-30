@@ -178,14 +178,22 @@ def upload_audio_file_to_release(
 
 
 def resolve_cover_path(value: str | None) -> Path | None:
+    return resolve_image_path(value, label="Cover")
+
+
+def resolve_thumbnail_path(value: str | None) -> Path | None:
+    return resolve_image_path(value, label="Thumbnail")
+
+
+def resolve_image_path(value: str | None, *, label: str) -> Path | None:
     if not value:
         return None
-    cover_path = Path(value).expanduser().resolve()
-    if not cover_path.exists():
-        raise RuntimeError(f"Cover file does not exist: {cover_path}")
-    if not cover_path.is_file():
-        raise RuntimeError(f"Cover path is not a file: {cover_path}")
-    return cover_path
+    image_path = Path(value).expanduser().resolve()
+    if not image_path.exists():
+        raise RuntimeError(f"{label} file does not exist: {image_path}")
+    if not image_path.is_file():
+        raise RuntimeError(f"{label} path is not a file: {image_path}")
+    return image_path
 
 
 def resolve_candidate_covers(values: list[str]) -> list[Path | None]:
@@ -458,6 +466,13 @@ def release_has_uploaded_cover(release: dict[str, Any]) -> bool:
     )
 
 
+def release_has_uploaded_thumbnail(release: dict[str, Any]) -> bool:
+    return bool(
+        release.get("youtube_thumbnail_path")
+        and release.get("youtube_thumbnail_source") == "manual-upload"
+    )
+
+
 def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
     if not audio_paths:
@@ -468,10 +483,17 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         if not audio_path.is_file():
             raise RuntimeError(f"Audio path is not a file: {audio_path}")
     cover_path = resolve_cover_path(args.cover)
+    thumbnail_path = resolve_thumbnail_path(args.thumbnail)
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-playlist requires --cover when creating a new Playlist Release. "
             "Generate a final 16:9 cover image first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
+        )
+    if not thumbnail_path and not args.release_id and not args.allow_cover_as_thumbnail:
+        raise RuntimeError(
+            "auto-publish-playlist requires --thumbnail when creating a new Playlist Release. "
+            "Generate a YouTube thumbnail with readable text first, then pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH. "
+            "Only pass --allow-cover-as-thumbnail if the human explicitly wants one image for both video and thumbnail."
         )
 
     release = (
@@ -491,6 +513,12 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "auto-publish-playlist requires a final 16:9 cover image before YouTube upload. "
             "Pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH, or upload a final cover to the release first. "
             "Only pass --allow-generated-draft-cover if the human explicitly accepts a placeholder cover."
+        )
+    if not thumbnail_path and not release_has_uploaded_thumbnail(release) and not args.allow_cover_as_thumbnail:
+        raise RuntimeError(
+            "auto-publish-playlist requires a YouTube thumbnail image before YouTube upload. "
+            "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first. "
+            "Only pass --allow-cover-as-thumbnail if the human explicitly wants to reuse the video cover as the YouTube thumbnail."
         )
 
     raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
@@ -564,6 +592,23 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     else:
         raise RuntimeError("Final cover image is required before cover approval.")
 
+    if thumbnail_path:
+        content_type = mimetypes.guess_type(str(thumbnail_path))[0] or "image/png"
+        with thumbnail_path.open("rb") as handle:
+            release = request_json(
+                client,
+                "POST",
+                f"/playlists/{release['id']}/thumbnail/upload",
+                data={"actor": args.actor},
+                files={"thumbnail_file": (thumbnail_path.name, handle, content_type)},
+            )
+    elif release_has_uploaded_thumbnail(release):
+        release = get_release(client, release["id"])
+    elif args.allow_cover_as_thumbnail:
+        release = get_release(client, release["id"])
+    else:
+        raise RuntimeError("Final YouTube thumbnail image is required before cover approval.")
+
     release = request_json(
         client,
         "POST",
@@ -633,6 +678,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "actual_duration_seconds": release["actual_duration_seconds"],
             "output_audio_path": release.get("output_audio_path"),
             "output_video_path": release.get("output_video_path"),
+            "youtube_thumbnail_path": release.get("youtube_thumbnail_path"),
             "youtube_title": release.get("youtube_title"),
             "youtube_video_id": release.get("youtube_video_id"),
             "youtube_channel_id": channel_id,
@@ -678,6 +724,36 @@ def upload_cover(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "cover_approved": release["cover_approved"],
         },
         "next": "Approve the cover in the web UI, then render video.",
+    }
+
+
+def upload_thumbnail(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release_id = release["id"]
+    thumbnail_path = resolve_thumbnail_path(args.thumbnail)
+    if not thumbnail_path:
+        raise RuntimeError("Use --thumbnail.")
+
+    content_type = mimetypes.guess_type(str(thumbnail_path))[0] or "image/png"
+    with thumbnail_path.open("rb") as handle:
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release_id}/thumbnail/upload",
+            data={"actor": args.actor},
+            files={"thumbnail_file": (thumbnail_path.name, handle, content_type)},
+        )
+    return {
+        "ok": True,
+        "action": "upload-thumbnail",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "youtube_thumbnail_path": release.get("youtube_thumbnail_path"),
+            "youtube_thumbnail_source": release.get("youtube_thumbnail_source"),
+        },
+        "next": "Use this thumbnail for the next YouTube publish/re-upload.",
     }
 
 
@@ -820,7 +896,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
+    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
+    auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
     auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
     auto_playlist_parser.add_argument("--release-title", default="", help="New Playlist Release title. Defaults to first audio filename stem.")
     auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
@@ -841,6 +919,13 @@ def build_parser() -> argparse.ArgumentParser:
     cover_parser.add_argument("--release-title", default="", help="Existing release title.")
     cover_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     cover_parser.set_defaults(func=upload_cover)
+
+    thumbnail_parser = subparsers.add_parser("upload-thumbnail", help="Upload a YouTube thumbnail image for a release.")
+    thumbnail_parser.add_argument("--thumbnail", required=True, help="Path to YouTube thumbnail image: jpg, png, or webp.")
+    thumbnail_parser.add_argument("--release-id", default="", help="Existing release id.")
+    thumbnail_parser.add_argument("--release-title", default="", help="Existing release title.")
+    thumbnail_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
+    thumbnail_parser.set_defaults(func=upload_thumbnail)
 
     metadata_parser = subparsers.add_parser(
         "approve-metadata",

@@ -427,12 +427,13 @@ class BackgroundJobWorker:
             youtube_status = self.services.youtube.get_status()
             if youtube_status["ready"]:
                 try:
+                    thumbnail_path = str(meta.get("youtube_thumbnail_path") or "").strip() or cover_image_path
                     result = self.services.youtube.upload_playlist_video(
                         playlist,
                         title=title,
                         description=description,
                         tags=tags,
-                        thumbnail_path=cover_image_path,
+                        thumbnail_path=thumbnail_path,
                         youtube_channel_id=youtube_channel_id,
                     )
                     playlist.youtube_video_id = result.video_id

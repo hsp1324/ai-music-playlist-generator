@@ -134,6 +134,18 @@ def _cover_source(meta: dict) -> str | None:
     return None
 
 
+def _youtube_thumbnail_source(meta: dict) -> str | None:
+    thumbnail_path = meta.get("youtube_thumbnail_path")
+    if not thumbnail_path:
+        return None
+    if meta.get("youtube_thumbnail_source"):
+        return str(meta["youtube_thumbnail_source"])
+    for entry in reversed(list(meta.get("youtube_thumbnail_history") or [])):
+        if entry.get("thumbnail_path") == thumbnail_path and entry.get("source"):
+            return str(entry["source"])
+    return None
+
+
 def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
     tracks = [
@@ -168,6 +180,8 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         output_video_path=playlist.output_video_path,
         cover_image_path=meta.get("cover_image_path"),
         cover_source=_cover_source(meta),
+        youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
+        youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
         youtube_description=meta.get("youtube_description"),
         youtube_tags=list(meta.get("youtube_tags") or []),
@@ -645,6 +659,39 @@ def attach_uploaded_playlist_cover(
     playlist.youtube_video_id = None
     playlist.metadata_json = meta
     playlist.status = PlaylistStatus.ready
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
+def attach_uploaded_playlist_thumbnail(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+    thumbnail_path: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+    if not Path(thumbnail_path).exists():
+        raise ValueError("Uploaded thumbnail image is missing on disk.")
+
+    meta = _playlist_meta(playlist)
+    history = list(meta.get("youtube_thumbnail_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "thumbnail_path": thumbnail_path,
+            "uploaded_at": _utcnow().isoformat(),
+            "source": "manual-upload",
+        }
+    )
+    meta["youtube_thumbnail_history"] = history
+    meta["youtube_thumbnail_path"] = thumbnail_path
+    meta["youtube_thumbnail_source"] = "manual-upload"
+    meta.pop("youtube_thumbnail_upload_error", None)
+    playlist.metadata_json = meta
     db.add(playlist)
     db.commit()
     return _load_playlist_with_tracks(db, playlist.id)

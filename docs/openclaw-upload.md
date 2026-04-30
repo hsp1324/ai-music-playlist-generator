@@ -92,7 +92,20 @@ Only use `--pending-review` if the human explicitly asks to review playlist trac
 
 If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
 
-For full automatic playlist publishing, a final 16:9 cover image is required. `auto-publish-playlist` should receive `--cover /absolute/path/to/final-cover.png` or continue an existing release that already has an uploaded final cover. Do not rely on the app's generated draft cover for YouTube upload.
+For full automatic playlist publishing, two final 16:9 images are required.
+
+- `--cover /absolute/path/to/video-cover.png`: clean playback visual used inside the rendered video. Use little or no text because viewers will see it for the full video.
+- `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. Include short readable text and a small `Soft Hour Radio` brand mark.
+
+Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles.
+
+Thumbnail text rules for OpenClaw:
+
+- Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
+- Add one small support line, for example `study · work · relax` or `sleep · calm · night`.
+- Add a small `1 HOUR` or exact duration badge.
+- Keep text large enough to read on a phone.
+- Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
 
 ## Web Review Surface
 
@@ -203,6 +216,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
+- Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
