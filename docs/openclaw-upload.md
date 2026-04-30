@@ -95,7 +95,7 @@ If OpenClaw uploads many playlist files in one automation run, prefer `auto-publ
 For full automatic playlist publishing, two final 16:9 images are required.
 
 - `--cover /absolute/path/to/video-cover.png`: clean playback visual used inside the rendered video. Use little or no text because viewers will see it for the full video.
-- `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. Include short readable text and a small `Soft Hour Radio` brand mark.
+- `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. Include short readable text and a small brand mark for the selected channel.
 
 Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles.
 
@@ -117,10 +117,20 @@ Dreamina/Seedance loop prompt guidance:
 Thumbnail text rules for OpenClaw:
 
 - Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
+- For Japan-related releases routed to `Tokyo Daydream Radio`, use clear Japan/city-pop text such as `TOKYO NIGHT`, `CITY POP`, `JAPAN LOFI`, or `ANIME CHILL`.
 - Add one small support line, for example `study · work · relax` or `sleep · calm · night`.
 - Add a small `1 HOUR` or exact duration badge.
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
+
+## YouTube Channel Routing
+
+For automatic playlist publishing, `scripts/openclaw-release auto-publish-playlist` chooses the YouTube channel from the release concept when `--youtube-channel-title` is omitted.
+
+- Use `Soft Hour Radio` for default background/cafe/sleep/study/chill playlists.
+- Use `Tokyo Daydream Radio` for Japan, Tokyo, Shibuya, Shinjuku, Japanese lofi, city pop, J-pop, anime, vaporwave, 일본, 도쿄, 시티팝, 애니, 제이팝, 日本, 東京, 渋谷, 新宿, アニメ, or シティポップ concepts.
+- Pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly when the human asks for Japanese/Tokyo/city-pop/anime music.
+- Do not use `MusicSun` unless the human explicitly requests it.
 
 ## Web Review Surface
 

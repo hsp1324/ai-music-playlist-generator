@@ -3,7 +3,14 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from scripts.openclaw_release import auto_publish_playlist, release_has_uploaded_cover, release_has_uploaded_thumbnail
+from scripts.openclaw_release import (
+    JAPAN_YOUTUBE_CHANNEL_TITLE,
+    DEFAULT_YOUTUBE_CHANNEL_TITLE,
+    auto_publish_playlist,
+    infer_youtube_channel_title,
+    release_has_uploaded_cover,
+    release_has_uploaded_thumbnail,
+)
 
 
 def _auto_publish_args(audio_path: str, **overrides):
@@ -17,7 +24,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "prompt": "",
         "tags": "",
         "target_seconds": 3600,
-        "youtube_channel_title": "Soft Hour Radio",
+        "youtube_channel_title": "",
         "youtube_channel_id": "",
         "force_under_target": False,
         "actor": "openclaw:auto-playlist",
@@ -57,6 +64,35 @@ def test_release_has_uploaded_thumbnail_requires_manual_upload_source() -> None:
         }
     )
     assert not release_has_uploaded_thumbnail({"youtube_thumbnail_path": "/tmp/thumb.png"})
+
+
+def test_infer_youtube_channel_routes_japanese_releases_to_tokyo_daydream() -> None:
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Tokyo Night City Pop",
+            description="Japanese lofi playlist",
+        )
+    ) == JAPAN_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="도쿄 감성 시티팝",
+        )
+    ) == JAPAN_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Cafe Piano",
+        )
+    ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Tokyo Night",
+            youtube_channel_title="Soft Hour Radio",
+        )
+    ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
 
 
 def test_auto_publish_playlist_requires_final_cover_before_side_effects(tmp_path) -> None:

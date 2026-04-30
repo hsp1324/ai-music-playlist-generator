@@ -22,6 +22,38 @@ from app.utils.track_titles import clean_track_display_title, display_track_titl
 
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
+DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
+JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
+JAPAN_CHANNEL_KEYWORDS = (
+    "anime",
+    "city pop",
+    "citypop",
+    "j-pop",
+    "jpop",
+    "japanese",
+    "japan",
+    "lofi japan",
+    "shibuya",
+    "shinjuku",
+    "tokyo",
+    "vaporwave",
+    "アニメ",
+    "シティポップ",
+    "チル",
+    "ローファイ",
+    "日本",
+    "東京",
+    "渋谷",
+    "新宿",
+    "일본",
+    "도쿄",
+    "시부야",
+    "신주쿠",
+    "시티팝",
+    "애니",
+    "애니메이션",
+    "제이팝",
+)
 
 
 def file_stem(path: Path) -> str:
@@ -416,7 +448,26 @@ def wait_for_release(
     )
 
 
-def resolve_soft_hour_channel_id(client: httpx.Client, *, title: str, channel_id: str = "") -> str:
+def infer_youtube_channel_title(args: argparse.Namespace) -> str:
+    explicit_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
+    if explicit_title:
+        return explicit_title
+
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            getattr(args, "release_title", ""),
+            getattr(args, "description", ""),
+            getattr(args, "prompt", ""),
+            getattr(args, "tags", ""),
+        )
+    ).lower()
+    if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
+        return JAPAN_YOUTUBE_CHANNEL_TITLE
+    return DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def resolve_youtube_channel_id(client: httpx.Client, *, title: str, channel_id: str = "") -> str:
     if channel_id:
         return channel_id
     status = request_json(client, "GET", "/youtube/status")
@@ -662,9 +713,10 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         )
     release = approve_generated_metadata(client, release=release, actor=args.actor)
 
-    channel_id = resolve_soft_hour_channel_id(
+    youtube_channel_title = infer_youtube_channel_title(args)
+    channel_id = resolve_youtube_channel_id(
         client,
-        title=args.youtube_channel_title,
+        title=youtube_channel_title,
         channel_id=args.youtube_channel_id,
     )
     release = request_json(
@@ -674,7 +726,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         json={
             "actor": args.actor,
             "youtube_channel_id": channel_id,
-            "note": f"Auto-publish private playlist to {args.youtube_channel_title}.",
+            "note": f"Auto-publish private playlist to {youtube_channel_title}.",
             "force_under_target": args.force_under_target,
         },
     )
@@ -702,7 +754,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "youtube_title": release.get("youtube_title"),
             "youtube_video_id": release.get("youtube_video_id"),
             "youtube_channel_id": channel_id,
-            "youtube_channel_title": args.youtube_channel_title,
+            "youtube_channel_title": youtube_channel_title,
         },
         "uploaded_tracks": uploaded_tracks,
         "privacy": "private (from AIMP_YOUTUBE_PRIVACY_STATUS)",
@@ -961,7 +1013,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="Soft Hour Radio", help="Connected YouTube channel title. Default: Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; Japanese/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
