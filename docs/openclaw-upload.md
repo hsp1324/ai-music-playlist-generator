@@ -110,6 +110,7 @@ Optional moving visual:
 Dreamina website workflow for OpenClaw:
 
 - Use `https://dreamina.capcut.com/ai-tool/home/` for browser-based Dreamina/Seedance generation.
+- Start from the final YouTube thumbnail image when possible. Use it as the first frame, image-to-video reference, or starting scene so the video's opening shot matches the clicked thumbnail.
 - Generate exactly one 8 second, 16:9 MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
@@ -119,6 +120,7 @@ Dreamina/Seedance loop prompt guidance:
 
 - Ask for a seamless ambient visual loop.
 - Ask for exactly 8 seconds. Do not request 5, 10, or 15 seconds.
+- Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and main subject in the first shot.
 - Use slow camera movement, stable composition, no hard cuts, no text, no subtitles, no logos, and no people unless specifically requested.
 - Include `start and end frames match` or equivalent wording.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
