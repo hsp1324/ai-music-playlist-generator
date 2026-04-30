@@ -44,7 +44,7 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
     assert "scale=1280:720" in args[args.index("-vf") + 1]
 
 
-def test_build_looped_video_creates_smooth_pingpong_unit(tmp_path) -> None:
+def test_build_looped_video_creates_smooth_crossfade_pingpong_unit(tmp_path) -> None:
     calls_path = tmp_path / "ffmpeg-calls.jsonl"
     ffmpeg_path = tmp_path / "fake-ffmpeg.py"
     ffmpeg_path.write_text(
@@ -81,7 +81,9 @@ def test_build_looped_video_creates_smooth_pingpong_unit(tmp_path) -> None:
     assert result == output_path
     calls = [json.loads(line) for line in calls_path.read_text(encoding="utf-8").splitlines()]
     assert len(calls) == 2
-    assert "reverse" in calls[0][calls[0].index("-filter_complex") + 1]
-    assert "concat=n=2" in calls[0][calls[0].index("-filter_complex") + 1]
+    filter_complex = calls[0][calls[0].index("-filter_complex") + 1]
+    assert "trim=duration=8" in filter_complex
+    assert "reverse" in filter_complex
+    assert "xfade=transition=fade:duration=1:offset=7" in filter_complex
     assert calls[1][calls[1].index("-stream_loop") + 1] == "-1"
     assert output_path.read_bytes() == b"fake-video"

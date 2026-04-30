@@ -24,6 +24,8 @@ YOUTUBE_LOOP_VIDEO_FILTER = (
     "fps=30,"
     "format=yuv420p"
 )
+LOOP_VIDEO_SOURCE_SECONDS = 8
+LOOP_VIDEO_TRANSITION_SECONDS = 1
 
 
 @dataclass
@@ -335,7 +337,7 @@ class FFMpegPlaylistBuilder:
         loop_source_path = clip_path
         loop_unit_path: Path | None = None
         if smooth_loop:
-            loop_unit_path = self._build_pingpong_loop_unit(clip_path, output_path)
+            loop_unit_path = self._build_smooth_loop_unit(clip_path, output_path)
             loop_source_path = loop_unit_path
         command = [
             self.settings.ffmpeg_binary,
@@ -380,8 +382,20 @@ class FFMpegPlaylistBuilder:
                 loop_unit_path.unlink(missing_ok=True)
         return output_path
 
-    def _build_pingpong_loop_unit(self, clip_path: Path, output_path: Path) -> Path:
+    def _build_smooth_loop_unit(self, clip_path: Path, output_path: Path) -> Path:
         loop_unit_path = output_path.with_name(f"{output_path.stem}-loop-unit.mp4")
+        transition_offset = LOOP_VIDEO_SOURCE_SECONDS - LOOP_VIDEO_TRANSITION_SECONDS
+        loop_filter = (
+            f"[0:v]{YOUTUBE_LOOP_VIDEO_FILTER},"
+            f"tpad=stop_mode=clone:stop_duration={LOOP_VIDEO_SOURCE_SECONDS},"
+            f"trim=duration={LOOP_VIDEO_SOURCE_SECONDS},"
+            "setpts=PTS-STARTPTS,"
+            "split=2[forward][reverse_source];"
+            "[reverse_source]reverse,setpts=PTS-STARTPTS[backward];"
+            "[forward][backward]"
+            f"xfade=transition=fade:duration={LOOP_VIDEO_TRANSITION_SECONDS}:offset={transition_offset},"
+            "format=yuv420p[loopv]"
+        )
         command = [
             self.settings.ffmpeg_binary,
             "-y",
@@ -390,11 +404,7 @@ class FFMpegPlaylistBuilder:
             "-i",
             str(clip_path),
             "-filter_complex",
-            (
-                f"[0:v]{YOUTUBE_LOOP_VIDEO_FILTER},split=2[forward][reverse];"
-                "[reverse]reverse[backward];"
-                "[forward][backward]concat=n=2:v=1:a=0[loopv]"
-            ),
+            loop_filter,
             "-map",
             "[loopv]",
             "-an",
