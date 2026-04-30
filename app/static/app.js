@@ -547,11 +547,14 @@ function buildYouTubeChannelPicker() {
   return { element: label, select };
 }
 
-async function uploadCoverFile(workspace, file) {
+async function uploadWorkspaceAssetFile(workspace, { endpoint, fieldName, file, extraFields = {} }) {
   const form = new FormData();
   form.append("actor", "web-ui");
-  form.append("cover_file", file, file.name);
-  const response = await fetch(`/api/playlists/${workspace.id}/cover/upload`, {
+  Object.entries(extraFields).forEach(([key, value]) => {
+    form.append(key, value);
+  });
+  form.append(fieldName, file, file.name);
+  const response = await fetch(`/api/playlists/${workspace.id}/${endpoint}`, {
     method: "POST",
     body: form,
   });
@@ -568,11 +571,38 @@ async function uploadCoverFile(workspace, file) {
   return data;
 }
 
-function pickCoverFile(workspace) {
+async function uploadCoverFile(workspace, file) {
+  return uploadWorkspaceAssetFile(workspace, {
+    endpoint: "cover/upload",
+    fieldName: "cover_file",
+    file,
+  });
+}
+
+async function uploadThumbnailFile(workspace, file) {
+  return uploadWorkspaceAssetFile(workspace, {
+    endpoint: "thumbnail/upload",
+    fieldName: "thumbnail_file",
+    file,
+  });
+}
+
+async function uploadLoopVideoFile(workspace, file) {
+  return uploadWorkspaceAssetFile(workspace, {
+    endpoint: "loop-video/upload",
+    fieldName: "loop_video_file",
+    file,
+    extraFields: {
+      smooth_loop: "true",
+    },
+  });
+}
+
+function pickWorkspaceAssetFile(workspace, { accept, upload }) {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/png,image/jpeg,image/webp";
+    input.accept = accept;
     input.addEventListener("change", async () => {
       const file = input.files?.[0];
       if (!file) {
@@ -580,13 +610,34 @@ function pickCoverFile(workspace) {
         return;
       }
       try {
-        const result = await uploadCoverFile(workspace, file);
+        const result = await upload(workspace, file);
         resolve(result);
       } catch (error) {
         reject(error);
       }
     }, { once: true });
     input.click();
+  });
+}
+
+function pickCoverFile(workspace) {
+  return pickWorkspaceAssetFile(workspace, {
+    accept: "image/png,image/jpeg,image/webp",
+    upload: uploadCoverFile,
+  });
+}
+
+function pickThumbnailFile(workspace) {
+  return pickWorkspaceAssetFile(workspace, {
+    accept: "image/png,image/jpeg,image/webp",
+    upload: uploadThumbnailFile,
+  });
+}
+
+function pickLoopVideoFile(workspace) {
+  return pickWorkspaceAssetFile(workspace, {
+    accept: "video/mp4,video/quicktime,video/webm",
+    upload: uploadLoopVideoFile,
   });
 }
 
@@ -813,6 +864,75 @@ function appendCoverPreview(workspace) {
   detailLinks.appendChild(card);
 }
 
+function appendThumbnailPreview(workspace) {
+  const thumbnailUrl = normalizeMediaUrl(workspace.youtube_thumbnail_path);
+  if (!thumbnailUrl) return;
+
+  const card = document.createElement("div");
+  card.className = "asset-preview thumbnail-preview approved";
+
+  const image = document.createElement("img");
+  image.src = thumbnailUrl;
+  image.alt = `${displayTitle(workspace.title)} YouTube thumbnail`;
+
+  const body = document.createElement("div");
+  body.className = "asset-preview-body";
+
+  const title = document.createElement("strong");
+  title.textContent = "YouTube Thumbnail";
+
+  const copy = document.createElement("span");
+  copy.textContent = "Click thumbnail with readable text. This is uploaded to YouTube, not used inside the rendered video.";
+
+  const actions = document.createElement("div");
+  actions.className = "asset-preview-actions";
+  actions.appendChild(buildLink("Open Thumbnail", thumbnailUrl));
+
+  body.appendChild(title);
+  body.appendChild(copy);
+  body.appendChild(actions);
+  card.appendChild(image);
+  card.appendChild(body);
+  detailLinks.appendChild(card);
+}
+
+function appendLoopVideoPreview(workspace) {
+  const loopVideoUrl = normalizeMediaUrl(workspace.loop_video_path);
+  if (!loopVideoUrl) return;
+
+  const card = document.createElement("div");
+  card.className = "asset-preview loop-video-preview approved";
+
+  const body = document.createElement("div");
+  body.className = "asset-preview-body";
+
+  const title = document.createElement("strong");
+  title.textContent = "8s Loop Video";
+
+  const copy = document.createElement("span");
+  copy.textContent = workspace.loop_video_smooth
+    ? "Moving visual for the rendered video. Smooth crossfade looping is enabled."
+    : "Moving visual for the rendered video. Direct hard looping is enabled.";
+
+  const video = document.createElement("video");
+  video.controls = true;
+  video.muted = true;
+  video.loop = true;
+  video.preload = "metadata";
+  video.src = loopVideoUrl;
+
+  const actions = document.createElement("div");
+  actions.className = "asset-preview-actions";
+  actions.appendChild(buildLink("Open Loop Video", loopVideoUrl));
+
+  body.appendChild(title);
+  body.appendChild(copy);
+  body.appendChild(video);
+  body.appendChild(actions);
+  card.appendChild(body);
+  detailLinks.appendChild(card);
+}
+
 function appendVideoPreview(workspace) {
   const videoUrl = normalizeMediaUrl(workspace.output_video_path);
   if (!videoUrl) return;
@@ -827,7 +947,9 @@ function appendVideoPreview(workspace) {
   title.textContent = "Rendered Video";
 
   const copy = document.createElement("span");
-  copy.textContent = "Audio and approved cover are combined for YouTube.";
+  copy.textContent = workspace.loop_video_path
+    ? "Audio and the uploaded loop video are combined for YouTube."
+    : "Audio and the approved clean cover are combined for YouTube.";
 
   const video = document.createElement("video");
   video.controls = true;
@@ -1415,6 +1537,8 @@ function renderWorkspaceDetail() {
   appendRenderStatus(workspace);
   appendRenderedAudioPlayer(workspace);
   appendCoverPreview(workspace);
+  appendThumbnailPreview(workspace);
+  appendLoopVideoPreview(workspace);
   appendVideoPreview(workspace);
   appendMetadataDraft(workspace);
 
@@ -1423,6 +1547,7 @@ function renderWorkspaceDetail() {
   const releaseLockedForPublish = Boolean(
     workspace.metadata_approved || workspace.publish_approved || workspace.youtube_video_id
   );
+  const assetChangeLocked = Boolean(workspace.publish_approved || workspace.youtube_video_id);
   const videoBusy = ["video_queued", "video_rendering"].includes(workspace.workflow_state);
   if (workspace.tracks.length) {
     if (workspace.status === "building" && !videoBusy) {
@@ -1455,7 +1580,7 @@ function renderWorkspaceDetail() {
   }
 
   const coverChangeBlocked = ["video_queued", "video_rendering", "youtube_uploading"].includes(workspace.workflow_state);
-  const canManageCover = workspace.output_audio_path && !releaseLockedForPublish && !coverChangeBlocked;
+  const canManageCover = workspace.output_audio_path && !assetChangeLocked && !coverChangeBlocked;
   if (canManageCover) {
     if (workspace.cover_image_path && !workspace.cover_approved) {
       detailActions.appendChild(
@@ -1478,6 +1603,26 @@ function renderWorkspaceDetail() {
         workspace.cover_image_path ? "action-button secondary-button" : "action-button primary-button",
         async () => {
           await pickCoverFile(workspace);
+        }
+      )
+    );
+
+    detailActions.appendChild(
+      actionButton(
+        workspace.youtube_thumbnail_path ? "Replace Thumbnail" : "Upload Thumbnail",
+        workspace.youtube_thumbnail_path ? "action-button secondary-button" : "action-button primary-button",
+        async () => {
+          await pickThumbnailFile(workspace);
+        }
+      )
+    );
+
+    detailActions.appendChild(
+      actionButton(
+        workspace.loop_video_path ? "Replace 8s Loop Video" : "Upload 8s Loop Video",
+        "action-button secondary-button",
+        async () => {
+          await pickLoopVideoFile(workspace);
         }
       )
     );
@@ -1510,6 +1655,12 @@ function renderWorkspaceDetail() {
     } else {
       detailActions.appendChild(
         actionButton("Render Video", "action-button primary-button", async () => {
+          if (!workspace.loop_video_path) {
+            const proceed = window.confirm(
+              "8초 loop video가 아직 없습니다.\n\n계속하면 clean cover 이미지로 정적인 영상을 렌더합니다.\nDreamina/Seedance moving visual을 쓰려면 먼저 Upload 8s Loop Video를 눌러 업로드하세요.\n\n그래도 정적인 영상으로 렌더할까요?"
+            );
+            if (!proceed) return;
+          }
           await api(`/api/playlists/${workspace.id}/video/render`, {
             method: "POST",
             body: JSON.stringify({
@@ -1616,6 +1767,10 @@ function renderWorkspaceDetail() {
             );
             if (!proceed) return;
             forceUnderTarget = true;
+          }
+          if (!workspace.youtube_thumbnail_path) {
+            alert("YouTube text thumbnail이 아직 없습니다. Upload Thumbnail로 글자가 있는 썸네일을 먼저 올려주세요.");
+            return;
           }
           await api(`/api/playlists/${workspace.id}/approve-publish`, {
             method: "POST",

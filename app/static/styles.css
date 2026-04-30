@@ -947,6 +947,11 @@ button:disabled {
   align-items: center;
 }
 
+.asset-preview.video-preview,
+.asset-preview.loop-video-preview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .asset-preview.approved,
 .metadata-preview.approved {
   background:
