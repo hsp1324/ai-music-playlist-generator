@@ -109,6 +109,7 @@ For `single_track_video`, the intended publish path is:
 - OpenClaw playlist automation can now run `scripts/openclaw-release auto-publish-playlist` to upload generated playlist tracks as approved, skip Slack per-track review spam, render audio/video, approve generated metadata, and upload privately to the connected `Soft Hour Radio` YouTube channel.
 - `scripts/openclaw-release upload-audio` also auto-approves tracks when the target release is a Playlist Release. Use `--pending-review` only when one-by-one playlist review is explicitly desired.
 - OpenClaw should provide standalone playlist track titles, not Suno pair labels. The helper also rewrites trailing A/B, 1/2, and older `Morning` / `Evening` style variants into natural standalone display titles.
+- `scripts/openclaw-release auto-publish-playlist` now requires a final uploaded 16:9 cover image before YouTube upload. The app's generated draft cover is only allowed with the explicit `--allow-generated-draft-cover` escape hatch.
 
 ### Cover art
 

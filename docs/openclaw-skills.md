@@ -141,8 +141,9 @@ Goal:
 - Upload all usable tracks to one Playlist Release.
 - Upload tracks as auto-approved, not pending human review.
 - If using `scripts/openclaw-release upload-audio` for individual playlist tracks, do not pass `--pending-review`; playlist uploads auto-approve by default.
-- If a final 16:9 cover image exists, pass it with --cover.
-- If no final cover exists, let the app generate a local draft cover.
+- A final 16:9 cover image is required before YouTube upload.
+- Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`.
+- Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
 - Approve the cover.
 - Render video.
@@ -181,7 +182,7 @@ scripts/openclaw-release auto-publish-playlist \
   --youtube-channel-title "Soft Hour Radio"
 ```
 
-If no final cover image exists, omit `--cover`; the app will create a local draft cover automatically.
+Do not omit `--cover` for a full private publish run. If final cover art is not ready, stop after audio upload/render and report that cover art is required. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
 If the run is continuing an existing release, use `--release-id RELEASE_ID` instead of creating a new title.
 
@@ -211,6 +212,8 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not use the `MusicSun` channel for playlist publishing unless the human explicitly overrides the channel.
 - Do not upload public. The final upload must be private.
 - Do not publish if YouTube channel `Soft Hour Radio` is not connected.
+- Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
+- Do not use `--allow-generated-draft-cover` unless the human explicitly says a placeholder cover is acceptable for this upload.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.

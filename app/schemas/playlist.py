@@ -133,6 +133,7 @@ class PlaylistWorkspaceRead(BaseModel):
     output_audio_path: str | None
     output_video_path: str | None
     cover_image_path: str | None
+    cover_source: str | None = None
     youtube_title: str | None = None
     youtube_description: str | None = None
     youtube_tags: list[str] = []

@@ -118,6 +118,22 @@ def _latest_render_job(playlist: Playlist) -> PlaylistJobRead | None:
     )
 
 
+def _cover_source(meta: dict) -> str | None:
+    cover_image_path = meta.get("cover_image_path")
+    if not cover_image_path:
+        return None
+    if meta.get("cover_source"):
+        return str(meta["cover_source"])
+    for entry in reversed(list(meta.get("cover_history") or [])):
+        if entry.get("cover_image_path") != cover_image_path:
+            continue
+        if entry.get("source"):
+            return str(entry["source"])
+        if entry.get("generated_at"):
+            return "generated-draft"
+    return None
+
+
 def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
     tracks = [
@@ -151,6 +167,7 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         output_audio_path=playlist.output_audio_path,
         output_video_path=playlist.output_video_path,
         cover_image_path=meta.get("cover_image_path"),
+        cover_source=_cover_source(meta),
         youtube_title=meta.get("youtube_title"),
         youtube_description=meta.get("youtube_description"),
         youtube_tags=list(meta.get("youtube_tags") or []),
@@ -574,6 +591,7 @@ def generate_playlist_cover(
     )
     meta["cover_history"] = history
     meta["cover_image_path"] = cover_image_path
+    meta["cover_source"] = "generated-draft"
     meta["cover_approved"] = False
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
@@ -616,6 +634,7 @@ def attach_uploaded_playlist_cover(
     )
     meta["cover_history"] = history
     meta["cover_image_path"] = cover_image_path
+    meta["cover_source"] = "manual-upload"
     meta["cover_approved"] = False
     meta["metadata_approved"] = False
     meta["publish_approved"] = False

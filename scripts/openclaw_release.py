@@ -451,6 +451,13 @@ def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any],
     )
 
 
+def release_has_uploaded_cover(release: dict[str, Any]) -> bool:
+    return bool(
+        release.get("cover_image_path")
+        and release.get("cover_source") == "manual-upload"
+    )
+
+
 def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
     if not audio_paths:
@@ -474,6 +481,12 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     )
     if release["workspace_mode"] != "playlist":
         raise RuntimeError("auto-publish-playlist requires a Playlist Release, not a Single Release.")
+    if not cover_path and not release_has_uploaded_cover(release) and not args.allow_generated_draft_cover:
+        raise RuntimeError(
+            "auto-publish-playlist requires a final 16:9 cover image before YouTube upload. "
+            "Pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH, or upload a final cover to the release first. "
+            "Only pass --allow-generated-draft-cover if the human explicitly accepts a placeholder cover."
+        )
 
     raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
     if args.title and len(args.title) != len(audio_paths):
@@ -534,13 +547,17 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 data={"actor": args.actor},
                 files={"cover_file": (cover_path.name, handle, content_type)},
             )
-    else:
+    elif release_has_uploaded_cover(release):
+        release = get_release(client, release["id"])
+    elif args.allow_generated_draft_cover:
         release = request_json(
             client,
             "POST",
             f"/playlists/{release['id']}/cover/generate",
             json={"actor": args.actor, "regenerate": False},
         )
+    else:
+        raise RuntimeError("Final cover image is required before cover approval.")
 
     release = request_json(
         client,
@@ -797,7 +814,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
-    auto_playlist_parser.add_argument("--cover", default="", help="Final 16:9 playlist cover image. If omitted, the app generates a local draft cover.")
+    auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
+    auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
     auto_playlist_parser.add_argument("--release-title", default="", help="New Playlist Release title. Defaults to first audio filename stem.")
     auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
