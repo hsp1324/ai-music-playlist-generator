@@ -107,6 +107,14 @@ Optional moving visual:
 - Use `--hard-loop-video` only if the clip is already a perfect seamless loop and direct repeat is preferred.
 - If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or text cover as the moving video visual.
 
+Dreamina website workflow for OpenClaw:
+
+- Use `https://dreamina.capcut.com/ai-tool/home/` for browser-based Dreamina/Seedance generation.
+- Generate exactly one 8 second, 16:9 MP4.
+- Download the generated MP4 to the VM or OpenClaw workspace.
+- Confirm the file exists locally before passing it to `--loop-video`.
+- If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video.
+
 Dreamina/Seedance loop prompt guidance:
 
 - Ask for a seamless ambient visual loop.

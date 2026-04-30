@@ -38,6 +38,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - `thumbnail`: YouTube click thumbnail. It should include short readable text such as `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `TOKYO NIGHT`, `CITY POP`, `1 HOUR`, plus a small brand mark for the selected channel.
 - If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 8 second MP4 and pass it with `--loop-video`. The app will repeat it smoothly during final video render. OpenClaw should not render a one-hour video itself.
 - Keep these assets separate: `--thumbnail` is the click image with text, `--cover` is the clean fallback visual, and `--loop-video` is the 8 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
+- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Create/download the 8 second MP4 there, save it locally, then pass the downloaded file path as `--loop-video`.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -159,6 +160,8 @@ Goal:
 - Optionally generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
 - The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text; the cover and loop video should not contain text, subtitles, lyrics, logos, or UI elements.
 - For loop clips, prompt Dreamina/Seedance for `exactly 8 seconds`, `seamless loop`, `slow camera motion`, `start and end frames match`, `no text`, `no subtitles`, and `no hard cuts`.
+- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, create the video with Dreamina/Seedance, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
+- If Dreamina login, CAPTCHA, payment, or human approval blocks browser automation, stop and report the exact blocked step instead of skipping the loop video.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
 - Approve the cover.

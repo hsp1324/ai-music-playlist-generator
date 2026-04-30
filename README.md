@@ -333,7 +333,7 @@ When a `single_track_video` workspace is ready and auto-publish is enabled, the 
 - loop that clip to match the full song duration with `ffmpeg`
 - upload the finished MP4 to YouTube with generated metadata
 
-OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Upload it with:
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, generate exactly one 8 second 16:9 MP4, download it locally, then upload it with:
 
 ```bash
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
