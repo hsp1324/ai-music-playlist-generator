@@ -468,6 +468,11 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         if not audio_path.is_file():
             raise RuntimeError(f"Audio path is not a file: {audio_path}")
     cover_path = resolve_cover_path(args.cover)
+    if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
+        raise RuntimeError(
+            "auto-publish-playlist requires --cover when creating a new Playlist Release. "
+            "Generate a final 16:9 cover image first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
+        )
 
     release = (
         get_release(client, args.release_id)

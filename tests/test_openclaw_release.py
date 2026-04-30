@@ -73,3 +73,27 @@ def test_auto_publish_playlist_requires_final_cover_before_side_effects(tmp_path
         auto_publish_playlist(client, _auto_publish_args(str(audio_path)))
 
     assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
+
+
+def test_auto_publish_playlist_requires_cover_before_creating_new_release(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires --cover"):
+        auto_publish_playlist(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="New Playlist",
+            ),
+        )
+
+    assert requested_paths == []
