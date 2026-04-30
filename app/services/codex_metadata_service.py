@@ -156,7 +156,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- For single-track releases, write as one song/release even if the timeline contains two approved audio parts.",
                 "- For single-track releases, do not present the release as a playlist and do not include a timestamp tracklist unless the release title explicitly asks for it.",
                 "- For timestamped tracklists, use each timeline item's start exactly and keep the same row order.",
-                "- Do not show trailing A/B labels in metadata titles. If two tracks share the same base title after removing A/B, rewrite only the displayed title text so each row is unique and natural.",
+                "- Do not show A/B, 1/2, or artificial pair labels in metadata titles. If two tracks read like variants of the same title, rewrite only the displayed title text so each row is unique and natural.",
                 "- Use display_title_hint as a starting point, but you may make the displayed titles more natural while preserving each row's timestamp.",
                 "- Timestamp positions are fixed playback positions. Never swap timestamps between tracks to make titles alphabetical or A/B ordered.",
                 "- If a track title is later corrected, only the title text should change; the timestamp and playback position must stay fixed.",

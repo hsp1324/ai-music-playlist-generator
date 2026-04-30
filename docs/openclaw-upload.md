@@ -72,6 +72,8 @@ If `--cover` is provided and this is a Single Release, approving the track autom
 
 When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a one-hour playlist does not spam Slack.
 
+Playlist track titles should look like final tracklist titles, not Suno alternatives. Do not upload names like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`. Give every playlist item a standalone title that fits the mood.
+
 ```bash
 scripts/openclaw-release upload-audio \
   --release-id RELEASE_ID \
@@ -87,6 +89,8 @@ The JSON result should include:
 - `track.status: approved`
 
 Only use `--pending-review` if the human explicitly asks to review playlist tracks one by one.
+
+If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
 
 ## Web Review Surface
 
@@ -137,7 +141,7 @@ scripts/openclaw-release upload-audio \
   --release-id RELEASE_ID \
   --audio /absolute/path/to/song.mp3 \
   --cover /absolute/path/to/cover.png \
-  --title "Song Title" \
+  --title "Standalone Track Title" \
   --prompt "Short generation prompt or notes" \
   --tags "playlist candidate"
 ```
@@ -197,6 +201,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
+- For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
 - Single Release candidates are still human-reviewed; the human may approve one candidate, approve both candidates to combine them, or reject both.
 - If both candidates are rejected, the app will archive the release automatically; do not delete files or database rows manually.

@@ -27,7 +27,8 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - For YouTube title/description/tag writing, use [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 - For playlist publishing, always use the connected YouTube channel `Soft Hour Radio`.
 - YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
-- Do not leave trailing `A` / `B` labels in uploaded playlist track titles. Clean names before upload, and make duplicate base titles unique with natural suffixes.
+- Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
+- Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -50,7 +51,7 @@ Goal:
 - If Suno returns two candidates, upload both candidates to one new Single Release.
 - If only one usable candidate exists, upload one candidate to one new Single Release.
 - If candidate cover images exist, upload them with the audio candidates.
-- Clean awkward trailing A/B labels from uploaded candidate titles. If titles become duplicated, make them naturally unique.
+- Clean awkward trailing A/B or 1/2 labels from uploaded candidate titles. If titles become duplicated, make them naturally unique without using pair labels.
 - When the human approves one candidate, its uploaded cover is automatically registered as the release cover. If the human approves both candidates, the two audio files are combined into one release audio.
 - The human still reviews/approves the cover before video rendering.
 - Do not approve, reject, render, publish, or upload to YouTube.
@@ -134,8 +135,9 @@ Use scripts/openclaw-release only.
 Goal:
 - Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
 - If Suno returns two outputs from one request, use both outputs as separate playlist tracks when both are usable.
-- Before upload, remove awkward trailing A/B labels from track titles.
-- If removing A/B creates duplicate titles, rename the displayed titles naturally so they are unique.
+- Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
+- If Suno gives two outputs from the same prompt, do not name them like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`.
+- Give each output a standalone title that fits the mood, for example `Saffron Motion` and `Open Road Cadence` instead of `Highway Saffron A` and `Highway Saffron B`.
 - Upload all usable tracks to one Playlist Release.
 - Upload tracks as auto-approved, not pending human review.
 - If using `scripts/openclaw-release upload-audio` for individual playlist tracks, do not pass `--pending-review`; playlist uploads auto-approve by default.
@@ -168,8 +170,11 @@ scripts/openclaw-release auto-publish-playlist \
   --release-title "PLAYLIST_TITLE" \
   --description "Short mood/use-case description for metadata generation." \
   --audio ABSOLUTE_AUDIO_PATH_01 \
+  --title "INDEPENDENT_TRACK_TITLE_01" \
   --audio ABSOLUTE_AUDIO_PATH_02 \
+  --title "INDEPENDENT_TRACK_TITLE_02" \
   --audio ABSOLUTE_AUDIO_PATH_03 \
+  --title "INDEPENDENT_TRACK_TITLE_03" \
   --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags" \
@@ -206,7 +211,8 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not use the `MusicSun` channel for playlist publishing unless the human explicitly overrides the channel.
 - Do not upload public. The final upload must be private.
 - Do not publish if YouTube channel `Soft Hour Radio` is not connected.
-- Do not keep A/B in uploaded track titles.
+- Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
+- Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.
 - If the automation times out while waiting for render/upload, report the exact stage and current release state. Do not start a duplicate publish blindly.
 

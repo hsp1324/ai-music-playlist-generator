@@ -9,6 +9,7 @@ from app.services.codex_metadata_service import CodexMetadataService
 from app.services.release_metadata_service import ReleaseMetadataService
 from app.workflows.playlist_automation import _normalize_youtube_tags
 from scripts.openclaw_release import release_timeline
+from app.utils.track_titles import upload_track_title
 
 
 def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
@@ -30,9 +31,9 @@ def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
 
     assert metadata.title == "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트"
     assert "공부 / 작업 / 독서 / 휴식 / 카페 분위기 / 조용한 배경음악" in metadata.description
-    assert "00:00 Cinnamon Keys - Morning" in metadata.description
-    assert "03:22 Cinnamon Keys - Evening" in metadata.description
-    assert "06:50 Feltward Sonata" in metadata.description
+    assert "00:00 Cinnamon Pulse" in metadata.description
+    assert "03:22 Cinnamon Bloom" in metadata.description
+    assert "06:50 Feltward Silverline" in metadata.description
     assert "Cinnamon Keys A" not in metadata.description
     assert "#Piano #CafePiano #StudyMusic #WorkMusic #RelaxingMusic #SoloPiano" in metadata.description
     assert metadata.tags == ["Piano", "CafePiano", "StudyMusic", "WorkMusic", "RelaxingMusic", "SoloPiano"]
@@ -61,10 +62,18 @@ def test_openclaw_metadata_context_timeline_uses_final_order() -> None:
     assert [item["start"] for item in timeline] == ["00:00", "03:22", "06:50"]
     assert [item["title"] for item in timeline] == ["Cinnamon Keys A", "Cinnamon Keys B", "Feltward Sonata A"]
     assert [item["display_title_hint"] for item in timeline] == [
-        "Cinnamon Keys - Morning",
-        "Cinnamon Keys - Evening",
-        "Feltward Sonata",
+        "Cinnamon Pulse",
+        "Cinnamon Bloom",
+        "Feltward Silverline",
     ]
+
+
+def test_title_cleanup_rewrites_pair_labels_without_trimming_normal_words() -> None:
+    assert upload_track_title("Highway Saffron - Morning") == "Saffron Afterglow"
+    assert upload_track_title("Highway Saffron - Evening") == "Saffron Current"
+    assert upload_track_title("Song 1") != "Song"
+    assert upload_track_title("Song 2") != "Song"
+    assert upload_track_title("Samba") == "Samba"
 
 
 def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
@@ -88,7 +97,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "🎧 Recommended for" in input
         assert "do not append 'Official AI Visualizer'" in input
         assert "Never swap timestamps between tracks" in input
-        assert "Do not show trailing A/B labels" in input
+        assert "Do not show A/B, 1/2, or artificial pair labels" in input
         assert "display_title_hint" in input
         assert "write as one song/release" in input
         output_path.write_text(
@@ -111,7 +120,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
     assert metadata.provider == "codex"
     assert metadata.error is None
     assert metadata.title == "조용한 카페 피아노"
-    assert "00:00 Cinnamon Keys" in metadata.description
+    assert "00:00 Cinnamon Pulse" in metadata.description
     assert "Cinnamon Keys A" not in metadata.description
     assert metadata.tags == ["Piano", "CafePiano"]
 
@@ -139,5 +148,5 @@ def test_codex_metadata_service_falls_back_when_cli_fails(monkeypatch) -> None:
 
     assert metadata.provider == "template"
     assert "Codex metadata generation failed" in (metadata.error or "")
-    assert "00:00 Cinnamon Keys" in metadata.description
+    assert "00:00 Cinnamon Pulse" in metadata.description
     assert "Cinnamon Keys A" not in metadata.description

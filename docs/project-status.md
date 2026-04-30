@@ -108,6 +108,7 @@ For `single_track_video`, the intended publish path is:
 - When `AIMP_CODEX_METADATA_ENABLED=true`, the web `Generate Metadata` / `Regenerate Metadata Draft` actions ask the VM's local Codex CLI to write the YouTube title, description, and tags. The app limits this to one Codex run at a time and falls back to the template generator on CLI failure, timeout, or invalid JSON.
 - OpenClaw playlist automation can now run `scripts/openclaw-release auto-publish-playlist` to upload generated playlist tracks as approved, skip Slack per-track review spam, render audio/video, approve generated metadata, and upload privately to the connected `Soft Hour Radio` YouTube channel.
 - `scripts/openclaw-release upload-audio` also auto-approves tracks when the target release is a Playlist Release. Use `--pending-review` only when one-by-one playlist review is explicitly desired.
+- OpenClaw should provide standalone playlist track titles, not Suno pair labels. The helper also rewrites trailing A/B, 1/2, and older `Morning` / `Evening` style variants into natural standalone display titles.
 
 ### Cover art
 

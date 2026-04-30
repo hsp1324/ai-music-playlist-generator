@@ -25,11 +25,11 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - If the release is a playlist, include a timestamped tracklist from the final order.
 - Always run `scripts/openclaw-release metadata-context` first and use its timeline in the description.
-- Prefer `display_timestamp_lines` when available. It keeps the same timestamps but removes awkward trailing `A` / `B` labels.
+- Prefer `display_timestamp_lines` when available. It keeps the same timestamps but removes awkward `A` / `B`, `1` / `2`, and old pair-style suffixes.
 - Do not guess timestamps. The helper calculates them from the app's final order and track durations.
 - Treat each timestamp as a fixed playback position. If a title is corrected, only change the title text; do not move or swap the timestamp.
 - Do not sort track titles alphabetically or by A/B label in the metadata. The playback order is the source of truth.
-- Do not show trailing `A` / `B` labels in the YouTube description. If two tracks would have the same title after removing A/B, rename the displayed titles naturally so they are unique.
+- Do not show trailing `A` / `B`, `1` / `2`, or pair labels like `Morning` / `Evening` in the YouTube description. If two tracks would read like variants of the same title, rename only the displayed title text so every row feels like a standalone song.
 - If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
 
 ## Metadata Style Prompt
@@ -45,7 +45,7 @@ scripts/openclaw-release metadata-context --release-id RELEASE_ID
 
 Use the returned timestamps exactly for the tracklist.
 Use `display_timestamp_lines` as the starting point when present.
-If a displayed title still ends in A or B, rewrite only the title text so it is natural and unique.
+If a displayed title still reads like A/B, 1/2, or a paired alternative, rewrite only the title text so it is natural and unique.
 Write metadata in this shape:
 
 Title:
