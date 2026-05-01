@@ -650,6 +650,11 @@ class BackgroundJobWorker:
                 f"{lyrics_context}"
                 f"{style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
-                "One continuous forward-moving shot, subtle slow camera motion, stable composition, no repeated segment, no hard cuts, no subtitles, no text."
+                "Signature composition: exactly three people seen from behind, walking away from the camera into the scene. "
+                "The viewer sees their backs and backs of heads, not front-facing faces. "
+                "One continuous forward-moving shot with subtle camera-follow movement from behind, stable composition, no repeated segment, no hard cuts, no subtitles, no text, no extra people or characters."
             )
-        return "Cinematic music visualizer shot, one continuous forward-moving take, atmospheric lighting, no repeated segment, no text."
+        return (
+            "Cinematic music visualizer shot with exactly three people seen from behind walking away from the camera into the scene, "
+            "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, no repeated segment, no text."
+        )

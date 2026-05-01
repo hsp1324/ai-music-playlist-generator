@@ -125,6 +125,8 @@ Static image creation rules:
 - Use OpenAI GPT Image models for static image generation. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running OpenAI/Image tool environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
 - If `gpt-image-2` is unavailable in the actual tool/API environment, fall back to the best available GPT Image model instead of using Dreamina for static images.
 - Produce 16:9 images, preferably `1280x720` or `1920x1080`.
+- Apply the channel visual signature to every final cover and thumbnail: exactly three people walking forward away from the viewer into the scene. The viewer should see their backs and backs of heads, not front-facing faces. If the human explicitly requests animals or stylized characters, those may replace the three people, but keep exactly three subjects, back view, and forward walking action.
+- The cover should be a clean version of this signature scene with no or minimal text. The YouTube thumbnail should use the same three-person walking composition plus large readable click text and channel branding.
 - Create the text thumbnail first, then use that final thumbnail image as the first-frame reference for Dreamina/Seedance video generation.
 
 Optional moving visual:
@@ -155,8 +157,8 @@ Dreamina/Seedance motion prompt guidance:
 - Do not ask Dreamina for a loop. Ask for one continuous forward-moving video shot.
 - Do not put duration, ratio, or quality in the prompt. Set those in Dreamina controls only.
 - Do not include `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
-- Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and main subject in the first shot.
-- Use slow camera movement, stable composition, no hard cuts, no extra text overlays, no subtitles, no logos, and no people unless specifically requested.
+- Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and three-person back-view walking signature in the first shot.
+- Use subtle camera-follow movement from behind, stable composition, no hard cuts, no extra text overlays, no subtitles, no logos, and no extra people or characters.
 - Do not include `start and end frames match` or equivalent wording. The app handles smooth repeat with forward crossfade rendering, and forcing the last frame to match can make the clip too static.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
@@ -165,12 +167,15 @@ Recommended Dreamina prompt shape:
 
 ```text
 Use the uploaded first-frame image as the exact starting frame.
-Create one continuous ambient Tokyo night J-pop synth-pop video shot.
+Create one continuous forward-moving music visualizer shot.
+Keep the channel signature: exactly three people seen from behind, walking away from the camera into the scene.
+The viewer should see backs and backs of heads, not front-facing faces.
 The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
 Preserve the opening composition, lighting, palette, and baked-in text only at the start.
-Add subtle slow camera drift, neon reflections, rain shimmer, and soft city light motion.
-Stable composition, no hard cuts, no new text, no subtitles, no logos, no UI, no new people or characters.
+Adapt the background and atmosphere to the release concept.
+Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
+Stable composition, no hard cuts, no new text, no subtitles, no logos, no UI, no extra people or characters.
 ```
 
 Thumbnail text rules for OpenClaw:
@@ -181,6 +186,7 @@ Thumbnail text rules for OpenClaw:
 - Add support text or a duration badge only when it improves readability without cluttering the full-bleed layout.
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
+- Keep the three-person back-view walking signature visible even when thumbnail text is added.
 
 Localized YouTube metadata rules for OpenClaw:
 
@@ -360,6 +366,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - If Suno style/settings are available, upload them in the same command with `--style`.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
+- Static cover and thumbnail images must follow the channel visual signature: exactly three people seen from behind, walking forward away from the viewer into the scene.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - If OpenClaw creates a Dreamina/Seedance loop clip, pass the 6 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
