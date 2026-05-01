@@ -1320,6 +1320,7 @@ button:disabled {
 .track-prompt {
   margin: 0;
   line-height: 1.55;
+  white-space: pre-line;
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;

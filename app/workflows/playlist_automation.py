@@ -83,11 +83,13 @@ def _track_payload(track: Track) -> PlaylistTrackRead:
     return PlaylistTrackRead(
         id=track.id,
         title=track.title,
+        prompt=track.prompt,
         duration_seconds=track.duration_seconds,
         audio_path=track.audio_path,
         preview_url=track.preview_url,
         image_url=metadata.get("image_url"),
         tags=metadata.get("tags"),
+        lyrics=str(metadata.get("lyrics") or ""),
     )
 
 

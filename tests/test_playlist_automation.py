@@ -96,6 +96,7 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
             data={
                 "title": f"Manual Upload {marker}",
                 "prompt": "manual suno intake candidate",
+                "lyrics": "달빛 아래 조용한 후렴",
                 "duration_seconds": "123",
                 "model_score": "0.87",
             },
@@ -109,6 +110,8 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         assert track["audio_path"].endswith("manual-upload.mp3")
         assert track["metadata_json"]["source"] == "manual-upload"
         assert track["metadata_json"]["model_score"] == 0.87
+        assert track["metadata_json"]["lyrics"] == "달빛 아래 조용한 후렴"
+        assert track["lyrics"] == "달빛 아래 조용한 후렴"
     finally:
         clear_isolated_client_env()
 
@@ -163,6 +166,7 @@ def test_create_track_audio_url_is_cached_locally(tmp_path, monkeypatch) -> None
             json={
                 "title": "API Remote",
                 "prompt": "api remote intake",
+                "lyrics": "remote api lyrics",
                 "duration_seconds": 123,
                 "audio_path": "https://cdn.example.com/api-remote.mp3",
                 "metadata": {"source": "api-test"},
@@ -175,6 +179,7 @@ def test_create_track_audio_url_is_cached_locally(tmp_path, monkeypatch) -> None
         assert track["metadata_json"]["source_audio_url"] == "https://cdn.example.com/api-remote.mp3"
         assert track["metadata_json"]["audio_source"] == "remote-url-cache"
         assert track["metadata_json"]["source"] == "api-test"
+        assert track["metadata_json"]["lyrics"] == "remote api lyrics"
     finally:
         clear_isolated_client_env()
 

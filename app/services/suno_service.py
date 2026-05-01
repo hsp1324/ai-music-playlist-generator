@@ -127,6 +127,7 @@ class StubSunoGateway:
 
     def _normalize_legacy_payload(self, payload: dict[str, Any]) -> SunoWebhookPayload:
         metadata = payload.get("metadata") or {}
+        metadata.setdefault("lyrics", payload.get("lyrics") or payload.get("lyric") or "")
         duration_seconds = payload.get("duration_seconds") or metadata.get("duration_seconds") or 0
         track = SunoWebhookTrack(
             source_track_id=payload.get("source_track_id"),
@@ -185,6 +186,7 @@ class StubSunoGateway:
                 "source_image_url": item.get("source_image_url"),
                 "model_name": item.get("model_name"),
                 "tags": item.get("tags"),
+                "lyrics": item.get("lyrics") or item.get("lyric") or "",
                 "create_time": item.get("createTime"),
             }
             audio_url = item.get("audio_url") or item.get("source_audio_url")

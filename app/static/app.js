@@ -1311,6 +1311,7 @@ async function submitQuickUpload() {
         const form = new FormData();
         form.append("title", fileStem(file.name));
         form.append("prompt", "manual quick upload");
+        form.append("lyrics", "");
         form.append("duration_seconds", "0");
         form.append("pending_workspace_id", workspaceId);
         form.append("audio_file", file, file.name);
@@ -1865,6 +1866,9 @@ function renderWorkspaceDetail() {
       status.textContent = statusLabel(track.status);
       status.classList.add(track.status);
       prompt.textContent = shortText(track.prompt || "Prompt not provided.", 160);
+      if (track.lyrics || track.metadata_json?.lyrics) {
+        prompt.textContent = `${prompt.textContent}\nLyrics: ${shortText(track.lyrics || track.metadata_json.lyrics, 220)}`;
+      }
 
       if (audioUrl) {
         audio.src = audioUrl;
@@ -1993,7 +1997,10 @@ function renderWorkspaceDetail() {
     image.src = imageUrl;
     image.alt = displayTitle(track.title, "Track");
     title.textContent = displayTitle(track.title, "Untitled Track");
-    meta.textContent = shortText(track.tags || "approved track", 80);
+    meta.textContent = shortText(
+      track.lyrics ? `${track.tags || "approved track"} · lyrics saved` : track.tags || "approved track",
+      90
+    );
     duration.textContent = formatDuration(track.duration_seconds);
 
     if (audioUrl) {
@@ -2003,6 +2010,12 @@ function renderWorkspaceDetail() {
     }
     if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
     if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
+    if (track.lyrics) {
+      const lyricsButton = actionButton("Lyrics", "pill-action reorder", async () => {
+        alert(track.lyrics);
+      });
+      actions.appendChild(lyricsButton);
+    }
     if (showTrackReviewColumns && workspace.tracks.length > 1) {
       const upButton = actionButton("Up", "pill-action reorder", async () => {
         await reorderApprovedTrack(workspace, index, -1);

@@ -24,6 +24,8 @@ scripts/openclaw-release upload-single-candidates \
   --audio /absolute/path/to/song-b.mp3 \
   --cover /absolute/path/to/cover-a.png \
   --cover /absolute/path/to/cover-b.png \
+  --lyrics-file /absolute/path/to/song-a-lyrics.txt \
+  --lyrics-file /absolute/path/to/song-b-lyrics.txt \
   --prompt "Short generation prompt or notes" \
   --tags "ai music, single"
 ```
@@ -44,6 +46,12 @@ Cover behavior:
 - Use one `--cover` per `--audio` to upload candidate-specific covers.
 - When a Single Release candidate is approved, its uploaded cover is automatically registered as the release cover. If both candidates are approved, the first available uploaded cover is used as the release cover. The human only needs to review/approve the cover before rendering video.
 
+Lyrics/content behavior:
+
+- `--lyrics` or `--lyrics-file` is optional, but OpenClaw should provide it whenever Suno generated lyrics or meaningful song content.
+- If the track is instrumental or lyrics are unknown, omit the flag or pass an empty value.
+- Lyrics are stored with the track so future thumbnail, Dreamina loop-video, metadata, or standalone single publishing work has song-content context.
+
 ## Upload One New Single Candidate
 
 Use this for one generated song that should become its own single release candidate.
@@ -54,6 +62,7 @@ scripts/openclaw-release upload-audio \
   --audio /absolute/path/to/song.mp3 \
   --cover /absolute/path/to/cover.png \
   --title "Song Title" \
+  --lyrics-file /absolute/path/to/song-lyrics.txt \
   --prompt "Short generation prompt or notes" \
   --tags "ai music, single"
 ```
@@ -79,6 +88,7 @@ scripts/openclaw-release upload-audio \
   --release-id RELEASE_ID \
   --audio /absolute/path/to/playlist-track.mp3 \
   --title "Track Title" \
+  --lyrics-file /absolute/path/to/playlist-track-lyrics.txt \
   --prompt "Short generation prompt or notes" \
   --tags "ai music, playlist"
 ```
@@ -91,6 +101,7 @@ The JSON result should include:
 Only use `--pending-review` if the human explicitly asks to review playlist tracks one by one.
 
 If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
+Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics are available. For instrumental tracks, empty lyrics are acceptable.
 
 For full automatic playlist publishing, two final 16:9 images are required.
 
@@ -121,7 +132,7 @@ Dreamina/Seedance loop prompt guidance:
 - Ask for a seamless ambient visual loop.
 - Ask for exactly 8 seconds. Do not request 5, 10, or 15 seconds.
 - Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and main subject in the first shot.
-- Use slow camera movement, stable composition, no hard cuts, no text, no subtitles, no logos, and no people unless specifically requested.
+- Use slow camera movement, stable composition, no hard cuts, no extra text overlays, no subtitles, no logos, and no people unless specifically requested.
 - Include `start and end frames match` or equivalent wording.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
@@ -251,6 +262,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 - Do not call `Approve Publish` automatically.
 - Do not upload to YouTube automatically.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
+- If lyrics or meaningful song-content notes are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value for instrumentals or unknown lyrics.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.

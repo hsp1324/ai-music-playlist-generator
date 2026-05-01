@@ -22,6 +22,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - Human review happens in Slack or the web UI.
 - Single Release means one final song, but it may contain up to two review candidates from Suno.
 - Playlist Release normally means automatic private publishing. If the human asks for a playlist production run, upload generated tracks as already approved, render everything, generate/approve metadata, and upload privately to YouTube.
+- When uploading audio, include lyrics or song-content notes with `--lyrics` or `--lyrics-file` whenever available. Empty lyrics are acceptable for instrumentals or unknown lyrics, but do not discard lyrics when Suno/OpenClaw has them.
 - Always return the final JSON result and mention `release.id` plus uploaded `track.id` values.
 - If a command fails, stop and report the exact error. Do not retry blindly more than once.
 - For YouTube title/description/tag writing, use [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
@@ -62,6 +63,7 @@ Goal:
 - If Suno returns two candidates, upload both candidates to one new Single Release.
 - If only one usable candidate exists, upload one candidate to one new Single Release.
 - If candidate cover images exist, upload them with the audio candidates.
+- If candidate lyrics exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. If a candidate is instrumental, leave lyrics empty.
 - Clean awkward trailing A/B or 1/2 labels from uploaded candidate titles. If titles become duplicated, make them naturally unique without using pair labels.
 - When the human approves one candidate, its uploaded cover is automatically registered as the release cover. If the human approves both candidates, the two audio files are combined into one release audio.
 - The human still reviews/approves the cover before video rendering.
@@ -77,6 +79,8 @@ scripts/openclaw-release upload-single-candidates \
   --audio ABSOLUTE_AUDIO_PATH_B \
   --cover ABSOLUTE_COVER_PATH_A \
   --cover ABSOLUTE_COVER_PATH_B \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_A \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_B \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
@@ -85,10 +89,11 @@ scripts/openclaw-release upload-single-candidates \
   --release-title "RELEASE_TITLE" \
   --audio ABSOLUTE_AUDIO_PATH \
   --cover ABSOLUTE_COVER_PATH \
+  --lyrics-file ABSOLUTE_LYRICS_PATH \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
-If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order.
+If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics are not available, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field.
 
 Report the command output JSON. The human will approve one candidate, approve both candidates, or reject both in Slack or the web UI.
 ```
@@ -149,6 +154,7 @@ Goal:
 - Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
 - If Suno returns two outputs from one request, use both outputs as separate playlist tracks when both are usable.
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
+- Preserve each track's lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available, because good playlist tracks may later be republished as standalone singles and OpenClaw needs this context for thumbnail/loop-video generation.
 - If Suno gives two outputs from the same prompt, do not name them like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`.
 - Give each output a standalone title that fits the mood, for example `Saffron Motion` and `Open Road Cadence` instead of `Highway Saffron A` and `Highway Saffron B`.
 - Upload all usable tracks to one Playlist Release.
@@ -159,9 +165,9 @@ Goal:
 - Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`.
 - Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`.
 - Optionally generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
-- The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text; the cover and loop video should not contain text, subtitles, lyrics, logos, or UI elements.
+- The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text; the cover should stay clean, and the loop video should not add extra text, subtitles, lyrics, logos, or UI elements beyond the thumbnail reference used for its first frame.
 - Use the approved/final thumbnail as the visual starting reference for Dreamina/Seedance image-to-video generation. The first shot of the 8 second loop video should look like the thumbnail, but the loop video itself should not add extra text, subtitles, lyrics, logos, or UI elements beyond what is already baked into the thumbnail reference.
-- For loop clips, prompt Dreamina/Seedance for `exactly 8 seconds`, `seamless loop`, `slow camera motion`, `start and end frames match`, `no text`, `no subtitles`, and `no hard cuts`.
+- For loop clips, prompt Dreamina/Seedance for `exactly 8 seconds`, `seamless loop`, `slow camera motion`, `start and end frames match`, `no extra text overlays`, `no subtitles`, and `no hard cuts`.
 - If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, create the video with Dreamina/Seedance, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
 - If Dreamina login, CAPTCHA, payment, or human approval blocks browser automation, stop and report the exact blocked step instead of skipping the loop video.
 - Do not let the app's local draft cover stand in for final cover art.
@@ -201,10 +207,13 @@ scripts/openclaw-release auto-publish-playlist \
   --description "Short mood/use-case description for metadata generation." \
   --audio ABSOLUTE_AUDIO_PATH_01 \
   --title "INDEPENDENT_TRACK_TITLE_01" \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_01 \
   --audio ABSOLUTE_AUDIO_PATH_02 \
   --title "INDEPENDENT_TRACK_TITLE_02" \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_02 \
   --audio ABSOLUTE_AUDIO_PATH_03 \
   --title "INDEPENDENT_TRACK_TITLE_03" \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_03 \
   --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH \
   --thumbnail ABSOLUTE_YOUTUBE_THUMBNAIL_IMAGE_PATH \
   --loop-video ABSOLUTE_DREAMINA_SEEDANCE_LOOP_MP4 \
@@ -252,7 +261,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not use `--allow-generated-draft-cover` unless the human explicitly says a placeholder cover is acceptable for this upload.
 - Do not use `--allow-cover-as-thumbnail` unless the human explicitly says one image is acceptable for both the video visual and YouTube thumbnail.
 - Do not create a long one-hour MP4 in OpenClaw. Upload only the 8 second loop clip with `--loop-video`; the app handles the long render.
-- Do not put text, subtitles, lyrics, logos, or UI elements inside the loop video. Put text only in the separate `--thumbnail` image.
+- Do not add new text, subtitles, lyric overlays, logos, or UI elements inside the loop video. Text should come only from the thumbnail reference used as the opening frame.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.

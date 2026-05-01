@@ -187,6 +187,7 @@ class CodexMetadataService(ReleaseMetadataService):
                     "duration": self._format_duration(duration),
                     "prompt": track.prompt,
                     "tags": track_meta.get("tags"),
+                    "lyrics": str(track_meta.get("lyrics") or ""),
                 }
             )
             offset += duration

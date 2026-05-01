@@ -588,10 +588,14 @@ class BackgroundJobWorker:
             return explicit_prompt
         if tracks:
             track = tracks[0]
-            tags = str((track.metadata_json or {}).get("tags") or "").strip()
+            track_meta = track.metadata_json or {}
+            tags = str(track_meta.get("tags") or "").strip()
+            lyrics = str(track_meta.get("lyrics") or "").strip()
+            lyrics_context = f" Lyrics/content context: {lyrics[:800]}." if lyrics else ""
             return (
                 f"Cinematic music visualizer loop for '{track.title}'. "
                 f"Prompt mood: {track.prompt}. "
+                f"{lyrics_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
                 "Slow camera motion, seamless looping movement, no hard cuts, no subtitles, no text."
             )

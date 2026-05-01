@@ -91,11 +91,13 @@ class PlaylistItemRead(BaseModel):
 class PlaylistTrackRead(BaseModel):
     id: str
     title: str
+    prompt: str = ""
     duration_seconds: int
     audio_path: str | None
     preview_url: str | None
     image_url: str | None = None
     tags: str | None = None
+    lyrics: str = ""
 
 
 class PlaylistJobRead(BaseModel):

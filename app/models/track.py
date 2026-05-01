@@ -41,3 +41,7 @@ class Track(Base):
     approvals = relationship("Approval", back_populates="track", cascade="all, delete-orphan")
     playlist_items = relationship("PlaylistItem", back_populates="track")
     jobs = relationship("Job", back_populates="track")
+
+    @property
+    def lyrics(self) -> str:
+        return str((self.metadata_json or {}).get("lyrics") or "")

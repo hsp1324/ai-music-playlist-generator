@@ -40,6 +40,7 @@ def _create_track_record(
     payload: TrackCreateRequest,
 ) -> Track:
     metadata = dict(payload.metadata or {})
+    metadata["lyrics"] = str(payload.lyrics if payload.lyrics is not None else metadata.get("lyrics") or "")
     pending_workspace_id = metadata.get("pending_workspace_id")
     if pending_workspace_id and not metadata.get("pending_workspace_title"):
         playlist = db.get(Playlist, pending_workspace_id)
@@ -302,6 +303,7 @@ async def manual_upload_track(
     request: Request,
     title: str = Form(...),
     prompt: str = Form(""),
+    lyrics: str = Form(""),
     duration_seconds: int = Form(0),
     preview_url: str | None = Form(None),
     audio_url: str | None = Form(None),
@@ -341,6 +343,7 @@ async def manual_upload_track(
     payload = TrackCreateRequest(
         title=title,
         prompt=prompt,
+        lyrics=lyrics,
         duration_seconds=inferred_duration_seconds,
         audio_path=audio_path,
         preview_url=preview_url,

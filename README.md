@@ -311,6 +311,7 @@ Runtime behavior:
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
 Single releases can approve one candidate directly, or approve two related candidates and combine them into one single-style release audio before cover/video/publish.
+Track uploads can include optional `lyrics` content. The app stores it in track metadata and exposes it in release context so OpenClaw can later create better thumbnails, Dreamina loop videos, metadata, or standalone single releases from strong playlist tracks.
 
 ## Dreamina Loop Video
 

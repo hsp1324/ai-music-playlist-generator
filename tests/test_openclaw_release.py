@@ -10,6 +10,7 @@ from scripts.openclaw_release import (
     infer_youtube_channel_title,
     release_has_uploaded_cover,
     release_has_uploaded_thumbnail,
+    resolve_lyrics_items,
 )
 
 
@@ -23,6 +24,8 @@ def _auto_publish_args(audio_path: str, **overrides):
         "description": "",
         "prompt": "",
         "tags": "",
+        "lyrics": [],
+        "lyrics_file": [],
         "target_seconds": 3600,
         "youtube_channel_title": "",
         "youtube_channel_id": "",
@@ -86,6 +89,19 @@ def test_infer_youtube_channel_routes_japanese_releases_to_tokyo_daydream() -> N
             release_title="Cafe Piano",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def test_resolve_lyrics_items_allows_empty_shared_and_per_track(tmp_path) -> None:
+    assert resolve_lyrics_items(2, lyrics=[], lyrics_files=[]) == ["", ""]
+    assert resolve_lyrics_items(2, lyrics=["shared lyrics"], lyrics_files=[]) == ["shared lyrics", "shared lyrics"]
+    assert resolve_lyrics_items(2, lyrics=["first", "second"], lyrics_files=[]) == ["first", "second"]
+
+    lyrics_file = tmp_path / "lyrics.txt"
+    lyrics_file.write_text("file lyrics\n", encoding="utf-8")
+    assert resolve_lyrics_items(1, lyrics=[], lyrics_files=[str(lyrics_file)]) == ["file lyrics"]
+
+    with pytest.raises(RuntimeError, match="exactly one per --audio"):
+        resolve_lyrics_items(2, lyrics=["one", "two", "three"], lyrics_files=[])
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",

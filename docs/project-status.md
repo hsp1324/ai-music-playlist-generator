@@ -113,6 +113,7 @@ For `single_track_video`, the intended publish path is:
 - Full OpenClaw playlist publishing now expects two final 16:9 images: a clean video cover via `--cover` and a text-based YouTube thumbnail via `--thumbnail`. Reusing the cover as the thumbnail is only allowed with `--allow-cover-as-thumbnail`.
 - OpenClaw can also pass an 8 second Dreamina/Seedance MP4 via `--loop-video`. The app stores it as `loop_video_path` and uses smooth crossfade ping-pong looping during final video render instead of making OpenClaw export a one-hour video.
 - The web release detail UI now supports direct upload/replace actions for clean cover, text YouTube thumbnail, and 8 second loop video as separate assets.
+- Track uploads now accept optional lyrics/content notes. Lyrics are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, and standalone single workflows.
 
 ### Cover art
 
