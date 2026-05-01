@@ -286,7 +286,18 @@ class BackgroundJobWorker:
             )
 
         youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
+        render_meta = meta
         meta = self._current_playlist_meta(db, playlist.id, fallback=meta)
+        for key in (
+            "dreamina_job_id",
+            "dreamina_video_url",
+            "loop_video_path",
+            "loop_video_render_mode",
+            "loop_video_smooth",
+            "loop_video_source",
+        ):
+            if key in render_meta:
+                meta[key] = render_meta[key]
         meta["youtube_title"] = youtube_metadata.title
         meta["youtube_description"] = youtube_metadata.description
         meta["youtube_tags"] = youtube_metadata.tags
