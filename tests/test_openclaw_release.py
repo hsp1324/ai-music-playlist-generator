@@ -14,6 +14,7 @@ from scripts.openclaw_release import (
     release_has_uploaded_cover,
     release_has_uploaded_thumbnail,
     resolve_lyrics_items,
+    resolve_style_items,
 )
 
 
@@ -26,6 +27,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "release_title": "",
         "description": "",
         "prompt": "",
+        "style": [],
         "tags": "",
         "lyrics": [],
         "lyrics_file": [],
@@ -112,6 +114,14 @@ def test_resolve_lyrics_items_allows_empty_shared_and_per_track(tmp_path) -> Non
             youtube_channel_title="Soft Hour Radio",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def test_resolve_style_items_allows_shared_and_per_track() -> None:
+    assert resolve_style_items(2, styles=[]) == ["", ""]
+    assert resolve_style_items(2, styles=["shared style"]) == ["shared style", "shared style"]
+    assert resolve_style_items(2, styles=["style one", "style two"]) == ["style one", "style two"]
+    with pytest.raises(RuntimeError, match="exactly one per --audio"):
+        resolve_style_items(2, styles=["one", "two", "three"])
 
 
 def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
@@ -310,6 +320,24 @@ def test_auto_publish_single_requires_final_cover_before_side_effects(tmp_path) 
         )
 
     assert requested_paths == []
+
+
+def test_auto_publish_single_rejects_multiple_audio_paths(tmp_path) -> None:
+    first_audio = tmp_path / "first.mp3"
+    second_audio = tmp_path / "second.mp3"
+    first_audio.write_bytes(b"fake mp3")
+    second_audio.write_bytes(b"fake mp3")
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(lambda request: httpx.Response(500)))
+
+    with pytest.raises(RuntimeError, match="exactly one final song"):
+        auto_publish_single(
+            client,
+            _auto_publish_args(
+                str(first_audio),
+                audio=[str(first_audio), str(second_audio)],
+                actor="openclaw:auto-single",
+            ),
+        )
 
 
 def test_auto_publish_single_requires_thumbnail_before_side_effects(tmp_path) -> None:

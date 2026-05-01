@@ -162,6 +162,17 @@ def resolve_lyrics_items(audio_count: int, *, lyrics: list[str], lyrics_files: l
     return values
 
 
+def resolve_style_items(audio_count: int, *, styles: list[str]) -> list[str]:
+    values = list(styles or [])
+    if not values:
+        return [""] * audio_count
+    if len(values) == 1:
+        return [values[0]] * audio_count
+    if len(values) != audio_count:
+        raise RuntimeError("When using per-track styles, provide either one shared value or exactly one per --audio.")
+    return values
+
+
 def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
     offset = 0
     timeline = []
@@ -179,6 +190,7 @@ def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
                 "duration_seconds": duration,
                 "duration": format_timestamp(duration),
                 "lyrics": str(track.get("lyrics") or ""),
+                "style": str(track.get("style") or ""),
                 "prompt": track.get("prompt") or "",
                 "tags": track.get("tags") or "",
             }
@@ -213,6 +225,7 @@ def upload_audio_file_to_release(
     prompt: str,
     tags: str,
     lyrics: str = "",
+    style: str = "",
     cover_path: Path | None = None,
     dispatch_review: bool = True,
 ) -> dict[str, Any]:
@@ -237,6 +250,7 @@ def upload_audio_file_to_release(
                     "pending_workspace_id": release_id,
                     "tags": tags or "",
                     "lyrics": lyrics or "",
+                    "style": style or "",
                     "dispatch_review": str(dispatch_review).lower(),
                 },
                 files=files,
@@ -315,6 +329,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         prompt=args.prompt,
         tags=args.tags,
         lyrics=lyrics,
+        style=args.style,
         cover_path=cover_path,
         dispatch_review=not auto_approve_playlist,
     )
@@ -344,6 +359,8 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "status": track["status"],
             "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
             "lyrics_present": bool((track.get("metadata_json") or {}).get("lyrics")),
+            "style": (track.get("metadata_json") or {}).get("style") or "",
+            "style_present": bool((track.get("metadata_json") or {}).get("style")),
         },
         "next": (
             "Track uploaded and auto-approved into the playlist."
@@ -384,6 +401,7 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         [{"title": title, "duration_seconds": 0} for title in raw_titles]
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
+    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
 
     tracks = []
     for index, audio_path in enumerate(audio_paths, start=1):
@@ -399,6 +417,7 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
             prompt=args.prompt,
             tags=args.tags,
             lyrics=lyrics_items[index - 1],
+            style=style_items[index - 1],
             cover_path=cover_path,
         )
         tracks.append(
@@ -408,6 +427,8 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
                 "status": track["status"],
                 "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
                 "lyrics_present": bool((track.get("metadata_json") or {}).get("lyrics")),
+                "style": (track.get("metadata_json") or {}).get("style") or "",
+                "style_present": bool((track.get("metadata_json") or {}).get("style")),
             }
         )
 
@@ -422,8 +443,8 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         },
         "tracks": tracks,
         "next": (
-            "Human review can approve one candidate or both candidates. "
-            "If both are approved, the app combines them into one single-style release. "
+            "Human review can approve one candidate. If both candidates are good, approve the second one too; "
+            "the app will split it into its own Single Release instead of combining the two songs. "
             "If both candidates are rejected, the release is automatically archived and can be restored from the web UI."
         ),
     }
@@ -658,9 +679,10 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         [{"title": title, "duration_seconds": 0} for title in raw_titles]
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
+    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
 
     uploaded_tracks = []
-    for audio_path, track_title, lyrics in zip(audio_paths, display_titles, lyrics_items):
+    for audio_path, track_title, lyrics, style in zip(audio_paths, display_titles, lyrics_items, style_items):
         track = upload_audio_file_to_release(
             client,
             release_id=release["id"],
@@ -669,6 +691,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             prompt=args.prompt,
             tags=args.tags,
             lyrics=lyrics,
+            style=style,
             cover_path=None,
             dispatch_review=False,
         )
@@ -685,6 +708,8 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 "status": approved["status"],
                 "duration_seconds": approved["duration_seconds"],
                 "lyrics_present": bool((approved.get("metadata_json") or {}).get("lyrics")),
+                "style": (approved.get("metadata_json") or {}).get("style") or "",
+                "style_present": bool((approved.get("metadata_json") or {}).get("style")),
             }
         )
 
@@ -827,8 +852,8 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
 
 def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
-    if not 1 <= len(audio_paths) <= 2:
-        raise RuntimeError("auto-publish-single requires one or two --audio paths.")
+    if len(audio_paths) != 1:
+        raise RuntimeError("auto-publish-single publishes exactly one final song. Run it once per good Suno output.")
     for audio_path in audio_paths:
         if not audio_path.exists():
             raise RuntimeError(f"Audio file does not exist: {audio_path}")
@@ -859,6 +884,11 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     )
     if release["workspace_mode"] != "single_track_video":
         raise RuntimeError("auto-publish-single requires a Single Release, not a Playlist Release.")
+    if release.get("tracks"):
+        raise RuntimeError(
+            "auto-publish-single requires an empty Single Release because it publishes one final song. "
+            "Run without --release-id, or create a fresh Single Release for this Suno output."
+        )
     if not cover_path and not release_has_uploaded_cover(release) and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-single requires a final 16:9 cover image before YouTube upload. "
@@ -891,9 +921,10 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         [{"title": title, "duration_seconds": 0} for title in raw_titles]
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
+    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
 
     uploaded_tracks = []
-    for audio_path, track_title, lyrics in zip(audio_paths, track_titles, lyrics_items):
+    for audio_path, track_title, lyrics, style in zip(audio_paths, track_titles, lyrics_items, style_items):
         track = upload_audio_file_to_release(
             client,
             release_id=release["id"],
@@ -902,6 +933,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             prompt=args.prompt,
             tags=args.tags,
             lyrics=lyrics,
+            style=style,
             cover_path=None,
             dispatch_review=False,
         )
@@ -919,6 +951,8 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 "status": approved["status"],
                 "duration_seconds": approved["duration_seconds"],
                 "lyrics_present": bool((approved.get("metadata_json") or {}).get("lyrics")),
+                "style": (approved.get("metadata_json") or {}).get("style") or "",
+                "style_present": bool((approved.get("metadata_json") or {}).get("style")),
             }
         )
 
@@ -1189,6 +1223,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
         "instructions": (
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
+            "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols. "
             "For Tokyo/J-pop/Japan releases, write Korean, Japanese, and English title/description versions and pass them to approve-metadata."
         ),
@@ -1310,6 +1345,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--audio", required=True, help="Path to generated audio file.")
     audio_parser.add_argument("--title", default="", help="Track title. Defaults to audio filename stem.")
     audio_parser.add_argument("--prompt", default="", help="Prompt or generation note.")
+    audio_parser.add_argument("--style", default="", help="Suno style/settings used to generate this audio.")
     audio_parser.add_argument("--tags", default="", help="Comma-separated tags.")
     audio_parser.add_argument("--lyrics", default="", help="Optional lyrics or content notes for this audio. Empty is allowed.")
     audio_parser.add_argument("--lyrics-file", default="", help="Optional UTF-8 text file containing lyrics or content notes.")
@@ -1330,6 +1366,7 @@ def build_parser() -> argparse.ArgumentParser:
     candidates_parser.add_argument("--cover", action="append", default=[], help="Optional candidate cover path. Repeat once for a shared cover or once per --audio.")
     candidates_parser.add_argument("--release-title", default="", help="Single release title. Defaults to first audio filename stem.")
     candidates_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by the candidates.")
+    candidates_parser.add_argument("--style", action="append", default=[], help="Suno style/settings. Repeat once per --audio, or provide one shared value.")
     candidates_parser.add_argument("--tags", default="", help="Comma-separated tags shared by the candidates.")
     candidates_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     candidates_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
@@ -1351,6 +1388,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--release-title", default="", help="New Playlist Release title. Defaults to first audio filename stem.")
     auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
     auto_playlist_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
+    auto_playlist_parser.add_argument("--style", action="append", default=[], help="Suno style/settings. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
@@ -1365,9 +1403,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     auto_single_parser = subparsers.add_parser(
         "auto-publish-single",
-        help="Upload one or two single candidates, auto-approve, render, generate metadata, and private-publish to YouTube.",
+        help="Upload one final single, auto-approve, render, generate metadata, and private-publish to YouTube.",
     )
-    auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Repeat for a second Suno candidate if both should be combined.")
+    auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Use exactly one; run this command again for a second good Suno output.")
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 clean cover image unless an uploaded final cover already exists on the release.")
     auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release.")
@@ -1379,6 +1417,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--release-title", default="", help="New Single Release title. Defaults to first audio filename stem.")
     auto_single_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
     auto_single_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
+    auto_single_parser.add_argument("--style", action="append", default=[], help="Suno style/settings for this final song. Provide one value.")
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")

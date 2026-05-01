@@ -99,7 +99,8 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "Never swap timestamps between tracks" in input
         assert "Do not show A/B, 1/2, or artificial pair labels" in input
         assert "display_title_hint" in input
-        assert "write as one song/release" in input
+        assert "write as one standalone song/release" in input
+        assert "Use prompt, style, tags, and lyrics as private creative context" in input
         output_path.write_text(
             json.dumps(
                 {

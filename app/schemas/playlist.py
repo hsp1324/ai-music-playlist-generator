@@ -100,6 +100,7 @@ class PlaylistTrackRead(BaseModel):
     image_url: str | None = None
     tags: str | None = None
     lyrics: str = ""
+    style: str = ""
 
 
 class PlaylistJobRead(BaseModel):

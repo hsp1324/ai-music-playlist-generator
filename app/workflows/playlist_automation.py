@@ -59,7 +59,7 @@ def _auto_publish_when_ready(playlist: Playlist) -> bool:
 def _publish_is_ready(playlist: Playlist) -> bool:
     mode = _workspace_mode(playlist)
     if mode == "single_track_video":
-        return bool(playlist.items)
+        return len(playlist.items) == 1
     return playlist.actual_duration_seconds >= playlist.target_duration_seconds
 
 
@@ -95,6 +95,7 @@ def _track_payload(track: Track) -> PlaylistTrackRead:
         image_url=metadata.get("image_url"),
         tags=metadata.get("tags"),
         lyrics=str(metadata.get("lyrics") or ""),
+        style=str(metadata.get("style") or ""),
     )
 
 
@@ -510,44 +511,88 @@ def _sync_single_release_audio_state(
 
     meta = _playlist_meta(playlist)
     _refresh_playlist_duration(playlist)
-    track_audio_paths = {track.audio_path for track in tracks if track.audio_path}
-    if reset_downstream_assets or playlist.output_audio_path in track_audio_paths:
+    if reset_downstream_assets:
         _clear_downstream_release_assets(playlist, meta)
-        playlist.output_audio_path = None
-
-    meta["publish_ready"] = True
-    if not _all_tracks_renderable(playlist):
-        playlist.output_audio_path = None
-        playlist.output_video_path = None
-        playlist.youtube_video_id = None
-        playlist.status = PlaylistStatus.draft
-        meta["render_ready"] = False
-        meta["workflow_state"] = "pending_audio_source"
-        meta["render_error"] = "All approved single release parts must be local audio files before rendering."
-        meta["note"] = "This single release needs local uploaded audio files before combining both approved parts."
-    elif playlist.output_audio_path and Path(playlist.output_audio_path).exists():
-        playlist.status = PlaylistStatus.ready
-        meta["render_ready"] = True
-        meta["workflow_state"] = "audio_ready"
-        meta.pop("render_error", None)
-        meta["note"] = "Combined single audio is ready. Upload or approve cover next."
-    else:
-        playlist.status = PlaylistStatus.draft
-        meta["render_ready"] = False
-        meta["workflow_state"] = "pending_audio_render"
-        meta.pop("render_error", None)
-        meta["note"] = "Two approved single candidates will be combined into one release audio."
-
-    if not meta.get("cover_image_path"):
-        for track in tracks:
-            if _promote_single_release_cover_from_track(playlist, track, meta):
-                break
-        if not playlist.output_audio_path:
-            meta["workflow_state"] = "pending_audio_render"
-            meta["note"] = "Two approved single candidates will be combined into one release audio."
-
+    playlist.output_audio_path = None
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.status = PlaylistStatus.draft
+    meta["publish_ready"] = False
+    meta["render_ready"] = False
+    meta["workflow_state"] = "needs_single_selection"
+    meta["render_error"] = "Single Release can publish only one selected track. Move extra approved tracks into separate Single Releases."
+    meta["note"] = "This Single Release has multiple approved tracks. Publish each good Suno output as its own Single Release instead of combining them."
     playlist.metadata_json = meta
     return True
+
+
+def _create_split_single_release_for_track(
+    db: Session,
+    *,
+    source_playlist: Playlist,
+    track: Track,
+    actor: str,
+) -> Playlist:
+    source_meta = _playlist_meta(source_playlist)
+    title = track.title or f"{source_playlist.title} Single"
+    playlist = Playlist(
+        title=title,
+        status=PlaylistStatus.draft,
+        target_duration_seconds=1,
+        actual_duration_seconds=0,
+        metadata_json={
+            "workspace_mode": "single_track_video",
+            "auto_publish_when_ready": bool(source_meta.get("auto_publish_when_ready")),
+            "description": f"Split from {source_playlist.title} after multiple Suno candidates were approved.",
+            "cover_prompt": "",
+            "dreamina_prompt": "",
+            "workflow_state": "collecting",
+            "publish_ready": False,
+            "publish_approved": False,
+            "cover_approved": False,
+            "metadata_approved": False,
+            "split_from_release_id": source_playlist.id,
+            "split_from_release_title": source_playlist.title,
+        },
+    )
+    db.add(playlist)
+    db.flush()
+    db.add(
+        PlaylistItem(
+            playlist_id=playlist.id,
+            track_id=track.id,
+            order_index=1,
+            included_duration_seconds=track.duration_seconds,
+        )
+    )
+    db.flush()
+    db.refresh(playlist)
+
+    assignment_history = [
+        {
+            "track_id": track.id,
+            "actor": actor,
+            "assigned_at": _utcnow().isoformat(),
+            "split_from_release_id": source_playlist.id,
+        }
+    ]
+    _promote_single_release_audio(playlist, track, reset_downstream_assets=True)
+    meta = _playlist_meta(playlist)
+    meta["assignment_history"] = assignment_history
+    meta["split_from_release_id"] = source_playlist.id
+    meta["split_from_release_title"] = source_playlist.title
+    meta["note"] = "Approved as its own Single Release because the source candidate set already has a selected track."
+    playlist.metadata_json = meta
+
+    track_meta = dict(track.metadata_json or {})
+    track_meta["pending_workspace_id"] = playlist.id
+    track_meta["pending_workspace_title"] = playlist.title
+    track_meta["split_from_release_id"] = source_playlist.id
+    track.metadata_json = track_meta
+    db.add(track)
+    db.add(playlist)
+    db.flush()
+    return playlist
 
 
 def _find_active_playlist_job(
@@ -1118,6 +1163,12 @@ async def _update_publish_state(
                 reset_downstream_assets=False,
             )
             meta = _playlist_meta(playlist)
+        if len(tracks) > 1:
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
+            db.refresh(playlist)
+            return
 
     if _publish_is_ready(playlist):
         meta["workflow_state"] = "audio_ready" if playlist.output_audio_path else "pending_audio_render"
@@ -1210,8 +1261,17 @@ async def assign_track_to_playlist(
         raise ValueError("Playlist not found")
 
     existing_item = next((item for item in playlist.items if item.track_id == track.id), None)
-    if _workspace_mode(playlist) == "single_track_video" and existing_item is None and len(playlist.items) >= 2:
-        raise ValueError("Single release can contain at most two approved tracks.")
+    if _workspace_mode(playlist) == "single_track_video" and existing_item is None and playlist.items:
+        split_playlist = _create_split_single_release_for_track(
+            db,
+            source_playlist=playlist,
+            track=track,
+            actor=actor,
+        )
+        db.commit()
+        split_playlist = _load_playlist_with_tracks(db, split_playlist.id)
+        await _update_publish_state(db, services, split_playlist, trigger=f"assignment:{track.id}")
+        return _load_playlist_with_tracks(db, split_playlist.id)
 
     if existing_item is None:
         order_index = (max((item.order_index for item in playlist.items), default=0) + 1)
@@ -1267,8 +1327,8 @@ def reorder_workspace_tracks(
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
         raise ValueError("Playlist not found")
-    if _workspace_mode(playlist) == "single_track_video" and len(track_ids) > 2:
-        raise ValueError("Single release can only contain up to two approved tracks.")
+    if _workspace_mode(playlist) == "single_track_video" and len(track_ids) > 1:
+        raise ValueError("Single release can only contain one selected track. Publish additional candidates as separate Single Releases.")
 
     item_by_track_id = {item.track_id: item for item in playlist.items}
     if len(track_ids) != len(item_by_track_id) or set(track_ids) != set(item_by_track_id):
@@ -1305,12 +1365,7 @@ def reorder_workspace_tracks(
             db.commit()
             return _load_playlist_with_tracks(db, playlist.id)
         if len(tracks) > 1:
-            _sync_single_release_audio_state(
-                playlist,
-                reset_downstream_assets=True,
-            )
-            meta = _playlist_meta(playlist)
-            meta["reorder_history"] = history
+            raise ValueError("Single release can only contain one selected track. Publish additional candidates as separate Single Releases.")
 
     meta["render_ready"] = False
     meta["publish_approved"] = False
@@ -1365,19 +1420,15 @@ def queue_workspace_audio_render(
             db.add(playlist)
             db.commit()
             return _load_playlist_with_tracks(db, playlist.id)
-        if len(tracks) > 2:
-            raise ValueError("Single release can only contain up to two approved tracks.")
+        if len(tracks) > 1:
+            raise ValueError("Single release can only render one selected track. Publish additional candidates as separate Single Releases.")
 
     active_job = _find_active_playlist_job(db, playlist)
     meta = _playlist_meta(playlist)
     meta["render_ready"] = False
     meta["publish_approved"] = False
     meta["workflow_state"] = "render_queued"
-    meta["note"] = (
-        "Combining two approved single candidates into one release audio."
-        if _workspace_mode(playlist) == "single_track_video"
-        else "Playlist audio render queued from the web dashboard."
-    )
+    meta["note"] = "Playlist audio render queued from the web dashboard."
     meta.pop("render_error", None)
     meta.pop("cover_image_path", None)
     meta.pop("cover_approved", None)

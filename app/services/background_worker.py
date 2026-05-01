@@ -641,11 +641,14 @@ class BackgroundJobWorker:
             track_meta = track.metadata_json or {}
             tags = str(track_meta.get("tags") or "").strip()
             lyrics = str(track_meta.get("lyrics") or "").strip()
+            style = str(track_meta.get("style") or "").strip()
             lyrics_context = f" Lyrics/content context: {lyrics[:800]}." if lyrics else ""
+            style_context = f" Suno style/settings: {style[:500]}." if style else ""
             return (
                 f"Cinematic music visualizer loop for '{track.title}'. "
                 f"Prompt mood: {track.prompt}. "
                 f"{lyrics_context}"
+                f"{style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
                 "Slow camera motion, seamless looping movement, no hard cuts, no subtitles, no text."
             )

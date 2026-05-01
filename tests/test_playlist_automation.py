@@ -98,6 +98,7 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
                 "title": f"Manual Upload {marker}",
                 "prompt": "manual suno intake candidate",
                 "lyrics": "달빛 아래 조용한 후렴",
+                "style": "bright Korean pop ballad, clean vocal, 92 BPM",
                 "duration_seconds": "123",
                 "model_score": "0.87",
             },
@@ -112,7 +113,9 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         assert track["metadata_json"]["source"] == "manual-upload"
         assert track["metadata_json"]["model_score"] == 0.87
         assert track["metadata_json"]["lyrics"] == "달빛 아래 조용한 후렴"
+        assert track["metadata_json"]["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
         assert track["lyrics"] == "달빛 아래 조용한 후렴"
+        assert track["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
     finally:
         clear_isolated_client_env()
 
@@ -168,6 +171,7 @@ def test_create_track_audio_url_is_cached_locally(tmp_path, monkeypatch) -> None
                 "title": "API Remote",
                 "prompt": "api remote intake",
                 "lyrics": "remote api lyrics",
+                "style": "remote api style",
                 "duration_seconds": 123,
                 "audio_path": "https://cdn.example.com/api-remote.mp3",
                 "metadata": {"source": "api-test"},
@@ -181,6 +185,8 @@ def test_create_track_audio_url_is_cached_locally(tmp_path, monkeypatch) -> None
         assert track["metadata_json"]["audio_source"] == "remote-url-cache"
         assert track["metadata_json"]["source"] == "api-test"
         assert track["metadata_json"]["lyrics"] == "remote api lyrics"
+        assert track["metadata_json"]["style"] == "remote api style"
+        assert track["style"] == "remote api style"
     finally:
         clear_isolated_client_env()
 
@@ -488,7 +494,7 @@ def test_workspace_flow_assigns_tracks_and_requests_publish_approval(tmp_path) -
         clear_isolated_client_env()
 
 
-def test_single_release_can_combine_two_approved_tracks(tmp_path) -> None:
+def test_second_single_candidate_approval_creates_separate_release(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -551,15 +557,29 @@ def test_single_release_can_combine_two_approved_tracks(tmp_path) -> None:
             },
         )
         assert second_approve.status_code == 200
-        assert drain_background_jobs(client) == 1
+        assert drain_background_jobs(client) == 0
 
         workspaces_response = client.get("/api/playlists/workspaces")
-        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
-        assert [track["id"] for track in workspace["tracks"]] == track_ids
-        assert workspace["actual_duration_seconds"] == 360
-        assert workspace["workflow_state"] == "audio_ready"
-        assert workspace["output_audio_path"].endswith(f"{workspace_id}.mp3")
-        assert rendered_titles == ["Single Candidate 0", "Single Candidate 1"]
+        assert workspaces_response.status_code == 200
+        workspaces = workspaces_response.json()
+        original = next(item for item in workspaces if item["id"] == workspace_id)
+        split = next(
+            item
+            for item in workspaces
+            if item["id"] != workspace_id
+            and item["workspace_mode"] == "single_track_video"
+            and [track["id"] for track in item["tracks"]] == [track_ids[1]]
+        )
+        assert [track["id"] for track in original["tracks"]] == [track_ids[0]]
+        assert original["actual_duration_seconds"] == 180
+        assert original["workflow_state"] == "audio_ready"
+        assert original["output_audio_path"].endswith("single-0.mp3")
+        assert split["title"] == "Single Candidate 1"
+        assert split["actual_duration_seconds"] == 180
+        assert split["workflow_state"] == "audio_ready"
+        assert split["output_audio_path"].endswith("single-1.mp3")
+        assert "own Single Release" in split["note"]
+        assert rendered_titles == []
     finally:
         clear_isolated_client_env()
 

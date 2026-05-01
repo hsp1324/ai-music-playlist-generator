@@ -15,7 +15,7 @@ Do not use the public `https://ai-music...sslip.io` URL from OpenClaw. Public tr
 
 ## Upload A New Single Candidate Set
 
-Use this when Suno/OpenClaw produced one or two candidates for the same single release. Suno usually returns two songs; upload both to the same new Single Release so a human can choose one or approve both.
+Use this when Suno/OpenClaw produced one or two candidates for the same single release. Suno usually returns two songs; upload both to the same new Single Release so a human can choose. If both are good, the second approved candidate becomes its own Single Release instead of being combined.
 
 ```bash
 scripts/openclaw-release upload-single-candidates \
@@ -26,6 +26,7 @@ scripts/openclaw-release upload-single-candidates \
   --cover /absolute/path/to/cover-b.png \
   --lyrics-file /absolute/path/to/song-a-lyrics.txt \
   --lyrics-file /absolute/path/to/song-b-lyrics.txt \
+  --style "Suno style/settings used for this prompt" \
   --prompt "Short generation prompt or notes" \
   --tags "ai music, single"
 ```
@@ -37,20 +38,26 @@ The command returns JSON with:
 - `tracks[].id`
 - next action
 
-After this, both candidates appear in the web/Slack review queue. A human can approve one candidate, or approve both candidates to combine them into one single-style release audio. If both candidates are rejected, the Single Release is automatically archived instead of deleted. It can be restored from the web UI archive.
+After this, both candidates appear in the web/Slack review queue. A human can approve one candidate. If both candidates are good, approve both; the app keeps the first selected track in the original Single Release and splits the second selected track into a new Single Release. If both candidates are rejected, the Single Release is automatically archived instead of deleted. It can be restored from the web UI archive.
 
 Cover behavior:
 
 - `--cover` is optional.
 - Use one `--cover` to share the same cover across all uploaded candidates.
 - Use one `--cover` per `--audio` to upload candidate-specific covers.
-- When a Single Release candidate is approved, its uploaded cover is automatically registered as the release cover. If both candidates are approved, the first available uploaded cover is used as the release cover. The human only needs to review/approve the cover before rendering video.
+- When a Single Release candidate is approved, its uploaded cover is automatically registered as that release's cover. If both candidates are approved, each approved song should continue with its own cover/thumbnail/loop-video assets.
 
 Lyrics/content behavior:
 
 - `--lyrics` or `--lyrics-file` is optional, but OpenClaw should provide it whenever Suno generated lyrics or meaningful song content.
 - If the track is instrumental or lyrics are unknown, omit the flag or pass an empty value.
 - Lyrics are stored with the track so future thumbnail, Dreamina loop-video, metadata, or standalone single publishing work has song-content context.
+
+Style behavior:
+
+- `--style` is optional, but OpenClaw should provide it whenever the Suno style/settings are known.
+- Use one `--style` for a shared prompt style, or one `--style` per `--audio` when candidates used different settings.
+- Style is stored with the track so future remake, thumbnail, Dreamina loop-video, and metadata work can see how the song was generated.
 
 ## Upload One New Single Candidate
 
@@ -63,6 +70,7 @@ scripts/openclaw-release upload-audio \
   --cover /absolute/path/to/cover.png \
   --title "Song Title" \
   --lyrics-file /absolute/path/to/song-lyrics.txt \
+  --style "Suno style/settings used for this song" \
   --prompt "Short generation prompt or notes" \
   --tags "ai music, single"
 ```
@@ -89,6 +97,7 @@ scripts/openclaw-release upload-audio \
   --audio /absolute/path/to/playlist-track.mp3 \
   --title "Track Title" \
   --lyrics-file /absolute/path/to/playlist-track-lyrics.txt \
+  --style "Suno style/settings used for this track" \
   --prompt "Short generation prompt or notes" \
   --tags "ai music, playlist"
 ```
@@ -101,7 +110,7 @@ The JSON result should include:
 Only use `--pending-review` if the human explicitly asks to review playlist tracks one by one.
 
 If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
-Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics are available. For instrumental tracks, empty lyrics are acceptable.
+Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics are available. For instrumental tracks, empty lyrics are acceptable. Pass one shared `--style` or one `--style` per `--audio` whenever Suno style/settings are known.
 
 For full automatic playlist publishing, two final 16:9 images are required.
 
@@ -201,7 +210,7 @@ After OpenClaw uploads audio, the web UI shows the selected release as a music-l
 - Clicking a release card opens a focused `?release=...` page instead of scrolling to a lower dashboard panel.
 - `Awaiting Approval` contains uploaded candidates with cover art, duration, player controls, prompt notes, and approve/hold/reject actions.
 - `Final Order` contains approved tracks in playlist order. Playlist releases can be reordered by drag/drop before audio rendering.
-- Single Releases can end with one approved selected track, or two approved tracks that are combined into one single-style release audio. Playlist Releases may contain many approved tracks.
+- Single Releases end with one selected track. If two reviewed candidates are both approved, the app splits the second one into a separate Single Release instead of combining them. Playlist Releases may contain many approved tracks.
 - The web UI defers automatic polling while any audio player is actively playing, so mobile playback is not interrupted by background refresh.
 - Starting one web audio player pauses any other currently playing web audio player.
 
@@ -284,13 +293,13 @@ For a new single candidate set, create one Single Release by using --release-tit
 For an existing release, use --release-id and keep all related Suno outputs in that same workspace.
 When Suno returns two candidate songs for one single release, run:
 
-scripts/openclaw-release upload-single-candidates --release-title "TITLE" --audio ABSOLUTE_AUDIO_PATH_A --audio ABSOLUTE_AUDIO_PATH_B --cover ABSOLUTE_COVER_PATH_A --cover ABSOLUTE_COVER_PATH_B --prompt "PROMPT" --tags "TAGS"
+scripts/openclaw-release upload-single-candidates --release-title "TITLE" --audio ABSOLUTE_AUDIO_PATH_A --audio ABSOLUTE_AUDIO_PATH_B --cover ABSOLUTE_COVER_PATH_A --cover ABSOLUTE_COVER_PATH_B --style "SUNO_STYLE_OR_SETTINGS" --prompt "PROMPT" --tags "TAGS"
 
 Return the JSON result, especially release.id and tracks[].id.
 Do not approve, render, or publish unless explicitly asked.
 If only one candidate exists, run:
 
-scripts/openclaw-release upload-audio --new-single --audio ABSOLUTE_AUDIO_PATH --cover ABSOLUTE_COVER_PATH --title "TITLE" --prompt "PROMPT" --tags "TAGS"
+scripts/openclaw-release upload-audio --new-single --audio ABSOLUTE_AUDIO_PATH --cover ABSOLUTE_COVER_PATH --title "TITLE" --style "SUNO_STYLE_OR_SETTINGS" --prompt "PROMPT" --tags "TAGS"
 
 Return the JSON result, especially release.id and track.id.
 Do not approve, render, or publish unless explicitly asked.
@@ -304,7 +313,7 @@ If the human explicitly asks OpenClaw to publish one single all the way to YouTu
 ```text
 Create an original single release and publish it privately.
 Generate or obtain:
-- one or two Suno audio candidates
+- one final Suno audio file per YouTube single
 - a final clean 16:9 cover image
 - a separate YouTube thumbnail image with readable text
 - optionally one exactly 8 second Dreamina/Seedance loop video
@@ -317,6 +326,7 @@ scripts/openclaw-release auto-publish-single \
   --audio ABSOLUTE_AUDIO_PATH_01 \
   --title "INDEPENDENT_TRACK_TITLE_01" \
   --lyrics-file ABSOLUTE_LYRICS_PATH_01 \
+  --style "SUNO_STYLE_OR_SETTINGS" \
   --cover ABSOLUTE_FINAL_CLEAN_COVER_IMAGE_PATH \
   --thumbnail ABSOLUTE_YOUTUBE_TEXT_THUMBNAIL_IMAGE_PATH \
   --loop-video ABSOLUTE_DREAMINA_SEEDANCE_8_SECOND_MP4 \
@@ -325,7 +335,7 @@ scripts/openclaw-release auto-publish-single \
   --youtube-channel-title "Tokyo Daydream Radio"
 
 For non-Japan releases, use "Soft Hour Radio" unless the human says otherwise.
-For one audio candidate, pass one --audio/--title/--lyrics-file. For two candidates that should be combined, pass two.
+Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice.
 ```
 
 ## Safety Rules
@@ -334,6 +344,7 @@ For one audio candidate, pass one --audio/--title/--lyrics-file. For two candida
 - Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - If lyrics or meaningful song-content notes are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value for instrumentals or unknown lyrics.
+- If Suno style/settings are available, upload them in the same command with `--style`.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
@@ -344,6 +355,6 @@ For one audio candidate, pass one --audio/--title/--lyrics-file. For two candida
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
-- Single Release candidates are still human-reviewed; the human may approve one candidate, approve both candidates to combine them, or reject both.
+- Single Release candidates are still human-reviewed; the human may approve one candidate, approve both candidates as separate Single Releases, or reject both.
 - If both candidates are rejected, the app will archive the release automatically; do not delete files or database rows manually.
 - If three or more songs are ready for one release, use a Playlist Release instead.

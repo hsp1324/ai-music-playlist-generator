@@ -1389,7 +1389,7 @@ function setQuickUploadFiles(files) {
     const hint = quickUploadFiles.length === 1
       ? "기존 release를 선택하거나 '+ New Single Release from this file'을 선택하세요."
       : quickUploadFiles.length === 2
-        ? "Suno 후보 2곡은 새 Single Release 후보로 함께 올릴 수 있습니다."
+        ? "Suno 후보 2곡은 같은 Single Release 후보로 올리고, 둘 다 좋으면 각각 따로 publish합니다."
         : "3개 이상 파일은 Playlist Release를 선택하세요.";
     setTextStatus(quickUploadStatus, `${quickUploadFiles.length}개 파일 준비됨. ${hint}`);
   }
@@ -2044,15 +2044,19 @@ function renderWorkspaceDetail() {
 
       const imageUrl = trackCoverUrl(track);
       const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
+      const styleText = track.style || track.metadata_json?.style || "";
 
       image.src = imageUrl;
       image.alt = displayTitle(track.title, "Track");
       duration.textContent = formatDuration(track.duration_seconds);
       title.textContent = displayTitle(track.title, "Untitled Track");
-      subtitle.textContent = shortText(track.metadata_json?.tags || track.source_track_id || "manual candidate", 64);
+      subtitle.textContent = shortText(styleText || track.metadata_json?.tags || track.source_track_id || "manual candidate", 64);
       status.textContent = statusLabel(track.status);
       status.classList.add(track.status);
       prompt.textContent = shortText(track.prompt || "Prompt not provided.", 160);
+      if (styleText) {
+        prompt.textContent = `${prompt.textContent}\nStyle: ${shortText(styleText, 220)}`;
+      }
       if (track.lyrics || track.metadata_json?.lyrics) {
         prompt.textContent = `${prompt.textContent}\nLyrics: ${shortText(track.lyrics || track.metadata_json.lyrics, 220)}`;
       }
@@ -2145,6 +2149,7 @@ function renderWorkspaceDetail() {
     const actions = fragment.querySelector(".approved-actions");
     const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
     const imageUrl = trackCoverUrl(track);
+    const styleText = track.style || track.metadata_json?.style || "";
 
     card.dataset.trackId = track.id;
     if (order) order.textContent = String(index + 1).padStart(2, "0");
@@ -2185,7 +2190,11 @@ function renderWorkspaceDetail() {
     image.alt = displayTitle(track.title, "Track");
     title.textContent = displayTitle(track.title, "Untitled Track");
     meta.textContent = shortText(
-      track.lyrics ? `${track.tags || "approved track"} · lyrics saved` : track.tags || "approved track",
+      [
+        track.tags || "",
+        styleText ? "style saved" : "",
+        track.lyrics ? "lyrics saved" : "",
+      ].filter(Boolean).join(" · ") || "approved track",
       90
     );
     duration.textContent = formatDuration(track.duration_seconds);
@@ -2202,6 +2211,12 @@ function renderWorkspaceDetail() {
         alert(track.lyrics);
       });
       actions.appendChild(lyricsButton);
+    }
+    if (styleText) {
+      const styleButton = actionButton("Style", "pill-action reorder", async () => {
+        alert(styleText);
+      });
+      actions.appendChild(styleButton);
     }
     if (showTrackReviewColumns && workspace.tracks.length > 1) {
       const upButton = actionButton("Up", "pill-action reorder", async () => {

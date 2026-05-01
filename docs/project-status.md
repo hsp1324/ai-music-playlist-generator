@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-04-24
+Last updated: 2026-05-01
 
 ## Goal
 
@@ -57,8 +57,8 @@ Two modes exist:
   - collect approved tracks until target duration
   - then request publish approval
 - `single_track_video`
-  - one approved track is enough, but two approved candidates can be combined
-  - intended for one-song video publishing, including a two-part single-style release
+  - one approved track becomes one YouTube single
+  - two Suno candidates can be reviewed together, but if both are good they are published as separate Single Releases
   - can auto-publish when ready
 
 ### 5. Publish pipeline
@@ -81,8 +81,8 @@ The stall guard is progress-based, not a hard wall-clock timeout. It only fails 
 
 For `single_track_video`, the intended publish path is:
 
-1. approve one or two tracks into workspace
-2. render audio; one approved track uses its source audio directly, two approved tracks render into one combined audio file
+1. approve one selected track into the workspace
+2. use its uploaded source audio directly
 3. generate cover
 4. optionally generate a short Dreamina clip
 5. loop the clip to match the audio
@@ -115,7 +115,7 @@ For `single_track_video`, the intended publish path is:
 - OpenClaw should generate static cover/thumbnail images with OpenAI GPT Image models, preferably `gpt-image-2` when available, not Dreamina. Dreamina is reserved for the moving visual clip.
 - OpenClaw can also pass an 8 second Dreamina/Seedance MP4 via `--loop-video`. The app stores it as `loop_video_path` and uses smooth 2 second forward crossfade looping during final video render instead of making OpenClaw export a one-hour video. Browser automation should use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds`.
 - The web release detail UI now supports direct upload/replace actions for clean cover, text YouTube thumbnail, and 8 second loop video as separate assets.
-- Track uploads now accept optional lyrics/content notes. Lyrics are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, and standalone single workflows.
+- Track uploads now accept optional lyrics/content notes and Suno style/settings. Both are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, remake, and standalone single workflows.
 
 ### Cover art
 

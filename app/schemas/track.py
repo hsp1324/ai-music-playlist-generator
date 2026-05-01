@@ -22,6 +22,7 @@ class TrackCreateRequest(BaseModel):
     title: str
     prompt: str
     lyrics: str | None = None
+    style: str | None = None
     duration_seconds: int = Field(default=0, ge=0)
     audio_path: str | None = None
     preview_url: str | None = None
@@ -52,6 +53,7 @@ class TrackRead(BaseModel):
     title: str
     prompt: str
     lyrics: str = ""
+    style: str = ""
     duration_seconds: int
     audio_path: str | None
     preview_url: str | None

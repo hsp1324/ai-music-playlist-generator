@@ -25,6 +25,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - If the release is a playlist, include a timestamped tracklist from the final order.
 - Always run `scripts/openclaw-release metadata-context` first and use its timeline in the description.
+- `metadata-context` includes track `prompt`, `style`, `tags`, and `lyrics` when available. Use them as private creative context, but do not paste raw Suno settings into the public description.
 - Prefer `display_timestamp_lines` when available. It keeps the same timestamps but removes awkward `A` / `B`, `1` / `2`, and old pair-style suffixes.
 - Do not guess timestamps. The helper calculates them from the app's final order and track durations.
 - Treat each timestamp as a fixed playback position. If a title is corrected, only change the title text; do not move or swap the timestamp.
@@ -39,7 +40,7 @@ Give OpenClaw this prompt:
 ```text
 You are writing YouTube metadata for an AI music release in the AI Music app.
 
-Read the release title, final track order, durations, and mood.
+Read the release title, final track order, durations, mood, style, lyrics, and tags.
 First run:
 scripts/openclaw-release metadata-context --release-id RELEASE_ID
 

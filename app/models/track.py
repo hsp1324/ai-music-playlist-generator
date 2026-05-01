@@ -45,3 +45,7 @@ class Track(Base):
     @property
     def lyrics(self) -> str:
         return str((self.metadata_json or {}).get("lyrics") or "")
+
+    @property
+    def style(self) -> str:
+        return str((self.metadata_json or {}).get("style") or "")

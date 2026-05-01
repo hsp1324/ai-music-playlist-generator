@@ -164,8 +164,9 @@ class CodexMetadataService(ReleaseMetadataService):
                 "  4. One slash-separated Korean use-case line.",
                 "  5. A timestamped tracklist using the fixed start times and playback order from timeline.",
                 "  6. One final hashtag line with 5-8 relevant hashtags.",
-                "- For single-track releases, write as one song/release even if the timeline contains two approved audio parts.",
+                "- For single-track releases, write as one standalone song/release.",
                 "- For single-track releases, do not present the release as a playlist and do not include a timestamp tracklist unless the release title explicitly asks for it.",
+                "- Use prompt, style, tags, and lyrics as private creative context; do not paste raw generation settings into the public description.",
                 "- For timestamped tracklists, use each timeline item's start exactly and keep the same row order.",
                 "- Do not show A/B, 1/2, or artificial pair labels in metadata titles. If two tracks read like variants of the same title, rewrite only the displayed title text so each row is unique and natural.",
                 "- Use display_title_hint as a starting point, but you may make the displayed titles more natural while preserving each row's timestamp.",
@@ -199,6 +200,7 @@ class CodexMetadataService(ReleaseMetadataService):
                     "prompt": track.prompt,
                     "tags": track_meta.get("tags"),
                     "lyrics": str(track_meta.get("lyrics") or ""),
+                    "style": str(track_meta.get("style") or ""),
                 }
             )
             offset += duration
