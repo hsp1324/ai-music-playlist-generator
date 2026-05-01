@@ -645,11 +645,11 @@ class BackgroundJobWorker:
             lyrics_context = f" Lyrics/content context: {lyrics[:800]}." if lyrics else ""
             style_context = f" Suno style/settings: {style[:500]}." if style else ""
             return (
-                f"Cinematic music visualizer loop for '{track.title}'. "
+                f"Cinematic music visualizer shot for '{track.title}'. "
                 f"Prompt mood: {track.prompt}. "
                 f"{lyrics_context}"
                 f"{style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
-                "Slow camera motion, seamless looping movement, no hard cuts, no subtitles, no text."
+                "One continuous forward-moving shot, subtle slow camera motion, stable composition, no repeated segment, no hard cuts, no subtitles, no text."
             )
-        return "Cinematic music visualizer loop, seamless motion, atmospheric lighting, no text."
+        return "Cinematic music visualizer shot, one continuous forward-moving take, atmospheric lighting, no repeated segment, no text."

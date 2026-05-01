@@ -150,15 +150,28 @@ Dreamina website workflow for OpenClaw:
 - Confirm the file exists locally before passing it to `--loop-video`.
 - If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video.
 
-Dreamina/Seedance loop prompt guidance:
+Dreamina/Seedance motion prompt guidance:
 
-- Ask for a seamless ambient visual loop.
-- Ask for exactly 8 seconds. Do not request 5, 10, or 15 seconds.
+- Do not ask Dreamina for a loop. Ask for one continuous forward-moving video shot.
+- Do not put duration, ratio, or quality in the prompt. Set those in Dreamina controls only.
+- Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
 - Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and main subject in the first shot.
 - Use slow camera movement, stable composition, no hard cuts, no extra text overlays, no subtitles, no logos, and no people unless specifically requested.
 - Do not include `start and end frames match` or equivalent wording. The app handles smooth repeat with forward crossfade rendering, and forcing the last frame to match can make the clip too static.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
+
+Recommended Dreamina prompt shape:
+
+```text
+Use the uploaded first-frame image as the exact starting frame.
+Create one continuous ambient Tokyo night J-pop synth-pop video shot.
+The motion must progress forward naturally for the full clip.
+Do not repeat any segment. Do not ping-pong or restart motion.
+Preserve the opening composition, lighting, palette, and baked-in text only at the start.
+Add subtle slow camera drift, neon reflections, rain shimmer, and soft city light motion.
+Stable composition, no hard cuts, no new text, no subtitles, no logos, no UI, no new people or characters.
+```
 
 Thumbnail text rules for OpenClaw:
 
@@ -351,7 +364,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - If OpenClaw creates a Dreamina/Seedance loop clip, pass the 8 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text; `--cover` and `--loop-video` should be clean visuals without text.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` for loop video generation.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
