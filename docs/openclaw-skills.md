@@ -37,10 +37,11 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - Full playlist publishing needs two 16:9 images:
 - `cover`: clean video visual shown during playback. It should look good for the full video duration and should have no or minimal text.
 - `thumbnail`: YouTube click thumbnail. It should include short readable text such as `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `TOKYO NIGHT`, `CITY POP`, `1 HOUR`, plus a small brand mark for the selected channel.
-- If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 8 second MP4 and pass it with `--loop-video`. The app will repeat it smoothly during final video render. OpenClaw should not render a one-hour video itself.
+- Generate static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the OpenAI/Image tool environment. Do not use Dreamina for static image generation. Do not assume the OpenAI API is free; use the available Codex/ChatGPT image tool if that is the operator-approved path, or use API billing/credentials when explicitly configured.
+- Use Dreamina/Seedance only for the moving visual clip. If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 8 second MP4 and pass it with `--loop-video`. The app will repeat it smoothly during final video render. OpenClaw should not render a one-hour video itself.
 - Keep these assets separate: `--thumbnail` is the click image with text, `--cover` is the clean fallback visual, and `--loop-video` is the 8 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
-- The 8 second loop video must visually match the thumbnail. Use the final thumbnail image as the first frame, image-to-video reference, or starting-scene reference in Dreamina/Seedance, then animate from that scene. This keeps the clicked thumbnail and the video's opening shot consistent.
-- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Create/download the 8 second MP4 there, save it locally, then pass the downloaded file path as `--loop-video`.
+- The 8 second loop video must visually match the thumbnail. Use the final thumbnail image as the first-frame or starting-scene reference in Dreamina/Seedance, then animate from that scene. Do not use Omni Reference. Do not provide a last-frame reference because it makes the motion too static.
+- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Select Seedance/Dreamina `2.0 Fast`, first/last-frame mode if the UI asks, provide the first frame only, leave the last frame empty, set ratio to `16:9` when selectable, quality to `720p`, duration to exactly `8 seconds`, then create/download the MP4, save it locally, and pass the downloaded file path as `--loop-video`.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -120,7 +121,100 @@ Next: human should approve one candidate, approve both candidates to combine the
 - A Single Release can contain at most two approved tracks. If it already has two selected/approved tracks, create a new Single Release instead of uploading more candidates to it.
 - If both candidates are rejected later, the app archives the release automatically. Do not manually delete it.
 
-## Skill 2: Automatic Private Playlist Publisher
+## Skill 2: Automatic Private Single Publisher
+
+Use this skill when the user explicitly asks OpenClaw to create one standalone song/single and publish it privately to YouTube.
+
+### Goal
+
+Create one Single Release, generate one or two Suno candidates, auto-approve the usable candidates, render the final single video, approve metadata, and upload privately to YouTube on the correct channel.
+
+This is different from `Single Release Candidate Set`: that skill stops for human candidate review. Use this automatic publisher only when the human says to publish/upload the single.
+
+For Japan, Tokyo, city pop, J-pop, anime, Japanese lofi, or similar Japan-themed singles, publish to `Tokyo Daydream Radio`.
+
+### OpenClaw Skill Prompt
+
+```text
+You are creating and privately publishing one Single Release for the AI Music app.
+
+Work in /opt/ai-music-playlist-generator on the Oracle VM.
+Use scripts/openclaw-release only.
+
+Goal:
+- Generate an original standalone song/single.
+- If the human references an existing artist such as YOASOBI, treat it only as mood/style guidance. Do not copy melodies, lyrics, titles, or a specific song.
+- If Suno returns two usable candidates and the human asked for full automation, either choose the stronger one or use both only when they work as one combined single-style release.
+- Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
+- Preserve lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available. Empty lyrics are acceptable for instrumentals or unknown lyrics.
+- A final clean 16:9 cover image is required.
+- A separate YouTube thumbnail image with readable text is required. For J-pop/Japan singles, use short click text such as `J-POP`, `TOKYO POP`, `NEW JAPAN POP`, or the release title plus the channel brand.
+- Generate both static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model. Dreamina is only for the moving 8 second MP4. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
+- Generate exactly one 8 second Dreamina/Seedance MP4 before publish when moving visuals are requested.
+- Use the final YouTube thumbnail as the first-frame/start-frame reference for Dreamina/Seedance so the video opening matches the clicked thumbnail. Do not use Omni Reference. Do not upload a last-frame reference.
+- The thumbnail, cover, and loop video are three different assets. The thumbnail has readable text; the cover is clean; the loop video should not add extra subtitles, lyrics, UI, or new text beyond the thumbnail reference.
+- If using browser automation, open `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, use first/last-frame mode with only the first frame provided, do not use Omni Reference, leave the last frame empty, set `16:9`, `720p`, and `8 seconds` when selectable, create/download the MP4, confirm the local file exists, and pass that absolute path as `--loop-video`.
+- Render audio/video, generate and approve YouTube metadata, and upload privately.
+- Publish Japanese/J-pop/Tokyo content to `Tokyo Daydream Radio`.
+- Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
+```
+
+### Run The Full Automation
+
+After the generated audio, final cover, text thumbnail, and optional 8 second loop video are ready, run one command:
+
+```bash
+scripts/openclaw-release auto-publish-single \
+  --release-title "SINGLE_RELEASE_TITLE" \
+  --description "Short concept description for metadata generation." \
+  --audio ABSOLUTE_AUDIO_PATH_01 \
+  --title "INDEPENDENT_TRACK_TITLE_01" \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_01 \
+  --audio ABSOLUTE_AUDIO_PATH_02 \
+  --title "INDEPENDENT_TRACK_TITLE_02" \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_02 \
+  --cover ABSOLUTE_FINAL_CLEAN_COVER_IMAGE_PATH \
+  --thumbnail ABSOLUTE_YOUTUBE_TEXT_THUMBNAIL_IMAGE_PATH \
+  --loop-video ABSOLUTE_DREAMINA_SEEDANCE_8_SECOND_MP4 \
+  --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
+  --tags "comma, separated, tags" \
+  --youtube-channel-title "Tokyo Daydream Radio"
+```
+
+For one final audio file, pass only one `--audio`, one `--title`, and one optional `--lyrics-file`.
+
+Do not omit `--cover` or `--thumbnail` for a full private single publish run. If either asset is not ready, stop after audio creation and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
+
+`--loop-video` is optional but preferred when the human wants moving visuals. If provided, it must be exactly 8 seconds or close enough for the app to trim/pad it to 8 seconds and repeat it smoothly during final video rendering.
+
+### Required Output
+
+OpenClaw should finish with:
+
+```text
+Private single upload completed.
+release.id: ...
+release.title: ...
+uploaded tracks:
+- ...
+- ...
+youtube_video_id: ...
+youtube_channel: SELECTED_CHANNEL_TITLE
+privacy: private
+Next: human should listen to the private YouTube upload and change visibility to Public only if it is good.
+```
+
+### Safety Checks
+
+- Use `auto-publish-single` only when the human explicitly asks for publishing/uploading the single.
+- Do not upload public. The final upload must be private.
+- Do not create two separate Single Releases for two Suno candidates from one prompt.
+- Do not upload more than two candidates to one Single Release.
+- Do not use pair labels like A/B or 1/2 in final titles.
+- Do not publish without a final clean cover, a separate text thumbnail, and the correct YouTube channel selection.
+- For Japanese/J-pop/Tokyo singles, pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly.
+
+## Skill 3: Automatic Private Playlist Publisher
 
 Use this skill when the user asks for a playlist, mix, compilation, or approximately one-hour release and expects OpenClaw to finish the private YouTube upload.
 
@@ -162,13 +256,13 @@ Goal:
 - If using `scripts/openclaw-release upload-audio` for individual playlist tracks, do not pass `--pending-review`; playlist uploads auto-approve by default.
 - A final 16:9 cover image is required before YouTube upload.
 - A separate YouTube thumbnail image with readable text is required before YouTube upload.
-- Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`.
-- Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`.
+- Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`. Use OpenAI GPT Image models for static image creation, not Dreamina.
+- Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`. Use OpenAI GPT Image models for static image creation, not Dreamina.
 - Optionally generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
 - The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text; the cover should stay clean, and the loop video should not add extra text, subtitles, lyrics, logos, or UI elements beyond the thumbnail reference used for its first frame.
 - Use the approved/final thumbnail as the visual starting reference for Dreamina/Seedance image-to-video generation. The first shot of the 8 second loop video should look like the thumbnail, but the loop video itself should not add extra text, subtitles, lyrics, logos, or UI elements beyond what is already baked into the thumbnail reference.
-- For loop clips, prompt Dreamina/Seedance for `exactly 8 seconds`, `seamless loop`, `slow camera motion`, `start and end frames match`, `no extra text overlays`, `no subtitles`, and `no hard cuts`.
-- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, create the video with Dreamina/Seedance, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
+- For loop clips, prompt Dreamina/Seedance for `exactly 8 seconds`, `smooth gentle motion`, `slow camera motion`, `stable composition`, `no extra text overlays`, `no subtitles`, `no logos`, and `no hard cuts`. Do not ask for a matching last frame; the app handles smooth repeat with forward crossfade rendering.
+- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, choose Seedance/Dreamina `2.0 Fast`, choose the first/last-frame workflow if the UI requires a mode, upload only the first-frame image, leave the last frame empty, do not use Omni Reference, set ratio `16:9`, quality `720p`, duration exactly `8 seconds`, create the video, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
 - If Dreamina login, CAPTCHA, payment, or human approval blocks browser automation, stop and report the exact blocked step instead of skipping the loop video.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
@@ -224,7 +318,7 @@ scripts/openclaw-release auto-publish-playlist \
 
 Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the app trims/pads the source to 8 seconds, creates a smooth crossfade ping-pong loop, and repeats it to match the full audio duration. The loop transition should dissolve/fade between motion directions instead of hard-cutting.
+`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the app trims/pads the source to 8 seconds, creates a smooth 1 second forward crossfade loop, and repeats it to match the full audio duration. The loop transition should dissolve from one forward pass into the next instead of hard-cutting.
 
 If the release is Japan-related, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
 
@@ -258,10 +352,12 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general releases and `Tokyo Daydream Radio` for Japan-related releases.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
 - Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
+- Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the already-final thumbnail into an 8 second loop video.
 - Do not use `--allow-generated-draft-cover` unless the human explicitly says a placeholder cover is acceptable for this upload.
 - Do not use `--allow-cover-as-thumbnail` unless the human explicitly says one image is acceptable for both the video visual and YouTube thumbnail.
 - Do not create a long one-hour MP4 in OpenClaw. Upload only the 8 second loop clip with `--loop-video`; the app handles the long render.
 - Do not add new text, subtitles, lyric overlays, logos, or UI elements inside the loop video. Text should come only from the thumbnail reference used as the opening frame.
+- Do not use Dreamina Omni Reference for loop-video generation. Use first-frame/start-frame input only and leave last-frame input empty.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.
@@ -274,6 +370,12 @@ Use `Single Release Candidate Set` when:
 - The user asks for one song, one single, one YouTube single, or one standalone track.
 - Suno returns two alternatives for the same prompt.
 - The human needs to choose A or B.
+
+Use `Automatic Private Single Publisher` when:
+
+- The user asks for one song, one single, or one standalone track and explicitly says to publish/upload it.
+- The goal is a private YouTube upload without stopping for candidate review.
+- The release needs a final clean cover, separate text thumbnail, optional 8 second Dreamina/Seedance loop video, metadata approval, and private upload.
 
 Use `Automatic Private Playlist Publisher` when:
 

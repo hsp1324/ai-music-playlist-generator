@@ -522,7 +522,14 @@ def resolve_youtube_channel_id(client: httpx.Client, *, title: str, channel_id: 
     return str(match["id"])
 
 
-def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id: str, actor: str) -> dict[str, Any]:
+def approve_track_to_release(
+    client: httpx.Client,
+    *,
+    track_id: str,
+    release_id: str,
+    actor: str,
+    rationale: str,
+) -> dict[str, Any]:
     return request_json(
         client,
         "POST",
@@ -531,9 +538,19 @@ def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id
             "decision": "approve",
             "source": "agent",
             "actor": actor,
-            "rationale": "Auto-approved for private playlist publishing.",
+            "rationale": rationale,
             "playlist_id": release_id,
         },
+    )
+
+
+def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id: str, actor: str) -> dict[str, Any]:
+    return approve_track_to_release(
+        client,
+        track_id=track_id,
+        release_id=release_id,
+        actor=actor,
+        rationale="Auto-approved for private playlist publishing.",
     )
 
 
@@ -788,6 +805,239 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     return {
         "ok": True,
         "action": "auto-publish-playlist",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "actual_duration_seconds": release["actual_duration_seconds"],
+            "output_audio_path": release.get("output_audio_path"),
+            "output_video_path": release.get("output_video_path"),
+            "loop_video_path": release.get("loop_video_path"),
+            "youtube_thumbnail_path": release.get("youtube_thumbnail_path"),
+            "youtube_title": release.get("youtube_title"),
+            "youtube_video_id": release.get("youtube_video_id"),
+            "youtube_channel_id": channel_id,
+            "youtube_channel_title": youtube_channel_title,
+        },
+        "uploaded_tracks": uploaded_tracks,
+        "privacy": "private (from AIMP_YOUTUBE_PRIVACY_STATUS)",
+        "next": "Listen to the private YouTube upload. If it is good, change visibility to Public in YouTube Studio.",
+    }
+
+
+def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
+    if not 1 <= len(audio_paths) <= 2:
+        raise RuntimeError("auto-publish-single requires one or two --audio paths.")
+    for audio_path in audio_paths:
+        if not audio_path.exists():
+            raise RuntimeError(f"Audio file does not exist: {audio_path}")
+        if not audio_path.is_file():
+            raise RuntimeError(f"Audio path is not a file: {audio_path}")
+    cover_path = resolve_cover_path(args.cover)
+    thumbnail_path = resolve_thumbnail_path(args.thumbnail)
+    loop_video_path = resolve_loop_video_path(args.loop_video)
+    if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
+        raise RuntimeError(
+            "auto-publish-single requires --cover when creating a new Single Release. "
+            "Generate a final 16:9 clean cover image first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
+        )
+    if not thumbnail_path and not args.release_id and not args.allow_cover_as_thumbnail:
+        raise RuntimeError(
+            "auto-publish-single requires --thumbnail when creating a new Single Release. "
+            "Generate a YouTube thumbnail with readable text first, then pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH."
+        )
+
+    release = (
+        get_release(client, args.release_id)
+        if args.release_id
+        else create_single_release(
+            client,
+            args.release_title or file_stem(audio_paths[0]),
+            description=args.description or "Automatic private single release created by OpenClaw.",
+        )
+    )
+    if release["workspace_mode"] != "single_track_video":
+        raise RuntimeError("auto-publish-single requires a Single Release, not a Playlist Release.")
+    if not cover_path and not release_has_uploaded_cover(release) and not args.allow_generated_draft_cover:
+        raise RuntimeError(
+            "auto-publish-single requires a final 16:9 cover image before YouTube upload. "
+            "Pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH, or upload a final cover to the release first."
+        )
+    if not thumbnail_path and not release_has_uploaded_thumbnail(release) and not args.allow_cover_as_thumbnail:
+        raise RuntimeError(
+            "auto-publish-single requires a YouTube thumbnail image before YouTube upload. "
+            "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first."
+        )
+
+    if loop_video_path:
+        content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
+        with loop_video_path.open("rb") as handle:
+            release = request_json(
+                client,
+                "POST",
+                f"/playlists/{release['id']}/loop-video/upload",
+                data={
+                    "actor": args.actor,
+                    "smooth_loop": str(not args.hard_loop_video).lower(),
+                },
+                files={"loop_video_file": (loop_video_path.name, handle, content_type)},
+            )
+
+    raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
+    if args.title and len(args.title) != len(audio_paths):
+        raise RuntimeError("When using --title, provide exactly one --title per --audio.")
+    track_titles = display_track_titles(
+        [{"title": title, "duration_seconds": 0} for title in raw_titles]
+    )
+    lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
+
+    uploaded_tracks = []
+    for audio_path, track_title, lyrics in zip(audio_paths, track_titles, lyrics_items):
+        track = upload_audio_file_to_release(
+            client,
+            release_id=release["id"],
+            audio_path=audio_path,
+            title=track_title,
+            prompt=args.prompt,
+            tags=args.tags,
+            lyrics=lyrics,
+            cover_path=None,
+            dispatch_review=False,
+        )
+        approved = approve_track_to_release(
+            client,
+            track_id=track["id"],
+            release_id=release["id"],
+            actor=args.actor,
+            rationale="Auto-approved for private single publishing explicitly requested by the human.",
+        )
+        uploaded_tracks.append(
+            {
+                "id": approved["id"],
+                "title": approved["title"],
+                "status": approved["status"],
+                "duration_seconds": approved["duration_seconds"],
+                "lyrics_present": bool((approved.get("metadata_json") or {}).get("lyrics")),
+            }
+        )
+
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/render-audio",
+        json={"actor": args.actor},
+    )
+    release = wait_for_release(
+        client,
+        release["id"],
+        stage="single audio render",
+        timeout_seconds=args.wait_timeout_seconds,
+        poll_seconds=args.poll_seconds,
+        predicate=lambda item: bool(item.get("output_audio_path")),
+    )
+
+    if cover_path:
+        content_type = mimetypes.guess_type(str(cover_path))[0] or "image/png"
+        with cover_path.open("rb") as handle:
+            release = request_json(
+                client,
+                "POST",
+                f"/playlists/{release['id']}/cover/upload",
+                data={"actor": args.actor},
+                files={"cover_file": (cover_path.name, handle, content_type)},
+            )
+    elif release_has_uploaded_cover(release):
+        release = get_release(client, release["id"])
+    elif args.allow_generated_draft_cover:
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release['id']}/cover/generate",
+            json={"actor": args.actor, "regenerate": False},
+        )
+    else:
+        raise RuntimeError("Final cover image is required before cover approval.")
+
+    if thumbnail_path:
+        content_type = mimetypes.guess_type(str(thumbnail_path))[0] or "image/png"
+        with thumbnail_path.open("rb") as handle:
+            release = request_json(
+                client,
+                "POST",
+                f"/playlists/{release['id']}/thumbnail/upload",
+                data={"actor": args.actor},
+                files={"thumbnail_file": (thumbnail_path.name, handle, content_type)},
+            )
+    elif release_has_uploaded_thumbnail(release):
+        release = get_release(client, release["id"])
+    elif args.allow_cover_as_thumbnail:
+        release = get_release(client, release["id"])
+    else:
+        raise RuntimeError("Final YouTube thumbnail image is required before cover approval.")
+
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/cover/approve",
+        json={
+            "actor": args.actor,
+            "approved": True,
+            "note": "Auto-approved cover for private single publishing.",
+        },
+    )
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/video/render",
+        json={"actor": args.actor},
+    )
+    release = wait_for_release(
+        client,
+        release["id"],
+        stage="single video render",
+        timeout_seconds=args.wait_timeout_seconds,
+        poll_seconds=args.poll_seconds,
+        predicate=lambda item: bool(item.get("output_video_path")) and bool(item.get("youtube_title")),
+    )
+
+    if not release.get("youtube_title") or not release.get("youtube_description"):
+        release = request_json(
+            client,
+            "POST",
+            f"/playlists/{release['id']}/metadata/generate",
+            json={"actor": args.actor},
+        )
+    release = approve_generated_metadata(client, release=release, actor=args.actor)
+
+    youtube_channel_title = infer_youtube_channel_title(args)
+    channel_id = resolve_youtube_channel_id(
+        client,
+        title=youtube_channel_title,
+        channel_id=args.youtube_channel_id,
+    )
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/approve-publish",
+        json={
+            "actor": args.actor,
+            "youtube_channel_id": channel_id,
+            "note": f"Auto-publish private single to {youtube_channel_title}.",
+        },
+    )
+    release = wait_for_release(
+        client,
+        release["id"],
+        stage="YouTube private single upload",
+        timeout_seconds=args.wait_timeout_seconds,
+        poll_seconds=args.poll_seconds,
+        predicate=lambda item: bool(item.get("youtube_video_id")) or item.get("workflow_state") == "ready_for_youtube_auth",
+    )
+
+    return {
+        "ok": True,
+        "action": "auto-publish-single",
         "release": {
             "id": release["id"],
             "title": release["title"],
@@ -1072,6 +1322,32 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")
     auto_playlist_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for background jobs.")
     auto_playlist_parser.set_defaults(func=auto_publish_playlist)
+
+    auto_single_parser = subparsers.add_parser(
+        "auto-publish-single",
+        help="Upload one or two single candidates, auto-approve, render, generate metadata, and private-publish to YouTube.",
+    )
+    auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Repeat for a second Suno candidate if both should be combined.")
+    auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
+    auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 clean cover image unless an uploaded final cover already exists on the release.")
+    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Optional 8 second visual loop clip generated by Dreamina/Seedance. The app repeats it during video render.")
+    auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct repeat instead of the default smooth crossfade ping-pong loop render.")
+    auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
+    auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
+    auto_single_parser.add_argument("--release-id", default="", help="Existing Single Release id. If omitted, a new release is created.")
+    auto_single_parser.add_argument("--release-title", default="", help="New Single Release title. Defaults to first audio filename stem.")
+    auto_single_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
+    auto_single_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
+    auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
+    auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
+    auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; Japanese/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
+    auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
+    auto_single_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")
+    auto_single_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for background jobs.")
+    auto_single_parser.set_defaults(func=auto_publish_single)
 
     cover_parser = subparsers.add_parser("upload-cover", help="Upload a 16:9 cover image for a release.")
     cover_parser.add_argument("--cover", required=True, help="Path to cover image file: jpg, png, or webp.")

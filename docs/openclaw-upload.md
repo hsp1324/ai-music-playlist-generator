@@ -110,19 +110,33 @@ For full automatic playlist publishing, two final 16:9 images are required.
 
 Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles. The thumbnail is for clicks and should have text; the cover is the clean still-image fallback for video rendering and should not have text.
 
+Static image creation rules:
+
+- Do not use Dreamina for static cover or YouTube thumbnail images.
+- Use OpenAI GPT Image models for static image generation. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running OpenAI/Image tool environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
+- If `gpt-image-2` is unavailable in the actual tool/API environment, fall back to the best available GPT Image model instead of using Dreamina for static images.
+- Produce 16:9 images, preferably `1280x720` or `1920x1080`.
+- Create the text thumbnail first, then use that final thumbnail image as the first-frame reference for Dreamina/Seedance video generation.
+
 Optional moving visual:
 
 - `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 8 second Dreamina/Seedance visual clip. The app repeats it during video render.
 - OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
-- The app uses smooth crossfade ping-pong looping by default. It trims/pads the source to 8 seconds, reverses it back toward the first frame, and uses a short fade transition so the join feels like a dissolve instead of a sudden jump.
+- The app uses smooth 1 second forward crossfade looping by default. It trims/pads the source to 8 seconds, then fades the end of each forward pass into the beginning of the next forward pass so the join feels like a dissolve instead of a sudden jump.
 - Use `--hard-loop-video` only if the clip is already a perfect seamless loop and direct repeat is preferred.
 - If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or text cover as the moving video visual.
 
 Dreamina website workflow for OpenClaw:
 
 - Use `https://dreamina.capcut.com/ai-tool/home/` for browser-based Dreamina/Seedance generation.
-- Start from the final YouTube thumbnail image when possible. Use it as the first frame, image-to-video reference, or starting scene so the video's opening shot matches the clicked thumbnail.
-- Generate exactly one 8 second, 16:9 MP4.
+- Use Dreamina/Seedance `2.0 Fast`.
+- Do not use Omni Reference.
+- Use the first/last-frame workflow if the UI asks which mode to use, but provide only the first-frame image.
+- Start from the final YouTube thumbnail image. Use it as the first frame or starting scene so the video's opening shot matches the clicked thumbnail.
+- Leave the last-frame input empty. Do not upload a last-frame reference; it makes the generated motion too static.
+- Set ratio to `16:9` when selectable.
+- Set quality to `720p` when selectable.
+- Generate exactly one `8 second` MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
 - If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video.
@@ -133,7 +147,7 @@ Dreamina/Seedance loop prompt guidance:
 - Ask for exactly 8 seconds. Do not request 5, 10, or 15 seconds.
 - Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and main subject in the first shot.
 - Use slow camera movement, stable composition, no hard cuts, no extra text overlays, no subtitles, no logos, and no people unless specifically requested.
-- Include `start and end frames match` or equivalent wording.
+- Do not include `start and end frames match` or equivalent wording. The app handles smooth repeat with forward crossfade rendering, and forcing the last frame to match can make the clip too static.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
 
@@ -257,17 +271,48 @@ If a 16:9 cover image is also ready and the release already has rendered audio, 
 scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_COVER_PATH
 ```
 
+If the human explicitly asks OpenClaw to publish one single all the way to YouTube, use the automatic single publisher instead:
+
+```text
+Create an original single release and publish it privately.
+Generate or obtain:
+- one or two Suno audio candidates
+- a final clean 16:9 cover image
+- a separate YouTube thumbnail image with readable text
+- optionally one exactly 8 second Dreamina/Seedance loop video
+
+Then run:
+
+scripts/openclaw-release auto-publish-single \
+  --release-title "SINGLE_TITLE" \
+  --description "CONCEPT_FOR_METADATA" \
+  --audio ABSOLUTE_AUDIO_PATH_01 \
+  --title "INDEPENDENT_TRACK_TITLE_01" \
+  --lyrics-file ABSOLUTE_LYRICS_PATH_01 \
+  --cover ABSOLUTE_FINAL_CLEAN_COVER_IMAGE_PATH \
+  --thumbnail ABSOLUTE_YOUTUBE_TEXT_THUMBNAIL_IMAGE_PATH \
+  --loop-video ABSOLUTE_DREAMINA_SEEDANCE_8_SECOND_MP4 \
+  --prompt "PROMPT" \
+  --tags "TAGS" \
+  --youtube-channel-title "Tokyo Daydream Radio"
+
+For non-Japan releases, use "Soft Hour Radio" unless the human says otherwise.
+For one audio candidate, pass one --audio/--title/--lyrics-file. For two candidates that should be combined, pass two.
+```
+
 ## Safety Rules
 
-- Do not call `Approve Publish` automatically.
-- Do not upload to YouTube automatically.
+- Do not call `Approve Publish` automatically unless the human explicitly asks for full private publishing.
+- Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - If lyrics or meaningful song-content notes are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value for instrumentals or unknown lyrics.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
+- Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - If OpenClaw creates a Dreamina/Seedance loop clip, pass the 8 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text; `--cover` and `--loop-video` should be clean visuals without text.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` for loop video generation.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.

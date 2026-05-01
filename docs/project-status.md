@@ -106,12 +106,13 @@ For `single_track_video`, the intended publish path is:
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
 - OpenClaw can get exact final-order timestamps through `scripts/openclaw-release metadata-context` and should use `display_timestamp_lines` in YouTube descriptions when available, so awkward `A` / `B` suffixes are not shown while timestamps stay fixed
 - When `AIMP_CODEX_METADATA_ENABLED=true`, the web `Generate Metadata` / `Regenerate Metadata Draft` actions ask the VM's local Codex CLI to write the YouTube title, description, and tags. The app limits this to one Codex run at a time and falls back to the template generator on CLI failure, timeout, or invalid JSON.
-- OpenClaw playlist automation can now run `scripts/openclaw-release auto-publish-playlist` to upload generated playlist tracks as approved, skip Slack per-track review spam, render audio/video, approve generated metadata, and upload privately to the selected connected YouTube channel. General releases default to `Soft Hour Radio`; Japan/Tokyo/city-pop/anime/J-pop releases route to `Tokyo Daydream Radio`.
+- OpenClaw playlist automation can now run `scripts/openclaw-release auto-publish-playlist` to upload generated playlist tracks as approved, skip Slack per-track review spam, render audio/video, approve generated metadata, and upload privately to the selected connected YouTube channel. OpenClaw can also run `scripts/openclaw-release auto-publish-single` for a human-approved end-to-end private single upload. General releases default to `Soft Hour Radio`; Japan/Tokyo/city-pop/anime/J-pop releases route to `Tokyo Daydream Radio`.
 - `scripts/openclaw-release upload-audio` also auto-approves tracks when the target release is a Playlist Release. Use `--pending-review` only when one-by-one playlist review is explicitly desired.
 - OpenClaw should provide standalone playlist track titles, not Suno pair labels. The helper also rewrites trailing A/B, 1/2, and older `Morning` / `Evening` style variants into natural standalone display titles.
 - `scripts/openclaw-release auto-publish-playlist` now requires a final uploaded 16:9 cover image before YouTube upload. The app's generated draft cover is only allowed with the explicit `--allow-generated-draft-cover` escape hatch.
 - Full OpenClaw playlist publishing now expects two final 16:9 images: a clean video cover via `--cover` and a text-based YouTube thumbnail via `--thumbnail`. Reusing the cover as the thumbnail is only allowed with `--allow-cover-as-thumbnail`.
-- OpenClaw can also pass an 8 second Dreamina/Seedance MP4 via `--loop-video`. The app stores it as `loop_video_path` and uses smooth crossfade ping-pong looping during final video render instead of making OpenClaw export a one-hour video.
+- OpenClaw should generate static cover/thumbnail images with OpenAI GPT Image models, preferably `gpt-image-2` when available, not Dreamina. Dreamina is reserved for the moving visual clip.
+- OpenClaw can also pass an 8 second Dreamina/Seedance MP4 via `--loop-video`. The app stores it as `loop_video_path` and uses smooth 1 second forward crossfade looping during final video render instead of making OpenClaw export a one-hour video. Browser automation should use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds`.
 - The web release detail UI now supports direct upload/replace actions for clean cover, text YouTube thumbnail, and 8 second loop video as separate assets.
 - Track uploads now accept optional lyrics/content notes. Lyrics are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, and standalone single workflows.
 
@@ -119,7 +120,7 @@ For `single_track_video`, the intended publish path is:
 
 - Manual cover upload is the preferred operator path when final art already exists
 - `Generate Draft Cover` creates a simple local PNG placeholder with Pillow
-- The app does not currently call Codex/OpenAI image generation for covers
+- The app does not currently call Codex/OpenAI image generation for covers; OpenClaw should create final static art externally with OpenAI GPT Image models and upload the files.
 - A generated draft can be replaced from the web UI with `Upload Cover`
 
 ### Dreamina

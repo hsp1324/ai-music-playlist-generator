@@ -250,7 +250,7 @@ class BackgroundJobWorker:
                     total_duration_seconds=total_duration_seconds,
                 )
             )
-            meta["loop_video_render_mode"] = "smooth-crossfade-pingpong" if meta.get("loop_video_smooth", True) else "hard-loop"
+            meta["loop_video_render_mode"] = "smooth-forward-crossfade" if meta.get("loop_video_smooth", True) else "hard-loop"
         elif workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
             loop_prompt = self._build_dreamina_prompt(playlist, tracks)
             clip_path = Path(self.settings.playlists_dir) / f"{playlist.id}-dreamina.mp4"
@@ -272,7 +272,7 @@ class BackgroundJobWorker:
             meta["loop_video_path"] = str(downloaded_clip)
             meta["loop_video_source"] = "dreamina-useapi"
             meta["loop_video_smooth"] = True
-            meta["loop_video_render_mode"] = "smooth-crossfade-pingpong"
+            meta["loop_video_render_mode"] = "smooth-forward-crossfade"
         else:
             playlist.output_video_path = str(
                 self._call_builder_with_progress(

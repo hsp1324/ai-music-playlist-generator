@@ -7,6 +7,7 @@ from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     auto_publish_playlist,
+    auto_publish_single,
     infer_youtube_channel_title,
     release_has_uploaded_cover,
     release_has_uploaded_thumbnail,
@@ -218,6 +219,59 @@ def test_auto_publish_playlist_requires_thumbnail_before_creating_new_release(tm
                 release_id="",
                 release_title="New Playlist",
                 cover=str(cover_path),
+            ),
+        )
+
+    assert requested_paths == []
+
+
+def test_auto_publish_single_requires_final_cover_before_side_effects(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires --cover"):
+        auto_publish_single(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="J-pop Single",
+                actor="openclaw:auto-single",
+            ),
+        )
+
+    assert requested_paths == []
+
+
+def test_auto_publish_single_requires_thumbnail_before_side_effects(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    cover_path = tmp_path / "cover.png"
+    cover_path.write_bytes(b"fake cover")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires --thumbnail"):
+        auto_publish_single(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="J-pop Single",
+                cover=str(cover_path),
+                actor="openclaw:auto-single",
             ),
         )
 

@@ -294,6 +294,8 @@ class FFMpegPlaylistBuilder:
             str(audio_path),
             "-c:v",
             "libx264",
+            "-preset",
+            "veryfast",
             "-tune",
             "stillimage",
             "-vf",
@@ -336,39 +338,83 @@ class FFMpegPlaylistBuilder:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         loop_source_path = clip_path
         loop_unit_path: Path | None = None
+        command: list[str]
         if smooth_loop:
-            loop_unit_path = self._build_smooth_loop_unit(clip_path, output_path)
-            loop_source_path = loop_unit_path
-        command = [
-            self.settings.ffmpeg_binary,
-            "-y",
-            "-hide_banner",
-            "-nostats",
-            "-progress",
-            "pipe:1",
-            "-stream_loop",
-            "-1",
-            "-i",
-            str(loop_source_path),
-            "-i",
-            str(audio_path),
-            "-map",
-            "0:v:0",
-            "-map",
-            "1:a:0",
-            "-c:v",
-            "libx264",
-            "-pix_fmt",
-            "yuv420p",
-            "-c:a",
-            "aac",
-            "-b:a",
-            "192k",
-            "-shortest",
-            "-movflags",
-            "+faststart",
-            str(output_path),
-        ]
+            intro_path, loop_unit_path = self._build_smooth_loop_assets(clip_path, output_path)
+            loop_filter = (
+                "[0:v]setpts=PTS-STARTPTS[intro];"
+                "[1:v]fps=30,setpts=N/(30*TB)[loop];"
+                "[intro][loop]concat=n=2:v=1:a=0,format=yuv420p[loopv]"
+            )
+            command = [
+                self.settings.ffmpeg_binary,
+                "-y",
+                "-hide_banner",
+                "-nostats",
+                "-progress",
+                "pipe:1",
+                "-i",
+                str(intro_path),
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(loop_unit_path),
+                "-i",
+                str(audio_path),
+                "-filter_complex",
+                loop_filter,
+                "-map",
+                "[loopv]",
+                "-map",
+                "2:a:0",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-shortest",
+                "-movflags",
+                "+faststart",
+                str(output_path),
+            ]
+        else:
+            command = [
+                self.settings.ffmpeg_binary,
+                "-y",
+                "-hide_banner",
+                "-nostats",
+                "-progress",
+                "pipe:1",
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(loop_source_path),
+                "-i",
+                str(audio_path),
+                "-map",
+                "0:v:0",
+                "-map",
+                "1:a:0",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-pix_fmt",
+                "yuv420p",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "192k",
+                "-shortest",
+                "-movflags",
+                "+faststart",
+                str(output_path),
+            ]
         output_path.unlink(missing_ok=True)
         try:
             self._run_ffmpeg_with_progress(
@@ -380,42 +426,175 @@ class FFMpegPlaylistBuilder:
         finally:
             if loop_unit_path:
                 loop_unit_path.unlink(missing_ok=True)
+            if smooth_loop:
+                intro_path.unlink(missing_ok=True)
         return output_path
 
-    def _build_smooth_loop_unit(self, clip_path: Path, output_path: Path) -> Path:
+    def _build_smooth_loop_assets(self, clip_path: Path, output_path: Path) -> tuple[Path, Path]:
+        intro_path = output_path.with_name(f"{output_path.stem}-loop-intro.mp4")
         loop_unit_path = output_path.with_name(f"{output_path.stem}-loop-unit.mp4")
+        normalized_path = output_path.with_name(f"{output_path.stem}-loop-normalized.mp4")
+        transition_path = output_path.with_name(f"{output_path.stem}-loop-transition.mp4")
+        body_path = output_path.with_name(f"{output_path.stem}-loop-body.mp4")
         transition_offset = LOOP_VIDEO_SOURCE_SECONDS - LOOP_VIDEO_TRANSITION_SECONDS
-        loop_filter = (
-            f"[0:v]{YOUTUBE_LOOP_VIDEO_FILTER},"
+        normalized_filter = (
+            f"{YOUTUBE_LOOP_VIDEO_FILTER},"
             f"tpad=stop_mode=clone:stop_duration={LOOP_VIDEO_SOURCE_SECONDS},"
             f"trim=duration={LOOP_VIDEO_SOURCE_SECONDS},"
-            "setpts=PTS-STARTPTS,"
-            "split=2[forward][reverse_source];"
-            "[reverse_source]reverse,setpts=PTS-STARTPTS[backward];"
-            "[forward][backward]"
-            f"xfade=transition=fade:duration={LOOP_VIDEO_TRANSITION_SECONDS}:offset={transition_offset},"
-            "format=yuv420p[loopv]"
+            "setpts=PTS-STARTPTS"
         )
-        command = [
-            self.settings.ffmpeg_binary,
-            "-y",
-            "-hide_banner",
-            "-nostats",
-            "-i",
-            str(clip_path),
-            "-filter_complex",
-            loop_filter,
-            "-map",
-            "[loopv]",
-            "-an",
-            "-c:v",
-            "libx264",
-            "-pix_fmt",
-            "yuv420p",
-            "-movflags",
-            "+faststart",
-            str(loop_unit_path),
-        ]
-        loop_unit_path.unlink(missing_ok=True)
-        self._run_ffmpeg(command)
-        return loop_unit_path
+        transition_filter = (
+            "[0:v]setpts=PTS-STARTPTS[tail];"
+            "[1:v]setpts=PTS-STARTPTS[head];"
+            "[tail][head]"
+            f"xfade=transition=fade:duration={LOOP_VIDEO_TRANSITION_SECONDS}:offset=0"
+            ",format=yuv420p[transition]"
+        )
+        concat_filter = (
+            "[0:v]setpts=PTS-STARTPTS[transition];"
+            "[1:v]setpts=PTS-STARTPTS[body];"
+            "[transition][body]concat=n=2:v=1:a=0,format=yuv420p[loopv]"
+        )
+
+        for path in (intro_path, loop_unit_path, normalized_path, transition_path, body_path):
+            path.unlink(missing_ok=True)
+
+        try:
+            self._run_ffmpeg(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-y",
+                    "-hide_banner",
+                    "-nostats",
+                    "-i",
+                    str(clip_path),
+                    "-vf",
+                    normalized_filter,
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-movflags",
+                    "+faststart",
+                    str(normalized_path),
+                ]
+            )
+            self._run_ffmpeg(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-y",
+                    "-hide_banner",
+                    "-nostats",
+                    "-i",
+                    str(normalized_path),
+                    "-t",
+                    str(transition_offset),
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-movflags",
+                    "+faststart",
+                    str(intro_path),
+                ]
+            )
+            self._run_ffmpeg(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-y",
+                    "-hide_banner",
+                    "-nostats",
+                    "-ss",
+                    str(transition_offset),
+                    "-t",
+                    str(LOOP_VIDEO_TRANSITION_SECONDS),
+                    "-i",
+                    str(normalized_path),
+                    "-ss",
+                    "0",
+                    "-t",
+                    str(LOOP_VIDEO_TRANSITION_SECONDS),
+                    "-i",
+                    str(normalized_path),
+                    "-filter_complex",
+                    transition_filter,
+                    "-map",
+                    "[transition]",
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-movflags",
+                    "+faststart",
+                    str(transition_path),
+                ]
+            )
+            self._run_ffmpeg(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-y",
+                    "-hide_banner",
+                    "-nostats",
+                    "-ss",
+                    str(LOOP_VIDEO_TRANSITION_SECONDS),
+                    "-t",
+                    str(transition_offset - LOOP_VIDEO_TRANSITION_SECONDS),
+                    "-i",
+                    str(normalized_path),
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-movflags",
+                    "+faststart",
+                    str(body_path),
+                ]
+            )
+            self._run_ffmpeg(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-y",
+                    "-hide_banner",
+                    "-nostats",
+                    "-i",
+                    str(transition_path),
+                    "-i",
+                    str(body_path),
+                    "-filter_complex",
+                    concat_filter,
+                    "-map",
+                    "[loopv]",
+                    "-an",
+                    "-c:v",
+                    "libx264",
+                    "-preset",
+                    "veryfast",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-movflags",
+                    "+faststart",
+                    str(loop_unit_path),
+                ]
+            )
+        except Exception:
+            intro_path.unlink(missing_ok=True)
+            loop_unit_path.unlink(missing_ok=True)
+            raise
+        finally:
+            normalized_path.unlink(missing_ok=True)
+            transition_path.unlink(missing_ok=True)
+            body_path.unlink(missing_ok=True)
+
+        return intro_path, loop_unit_path

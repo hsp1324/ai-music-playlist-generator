@@ -1142,6 +1142,13 @@ button:disabled {
   gap: 7px;
 }
 
+.metadata-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .metadata-tags span {
   display: inline-flex;
   align-items: center;

@@ -44,7 +44,7 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
     assert "scale=1280:720" in args[args.index("-vf") + 1]
 
 
-def test_build_looped_video_creates_smooth_crossfade_pingpong_unit(tmp_path) -> None:
+def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> None:
     calls_path = tmp_path / "ffmpeg-calls.jsonl"
     ffmpeg_path = tmp_path / "fake-ffmpeg.py"
     ffmpeg_path.write_text(
@@ -80,10 +80,32 @@ def test_build_looped_video_creates_smooth_crossfade_pingpong_unit(tmp_path) -> 
 
     assert result == output_path
     calls = [json.loads(line) for line in calls_path.read_text(encoding="utf-8").splitlines()]
-    assert len(calls) == 2
-    filter_complex = calls[0][calls[0].index("-filter_complex") + 1]
-    assert "trim=duration=8" in filter_complex
-    assert "reverse" in filter_complex
-    assert "xfade=transition=fade:duration=1:offset=7" in filter_complex
-    assert calls[1][calls[1].index("-stream_loop") + 1] == "-1"
+    assert len(calls) == 6
+
+    normalize_filter = calls[0][calls[0].index("-vf") + 1]
+    assert "trim=duration=8" in normalize_filter
+
+    intro_call = calls[1]
+    assert intro_call[intro_call.index("-t") + 1] == "7"
+
+    transition_call = calls[2]
+    transition_filter = transition_call[transition_call.index("-filter_complex") + 1]
+    assert "reverse" not in transition_filter
+    assert "xfade=transition=fade:duration=1:offset=0" in transition_filter
+    assert transition_call[transition_call.index("-ss") + 1] == "7"
+
+    body_call = calls[3]
+    assert body_call[body_call.index("-ss") + 1] == "1"
+    assert body_call[body_call.index("-t") + 1] == "6"
+
+    loop_unit_call = calls[4]
+    loop_unit_filter = loop_unit_call[loop_unit_call.index("-filter_complex") + 1]
+    assert "concat=n=2:v=1:a=0" in loop_unit_filter
+
+    render_call = calls[5]
+    assert render_call[render_call.index("-stream_loop") + 1] == "-1"
+    render_filter = render_call[render_call.index("-filter_complex") + 1]
+    assert "concat=n=2:v=1:a=0" in render_filter
+    assert render_call[render_call.index("-map") + 1] == "[loopv]"
+    assert "2:a:0" in render_call
     assert output_path.read_bytes() == b"fake-video"

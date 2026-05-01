@@ -9,6 +9,7 @@ const state = {
   autoRefreshDeferred: false,
   autoRefreshInFlight: false,
   youtubeStatus: null,
+  editingMetadataReleaseId: "",
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -109,7 +110,7 @@ function isAudioPlaybackActive() {
 }
 
 async function autoRefresh() {
-  if (document.hidden || isAudioPlaybackActive()) {
+  if (document.hidden || isAudioPlaybackActive() || state.editingMetadataReleaseId) {
     state.autoRefreshDeferred = true;
     return;
   }
@@ -454,6 +455,28 @@ function metadataDraftValues() {
   return { title, description, tags };
 }
 
+async function saveMetadataChanges(workspace) {
+  const metadata = metadataDraftValues();
+  if (!metadata.title || !metadata.description) {
+    alert("YouTube title과 description은 비워둘 수 없습니다.");
+    return;
+  }
+  await api(`/api/playlists/${workspace.id}/metadata/approve`, {
+    method: "POST",
+    body: JSON.stringify({
+      actor: "web-ui",
+      title: metadata.title,
+      description: metadata.description,
+      tags: metadata.tags,
+      note: workspace.metadata_approved
+        ? "Edited approved metadata from workspace detail."
+        : "Approved from workspace detail.",
+    }),
+  });
+  state.editingMetadataReleaseId = "";
+  await refreshBoard();
+}
+
 function uploadResultLine(track, index) {
   return `${index + 1}. ${displayTitle(track.title)} | ${statusLabel(track.status)} | ${formatDuration(
     track.duration_seconds
@@ -666,6 +689,15 @@ function actionButton(label, className, handler) {
       button.disabled = false;
     }
   });
+  return button;
+}
+
+function localActionButton(label, className, handler) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener("click", handler);
   return button;
 }
 
@@ -911,7 +943,7 @@ function appendLoopVideoPreview(workspace) {
 
   const copy = document.createElement("span");
   copy.textContent = workspace.loop_video_smooth
-    ? "Moving visual for the rendered video. Smooth crossfade looping is enabled."
+    ? "Moving visual for the rendered video. Smooth 1s forward crossfade looping is enabled."
     : "Moving visual for the rendered video. Direct hard looping is enabled.";
 
   const video = document.createElement("video");
@@ -971,8 +1003,11 @@ function appendVideoPreview(workspace) {
 function appendMetadataDraft(workspace) {
   if (!workspace.youtube_title && !workspace.youtube_description) return;
 
+  const metadataEditing = state.editingMetadataReleaseId === workspace.id;
   const card = document.createElement("div");
-  card.className = `metadata-preview metadata-review-panel ${workspace.metadata_approved ? "approved" : "review"}`;
+  card.className = `metadata-preview metadata-review-panel ${workspace.metadata_approved ? "approved" : "review"}${
+    metadataEditing ? " editing" : ""
+  }`;
 
   const header = document.createElement("div");
   header.className = "metadata-review-header";
@@ -981,13 +1016,19 @@ function appendMetadataDraft(workspace) {
 
   const kicker = document.createElement("span");
   kicker.className = "metadata-kicker";
-  kicker.textContent = workspace.metadata_approved ? "Metadata Approved" : "Metadata Review";
+  kicker.textContent = metadataEditing
+    ? "Metadata Editing"
+    : workspace.metadata_approved
+    ? "Metadata Approved"
+    : "Metadata Review";
 
   const heading = document.createElement("h3");
   heading.textContent = workspace.youtube_title || "Untitled YouTube Draft";
 
   const summary = document.createElement("p");
-  summary.textContent = workspace.metadata_approved
+  summary.textContent = metadataEditing
+    ? "승인된 YouTube 제목, 설명, 태그를 수정 중입니다. 저장하면 다시 승인된 metadata로 반영됩니다."
+    : workspace.metadata_approved
     ? "Approved YouTube copy. Final publish can use this title, description, and tags."
     : "YouTube에 올라갈 제목, 설명, 태그입니다. 여기서 확인하고 필요하면 바로 수정한 뒤 승인하세요.";
 
@@ -1022,7 +1063,7 @@ function appendMetadataDraft(workspace) {
   titleInput.type = "text";
   titleInput.maxLength = 100;
   titleInput.value = workspace.youtube_title || "";
-  titleInput.readOnly = Boolean(workspace.metadata_approved);
+  titleInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
   titleInput.dataset.metadataField = "title";
   titleField.appendChild(titleLabel);
   titleField.appendChild(titleInput);
@@ -1034,7 +1075,7 @@ function appendMetadataDraft(workspace) {
   const descriptionInput = document.createElement("textarea");
   descriptionInput.rows = 10;
   descriptionInput.value = workspace.youtube_description || "";
-  descriptionInput.readOnly = Boolean(workspace.metadata_approved);
+  descriptionInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
   descriptionInput.dataset.metadataField = "description";
   descriptionField.appendChild(descriptionLabel);
   descriptionField.appendChild(descriptionInput);
@@ -1046,7 +1087,7 @@ function appendMetadataDraft(workspace) {
   const tagsInput = document.createElement("input");
   tagsInput.type = "text";
   tagsInput.value = metadataTagsText(workspace);
-  tagsInput.readOnly = Boolean(workspace.metadata_approved);
+  tagsInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
   tagsInput.dataset.metadataField = "tags";
   tagsField.appendChild(tagsLabel);
   tagsField.appendChild(tagsInput);
@@ -1054,6 +1095,34 @@ function appendMetadataDraft(workspace) {
   fields.appendChild(titleField);
   fields.appendChild(descriptionField);
   fields.appendChild(tagsField);
+
+  const inlineActions = document.createElement("div");
+  inlineActions.className = "metadata-inline-actions";
+  if (workspace.metadata_approved) {
+    if (metadataEditing) {
+      inlineActions.appendChild(
+        actionButton("Save Metadata Changes", "action-button primary-button", async () => {
+          await saveMetadataChanges(workspace);
+        })
+      );
+      inlineActions.appendChild(
+        localActionButton("Cancel Metadata Edit", "action-button secondary-button", () => {
+          state.editingMetadataReleaseId = "";
+          renderWorkspaceDetail();
+        })
+      );
+    } else {
+      inlineActions.appendChild(
+        localActionButton("Edit Metadata", "action-button primary-button", () => {
+          state.editingMetadataReleaseId = workspace.id;
+          renderWorkspaceDetail();
+          window.setTimeout(() => {
+            detailPanel.querySelector('[data-metadata-field="description"]')?.focus();
+          }, 0);
+        })
+      );
+    }
+  }
 
   const tags = document.createElement("div");
   tags.className = "metadata-tags";
@@ -1065,6 +1134,9 @@ function appendMetadataDraft(workspace) {
 
   card.appendChild(header);
   card.appendChild(fields);
+  if (inlineActions.children.length) {
+    card.appendChild(inlineActions);
+  }
   card.appendChild(tags);
   detailLinks.appendChild(card);
 }
@@ -1545,6 +1617,7 @@ function renderWorkspaceDetail() {
 
   const youtubeReady = Boolean(state.youtubeStatus?.ready);
   const waitingForYouTubeAuth = workspace.workflow_state === "ready_for_youtube_auth" && !youtubeReady;
+  const metadataEditing = state.editingMetadataReleaseId === workspace.id;
   const releaseLockedForPublish = Boolean(
     workspace.metadata_approved || workspace.publish_approved || workspace.youtube_video_id
   );
@@ -1685,32 +1758,47 @@ function renderWorkspaceDetail() {
       })
     );
   } else if (workspace.output_video_path && workspace.youtube_title && workspace.metadata_approved) {
-    detailActions.appendChild(
-      actionButton("Regenerate Metadata Draft", "action-button secondary-button", async () => {
-        const proceed = window.confirm("승인된 metadata를 새 초안으로 다시 생성할까요? 다시 승인해야 publish/re-upload할 수 있습니다.");
-        if (!proceed) return;
-        await api(`/api/playlists/${workspace.id}/metadata/generate`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-          }),
-        });
-      })
-    );
+    if (metadataEditing) {
+      detailActions.appendChild(
+        actionButton("Save Metadata Changes", "action-button primary-button", async () => {
+          await saveMetadataChanges(workspace);
+        })
+      );
+      detailActions.appendChild(
+        localActionButton("Cancel Metadata Edit", "action-button secondary-button", () => {
+          state.editingMetadataReleaseId = "";
+          renderWorkspaceDetail();
+        })
+      );
+    } else {
+      detailActions.appendChild(
+        localActionButton("Edit Metadata", "action-button primary-button", () => {
+          state.editingMetadataReleaseId = workspace.id;
+          renderWorkspaceDetail();
+          window.setTimeout(() => {
+            detailPanel.querySelector('[data-metadata-field="description"]')?.focus();
+          }, 0);
+        })
+      );
+    }
+    if (!metadataEditing) {
+      detailActions.appendChild(
+        actionButton("Regenerate Metadata Draft", "action-button secondary-button", async () => {
+          const proceed = window.confirm("승인된 metadata를 새 초안으로 다시 생성할까요? 다시 승인해야 publish/re-upload할 수 있습니다.");
+          if (!proceed) return;
+          await api(`/api/playlists/${workspace.id}/metadata/generate`, {
+            method: "POST",
+            body: JSON.stringify({
+              actor: "web-ui",
+            }),
+          });
+        })
+      );
+    }
   } else if (workspace.youtube_title && !workspace.metadata_approved) {
     detailActions.appendChild(
       actionButton("Approve Metadata", "action-button primary-button", async () => {
-        const metadata = metadataDraftValues();
-        await api(`/api/playlists/${workspace.id}/metadata/approve`, {
-          method: "POST",
-          body: JSON.stringify({
-            actor: "web-ui",
-            title: metadata.title,
-            description: metadata.description,
-            tags: metadata.tags,
-            note: "Approved from workspace detail.",
-          }),
-        });
+        await saveMetadataChanges(workspace);
       })
     );
     detailActions.appendChild(
@@ -1725,7 +1813,7 @@ function renderWorkspaceDetail() {
     );
   }
 
-  if (workspace.metadata_approved) {
+  if (workspace.metadata_approved && !metadataEditing) {
     const publishBusy = workspace.workflow_state === "publish_queued";
     const needsYouTubeConnection = !youtubeReady;
     const connectedYouTubeChannels = state.youtubeStatus?.channels || [];
