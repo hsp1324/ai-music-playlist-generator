@@ -286,6 +286,7 @@ class BackgroundJobWorker:
             )
 
         youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
+        meta = self._current_playlist_meta(db, playlist.id, fallback=meta)
         meta["youtube_title"] = youtube_metadata.title
         meta["youtube_description"] = youtube_metadata.description
         meta["youtube_tags"] = youtube_metadata.tags
@@ -331,6 +332,13 @@ class BackgroundJobWorker:
         return builder_method(*args, **supported_kwargs)
 
     @staticmethod
+    def _current_playlist_meta(db: Session, playlist_id: str, *, fallback: dict) -> dict:
+        current = db.execute(
+            select(Playlist.metadata_json).where(Playlist.id == playlist_id)
+        ).scalar_one_or_none()
+        return dict(current or fallback or {})
+
+    @staticmethod
     def _build_video_progress_callback(db: Session, job: Job, playlist: Playlist):
         def callback(progress: dict) -> None:
             payload = {
@@ -343,7 +351,11 @@ class BackgroundJobWorker:
                 "playlist_id": playlist.id,
                 "progress": payload,
             }
-            meta = dict(playlist.metadata_json or {})
+            meta = BackgroundJobWorker._current_playlist_meta(
+                db,
+                playlist.id,
+                fallback=dict(playlist.metadata_json or {}),
+            )
             meta["video_render_progress"] = payload
             meta["note"] = payload["message"]
             playlist.metadata_json = meta

@@ -154,9 +154,9 @@ Dreamina/Seedance loop prompt guidance:
 Thumbnail text rules for OpenClaw:
 
 - Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
-- For Japan-related releases routed to `Tokyo Daydream Radio`, use clear Japan/city-pop text such as `TOKYO NIGHT`, `CITY POP`, `JAPAN LOFI`, or `ANIME CHILL`.
-- Add one small support line, for example `study · work · relax` or `sleep · calm · night`.
-- Add a small `1 HOUR` or exact duration badge.
+- Prefer the approved full-bleed style: strong image background, no card or panel, large bottom-left genre/mood text, and a smaller channel-brand line directly below.
+- For Japan-related releases routed to `Tokyo Daydream Radio`, use the channel name as the brand line. The approved J-pop pattern is large `J-POP` with `TOKYO DAYDREAM RADIO` beneath it.
+- Add support text or a duration badge only when it improves readability without cluttering the full-bleed layout.
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
 
