@@ -943,7 +943,7 @@ function appendLoopVideoPreview(workspace) {
 
   const copy = document.createElement("span");
   copy.textContent = workspace.loop_video_smooth
-    ? "Moving visual for the rendered video. Smooth 1s forward crossfade looping is enabled."
+    ? "Moving visual for the rendered video. Smooth 2s forward crossfade looping is enabled."
     : "Moving visual for the rendered video. Direct hard looping is enabled.";
 
   const video = document.createElement("video");

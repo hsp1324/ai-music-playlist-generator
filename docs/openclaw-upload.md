@@ -122,7 +122,7 @@ Optional moving visual:
 
 - `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 8 second Dreamina/Seedance visual clip. The app repeats it during video render.
 - OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
-- The app uses smooth 1 second forward crossfade looping by default. It trims/pads the source to 8 seconds, then fades the end of each forward pass into the beginning of the next forward pass so the join feels like a dissolve instead of a sudden jump.
+- The app uses smooth 2 second forward crossfade looping by default. It trims/pads the source to 8 seconds, then fades the end of each forward pass into the beginning of the next forward pass so the join feels like a dissolve instead of a sudden jump.
 - Use `--hard-loop-video` only if the clip is already a perfect seamless loop and direct repeat is preferred.
 - If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or text cover as the moving video visual.
 

@@ -318,7 +318,7 @@ scripts/openclaw-release auto-publish-playlist \
 
 Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the app trims/pads the source to 8 seconds, creates a smooth 1 second forward crossfade loop, and repeats it to match the full audio duration. The loop transition should dissolve from one forward pass into the next instead of hard-cutting.
+`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the app trims/pads the source to 8 seconds, creates a smooth 2 second forward crossfade loop, and repeats it to match the full audio duration. The loop transition should dissolve from one forward pass into the next instead of hard-cutting.
 
 If the release is Japan-related, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
 

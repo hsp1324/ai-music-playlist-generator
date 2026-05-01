@@ -86,17 +86,17 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
     assert "trim=duration=8" in normalize_filter
 
     intro_call = calls[1]
-    assert intro_call[intro_call.index("-t") + 1] == "7"
+    assert intro_call[intro_call.index("-t") + 1] == "6"
 
     transition_call = calls[2]
     transition_filter = transition_call[transition_call.index("-filter_complex") + 1]
     assert "reverse" not in transition_filter
-    assert "xfade=transition=fade:duration=1:offset=0" in transition_filter
-    assert transition_call[transition_call.index("-ss") + 1] == "7"
+    assert "xfade=transition=fade:duration=2:offset=0" in transition_filter
+    assert transition_call[transition_call.index("-ss") + 1] == "6"
 
     body_call = calls[3]
-    assert body_call[body_call.index("-ss") + 1] == "1"
-    assert body_call[body_call.index("-t") + 1] == "6"
+    assert body_call[body_call.index("-ss") + 1] == "2"
+    assert body_call[body_call.index("-t") + 1] == "4"
 
     loop_unit_call = calls[4]
     loop_unit_filter = loop_unit_call[loop_unit_call.index("-filter_complex") + 1]
