@@ -16,6 +16,11 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
+from app.utils.youtube_localizations import (
+    DEFAULT_YOUTUBE_LANGUAGE,
+    normalize_youtube_language,
+    normalize_youtube_localizations,
+)
 
 
 def _utcnow():
@@ -301,6 +306,15 @@ class BackgroundJobWorker:
         meta["youtube_title"] = youtube_metadata.title
         meta["youtube_description"] = youtube_metadata.description
         meta["youtube_tags"] = youtube_metadata.tags
+        meta["youtube_default_language"] = normalize_youtube_language(
+            getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
+        )
+        meta["youtube_localizations"] = normalize_youtube_localizations(
+            getattr(youtube_metadata, "localizations", {}),
+            default_title=youtube_metadata.title,
+            default_description=youtube_metadata.description,
+            default_language=meta["youtube_default_language"],
+        )
         meta["metadata_approved"] = False
         meta["publish_approved"] = False
         meta["workflow_state"] = "metadata_review"
@@ -458,6 +472,13 @@ class BackgroundJobWorker:
         title = str(meta.get("youtube_title") or "").strip()
         description = str(meta.get("youtube_description") or "").strip()
         tags = list(meta.get("youtube_tags") or [])
+        default_language = normalize_youtube_language(meta.get("youtube_default_language"))
+        localizations = normalize_youtube_localizations(
+            meta.get("youtube_localizations"),
+            default_title=title,
+            default_description=description,
+            default_language=default_language,
+        )
         if not title or not description:
             raise ValueError("YouTube metadata draft is missing before final YouTube upload.")
 
@@ -478,6 +499,8 @@ class BackgroundJobWorker:
                         tags=tags,
                         thumbnail_path=thumbnail_path,
                         youtube_channel_id=youtube_channel_id,
+                        localizations=localizations,
+                        default_language=default_language,
                     )
                     playlist.youtube_video_id = result.video_id
                     playlist.status = PlaylistStatus.uploaded
@@ -491,6 +514,10 @@ class BackgroundJobWorker:
                         meta["youtube_thumbnail_upload_error"] = result.response["thumbnail_upload_error"]
                     else:
                         meta.pop("youtube_thumbnail_upload_error", None)
+                    if result.response.get("localizations_upload_error"):
+                        meta["youtube_localizations_upload_error"] = result.response["localizations_upload_error"]
+                    else:
+                        meta.pop("youtube_localizations_upload_error", None)
                     for item in playlist.items:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)

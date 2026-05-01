@@ -14,6 +14,7 @@ from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.release_metadata_service import ReleaseMetadataService, YouTubeMetadata
+from app.utils.youtube_localizations import normalize_youtube_localizations
 
 
 class CodexMetadataService(ReleaseMetadataService):
@@ -104,11 +105,19 @@ class CodexMetadataService(ReleaseMetadataService):
             tags = self._normalize_tags(payload.get("tags") or [])
             if not title or not description:
                 raise RuntimeError("codex returned empty title or description")
+            localizations = normalize_youtube_localizations(
+                payload.get("localizations"),
+                default_title=title,
+                default_description=description,
+                default_language="ko",
+            )
             return YouTubeMetadata(
                 title=title[:100],
                 description=description,
                 tags=tags or ["ai music", "playlist", "background music"],
                 provider="codex",
+                localizations=localizations,
+                default_language="ko",
             )
 
     def _fallback_with_error(self, playlist: Playlist, tracks: list[Track], error: str) -> YouTubeMetadata:
@@ -141,8 +150,10 @@ class CodexMetadataService(ReleaseMetadataService):
                 "",
                 "Rules:",
                 "- Do not run shell commands or inspect files; use only the release context JSON below.",
-                "- Write primarily in Korean unless the release title strongly suggests another language.",
-                "- Keep title under 100 characters.",
+            "- Write primarily in Korean unless the release title strongly suggests another language.",
+            "- Also write localized YouTube metadata for Korean, Japanese, and English in localizations. Use language keys exactly: ko, ja, en.",
+            "- The ko localization should match the main title and description. The ja and en localizations should be natural translations/adaptations, not machine-looking literal copies.",
+            "- Keep title under 100 characters.",
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
                 "- For playlist releases, write the title like: <mood/genre/duration> | <listening use cases>.",
                 "- For playlist releases, do not append 'Official AI Visualizer' or similar branding to the title.",
@@ -248,6 +259,26 @@ class CodexMetadataService(ReleaseMetadataService):
                     "type": "array",
                     "items": {"type": "string", "minLength": 1},
                     "maxItems": 15,
+                },
+                "localizations": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "ko": {"$ref": "#/$defs/localizedMetadata"},
+                        "ja": {"$ref": "#/$defs/localizedMetadata"},
+                        "en": {"$ref": "#/$defs/localizedMetadata"},
+                    },
+                },
+            },
+            "$defs": {
+                "localizedMetadata": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["title", "description"],
+                    "properties": {
+                        "title": {"type": "string", "minLength": 1, "maxLength": 100},
+                        "description": {"type": "string", "minLength": 1},
+                    },
                 },
             },
         }

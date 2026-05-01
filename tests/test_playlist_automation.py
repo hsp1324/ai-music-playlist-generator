@@ -14,6 +14,7 @@ from app.main import create_app
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes.tracks import _extract_embedded_cover
+from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 
 
@@ -1678,9 +1679,16 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
         upload_video_ids = ["yt-auto-123"]
         upload_channel_ids = []
+        upload_localizations = []
 
         def fake_upload_playlist_video(*args, **kwargs):
             upload_channel_ids.append(kwargs.get("youtube_channel_id"))
+            upload_localizations.append(
+                {
+                    "default_language": kwargs.get("default_language"),
+                    "localizations": kwargs.get("localizations"),
+                }
+            )
             return SimpleNamespace(
                 video_id=upload_video_ids[-1],
                 response={
@@ -1729,6 +1737,23 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert drain_background_jobs(client) == 1
 
         prepare_release_for_final_publish(client, workspace_id)
+        localized_metadata_response = client.post(
+            f"/api/playlists/{workspace_id}/metadata/approve",
+            json={
+                "actor": "test-suite",
+                "title": "한국어 제목",
+                "description": "한국어 설명",
+                "tags": "jpop,playlist",
+                "default_language": "ko",
+                "localizations": {
+                    "ko": {"title": "한국어 제목", "description": "한국어 설명"},
+                    "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
+                    "en": {"title": "English Title", "description": "English description"},
+                },
+            },
+        )
+        assert localized_metadata_response.status_code == 200
+        assert localized_metadata_response.json()["youtube_localizations"]["ja"]["title"] == "日本語タイトル"
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             meta = dict(playlist.metadata_json or {})
@@ -1755,6 +1780,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert published["youtube_video_id"] == "yt-auto-123"
         assert published["output_video_path"].endswith(".mp4")
         assert upload_channel_ids[-1] == "UC123"
+        assert upload_localizations[-1]["default_language"] == "ko"
+        assert upload_localizations[-1]["localizations"]["en"]["title"] == "English Title"
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
@@ -1925,6 +1952,54 @@ def test_youtube_thumbnail_upload_is_compressed_under_api_limit(tmp_path) -> Non
 
     assert prepared.suffix == ".jpg"
     assert prepared.stat().st_size <= YOUTUBE_THUMBNAIL_MAX_BYTES
+
+
+def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypatch) -> None:
+    video_path = tmp_path / "release.mp4"
+    video_path.write_bytes(b"fake video")
+    captured = {}
+
+    class FakeInsertRequest:
+        def next_chunk(self):
+            return None, {"id": "yt-localized"}
+
+    class FakeVideos:
+        def insert(self, *, part, body, media_body):
+            captured["part"] = part
+            captured["body"] = body
+            captured["media_body"] = media_body
+            return FakeInsertRequest()
+
+    class FakeYouTube:
+        def videos(self):
+            return FakeVideos()
+
+    monkeypatch.setattr(youtube_service_module, "build", lambda *args, **kwargs: FakeYouTube())
+    monkeypatch.setattr(youtube_service_module, "MediaFileUpload", lambda *args, **kwargs: {"args": args, "kwargs": kwargs})
+
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage"))
+    service._load_credentials = lambda youtube_channel_id=None: object()
+
+    result = service.upload_playlist_video(
+        SimpleNamespace(output_video_path=str(video_path)),
+        title="한국어 제목",
+        description="한국어 설명",
+        tags=["Jpop"],
+        localizations={
+            "ko": {"title": "한국어 제목", "description": "한국어 설명"},
+            "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
+            "en": {"title": "English Title", "description": "English description"},
+        },
+        default_language="ko",
+    )
+
+    assert result.video_id == "yt-localized"
+    assert captured["part"] == "snippet,status,localizations"
+    assert captured["body"]["snippet"]["defaultLanguage"] == "ko"
+    assert captured["body"]["localizations"] == {
+        "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
+        "en": {"title": "English Title", "description": "English description"},
+    }
 
 
 def test_youtube_channel_selection_updates_active_channel(tmp_path) -> None:

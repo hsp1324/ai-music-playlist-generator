@@ -1179,6 +1179,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "youtube_title": release.get("youtube_title"),
             "youtube_description": release.get("youtube_description"),
             "youtube_tags": release.get("youtube_tags"),
+            "youtube_localizations": release.get("youtube_localizations") or {},
         },
         "timeline": timeline,
         "timestamp_lines": timestamp_lines,
@@ -1188,7 +1189,8 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
         "instructions": (
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
-            "Write tags as comma-separated plain tags without # symbols."
+            "Write tags as comma-separated plain tags without # symbols. "
+            "For Tokyo/J-pop/Japan releases, write Korean, Japanese, and English title/description versions and pass them to approve-metadata."
         ),
     }
 
@@ -1202,6 +1204,40 @@ def read_description(args: argparse.Namespace) -> str:
             raise RuntimeError(f"Description path is not a file: {path}")
         return path.read_text(encoding="utf-8").strip()
     return (args.description or "").strip()
+
+
+def read_optional_text(value: str, file_value: str, *, label: str) -> str:
+    if file_value:
+        path = Path(file_value).expanduser().resolve()
+        if not path.exists():
+            raise RuntimeError(f"{label} file does not exist: {path}")
+        if not path.is_file():
+            raise RuntimeError(f"{label} path is not a file: {path}")
+        return path.read_text(encoding="utf-8").strip()
+    return (value or "").strip()
+
+
+def metadata_localizations_from_args(args: argparse.Namespace, *, title: str, description: str) -> dict[str, dict[str, str]]:
+    localizations = {
+        "ko": {
+            "title": read_optional_text(args.ko_title, "", label="Korean title") or title,
+            "description": read_optional_text(args.ko_description, args.ko_description_file, label="Korean description")
+            or description,
+        },
+        "ja": {
+            "title": read_optional_text(args.ja_title, "", label="Japanese title"),
+            "description": read_optional_text(args.ja_description, args.ja_description_file, label="Japanese description"),
+        },
+        "en": {
+            "title": read_optional_text(args.en_title, "", label="English title"),
+            "description": read_optional_text(args.en_description, args.en_description_file, label="English description"),
+        },
+    }
+    return {
+        language: payload
+        for language, payload in localizations.items()
+        if payload["title"] and payload["description"]
+    }
 
 
 def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
@@ -1220,6 +1256,7 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
         raise RuntimeError("Use --description or --description-file.")
     if not tags:
         raise RuntimeError("--tags is required as a comma-separated string.")
+    localizations = metadata_localizations_from_args(args, title=title, description=description)
 
     release = request_json(
         client,
@@ -1230,6 +1267,8 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "title": title,
             "description": description,
             "tags": tags,
+            "default_language": "ko",
+            "localizations": localizations,
             "note": args.note or "Metadata approved from OpenClaw.",
         },
     )
@@ -1244,6 +1283,7 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "youtube_title": release["youtube_title"],
             "youtube_description": release["youtube_description"],
             "youtube_tags": release["youtube_tags"],
+            "youtube_localizations": release.get("youtube_localizations") or {},
         },
         "next": "Human can choose Publish Channel and approve publish/re-upload in the web UI.",
     }
@@ -1381,6 +1421,15 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--description", default="", help="YouTube description text. Prefer --description-file for multiline copy.")
     metadata_parser.add_argument("--description-file", default="", help="UTF-8 text file containing the YouTube description.")
     metadata_parser.add_argument("--tags", required=True, help="Comma-separated YouTube tags, for example: Piano,CafePiano,StudyMusic")
+    metadata_parser.add_argument("--ko-title", default="", help="Korean localized YouTube title. Defaults to --title.")
+    metadata_parser.add_argument("--ko-description", default="", help="Korean localized YouTube description. Defaults to --description.")
+    metadata_parser.add_argument("--ko-description-file", default="", help="UTF-8 Korean description file.")
+    metadata_parser.add_argument("--ja-title", default="", help="Japanese localized YouTube title.")
+    metadata_parser.add_argument("--ja-description", default="", help="Japanese localized YouTube description. Prefer --ja-description-file for multiline copy.")
+    metadata_parser.add_argument("--ja-description-file", default="", help="UTF-8 Japanese description file.")
+    metadata_parser.add_argument("--en-title", default="", help="English localized YouTube title.")
+    metadata_parser.add_argument("--en-description", default="", help="English localized YouTube description. Prefer --en-description-file for multiline copy.")
+    metadata_parser.add_argument("--en-description-file", default="", help="UTF-8 English description file.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)

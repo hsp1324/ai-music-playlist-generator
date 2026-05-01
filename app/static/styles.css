@@ -1084,6 +1084,47 @@ button:disabled {
   gap: 12px;
 }
 
+.metadata-language-tabs,
+.metadata-language-panels {
+  grid-column: 1 / -1;
+}
+
+.metadata-language-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.metadata-language-tab {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fff8ea;
+  color: var(--ink-soft);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.metadata-language-tab.active {
+  background: var(--ink);
+  color: #fff8ea;
+  box-shadow: 3px 3px 0 rgba(23, 19, 15, 0.16);
+}
+
+.metadata-language-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(420px, 1.4fr);
+  gap: 12px;
+}
+
+.metadata-language-panel[hidden] {
+  display: none;
+}
+
 .metadata-field {
   min-width: 0;
 }
@@ -1763,6 +1804,7 @@ select:focus {
   .render-player,
   .asset-preview,
   .metadata-fields,
+  .metadata-language-panel,
   .metadata-review-header {
     grid-template-columns: 1fr;
   }

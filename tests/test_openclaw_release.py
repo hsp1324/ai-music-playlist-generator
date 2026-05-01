@@ -1,3 +1,4 @@
+import json
 from types import SimpleNamespace
 
 import httpx
@@ -6,6 +7,7 @@ import pytest
 from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
+    approve_metadata,
     auto_publish_playlist,
     auto_publish_single,
     infer_youtube_channel_title,
@@ -110,6 +112,66 @@ def test_resolve_lyrics_items_allows_empty_shared_and_per_track(tmp_path) -> Non
             youtube_channel_title="Soft Hour Radio",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
+    ko_description = tmp_path / "ko.txt"
+    ja_description = tmp_path / "ja.txt"
+    en_description = tmp_path / "en.txt"
+    ko_description.write_text("한국어 설명", encoding="utf-8")
+    ja_description.write_text("日本語の説明", encoding="utf-8")
+    en_description.write_text("English description", encoding="utf-8")
+    captured_payloads = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_payloads.append(request.read())
+        return httpx.Response(
+            200,
+            json={
+                "id": "release-1",
+                "title": "Release",
+                "workflow_state": "publish_ready",
+                "metadata_approved": True,
+                "youtube_title": "한국어 제목",
+                "youtube_description": "한국어 설명",
+                "youtube_tags": ["Jpop"],
+                "youtube_localizations": {
+                    "ko": {"title": "한국어 제목", "description": "한국어 설명"},
+                    "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
+                    "en": {"title": "English Title", "description": "English description"},
+                },
+            },
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = approve_metadata(
+        client,
+        SimpleNamespace(
+            release_id="release-1",
+            release_title="",
+            title="한국어 제목",
+            description="",
+            description_file=str(ko_description),
+            tags="Jpop",
+            ko_title="한국어 제목",
+            ko_description="",
+            ko_description_file=str(ko_description),
+            ja_title="日本語タイトル",
+            ja_description="",
+            ja_description_file=str(ja_description),
+            en_title="English Title",
+            en_description="",
+            en_description_file=str(en_description),
+            actor="openclaw",
+            note="",
+        ),
+    )
+
+    payload = json.loads(captured_payloads[-1])
+    assert payload["default_language"] == "ko"
+    assert payload["localizations"]["ja"]["title"] == "日本語タイトル"
+    assert payload["localizations"]["en"]["description"] == "English description"
+    assert result["release"]["youtube_localizations"]["ko"]["title"] == "한국어 제목"
 
 
 def test_auto_publish_playlist_requires_final_cover_before_side_effects(tmp_path) -> None:

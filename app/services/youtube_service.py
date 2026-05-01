@@ -14,6 +14,12 @@ from PIL import Image
 
 from app.config import Settings
 from app.models.playlist import Playlist
+from app.utils.youtube_localizations import (
+    DEFAULT_YOUTUBE_LANGUAGE,
+    localizations_for_youtube_api,
+    normalize_youtube_language,
+    normalize_youtube_localizations,
+)
 
 
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
@@ -199,25 +205,47 @@ class YouTubeService:
         tags: list[str],
         thumbnail_path: str | None = None,
         youtube_channel_id: str | None = None,
+        localizations: dict[str, dict[str, str]] | None = None,
+        default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
     ) -> YouTubeUploadResult:
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
         if not playlist.output_video_path:
             raise ValueError("Playlist output_video_path is missing.")
 
         youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        default_language = normalize_youtube_language(default_language)
+        normalized_localizations = normalize_youtube_localizations(
+            localizations,
+            default_title=title,
+            default_description=description,
+            default_language=default_language,
+        )
+        default_copy = normalized_localizations.get(default_language)
+        if default_copy:
+            title = default_copy["title"]
+            description = default_copy["description"]
+        api_localizations = localizations_for_youtube_api(
+            normalized_localizations,
+            default_language=default_language,
+        )
         body = {
             "snippet": {
                 "title": title,
                 "description": description,
                 "tags": tags,
                 "categoryId": self.settings.youtube_category_id,
+                "defaultLanguage": default_language,
             },
             "status": {
                 "privacyStatus": self.settings.youtube_privacy_status,
             },
         }
+        parts = ["snippet", "status"]
+        if api_localizations:
+            body["localizations"] = api_localizations
+            parts.append("localizations")
         request = youtube.videos().insert(
-            part="snippet,status",
+            part=",".join(parts),
             body=body,
             media_body=MediaFileUpload(playlist.output_video_path, resumable=True),
         )
@@ -232,6 +260,9 @@ class YouTubeService:
                 "id": channel.get("id"),
                 "title": channel.get("title"),
             }
+        response["default_language"] = default_language
+        if normalized_localizations:
+            response["localizations"] = normalized_localizations
         if thumbnail_path and Path(thumbnail_path).exists():
             thumbnail_upload_path = self._prepare_thumbnail_upload(thumbnail_path)
             try:

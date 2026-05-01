@@ -10,6 +10,7 @@ const state = {
   autoRefreshInFlight: false,
   youtubeStatus: null,
   editingMetadataReleaseId: "",
+  metadataLanguageByRelease: {},
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -64,6 +65,11 @@ const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
+const METADATA_LANGUAGES = [
+  { code: "ko", label: "Korean", shortLabel: "KO" },
+  { code: "ja", label: "Japanese", shortLabel: "JA" },
+  { code: "en", label: "English", shortLabel: "EN" },
+];
 
 let quickUploadFiles = [];
 let quickUploadCoverFiles = [];
@@ -448,17 +454,62 @@ function parseMetadataTags(value) {
     .slice(0, 15);
 }
 
+function metadataDefaultLanguage(workspace) {
+  const language = workspace?.youtube_default_language || "ko";
+  return METADATA_LANGUAGES.some((item) => item.code === language) ? language : "ko";
+}
+
+function metadataLocalizations(workspace) {
+  const localizations = { ...(workspace?.youtube_localizations || {}) };
+  const defaultLanguage = metadataDefaultLanguage(workspace);
+  if (!localizations[defaultLanguage]) {
+    localizations[defaultLanguage] = {
+      title: workspace?.youtube_title || "",
+      description: workspace?.youtube_description || "",
+    };
+  }
+  return localizations;
+}
+
+function activeMetadataLanguage(workspace) {
+  const selected = state.metadataLanguageByRelease[workspace.id];
+  if (METADATA_LANGUAGES.some((item) => item.code === selected)) return selected;
+  return metadataDefaultLanguage(workspace);
+}
+
 function metadataDraftValues() {
-  const title = detailPanel.querySelector('[data-metadata-field="title"]')?.value?.trim();
-  const description = detailPanel.querySelector('[data-metadata-field="description"]')?.value?.trim();
+  const defaultLanguage = detailPanel.querySelector("[data-metadata-default-language]")?.dataset.metadataDefaultLanguage || "ko";
+  const localizations = {};
+  METADATA_LANGUAGES.forEach((language) => {
+    const title = detailPanel
+      .querySelector(`[data-metadata-field="localized-title"][data-metadata-lang="${language.code}"]`)
+      ?.value?.trim();
+    const description = detailPanel
+      .querySelector(`[data-metadata-field="localized-description"][data-metadata-lang="${language.code}"]`)
+      ?.value?.trim();
+    if (title || description) {
+      localizations[language.code] = { title: title || "", description: description || "" };
+    }
+  });
+  const defaultCopy = localizations[defaultLanguage] || {};
+  const title = defaultCopy.title || "";
+  const description = defaultCopy.description || "";
   const tags = parseMetadataTags(detailPanel.querySelector('[data-metadata-field="tags"]')?.value);
-  return { title, description, tags };
+  return { title, description, tags, localizations, default_language: defaultLanguage };
 }
 
 async function saveMetadataChanges(workspace) {
   const metadata = metadataDraftValues();
   if (!metadata.title || !metadata.description) {
-    alert("YouTube title과 description은 비워둘 수 없습니다.");
+    alert("기본 언어(KO) YouTube title과 description은 비워둘 수 없습니다.");
+    return;
+  }
+  const partialLanguage = METADATA_LANGUAGES.find((language) => {
+    const copy = metadata.localizations[language.code];
+    return copy && ((copy.title && !copy.description) || (!copy.title && copy.description));
+  });
+  if (partialLanguage) {
+    alert(`${partialLanguage.label} 탭은 title과 description을 둘 다 입력하거나 둘 다 비워야 합니다.`);
     return;
   }
   await api(`/api/playlists/${workspace.id}/metadata/approve`, {
@@ -468,6 +519,8 @@ async function saveMetadataChanges(workspace) {
       title: metadata.title,
       description: metadata.description,
       tags: metadata.tags,
+      localizations: metadata.localizations,
+      default_language: metadata.default_language,
       note: workspace.metadata_approved
         ? "Edited approved metadata from workspace detail."
         : "Approved from workspace detail.",
@@ -1027,10 +1080,10 @@ function appendMetadataDraft(workspace) {
 
   const summary = document.createElement("p");
   summary.textContent = metadataEditing
-    ? "승인된 YouTube 제목, 설명, 태그를 수정 중입니다. 저장하면 다시 승인된 metadata로 반영됩니다."
+    ? "승인된 YouTube 제목, 설명, 태그를 수정 중입니다. KO/JA/EN 탭을 확인한 뒤 저장하세요."
     : workspace.metadata_approved
-    ? "Approved YouTube copy. Final publish can use this title, description, and tags."
-    : "YouTube에 올라갈 제목, 설명, 태그입니다. 여기서 확인하고 필요하면 바로 수정한 뒤 승인하세요.";
+    ? "Approved YouTube copy. Final publish can use these default and localized titles/descriptions."
+    : "YouTube에 올라갈 제목, 설명, 태그입니다. KO/JA/EN 탭에서 확인하고 필요하면 수정한 뒤 승인하세요.";
 
   titleBlock.appendChild(kicker);
   titleBlock.appendChild(heading);
@@ -1054,31 +1107,71 @@ function appendMetadataDraft(workspace) {
 
   const fields = document.createElement("div");
   fields.className = "metadata-fields";
+  fields.dataset.metadataDefaultLanguage = metadataDefaultLanguage(workspace);
 
-  const titleField = document.createElement("label");
-  titleField.className = "metadata-field title-field";
-  const titleLabel = document.createElement("span");
-  titleLabel.textContent = "YouTube Title";
-  const titleInput = document.createElement("input");
-  titleInput.type = "text";
-  titleInput.maxLength = 100;
-  titleInput.value = workspace.youtube_title || "";
-  titleInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
-  titleInput.dataset.metadataField = "title";
-  titleField.appendChild(titleLabel);
-  titleField.appendChild(titleInput);
+  const localizations = metadataLocalizations(workspace);
+  const selectedLanguage = activeMetadataLanguage(workspace);
 
-  const descriptionField = document.createElement("label");
-  descriptionField.className = "metadata-field description-field";
-  const descriptionLabel = document.createElement("span");
-  descriptionLabel.textContent = "YouTube Description";
-  const descriptionInput = document.createElement("textarea");
-  descriptionInput.rows = 10;
-  descriptionInput.value = workspace.youtube_description || "";
-  descriptionInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
-  descriptionInput.dataset.metadataField = "description";
-  descriptionField.appendChild(descriptionLabel);
-  descriptionField.appendChild(descriptionInput);
+  const languageTabs = document.createElement("div");
+  languageTabs.className = "metadata-language-tabs";
+  METADATA_LANGUAGES.forEach((language) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = `metadata-language-tab${language.code === selectedLanguage ? " active" : ""}`;
+    tab.textContent = language.shortLabel;
+    tab.title = language.label;
+    tab.addEventListener("click", () => {
+      state.metadataLanguageByRelease[workspace.id] = language.code;
+      languageTabs.querySelectorAll(".metadata-language-tab").forEach((item) => {
+        item.classList.toggle("active", item === tab);
+      });
+      languagePanels.querySelectorAll(".metadata-language-panel").forEach((panel) => {
+        panel.hidden = panel.dataset.metadataLang !== language.code;
+      });
+    });
+    languageTabs.appendChild(tab);
+  });
+
+  const languagePanels = document.createElement("div");
+  languagePanels.className = "metadata-language-panels";
+  METADATA_LANGUAGES.forEach((language) => {
+    const copy = localizations[language.code] || {};
+    const panel = document.createElement("div");
+    panel.className = "metadata-language-panel";
+    panel.dataset.metadataLang = language.code;
+    panel.hidden = language.code !== selectedLanguage;
+
+    const titleField = document.createElement("label");
+    titleField.className = "metadata-field title-field";
+    const titleLabel = document.createElement("span");
+    titleLabel.textContent = `${language.label} Title`;
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.maxLength = 100;
+    titleInput.value = copy.title || "";
+    titleInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
+    titleInput.dataset.metadataField = "localized-title";
+    titleInput.dataset.metadataLang = language.code;
+    titleField.appendChild(titleLabel);
+    titleField.appendChild(titleInput);
+
+    const descriptionField = document.createElement("label");
+    descriptionField.className = "metadata-field description-field";
+    const descriptionLabel = document.createElement("span");
+    descriptionLabel.textContent = `${language.label} Description`;
+    const descriptionInput = document.createElement("textarea");
+    descriptionInput.rows = 10;
+    descriptionInput.value = copy.description || "";
+    descriptionInput.readOnly = Boolean(workspace.metadata_approved && !metadataEditing);
+    descriptionInput.dataset.metadataField = "localized-description";
+    descriptionInput.dataset.metadataLang = language.code;
+    descriptionField.appendChild(descriptionLabel);
+    descriptionField.appendChild(descriptionInput);
+
+    panel.appendChild(titleField);
+    panel.appendChild(descriptionField);
+    languagePanels.appendChild(panel);
+  });
 
   const tagsField = document.createElement("label");
   tagsField.className = "metadata-field tags-field";
@@ -1092,8 +1185,8 @@ function appendMetadataDraft(workspace) {
   tagsField.appendChild(tagsLabel);
   tagsField.appendChild(tagsInput);
 
-  fields.appendChild(titleField);
-  fields.appendChild(descriptionField);
+  fields.appendChild(languageTabs);
+  fields.appendChild(languagePanels);
   fields.appendChild(tagsField);
 
   const inlineActions = document.createElement("div");
@@ -1117,7 +1210,10 @@ function appendMetadataDraft(workspace) {
           state.editingMetadataReleaseId = workspace.id;
           renderWorkspaceDetail();
           window.setTimeout(() => {
-            detailPanel.querySelector('[data-metadata-field="description"]')?.focus();
+            const language = activeMetadataLanguage(workspace);
+            detailPanel
+              .querySelector(`[data-metadata-field="localized-description"][data-metadata-lang="${language}"]`)
+              ?.focus();
           }, 0);
         })
       );
@@ -1776,7 +1872,10 @@ function renderWorkspaceDetail() {
           state.editingMetadataReleaseId = workspace.id;
           renderWorkspaceDetail();
           window.setTimeout(() => {
-            detailPanel.querySelector('[data-metadata-field="description"]')?.focus();
+            const language = activeMetadataLanguage(workspace);
+            detailPanel
+              .querySelector(`[data-metadata-field="localized-description"][data-metadata-lang="${language}"]`)
+              ?.focus();
           }, 0);
         })
       );

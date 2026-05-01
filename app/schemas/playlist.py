@@ -54,6 +54,8 @@ class PlaylistMetadataApproveRequest(BaseModel):
     title: str | None = None
     description: str | None = None
     tags: list[str] | str | None = None
+    localizations: dict[str, dict[str, str]] | None = None
+    default_language: str = "ko"
     note: str | None = None
 
 
@@ -144,6 +146,8 @@ class PlaylistWorkspaceRead(BaseModel):
     youtube_title: str | None = None
     youtube_description: str | None = None
     youtube_tags: list[str] = []
+    youtube_localizations: dict[str, dict[str, str]] = Field(default_factory=dict)
+    youtube_default_language: str = "ko"
     metadata_provider: str | None = None
     metadata_generation_error: str | None = None
     youtube_video_id: str | None

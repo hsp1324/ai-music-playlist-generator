@@ -160,6 +160,31 @@ Thumbnail text rules for OpenClaw:
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
 
+Localized YouTube metadata rules for OpenClaw:
+
+- The app can upload YouTube localized metadata for `ko`, `ja`, and `en`.
+- For `Tokyo Daydream Radio`, Japan, Tokyo, city-pop, J-pop, anime, or Japanese lofi releases, always write all three language versions.
+- Use Korean as the default upload metadata. Pass Korean through `--title` and `--description-file`, and also pass `--ko-title` and `--ko-description-file`.
+- Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
+- Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
+- Keep all localized titles under 100 characters. Keep timestamps identical across languages; translate only the displayed title text and surrounding description.
+
+Example localized metadata approval:
+
+```bash
+scripts/openclaw-release approve-metadata \
+  --release-id RELEASE_ID \
+  --title "기분 좋아지는 일본어 J-pop 1시간 | 산책, 드라이브, 작업할 때 듣는 플레이리스트" \
+  --description-file /tmp/metadata-ko.txt \
+  --tags "Jpop,JapanesePop,TokyoDaydreamRadio,Playlist,DriveMusic,WorkMusic" \
+  --ko-title "기분 좋아지는 일본어 J-pop 1시간 | 산책, 드라이브, 작업할 때 듣는 플레이리스트" \
+  --ko-description-file /tmp/metadata-ko.txt \
+  --ja-title "気分が上がる日本語J-POP 1時間 | 散歩・ドライブ・作業用プレイリスト" \
+  --ja-description-file /tmp/metadata-ja.txt \
+  --en-title "Feel-Good Japanese J-Pop 1 Hour | Walk, Drive, Work Playlist" \
+  --en-description-file /tmp/metadata-en.txt
+```
+
 ## YouTube Channel Routing
 
 For automatic playlist publishing, `scripts/openclaw-release auto-publish-playlist` chooses the YouTube channel from the release concept when `--youtube-channel-title` is omitted.

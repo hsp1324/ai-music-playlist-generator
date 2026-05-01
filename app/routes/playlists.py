@@ -395,6 +395,8 @@ def approve_workspace_metadata(
             title=payload.title,
             description=payload.description,
             tags=payload.tags,
+            localizations=payload.localizations,
+            default_language=payload.default_language,
             note=payload.note,
         )
     except ValueError as exc:

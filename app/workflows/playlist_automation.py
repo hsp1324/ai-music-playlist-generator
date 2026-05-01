@@ -10,6 +10,11 @@ from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
 from app.schemas.playlist import PlaylistJobRead, PlaylistTrackRead, PlaylistWorkspaceRead
 from app.services.registry import ServiceRegistry
+from app.utils.youtube_localizations import (
+    DEFAULT_YOUTUBE_LANGUAGE,
+    normalize_youtube_language,
+    normalize_youtube_localizations,
+)
 
 
 def _utcnow() -> datetime:
@@ -202,6 +207,13 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         youtube_title=meta.get("youtube_title"),
         youtube_description=meta.get("youtube_description"),
         youtube_tags=list(meta.get("youtube_tags") or []),
+        youtube_localizations=normalize_youtube_localizations(
+            meta.get("youtube_localizations"),
+            default_title=meta.get("youtube_title"),
+            default_description=meta.get("youtube_description"),
+            default_language=str(meta.get("youtube_default_language") or DEFAULT_YOUTUBE_LANGUAGE),
+        ),
+        youtube_default_language=normalize_youtube_language(meta.get("youtube_default_language")),
         metadata_provider=meta.get("metadata_provider"),
         metadata_generation_error=meta.get("metadata_generation_error"),
         youtube_video_id=playlist.youtube_video_id,
@@ -393,6 +405,8 @@ def _clear_downstream_release_assets(playlist: Playlist, meta: dict) -> None:
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)
     meta.pop("youtube_tags", None)
+    meta.pop("youtube_localizations", None)
+    meta.pop("youtube_default_language", None)
     meta.pop("publish_approved_by", None)
     meta.pop("video_build_error", None)
     playlist.output_video_path = None
@@ -885,6 +899,15 @@ def generate_playlist_metadata(
     meta["youtube_title"] = youtube_metadata.title
     meta["youtube_description"] = youtube_metadata.description
     meta["youtube_tags"] = youtube_metadata.tags
+    meta["youtube_default_language"] = normalize_youtube_language(
+        getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
+    )
+    meta["youtube_localizations"] = normalize_youtube_localizations(
+        getattr(youtube_metadata, "localizations", {}),
+        default_title=youtube_metadata.title,
+        default_description=youtube_metadata.description,
+        default_language=meta["youtube_default_language"],
+    )
     meta["metadata_provider"] = youtube_metadata.provider
     if youtube_metadata.error:
         meta["metadata_generation_error"] = youtube_metadata.error
@@ -915,6 +938,8 @@ def approve_playlist_metadata(
     title: str | None = None,
     description: str | None = None,
     tags: list[str] | str | None = None,
+    localizations: dict[str, dict[str, str]] | None = None,
+    default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
     note: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
@@ -930,6 +955,20 @@ def approve_playlist_metadata(
         meta["youtube_description"] = description
     if tags is not None:
         meta["youtube_tags"] = _normalize_youtube_tags(tags)
+    default_language = normalize_youtube_language(default_language or meta.get("youtube_default_language"))
+    normalized_localizations = normalize_youtube_localizations(
+        localizations if localizations is not None else meta.get("youtube_localizations"),
+        default_title=meta.get("youtube_title"),
+        default_description=meta.get("youtube_description"),
+        default_language=default_language,
+    )
+    if normalized_localizations:
+        meta["youtube_default_language"] = default_language
+        meta["youtube_localizations"] = normalized_localizations
+        default_copy = normalized_localizations.get(default_language)
+        if default_copy:
+            meta["youtube_title"] = default_copy["title"]
+            meta["youtube_description"] = default_copy["description"]
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing. Generate metadata first.")
 
@@ -1284,6 +1323,8 @@ def reorder_workspace_tracks(
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)
     meta.pop("youtube_tags", None)
+    meta.pop("youtube_localizations", None)
+    meta.pop("youtube_default_language", None)
     meta.pop("publish_approved_by", None)
     playlist.metadata_json = meta
     playlist.output_audio_path = None
@@ -1344,6 +1385,8 @@ def queue_workspace_audio_render(
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)
     meta.pop("youtube_tags", None)
+    meta.pop("youtube_localizations", None)
+    meta.pop("youtube_default_language", None)
     meta.pop("publish_approved_by", None)
     playlist.metadata_json = meta
     playlist.output_audio_path = None
@@ -1428,6 +1471,8 @@ async def return_track_to_workspace_queue(
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)
     meta.pop("youtube_tags", None)
+    meta.pop("youtube_localizations", None)
+    meta.pop("youtube_default_language", None)
     playlist.metadata_json = meta
     playlist.output_audio_path = None
     playlist.output_video_path = None

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.config import Settings
 from app.models.playlist import Playlist
@@ -15,6 +15,8 @@ class YouTubeMetadata:
     tags: list[str]
     provider: str = "template"
     error: str | None = None
+    localizations: dict[str, dict[str, str]] = field(default_factory=dict)
+    default_language: str = "ko"
 
 
 class ReleaseMetadataService:
