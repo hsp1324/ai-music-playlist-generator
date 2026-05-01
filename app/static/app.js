@@ -992,7 +992,7 @@ function appendLoopVideoPreview(workspace) {
   body.className = "asset-preview-body";
 
   const title = document.createElement("strong");
-  title.textContent = "8s Loop Video";
+  title.textContent = "6s Loop Video";
 
   const copy = document.createElement("span");
   copy.textContent = workspace.loop_video_smooth
@@ -1789,7 +1789,7 @@ function renderWorkspaceDetail() {
 
     detailActions.appendChild(
       actionButton(
-        workspace.loop_video_path ? "Replace 8s Loop Video" : "Upload 8s Loop Video",
+        workspace.loop_video_path ? "Replace 6s Loop Video" : "Upload 6s Loop Video",
         "action-button secondary-button",
         async () => {
           await pickLoopVideoFile(workspace);
@@ -1827,7 +1827,7 @@ function renderWorkspaceDetail() {
         actionButton("Render Video", "action-button primary-button", async () => {
           if (!workspace.loop_video_path) {
             const proceed = window.confirm(
-              "8초 loop video가 아직 없습니다.\n\n계속하면 clean cover 이미지로 정적인 영상을 렌더합니다.\nDreamina/Seedance moving visual을 쓰려면 먼저 Upload 8s Loop Video를 눌러 업로드하세요.\n\n그래도 정적인 영상으로 렌더할까요?"
+              "6초 loop video가 아직 없습니다.\n\n계속하면 clean cover 이미지로 정적인 영상을 렌더합니다.\nDreamina/Seedance moving visual을 쓰려면 먼저 Upload 6s Loop Video를 눌러 업로드하세요.\n\n그래도 정적인 영상으로 렌더할까요?"
             );
             if (!proceed) return;
           }
