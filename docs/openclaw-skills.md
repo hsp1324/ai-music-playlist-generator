@@ -17,6 +17,8 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 ## Shared Rules
 
 - Never approve, reject, render, publish, or upload to YouTube unless the human explicitly asks.
+- Before generating audio in Suno, decide the target app workspace/release. Use one Single Release workspace for one standalone song candidate set, and one Playlist Release workspace for one playlist/mix. Do not scatter one Suno request or one playlist run across multiple workspaces.
+- If continuing existing work, use the existing `release.id` with `--release-id`. If starting fresh, create the right workspace through the helper command by passing `--release-title`.
 - OpenClaw creates audio candidates and uploads them to the app review queue.
 - If cover art is ready with the audio, upload the cover in the same command with `--cover`.
 - Human review happens in Slack or the web UI.
@@ -62,6 +64,7 @@ Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use the local app API only through scripts/openclaw-release.
 
 Goal:
+- Create or select one Single Release workspace before uploading Suno results.
 - Generate one standalone song/single.
 - If Suno returns two candidates, upload both candidates to one new Single Release.
 - If only one usable candidate exists, upload one candidate to one new Single Release.
@@ -144,6 +147,7 @@ Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use scripts/openclaw-release only.
 
 Goal:
+- Create or select one Single Release workspace before uploading Suno results.
 - Generate an original standalone song/single.
 - If the human references an existing artist such as YOASOBI, treat it only as mood/style guidance. Do not copy melodies, lyrics, titles, or a specific song.
 - If Suno returns two usable candidates and the human asked for full automation, either choose the stronger one or use both only when they work as one combined single-style release.
@@ -247,6 +251,7 @@ Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use scripts/openclaw-release only.
 
 Goal:
+- Create or select one Playlist Release workspace before uploading Suno results.
 - Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
 - If Suno returns two outputs from one request, use both outputs as separate playlist tracks when both are usable.
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.

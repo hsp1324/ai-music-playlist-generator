@@ -279,6 +279,9 @@ Give OpenClaw this instruction when it finishes a song:
 
 ```text
 When the final audio file is ready, upload it to the local AI Music app from /opt/ai-music-playlist-generator.
+Before uploading Suno output, decide whether this belongs to a Single Release workspace or a Playlist Release workspace.
+For a new single candidate set, create one Single Release by using --release-title with upload-single-candidates.
+For an existing release, use --release-id and keep all related Suno outputs in that same workspace.
 When Suno returns two candidate songs for one single release, run:
 
 scripts/openclaw-release upload-single-candidates --release-title "TITLE" --audio ABSOLUTE_AUDIO_PATH_A --audio ABSOLUTE_AUDIO_PATH_B --cover ABSOLUTE_COVER_PATH_A --cover ABSOLUTE_COVER_PATH_B --prompt "PROMPT" --tags "TAGS"
