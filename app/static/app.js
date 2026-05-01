@@ -86,6 +86,11 @@ function normalizeMediaUrl(path) {
   return encodeURI(path);
 }
 
+function youtubeWatchUrl(videoId) {
+  if (!videoId) return "";
+  return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+}
+
 function formatDuration(seconds) {
   if (!seconds) return "0:00";
   const mins = Math.floor(seconds / 60);
@@ -1053,6 +1058,47 @@ function appendVideoPreview(workspace) {
   detailLinks.appendChild(card);
 }
 
+function appendYouTubePreview(workspace) {
+  const youtubeUrl = youtubeWatchUrl(workspace.youtube_video_id);
+  if (!youtubeUrl) return;
+
+  const thumbnailUrl = normalizeMediaUrl(workspace.youtube_thumbnail_path);
+  const card = document.createElement("div");
+  card.className = "asset-preview youtube-link-preview approved";
+
+  if (thumbnailUrl) {
+    const image = document.createElement("img");
+    image.src = thumbnailUrl;
+    image.alt = `${displayTitle(workspace.title)} YouTube thumbnail`;
+    card.appendChild(image);
+  }
+
+  const body = document.createElement("div");
+  body.className = "asset-preview-body";
+
+  const title = document.createElement("strong");
+  title.textContent = "YouTube Upload";
+
+  const copy = document.createElement("span");
+  copy.textContent = workspace.output_video_path
+    ? "Uploaded to YouTube. The local rendered MP4 is still available until cleanup runs."
+    : "Uploaded to YouTube. The long local MP4 has been removed from this server; use the YouTube link to watch it.";
+
+  const idLine = document.createElement("small");
+  idLine.textContent = `Video ID: ${workspace.youtube_video_id}`;
+
+  const actions = document.createElement("div");
+  actions.className = "asset-preview-actions";
+  actions.appendChild(buildLink("Watch on YouTube", youtubeUrl));
+
+  body.appendChild(title);
+  body.appendChild(copy);
+  body.appendChild(idLine);
+  body.appendChild(actions);
+  card.appendChild(body);
+  detailLinks.appendChild(card);
+}
+
 function appendMetadataDraft(workspace) {
   if (!workspace.youtube_title && !workspace.youtube_description) return;
 
@@ -1709,6 +1755,7 @@ function renderWorkspaceDetail() {
   appendThumbnailPreview(workspace);
   appendLoopVideoPreview(workspace);
   appendVideoPreview(workspace);
+  appendYouTubePreview(workspace);
   appendMetadataDraft(workspace);
 
   const youtubeReady = Boolean(state.youtubeStatus?.ready);
@@ -1912,7 +1959,14 @@ function renderWorkspaceDetail() {
     );
   }
 
-  if (workspace.metadata_approved && !metadataEditing) {
+  if (workspace.metadata_approved && !metadataEditing && !workspace.output_video_path) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "action-button secondary-button";
+    button.textContent = workspace.youtube_video_id ? "Render Video Before Re-upload" : "Render Video Before Publish";
+    button.disabled = true;
+    detailActions.appendChild(button);
+  } else if (workspace.metadata_approved && !metadataEditing) {
     const publishBusy = workspace.workflow_state === "publish_queued";
     const needsYouTubeConnection = !youtubeReady;
     const connectedYouTubeChannels = state.youtubeStatus?.channels || [];

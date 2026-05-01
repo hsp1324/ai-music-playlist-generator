@@ -29,6 +29,7 @@ from app.schemas.playlist import (
 )
 from app.services.registry import ServiceRegistry
 from app.workflows.playlist_automation import (
+    _utcnow,
     approve_playlist_cover,
     approve_playlist_metadata,
     approve_playlist_publish,
@@ -106,6 +107,19 @@ def _store_loop_video_upload(upload: UploadFile, destination_dir: Path, playlist
     if not destination.exists() or destination.stat().st_size == 0:
         raise HTTPException(status_code=400, detail="Uploaded loop video is empty.")
     return str(destination)
+
+
+def _delete_uploaded_video_file(video_path: str | None) -> dict:
+    if not video_path:
+        return {"deleted": False, "path": None}
+    path = Path(video_path)
+    if not path.exists():
+        return {"deleted": False, "path": str(path)}
+    try:
+        path.unlink()
+    except OSError as exc:
+        return {"deleted": False, "path": str(path), "error": str(exc)}
+    return {"deleted": True, "path": str(path)}
 
 
 @router.post("/build", response_model=PlaylistRead, status_code=status.HTTP_201_CREATED)
@@ -447,7 +461,7 @@ def mark_playlist_uploaded(
         playlist.youtube_video_id = payload.youtube_video_id
     if payload.output_video_path:
         playlist.output_video_path = payload.output_video_path
-    playlist.metadata_json = {
+    meta = {
         **(playlist.metadata_json or {}),
         "uploaded_by": payload.actor,
         "upload_note": payload.note,
@@ -455,6 +469,15 @@ def mark_playlist_uploaded(
         "publish_ready": True,
         "publish_approved": True,
     }
+    cleanup = _delete_uploaded_video_file(playlist.output_video_path if playlist.youtube_video_id else None)
+    if cleanup["deleted"]:
+        playlist.output_video_path = None
+        meta["local_video_deleted_after_youtube_upload"] = cleanup["path"]
+        meta["local_video_deleted_at"] = _utcnow().isoformat()
+        meta.pop("local_video_cleanup_error", None)
+    elif cleanup.get("error"):
+        meta["local_video_cleanup_error"] = cleanup["error"]
+    playlist.metadata_json = meta
     db.add(playlist)
 
     for item in playlist.items:

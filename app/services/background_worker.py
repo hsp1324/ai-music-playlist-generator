@@ -502,10 +502,19 @@ class BackgroundJobWorker:
                         localizations=localizations,
                         default_language=default_language,
                     )
+                    uploaded_video_path = playlist.output_video_path
                     playlist.youtube_video_id = result.video_id
                     playlist.status = PlaylistStatus.uploaded
                     meta["workflow_state"] = "uploaded"
                     meta["youtube_response"] = result.response
+                    cleanup = self._delete_uploaded_video_file(uploaded_video_path)
+                    if cleanup["deleted"]:
+                        playlist.output_video_path = None
+                        meta["local_video_deleted_after_youtube_upload"] = cleanup["path"]
+                        meta["local_video_deleted_at"] = _utcnow().isoformat()
+                        meta.pop("local_video_cleanup_error", None)
+                    elif cleanup.get("error"):
+                        meta["local_video_cleanup_error"] = cleanup["error"]
                     if result.response.get("upload_channel"):
                         meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
                         meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
@@ -550,6 +559,19 @@ class BackgroundJobWorker:
         }
         db.add(playlist)
         db.add(job)
+
+    @staticmethod
+    def _delete_uploaded_video_file(video_path: str | None) -> dict:
+        if not video_path:
+            return {"deleted": False, "path": None}
+        path = Path(video_path)
+        if not path.exists():
+            return {"deleted": False, "path": str(path)}
+        try:
+            path.unlink()
+        except OSError as exc:
+            return {"deleted": False, "path": str(path), "error": str(exc)}
+        return {"deleted": True, "path": str(path)}
 
     def _mark_job_failed(self, db: Session, job: Job, error_text: str) -> None:
         playlist = db.get(Playlist, job.playlist_id) if job.playlist_id else None

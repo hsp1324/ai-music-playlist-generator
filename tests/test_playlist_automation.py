@@ -420,11 +420,14 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
         )
         assert playlist_response.status_code == 201
         playlist = playlist_response.json()
+        local_video = tmp_path / f"{marker}.mp4"
+        local_video.write_bytes(b"uploaded video")
 
         uploaded_response = client.post(
             f"/api/playlists/{playlist['id']}/mark-uploaded",
             json={
                 "youtube_video_id": f"yt-{marker}",
+                "output_video_path": str(local_video),
                 "actor": "test-suite",
                 "note": "uploaded manually",
             },
@@ -433,6 +436,8 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
         uploaded = uploaded_response.json()
         assert uploaded["status"] == "uploaded"
         assert uploaded["youtube_video_id"] == f"yt-{marker}"
+        assert uploaded["output_video_path"] is None
+        assert not local_video.exists()
 
         track_after = client.get(f"/api/tracks/{track_id}")
         assert track_after.status_code == 200
@@ -1756,7 +1761,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert approve_response.status_code == 200
         assert drain_background_jobs(client) == 1
 
-        prepare_release_for_final_publish(client, workspace_id)
+        prepared_release = prepare_release_for_final_publish(client, workspace_id)
         localized_metadata_response = client.post(
             f"/api/playlists/{workspace_id}/metadata/approve",
             json={
@@ -1782,6 +1787,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             db.add(playlist)
             db.commit()
 
+        first_video_path = localized_metadata_response.json()["output_video_path"] or prepared_release["output_video_path"]
+        assert os.path.exists(first_video_path)
+
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
             json={
@@ -1798,7 +1806,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert published["workflow_state"] == "uploaded"
         assert published["youtube_video_id"] == "yt-auto-123"
-        assert published["output_video_path"].endswith(".mp4")
+        assert published["output_video_path"] is None
+        assert not os.path.exists(first_video_path)
         assert upload_channel_ids[-1] == "UC123"
         assert upload_localizations[-1]["default_language"] == "ko"
         assert upload_localizations[-1]["localizations"]["en"]["title"] == "English Title"
@@ -1806,8 +1815,24 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
+            assert playlist.metadata_json["local_video_deleted_after_youtube_upload"] == first_video_path
 
         upload_video_ids.append("yt-auto-456")
+        render_again_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_again_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+        approve_again_response = client.post(
+            f"/api/playlists/{workspace_id}/metadata/approve",
+            json={"actor": "test-suite", "note": "metadata approved again"},
+        )
+        assert approve_again_response.status_code == 200
+        second_video_path = approve_again_response.json()["output_video_path"]
+        assert second_video_path.endswith(".mp4")
+        assert os.path.exists(second_video_path)
+
         reupload_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
             json={
@@ -1825,6 +1850,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         reuploaded = next(item for item in reloaded_response.json() if item["id"] == workspace_id)
         assert reuploaded["workflow_state"] == "uploaded"
         assert reuploaded["youtube_video_id"] == "yt-auto-456"
+        assert reuploaded["output_video_path"] is None
+        assert not os.path.exists(second_video_path)
         assert upload_channel_ids[-1] == "UC456"
     finally:
         clear_isolated_client_env()
@@ -1927,7 +1954,7 @@ def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> 
         playlists_response = client.get("/api/playlists")
         playlist = next(item for item in playlists_response.json() if item["id"] == workspace["id"])
         assert playlist["youtube_video_id"] == "yt-single-123"
-        assert playlist["output_video_path"].endswith(".mp4")
+        assert playlist["output_video_path"] is None
         assert playlist["metadata_json"]["youtube_title"].startswith("Neon Solo")
         assert playlist["metadata_json"]["dreamina_job_id"] == "dreamina-job-1"
     finally:

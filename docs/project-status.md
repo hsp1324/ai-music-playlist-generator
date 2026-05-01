@@ -116,6 +116,7 @@ For `single_track_video`, the intended publish path is:
 - OpenClaw should generate static cover/thumbnail images with OpenAI GPT Image models, preferably `gpt-image-2` when available, not Dreamina. Dreamina is reserved for the moving visual clip.
 - OpenClaw can also pass a 6 second Dreamina/Seedance MP4 via `--loop-video`. The app stores it as `loop_video_path` and uses smooth 2 second forward crossfade looping during final video render instead of making OpenClaw export a one-hour video. Browser automation should use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls.
 - The web release detail UI now supports direct upload/replace actions for clean cover, text YouTube thumbnail, and 6 second loop video as separate assets.
+- After a successful YouTube upload, the app deletes the long rendered local MP4 and keeps the YouTube video id/link as the watch surface. Re-uploading requires rendering a new local video first.
 - Track uploads now accept optional lyrics/content notes and Suno style/settings. Both are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, remake, and standalone single workflows.
 
 ### Cover art
