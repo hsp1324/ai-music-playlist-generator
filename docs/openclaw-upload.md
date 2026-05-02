@@ -131,9 +131,9 @@ Static image creation rules:
 
 Optional moving visual:
 
-- `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 6 second Dreamina/Seedance visual clip. The app repeats it during video render.
+- `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 8 second Dreamina/Seedance visual clip. The app repeats it during video render.
 - OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
-- The app uses smooth 2 second forward crossfade looping by default. It trims/pads the source to 6 seconds, then fades the end of each forward pass into the beginning of the next forward pass so the join feels like a dissolve instead of a sudden jump.
+- The app uses smooth 2 second forward crossfade looping by default. It uses the actual uploaded clip length, normally 8 seconds, then fades the end of each forward pass into the beginning of the next forward pass so the join feels like a dissolve instead of a sudden jump.
 - Use `--hard-loop-video` only if the clip is already a perfect seamless loop and direct repeat is preferred.
 - If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or text cover as the moving video visual.
 
@@ -147,7 +147,7 @@ Dreamina website workflow for OpenClaw:
 - Leave the last-frame input empty. Do not upload a last-frame reference; it makes the generated motion too static.
 - Set ratio to `16:9` when selectable.
 - Set quality to `720p` when selectable.
-- Generate exactly one `6 second` MP4.
+- Generate exactly one `8 second` MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
 - If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video.
@@ -156,7 +156,7 @@ Dreamina/Seedance motion prompt guidance:
 
 - Do not ask Dreamina for a loop. Ask for one continuous forward-moving video shot.
 - Do not put duration, ratio, or quality in the prompt. Set those in Dreamina controls only.
-- Do not include `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
+- Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
 - Ask Dreamina/Seedance to preserve the thumbnail's composition, lighting, palette, and three-person back-view walking signature in the first shot.
 - Use subtle camera-follow movement from behind, stable composition, no hard cuts, no extra text overlays, no subtitles, no logos, and no extra people or characters.
 - Do not include `start and end frames match` or equivalent wording. The app handles smooth repeat with forward crossfade rendering, and forcing the last frame to match can make the clip too static.
@@ -335,7 +335,7 @@ Generate or obtain:
 - one final Suno audio file per YouTube single
 - a final clean 16:9 cover image
 - a separate YouTube thumbnail image with readable text
-- optionally one exactly 6 second Dreamina/Seedance loop video
+- optionally one exactly 8 second Dreamina/Seedance loop video
 
 Then run:
 
@@ -369,9 +369,9 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Static cover and thumbnail images must follow the channel visual signature: exactly three people seen from behind, walking forward away from the viewer into the scene.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
-- If OpenClaw creates a Dreamina/Seedance loop clip, pass the 6 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
+- If OpenClaw creates a Dreamina/Seedance loop clip, pass the 8 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text; `--cover` and `--loop-video` should be clean visuals without text.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.

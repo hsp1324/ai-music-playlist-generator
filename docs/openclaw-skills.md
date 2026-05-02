@@ -47,11 +47,11 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - If the human explicitly asks for animals or stylized characters, those may replace the three people, but keep exactly three subjects, back view, and walking away from camera.
 - The background can change by genre and channel mood: Tokyo street, cafe alley, forest path, beach, moonlit road, rainy city, abstract dreamscape, etc. The constant signature is three backs walking forward into the world.
 - Generate static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the OpenAI/Image tool environment. Do not use Dreamina for static image generation. Do not assume the OpenAI API is free; use the available Codex/ChatGPT image tool if that is the operator-approved path, or use API billing/credentials when explicitly configured.
-- Use Dreamina/Seedance only for the moving visual clip. If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 6 second MP4 and pass it with `--loop-video`. The app will repeat it smoothly during final video render. OpenClaw should not render a one-hour video itself.
-- Keep these assets separate: `--thumbnail` is the click image with text, `--cover` is the clean fallback visual, and `--loop-video` is the 6 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
-- The 6 second loop video must visually match the thumbnail. Use the final thumbnail image as the first-frame or starting-scene reference in Dreamina/Seedance, then animate from that scene. Do not use Omni Reference. Do not provide a last-frame reference because it makes the motion too static.
-- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Select Seedance/Dreamina `2.0 Fast`, first/last-frame mode if the UI asks, provide the first frame only, leave the last frame empty, set ratio to `16:9` when selectable, quality to `720p`, duration to exactly `6 seconds`, then create/download the MP4, save it locally, and pass the downloaded file path as `--loop-video`.
-- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set duration, ratio, and quality only through Dreamina controls. The prompt should ask for one continuous forward-moving shot with no repeated segment; the app handles the final loop/crossfade.
+- Use Dreamina/Seedance only for the moving visual clip. If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 8 second MP4 and pass it with `--loop-video`. The app will repeat it smoothly during final video render. OpenClaw should not render a one-hour video itself.
+- Keep these assets separate: `--thumbnail` is the click image with text, `--cover` is the clean fallback visual, and `--loop-video` is the 8 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
+- The 8 second loop video must visually match the thumbnail. Use the final thumbnail image as the first-frame or starting-scene reference in Dreamina/Seedance, then animate from that scene. Do not use Omni Reference. Do not provide a last-frame reference because it makes the motion too static.
+- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Select Seedance/Dreamina `2.0 Fast`, first/last-frame mode if the UI asks, provide the first frame only, leave the last frame empty, set ratio to `16:9` when selectable, quality to `720p`, duration to exactly `8 seconds`, then create/download the MP4, save it locally, and pass the downloaded file path as `--loop-video`.
+- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set duration, ratio, and quality only through Dreamina controls. The prompt should ask for one continuous forward-moving shot with no repeated segment; the app handles the final loop/crossfade.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -166,12 +166,12 @@ Goal:
 - A final clean 16:9 cover image is required.
 - A separate YouTube thumbnail image with readable text is required. For J-pop/Japan singles, use short click text such as `J-POP`, `TOKYO POP`, `NEW JAPAN POP`, or the release title plus the channel brand.
 - Apply the channel visual signature to both static images: exactly three people seen from behind, walking away from camera into the scene. The cover should be the clean version; the thumbnail should use the same composition plus readable click text and channel branding.
-- Generate both static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model. Dreamina is only for the moving 6 second MP4. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
-- Generate exactly one 6 second Dreamina/Seedance MP4 before publish when moving visuals are requested.
+- Generate both static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model. Dreamina is only for the moving 8 second MP4. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
+- Generate exactly one 8 second Dreamina/Seedance MP4 before publish when moving visuals are requested.
 - Use the final visual signature image as the first-frame/start-frame reference for Dreamina/Seedance so the video opening matches the clicked thumbnail/cover. The frame must show the three people from behind walking into the scene. Do not use Omni Reference. Do not upload a last-frame reference.
 - The thumbnail, cover, and loop video are three different assets. The thumbnail has readable text; the cover is clean; the loop video should not add extra subtitles, lyrics, UI, or new text beyond the thumbnail reference.
-- If using browser automation, open `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, use first/last-frame mode with only the first frame provided, do not use Omni Reference, leave the last frame empty, set `16:9`, `720p`, and `6 seconds` when selectable, create/download the MP4, confirm the local file exists, and pass that absolute path as `--loop-video`.
-- Do not include duration, ratio, or quality words in the Dreamina prompt. Do not write `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. Those are either UI settings or app-render responsibilities.
+- If using browser automation, open `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, use first/last-frame mode with only the first frame provided, do not use Omni Reference, leave the last frame empty, set `16:9`, `720p`, and `8 seconds` when selectable, create/download the MP4, confirm the local file exists, and pass that absolute path as `--loop-video`.
+- Do not include duration, ratio, or quality words in the Dreamina prompt. Do not write `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. Those are either UI settings or app-render responsibilities.
 - Dreamina prompt shape: `Use the uploaded first-frame image as the exact starting frame. Create one continuous forward-moving music visualizer shot. Keep the channel signature: exactly three people seen from behind, walking away from the camera into the scene. The viewer should see backs and backs of heads, not front-facing faces. The motion must progress forward naturally for the full clip. Do not repeat any segment. Do not ping-pong or restart motion. Preserve the opening composition, lighting, palette, and baked-in text only at the start. Adapt the background and atmosphere to the release concept. Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion. Stable composition, no hard cuts, no new text, no subtitles, no logos, no UI, no extra people or characters.`
 - Render audio/video, generate and approve YouTube metadata, and upload privately.
 - Publish Japanese/J-pop/Tokyo content to `Tokyo Daydream Radio`.
@@ -180,7 +180,7 @@ Goal:
 
 ### Run The Full Automation
 
-After one generated audio file, final cover, text thumbnail, and optional 6 second loop video are ready, run one command:
+After one generated audio file, final cover, text thumbnail, and optional 8 second loop video are ready, run one command:
 
 ```bash
 scripts/openclaw-release auto-publish-single \
@@ -202,7 +202,7 @@ Pass exactly one `--audio`, one `--title`, one optional `--lyrics-file`, and one
 
 Do not omit `--cover` or `--thumbnail` for a full private single publish run. If either asset is not ready, stop after audio creation and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is optional but preferred when the human wants moving visuals. If provided, it must be exactly 6 seconds or close enough for the app to trim/pad it to 6 seconds and repeat it smoothly during final video rendering.
+`--loop-video` is optional but preferred when the human wants moving visuals. If provided, it should be exactly 8 seconds. The app uses the actual uploaded clip length and repeats it smoothly during final video rendering.
 
 ### Required Output
 
@@ -277,12 +277,12 @@ Goal:
 - Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`. Use OpenAI GPT Image models for static image creation, not Dreamina.
 - Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`. Use OpenAI GPT Image models for static image creation, not Dreamina.
 - Apply the channel visual signature to both images: exactly three people seen from behind walking away from the camera into the scene. Use a clean text-free version for `--cover`; use the same composition plus readable title/channel text for `--thumbnail`.
-- Optionally generate a 6 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
+- Optionally generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
 - The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text; the cover should stay clean, and the loop video should not add extra text, subtitles, lyrics, logos, or UI elements beyond the thumbnail reference used for its first frame.
-- Use the approved/final signature image as the visual starting reference for Dreamina/Seedance image-to-video generation. The first shot of the 6 second loop video should show the same three-person back-view walking composition as the thumbnail/cover, and the video motion should keep them walking forward away from the viewer. The loop video itself should not add extra text, subtitles, lyrics, logos, or UI elements beyond what is already baked into the starting frame.
+- Use the approved/final signature image as the visual starting reference for Dreamina/Seedance image-to-video generation. The first shot of the 8 second loop video should show the same three-person back-view walking composition as the thumbnail/cover, and the video motion should keep them walking forward away from the viewer. The loop video itself should not add extra text, subtitles, lyrics, logos, or UI elements beyond what is already baked into the starting frame.
 - For Dreamina motion clips, set duration/ratio/quality in Dreamina controls, not in the prompt. The prompt should request `exactly three people seen from behind walking away from camera`, `one continuous forward-moving video shot`, `smooth gentle motion`, `subtle camera-follow movement from behind`, `stable composition`, `no repeated segment`, `no extra text overlays`, `no subtitles`, `no logos`, and `no hard cuts`. Do not ask for a matching last frame; the app handles smooth repeat with forward crossfade rendering.
-- Do not include `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. These terms cause Seedance/Dreamina to sometimes generate a shorter repeated segment inside the clip.
-- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, choose Seedance/Dreamina `2.0 Fast`, choose the first/last-frame workflow if the UI requires a mode, upload only the first-frame image, leave the last frame empty, do not use Omni Reference, set ratio `16:9`, quality `720p`, duration exactly `6 seconds`, create the video, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
+- Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. These terms cause Seedance/Dreamina to sometimes generate a shorter repeated segment inside the clip.
+- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, choose Seedance/Dreamina `2.0 Fast`, choose the first/last-frame workflow if the UI requires a mode, upload only the first-frame image, leave the last frame empty, do not use Omni Reference, set ratio `16:9`, quality `720p`, duration exactly `8 seconds`, create the video, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
 - If Dreamina login, CAPTCHA, payment, or human approval blocks browser automation, stop and report the exact blocked step instead of skipping the loop video.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
@@ -341,7 +341,7 @@ scripts/openclaw-release auto-publish-playlist \
 
 Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the app trims/pads the source to 6 seconds, creates a smooth 2 second forward crossfade loop, and repeats it to match the full audio duration. The loop transition should dissolve from one forward pass into the next instead of hard-cutting.
+`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the app uses the actual uploaded clip length, normally 8 seconds, creates a smooth 2 second forward crossfade loop, and repeats it to match the full audio duration. The loop transition should dissolve from one forward pass into the next instead of hard-cutting.
 
 If the release is Japan-related, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
 
@@ -375,10 +375,10 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general releases and `Tokyo Daydream Radio` for Japan-related releases.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
 - Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
-- Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the already-final thumbnail into a 6 second loop video.
+- Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the already-final thumbnail into an 8 second loop video.
 - Do not use `--allow-generated-draft-cover` unless the human explicitly says a placeholder cover is acceptable for this upload.
 - Do not use `--allow-cover-as-thumbnail` unless the human explicitly says one image is acceptable for both the video visual and YouTube thumbnail.
-- Do not create a long one-hour MP4 in OpenClaw. Upload only the 6 second loop clip with `--loop-video`; the app handles the long render.
+- Do not create a long one-hour MP4 in OpenClaw. Upload only the 8 second loop clip with `--loop-video`; the app handles the long render.
 - Do not add new text, subtitles, lyric overlays, logos, or UI elements inside the loop video. The visual action should be the three people walking forward away from the viewer; text should come only from the starting-frame reference if text is already baked in.
 - Do not use Dreamina Omni Reference for loop-video generation. Use first-frame/start-frame input only and leave last-frame input empty.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
@@ -398,7 +398,7 @@ Use `Automatic Private Single Publisher` when:
 
 - The user asks for one song, one single, or one standalone track and explicitly says to publish/upload it.
 - The goal is a private YouTube upload without stopping for candidate review.
-- The release needs a final clean cover, separate text thumbnail, optional 6 second Dreamina/Seedance loop video, metadata approval, and private upload.
+- The release needs a final clean cover, separate text thumbnail, optional 8 second Dreamina/Seedance loop video, metadata approval, and private upload.
 
 Use `Automatic Private Playlist Publisher` when:
 

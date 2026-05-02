@@ -263,7 +263,7 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that clip during final video render with a smooth 1 second forward crossfade loop. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that clip during final video render with a smooth 2 second forward crossfade loop. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
 - The web release detail view exposes separate upload/replace buttons for clean cover, text YouTube thumbnail, and 8 second loop video.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
@@ -349,7 +349,7 @@ For full playlist automation, pass it directly:
 scripts/openclaw-release auto-publish-playlist ... --loop-video /absolute/path/to/clip.mp4
 ```
 
-The app repeats short clips with smooth 1 second forward crossfade looping by default, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer trims or pads the clip to 8 seconds, crossfades the end of each forward pass into the next forward pass to avoid a hard jump. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion.
+The app repeats short clips with smooth 2 second forward crossfade looping by default, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds, and crossfades the end of each forward pass into the next forward pass to avoid a hard jump. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion.
 
 ## Slack App Setup
 

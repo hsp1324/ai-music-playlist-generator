@@ -25,8 +25,8 @@ YOUTUBE_LOOP_VIDEO_FILTER = (
     "fps=30,"
     "format=yuv420p"
 )
-LOOP_VIDEO_SOURCE_SECONDS = 6
-LOOP_VIDEO_TRANSITION_SECONDS = 2
+DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 8
+DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 2
 
 
 @dataclass
@@ -342,11 +342,20 @@ class FFMpegPlaylistBuilder:
         concat_list_path: Path | None = None
         command: list[str]
         if smooth_loop:
-            intro_path, loop_unit_path = self._build_smooth_loop_assets(clip_path, output_path)
+            source_seconds = self._resolve_loop_source_seconds(clip_path)
+            transition_seconds = self._resolve_loop_transition_seconds(source_seconds)
+            loop_unit_seconds = source_seconds - transition_seconds
+            intro_path, loop_unit_path = self._build_smooth_loop_assets(
+                clip_path,
+                output_path,
+                source_seconds=source_seconds,
+                transition_seconds=transition_seconds,
+            )
             concat_list_path = self._write_loop_concat_list(
                 intro_path,
                 loop_unit_path,
                 output_path,
+                loop_unit_seconds=loop_unit_seconds,
                 total_duration_seconds=total_duration_seconds,
                 audio_path=audio_path,
             )
@@ -436,6 +445,7 @@ class FFMpegPlaylistBuilder:
         loop_unit_path: Path,
         output_path: Path,
         *,
+        loop_unit_seconds: float,
         total_duration_seconds: int | float | None,
         audio_path: Path,
     ) -> Path:
@@ -443,10 +453,10 @@ class FFMpegPlaylistBuilder:
         if total_duration <= 0:
             total_duration = self._probe_media_duration(audio_path)
         if total_duration <= 0:
-            total_duration = LOOP_VIDEO_SOURCE_SECONDS
+            total_duration = DEFAULT_LOOP_VIDEO_SOURCE_SECONDS
 
-        intro_duration = LOOP_VIDEO_SOURCE_SECONDS - LOOP_VIDEO_TRANSITION_SECONDS
-        loop_unit_duration = intro_duration
+        loop_unit_duration = max(loop_unit_seconds, 0.1)
+        intro_duration = loop_unit_duration
         repeat_count = max(1, ceil(max(total_duration - intro_duration, 0) / loop_unit_duration) + 1)
         list_path = output_path.with_name(f"{output_path.stem}-loop-concat.txt")
 
@@ -482,24 +492,59 @@ class FFMpegPlaylistBuilder:
         except (OSError, subprocess.CalledProcessError, ValueError):
             return 0.0
 
-    def _build_smooth_loop_assets(self, clip_path: Path, output_path: Path) -> tuple[Path, Path]:
+    def _resolve_loop_source_seconds(self, clip_path: Path) -> float:
+        probed_duration = self._probe_media_duration(clip_path)
+        if probed_duration > 0:
+            return max(probed_duration, 1.0)
+        configured_duration = float(
+            getattr(self.settings, "dreamina_video_duration_seconds", DEFAULT_LOOP_VIDEO_SOURCE_SECONDS)
+            or DEFAULT_LOOP_VIDEO_SOURCE_SECONDS
+        )
+        return max(configured_duration, 1.0)
+
+    def _resolve_loop_transition_seconds(self, source_seconds: float) -> float:
+        configured_transition = float(
+            getattr(self.settings, "crossfade_seconds", DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS)
+            or DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS
+        )
+        transition_seconds = max(configured_transition, 0.1)
+        return min(transition_seconds, max(source_seconds / 3, 0.1))
+
+    def _format_seconds(self, seconds: float) -> str:
+        if float(seconds).is_integer():
+            return str(int(seconds))
+        return f"{seconds:.3f}".rstrip("0").rstrip(".")
+
+    def _build_smooth_loop_assets(
+        self,
+        clip_path: Path,
+        output_path: Path,
+        *,
+        source_seconds: float,
+        transition_seconds: float,
+    ) -> tuple[Path, Path]:
         intro_path = output_path.with_name(f"{output_path.stem}-loop-intro.mp4")
         loop_unit_path = output_path.with_name(f"{output_path.stem}-loop-unit.mp4")
         normalized_path = output_path.with_name(f"{output_path.stem}-loop-normalized.mp4")
         transition_path = output_path.with_name(f"{output_path.stem}-loop-transition.mp4")
         body_path = output_path.with_name(f"{output_path.stem}-loop-body.mp4")
-        transition_offset = LOOP_VIDEO_SOURCE_SECONDS - LOOP_VIDEO_TRANSITION_SECONDS
+        transition_offset = source_seconds - transition_seconds
+        body_duration = source_seconds - (transition_seconds * 2)
+        source_arg = self._format_seconds(source_seconds)
+        transition_arg = self._format_seconds(transition_seconds)
+        transition_offset_arg = self._format_seconds(transition_offset)
+        body_duration_arg = self._format_seconds(body_duration)
         normalized_filter = (
             f"{YOUTUBE_LOOP_VIDEO_FILTER},"
-            f"tpad=stop_mode=clone:stop_duration={LOOP_VIDEO_SOURCE_SECONDS},"
-            f"trim=duration={LOOP_VIDEO_SOURCE_SECONDS},"
+            f"tpad=stop_mode=clone:stop_duration={source_arg},"
+            f"trim=duration={source_arg},"
             "setpts=PTS-STARTPTS"
         )
         transition_filter = (
             "[0:v]setpts=PTS-STARTPTS[tail];"
             "[1:v]setpts=PTS-STARTPTS[head];"
             "[tail][head]"
-            f"xfade=transition=fade:duration={LOOP_VIDEO_TRANSITION_SECONDS}:offset=0"
+            f"xfade=transition=fade:duration={transition_arg}:offset=0"
             ",format=yuv420p[transition]"
         )
         concat_filter = (
@@ -543,7 +588,7 @@ class FFMpegPlaylistBuilder:
                     "-i",
                     str(normalized_path),
                     "-t",
-                    str(transition_offset),
+                    transition_offset_arg,
                     "-an",
                     "-c:v",
                     "libx264",
@@ -563,15 +608,15 @@ class FFMpegPlaylistBuilder:
                     "-hide_banner",
                     "-nostats",
                     "-ss",
-                    str(transition_offset),
+                    transition_offset_arg,
                     "-t",
-                    str(LOOP_VIDEO_TRANSITION_SECONDS),
+                    transition_arg,
                     "-i",
                     str(normalized_path),
                     "-ss",
                     "0",
                     "-t",
-                    str(LOOP_VIDEO_TRANSITION_SECONDS),
+                    transition_arg,
                     "-i",
                     str(normalized_path),
                     "-filter_complex",
@@ -597,9 +642,9 @@ class FFMpegPlaylistBuilder:
                     "-hide_banner",
                     "-nostats",
                     "-ss",
-                    str(LOOP_VIDEO_TRANSITION_SECONDS),
+                    transition_arg,
                     "-t",
-                    str(transition_offset - LOOP_VIDEO_TRANSITION_SECONDS),
+                    body_duration_arg,
                     "-i",
                     str(normalized_path),
                     "-an",
