@@ -666,8 +666,7 @@ button:disabled {
 .workspace-state,
 .track-status,
 .workspace-stat,
-.track-duration,
-.approved-duration {
+.track-duration {
   display: inline-flex;
   align-items: center;
   min-height: 30px;
@@ -1684,8 +1683,8 @@ button:disabled {
 }
 
 .approved-grid {
-  overflow-x: auto;
-  padding-bottom: 2px;
+  overflow-x: visible;
+  padding-bottom: 0;
 }
 
 .queue-card {
@@ -1831,8 +1830,7 @@ button:disabled {
   align-items: center;
 }
 
-.release-focus-mode .track-status,
-.release-focus-mode .approved-duration {
+.release-focus-mode .track-status {
   flex: 0 0 auto;
   min-height: 24px;
   padding: 0 9px;
@@ -1841,6 +1839,11 @@ button:disabled {
 
 .approved-duration {
   flex: 0 0 auto;
+  color: var(--muted);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 audio {
@@ -1946,12 +1949,12 @@ audio {
 
 .approved-card {
   position: relative;
-  display: grid;
-  grid-template-columns: 34px minmax(320px, 1fr) minmax(260px, 0.92fr);
+  display: flex;
   gap: 8px;
   align-items: center;
   min-height: 48px;
-  min-width: 760px;
+  min-width: 0;
+  width: 100%;
   padding: 6px 8px;
   box-shadow: none;
   border-color: rgba(23, 19, 15, 0.2);
@@ -1966,10 +1969,9 @@ audio {
 }
 
 .release-focus-mode .approved-card {
-  grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
   gap: 7px;
   min-height: 46px;
-  min-width: 740px;
+  min-width: 0;
   padding: 6px 8px;
   border-width: 1.5px;
   border-radius: 13px;
@@ -2014,6 +2016,7 @@ audio {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 26px;
   min-width: 26px;
   color: var(--muted);
   font-family: "Archivo", "Noto Sans KR", sans-serif;
@@ -2042,8 +2045,9 @@ audio {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   white-space: nowrap;
 }
 
@@ -2068,7 +2072,7 @@ audio {
   flex: 0 0 auto;
   justify-content: flex-start;
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow: visible;
   padding-bottom: 1px;
 }
 
@@ -2090,6 +2094,11 @@ audio {
 
 .approved-card .track-player audio {
   height: 30px;
+}
+
+.approved-card .track-player {
+  flex: 0 1 320px;
+  min-width: 180px;
 }
 
 .form-stack {
