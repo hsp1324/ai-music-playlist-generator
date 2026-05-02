@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import func, select
@@ -17,6 +17,15 @@ from app.utils.youtube_localizations import (
 )
 
 
+ARCHIVE_RETENTION_DAYS = 7
+FAILED_WORKFLOW_STATES = {
+    "render_failed",
+    "video_build_failed",
+    "youtube_upload_failed",
+    "publish_failed",
+}
+
+
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -27,6 +36,22 @@ def _default_target_duration_seconds(services: ServiceRegistry) -> int:
 
 def _playlist_meta(playlist: Playlist) -> dict:
     return dict(playlist.metadata_json or {})
+
+
+def _parse_metadata_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _archive_purge_after(archived_at: datetime) -> datetime:
+    return archived_at + timedelta(days=ARCHIVE_RETENTION_DAYS)
 
 
 def _normalize_youtube_tags(tags: list[str] | str) -> list[str]:
@@ -182,6 +207,8 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         id=playlist.id,
         title=playlist.title,
         hidden=bool(meta.get("hidden")),
+        archived_at=_parse_metadata_datetime(meta.get("archived_at")),
+        purge_after=_parse_metadata_datetime(meta.get("purge_after")),
         status=playlist.status,
         workspace_mode=str(meta.get("workspace_mode") or "playlist"),
         auto_publish_when_ready=bool(meta.get("auto_publish_when_ready")),
@@ -227,6 +254,7 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
 
 
 def list_playlist_workspaces(db: Session) -> list[Playlist]:
+    purge_expired_archived_workspaces(db)
     return db.scalars(
         select(Playlist)
         .options(
@@ -235,6 +263,80 @@ def list_playlist_workspaces(db: Session) -> list[Playlist]:
         )
         .order_by(Playlist.updated_at.desc())
     ).all()
+
+
+def _metadata_path_values(value: object, *, key: str | None = None) -> list[str]:
+    if isinstance(value, dict):
+        paths: list[str] = []
+        for child_key, child_value in value.items():
+            paths.extend(_metadata_path_values(child_value, key=str(child_key)))
+        return paths
+    if isinstance(value, list):
+        paths = []
+        for item in value:
+            paths.extend(_metadata_path_values(item, key=key))
+        return paths
+    if isinstance(value, str) and key and key.endswith("_path"):
+        return [value]
+    return []
+
+
+def _delete_local_path(path_value: str | None) -> None:
+    if not path_value or path_value.startswith(("http://", "https://")):
+        return
+    path = Path(path_value)
+    if not path.is_file():
+        return
+    try:
+        path.unlink()
+    except OSError:
+        return
+
+
+def _archived_playlist_is_purgeable(playlist: Playlist, *, now: datetime) -> bool:
+    meta = _playlist_meta(playlist)
+    if not meta.get("hidden"):
+        return False
+    if any(job.status in {JobStatus.queued, JobStatus.running} for job in playlist.jobs):
+        return False
+    purge_after = _parse_metadata_datetime(meta.get("purge_after"))
+    if purge_after is None:
+        archived_at = _parse_metadata_datetime(meta.get("archived_at"))
+        if archived_at is None:
+            return False
+        purge_after = _archive_purge_after(archived_at)
+    return purge_after <= now
+
+
+def purge_expired_archived_workspaces(db: Session, *, now: datetime | None = None) -> int:
+    now = now or _utcnow()
+    playlists = db.scalars(
+        select(Playlist).options(
+            selectinload(Playlist.items),
+            selectinload(Playlist.jobs),
+        )
+    ).all()
+    purged = 0
+    for playlist in playlists:
+        if not _archived_playlist_is_purgeable(playlist, now=now):
+            continue
+
+        meta = _playlist_meta(playlist)
+        for path_value in {
+            playlist.output_audio_path,
+            playlist.output_video_path,
+            *_metadata_path_values(meta),
+        }:
+            _delete_local_path(path_value)
+        for job in list(playlist.jobs):
+            db.delete(job)
+        for item in list(playlist.items):
+            db.delete(item)
+        db.delete(playlist)
+        purged += 1
+    if purged:
+        db.commit()
+    return purged
 
 
 def _load_playlist_with_tracks(db: Session, playlist_id: str) -> Playlist | None:
@@ -314,18 +416,43 @@ def set_playlist_workspace_archive_state(
     meta["archive_history"] = history
     meta["hidden"] = archived
     if archived:
-        meta["archived_at"] = _utcnow().isoformat()
+        now = _utcnow()
+        previous_workflow_state = meta.get("workflow_state")
+        if previous_workflow_state != "archived":
+            meta["pre_archive_workflow_state"] = previous_workflow_state
+            meta["pre_archive_status"] = playlist.status.value
+            meta["pre_archive_note"] = meta.get("note")
+        purge_after = _archive_purge_after(now)
+        meta["archived_at"] = now.isoformat()
+        meta["purge_after"] = purge_after.isoformat()
         meta["archived_by"] = actor
+        meta["archive_retention_days"] = ARCHIVE_RETENTION_DAYS
         meta["workflow_state"] = "archived"
-        meta["note"] = "Single release archived after all candidates were rejected."
-        playlist.status = PlaylistStatus.draft
+        if previous_workflow_state in FAILED_WORKFLOW_STATES or playlist.status == PlaylistStatus.failed:
+            meta["note"] = "Failed release archived. It will be permanently deleted after 7 days unless restored."
+        else:
+            meta["note"] = "Release archived. It will be permanently deleted after 7 days unless restored."
     else:
         meta.pop("archived_at", None)
+        meta.pop("purge_after", None)
         meta.pop("archived_by", None)
+        meta.pop("archive_retention_days", None)
+        previous_workflow_state = meta.pop("pre_archive_workflow_state", None)
+        previous_status = meta.pop("pre_archive_status", None)
+        previous_note = meta.pop("pre_archive_note", None)
         if not playlist.items:
-            meta["workflow_state"] = "collecting"
+            meta["workflow_state"] = previous_workflow_state or "collecting"
             meta["publish_ready"] = False
+        elif previous_workflow_state:
+            meta["workflow_state"] = previous_workflow_state
         meta["note"] = "Release restored from archive."
+        if previous_note and previous_workflow_state in FAILED_WORKFLOW_STATES:
+            meta["note"] = previous_note
+        if previous_status:
+            try:
+                playlist.status = PlaylistStatus(previous_status)
+            except ValueError:
+                pass
         if revive_rejected:
             for track in _workspace_candidate_tracks(db, playlist.id):
                 if track.status == TrackStatus.rejected:

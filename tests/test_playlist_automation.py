@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
@@ -1597,6 +1598,114 @@ def test_publish_approval_reports_video_build_failure(tmp_path) -> None:
         published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert published["workflow_state"] == "video_build_failed"
         assert "ffmpeg missing" in published["note"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_failed_workspace_archive_is_purged_after_retention(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_video(audio_path, cover_image_path, output_path):
+            raise RuntimeError("ffmpeg missing")
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_video = fake_build_video
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Failed Archive Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "single.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Single Track",
+                "prompt": "minimal electronic",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/generate",
+            json={"actor": "test-suite"},
+        )
+        assert cover_response.status_code == 200
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        archive_response = client.post(
+            f"/api/playlists/{workspace_id}/archive",
+            json={
+                "actor": "test-suite",
+                "archived": True,
+                "revive_rejected": False,
+            },
+        )
+        assert archive_response.status_code == 200
+        archived = archive_response.json()
+        assert archived["hidden"] is True
+        assert archived["workflow_state"] == "archived"
+        assert archived["archived_at"]
+        assert archived["purge_after"]
+        assert "permanently deleted after 7 days" in archived["note"]
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            meta = dict(playlist.metadata_json or {})
+            audio_path = Path(playlist.output_audio_path)
+            cover_path = Path(meta["cover_image_path"])
+            assert audio_path.exists()
+            assert cover_path.exists()
+            old_archive_time = datetime.now(timezone.utc) - timedelta(days=8)
+            meta["archived_at"] = old_archive_time.isoformat()
+            meta["purge_after"] = (old_archive_time + timedelta(days=7)).isoformat()
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        assert workspaces_response.status_code == 200
+        assert all(item["id"] != workspace_id for item in workspaces_response.json())
+        assert not audio_path.exists()
+        assert not cover_path.exists()
+        with SessionLocal() as db:
+            assert db.get(Playlist, workspace_id) is None
     finally:
         clear_isolated_client_env()
 

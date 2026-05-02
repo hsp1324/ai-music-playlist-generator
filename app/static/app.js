@@ -11,6 +11,7 @@ const state = {
   youtubeStatus: null,
   editingMetadataReleaseId: "",
   metadataLanguageByRelease: {},
+  workspaceTab: "active",
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -20,6 +21,8 @@ const workspaceGrid = document.querySelector("#workspace-grid");
 const workspaceSection = document.querySelector(".workspace-section");
 const archivedWorkspaceSection = document.querySelector("#archived-workspace-section");
 const archivedWorkspaceGrid = document.querySelector("#archived-workspace-grid");
+const workspaceTabButtons = [...document.querySelectorAll("[data-workspace-tab]")];
+const archiveCountBadge = document.querySelector("#archive-count-badge");
 const detailPanel = document.querySelector("#workspace-detail-panel");
 const detailTitle = document.querySelector("#detail-title");
 const detailMeta = document.querySelector("#detail-meta");
@@ -182,6 +185,27 @@ function shortText(value, maxLength = 120) {
 
 function statusLabel(value) {
   return String(value || "").replaceAll("_", " ");
+}
+
+function isFailedWorkspace(workspace) {
+  return [
+    "render_failed",
+    "video_build_failed",
+    "youtube_upload_failed",
+    "publish_failed",
+  ].includes(workspace?.workflow_state);
+}
+
+function formatArchiveDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function isSingleRelease(workspace) {
@@ -1364,6 +1388,25 @@ function quickUploadWorkspaceOptions(selectedId = "") {
   return `<option value="">Choose release</option>${createSingleOption}${options}`;
 }
 
+function renderWorkspaceTabs() {
+  const archivedCount = archivedWorkspaces().length;
+  if (archiveCountBadge) archiveCountBadge.textContent = String(archivedCount);
+  workspaceTabButtons.forEach((button) => {
+    const selected = button.dataset.workspaceTab === state.workspaceTab;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  workspaceGrid.hidden = state.workspaceTab !== "active";
+  if (archivedWorkspaceSection) {
+    archivedWorkspaceSection.hidden = state.workspaceTab !== "archive";
+  }
+}
+
+function setWorkspaceTab(tab) {
+  state.workspaceTab = tab === "archive" ? "archive" : "active";
+  renderWorkspaceTiles();
+}
+
 function pendingTracks(workspaceId = "") {
   return state.tracks.filter((track) => {
     if (!["pending_review", "held"].includes(track.status)) return false;
@@ -1484,6 +1527,26 @@ async function createSingleReleaseFromFiles(files) {
   });
 }
 
+async function archiveWorkspaceForDeletion(workspace) {
+  const purgeLabel = "7일 뒤 완전 삭제됩니다";
+  const proceed = window.confirm(
+    `이 실패한 release를 삭제할까요?\n\n바로 지우지 않고 Archive로 이동합니다. ${purgeLabel}.\nArchive 탭에서 그 전까지 Restore할 수 있습니다.`
+  );
+  if (!proceed) return;
+  await api(`/api/playlists/${workspace.id}/archive`, {
+    method: "POST",
+    body: JSON.stringify({
+      actor: "web-ui",
+      archived: true,
+      revive_rejected: false,
+    }),
+  });
+  state.workspaceTab = "archive";
+  state.selectedWorkspaceId = "";
+  state.releaseFocus = false;
+  updateReleaseUrl("", true);
+}
+
 async function submitQuickUpload() {
   if (!quickUploadFiles.length) {
     setStatus(quickUploadStatus, "파일을 먼저 선택하세요.");
@@ -1597,10 +1660,13 @@ function selectWorkspace(workspaceId, scrollIntoView = true) {
 }
 
 function renderWorkspaceTiles() {
+  renderWorkspaceTabs();
   workspaceGrid.innerHTML = "";
+  renderArchivedWorkspaceTiles();
+
+  if (state.workspaceTab !== "active") return;
 
   const visible = visibleWorkspaces();
-  renderArchivedWorkspaceTiles();
 
   if (!visible.length) {
     const empty = document.createElement("div");
@@ -1646,11 +1712,25 @@ function renderWorkspaceTiles() {
       ? "Approve one or both candidates"
       : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
 
-    moreButton.textContent = "Open";
-    moreButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      openWorkspaceFocus(workspace.id);
-    });
+    if (isFailedWorkspace(workspace)) {
+      moreButton.textContent = "Delete";
+      moreButton.classList.add("danger-more-button");
+      moreButton.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        try {
+          await archiveWorkspaceForDeletion(workspace);
+          await refreshBoard();
+        } catch (error) {
+          alert(error.message);
+        }
+      });
+    } else {
+      moreButton.textContent = "Open";
+      moreButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openWorkspaceFocus(workspace.id);
+      });
+    }
 
     tile.addEventListener("click", () => openWorkspaceFocus(workspace.id));
     workspaceGrid.appendChild(fragment);
@@ -1659,9 +1739,19 @@ function renderWorkspaceTiles() {
 
 function renderArchivedWorkspaceTiles() {
   if (!archivedWorkspaceSection || !archivedWorkspaceGrid) return;
+  if (state.workspaceTab !== "archive") {
+    archivedWorkspaceGrid.innerHTML = "";
+    return;
+  }
   const archived = archivedWorkspaces();
-  archivedWorkspaceSection.hidden = !archived.length;
   archivedWorkspaceGrid.innerHTML = "";
+  if (!archived.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "Archive가 비어 있습니다.";
+    archivedWorkspaceGrid.appendChild(empty);
+    return;
+  }
   archived.forEach((workspace) => {
     const fragment = workspaceTileTemplate.content.cloneNode(true);
     const tile = fragment.querySelector(".workspace-tile");
@@ -1686,23 +1776,30 @@ function renderArchivedWorkspaceTiles() {
     stateEl.classList.add("waiting");
     copy.textContent = shortText(workspace.note || workspace.description || "All candidates were rejected.", 140);
     pipeline.remove();
-    next.textContent = "Restore하면 rejected 후보가 다시 review queue로 돌아옵니다.";
+    next.textContent = workspace.purge_after
+      ? `Restore 가능 · ${formatArchiveDate(workspace.purge_after)} 이후 자동 삭제`
+      : "Restore하면 다시 active release로 돌아옵니다.";
     approvedStat.textContent = `${workspace.tracks.length} selected`;
     pendingStat.textContent = `${rejectedCount} rejected`;
     hint.textContent = "Archived";
     moreButton.textContent = "Restore";
     moreButton.addEventListener("click", async (event) => {
       event.stopPropagation();
-      await api(`/api/playlists/${workspace.id}/archive`, {
-        method: "POST",
-        body: JSON.stringify({
-          actor: "web-ui",
-          archived: false,
-          revive_rejected: true,
-        }),
-      });
-      state.selectedWorkspaceId = workspace.id;
-      await refresh();
+      try {
+        await api(`/api/playlists/${workspace.id}/archive`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+            archived: false,
+            revive_rejected: true,
+          }),
+        });
+        state.selectedWorkspaceId = workspace.id;
+        state.workspaceTab = "active";
+        await refresh();
+      } catch (error) {
+        alert(error.message);
+      }
     });
     archivedWorkspaceGrid.appendChild(fragment);
   });
@@ -1747,6 +1844,13 @@ function renderWorkspaceDetail() {
   backButton.textContent = "All Releases";
   backButton.addEventListener("click", () => closeWorkspaceFocus());
   detailActions.appendChild(backButton);
+  if (!workspace.hidden && isFailedWorkspace(workspace)) {
+    detailActions.appendChild(
+      actionButton("Delete Failed Release", "action-button danger-button", async () => {
+        await archiveWorkspaceForDeletion(workspace);
+      })
+    );
+  }
 
   renderPipeline(detailPipeline, workspace);
   appendRenderStatus(workspace);
@@ -2436,6 +2540,9 @@ workspaceForm.addEventListener("submit", async (event) => {
 });
 
 menuToggleButton.addEventListener("click", () => toggleDrawer());
+workspaceTabButtons.forEach((button) => {
+  button.addEventListener("click", () => setWorkspaceTab(button.dataset.workspaceTab));
+});
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
 window.addEventListener("popstate", () => {
   const releaseId = new URLSearchParams(window.location.search).get("release") || "";

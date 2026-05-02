@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260501e" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260502a" />
   </head>
   <body>
     <div class="shell">
@@ -215,6 +215,12 @@
               <p class="section-kicker">Releases</p>
               <h2>작업할 릴리즈 선택</h2>
             </div>
+            <div class="workspace-tabs" role="tablist" aria-label="Release views">
+              <button class="workspace-tab active" type="button" data-workspace-tab="active">Active</button>
+              <button class="workspace-tab" type="button" data-workspace-tab="archive">
+                Archive <span id="archive-count-badge">0</span>
+              </button>
+            </div>
           </div>
           <div id="workspace-grid" class="workspace-grid"></div>
           <section id="archived-workspace-section" class="archived-workspace-section" hidden>
@@ -336,6 +342,6 @@
       </article>
     </template>
 
-    <script src="/assets/app.js?v=20260501f" defer></script>
+    <script src="/assets/app.js?v=20260502a" defer></script>
   </body>
 </html>

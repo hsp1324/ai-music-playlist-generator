@@ -32,8 +32,11 @@ The original Suno API automation idea is intentionally not the current core path
 ### 2. Workspace review
 
 - The main UI is workspace-first
-- The top of the page shows workspace cards
+- The release list uses `Active` and `Archive` tabs so archived releases no longer fill the homepage
+- The top of the active tab shows workspace cards
 - Clicking `More` opens the selected workspace detail board
+- Failed releases show a delete action that moves them into Archive first
+- Archived releases record `archived_at` and `purge_after`; they are permanently deleted after 7 days unless restored
 - Each workspace detail board has:
   - `Awaiting Approval`
   - `Approved`

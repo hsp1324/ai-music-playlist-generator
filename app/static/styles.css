@@ -233,6 +233,13 @@ button:disabled {
   box-shadow: 4px 4px 0 rgba(23, 19, 15, 0.18);
 }
 
+.danger-button,
+.danger-more-button {
+  background: var(--red);
+  color: #fff8ea;
+  box-shadow: 4px 4px 0 rgba(168, 61, 53, 0.24);
+}
+
 .menu-button {
   justify-content: flex-start;
 }
@@ -456,13 +463,54 @@ button:disabled {
   padding: 0 4px;
 }
 
+.workspace-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.workspace-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fff8ea;
+  color: var(--ink);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workspace-tab.active {
+  background: var(--ink);
+  color: #fff8ea;
+}
+
+.workspace-tab span {
+  display: inline-grid;
+  min-width: 24px;
+  min-height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(213, 106, 45, 0.22);
+}
+
+.workspace-tab.active span {
+  background: rgba(255, 248, 234, 0.22);
+}
+
 .workspace-grid {
   display: grid;
   gap: 14px;
 }
 
 .archived-workspace-section {
-  margin-top: 22px;
+  margin-top: 0;
 }
 
 .compact-headline h3 {

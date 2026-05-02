@@ -121,6 +121,8 @@ class PlaylistWorkspaceRead(BaseModel):
     id: str
     title: str
     hidden: bool = False
+    archived_at: datetime | None = None
+    purge_after: datetime | None = None
     status: PlaylistStatus
     workspace_mode: str
     auto_publish_when_ready: bool
