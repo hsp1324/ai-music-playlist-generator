@@ -2236,12 +2236,7 @@ select:focus {
   }
 
   .approved-card {
-    grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
     align-items: center;
-  }
-
-  .approved-main {
-    grid-template-columns: none;
   }
 
   .approved-card .track-player,
@@ -2254,7 +2249,7 @@ select:focus {
   }
 
   .release-focus-mode .approved-card {
-    grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
+    align-items: center;
   }
 
   .release-focus-mode .queue-media,
@@ -2355,10 +2350,13 @@ select:focus {
 
   .detail-header,
   .track-topline,
-  .approved-main,
   .render-player-copy,
   .panel-inline {
     display: grid;
+  }
+
+  .approved-card .approved-main {
+    display: flex;
   }
 
   .detail-actions {
