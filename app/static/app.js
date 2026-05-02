@@ -1529,8 +1529,12 @@ async function createSingleReleaseFromFiles(files) {
 
 async function archiveWorkspaceForDeletion(workspace) {
   const purgeLabel = "7일 뒤 완전 삭제됩니다";
+  const failedCopy = isFailedWorkspace(workspace) ? "이 실패한 release" : "이 release";
+  const youtubeCopy = workspace.youtube_video_id
+    ? "\n\n이미 올라간 YouTube 영상은 삭제하지 않고, 앱의 workspace 기록만 Archive로 이동합니다."
+    : "";
   const proceed = window.confirm(
-    `이 실패한 release를 삭제할까요?\n\n바로 지우지 않고 Archive로 이동합니다. ${purgeLabel}.\nArchive 탭에서 그 전까지 Restore할 수 있습니다.`
+    `${failedCopy}를 삭제할까요?\n\n바로 지우지 않고 Archive로 이동합니다. ${purgeLabel}.\nArchive 탭에서 그 전까지 Restore할 수 있습니다.${youtubeCopy}`
   );
   if (!proceed) return;
   await api(`/api/playlists/${workspace.id}/archive`, {
@@ -1545,6 +1549,23 @@ async function archiveWorkspaceForDeletion(workspace) {
   state.selectedWorkspaceId = "";
   state.releaseFocus = false;
   updateReleaseUrl("", true);
+}
+
+function workspaceDeleteButton(workspace, label = "Delete") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "more-button danger-more-button";
+  button.textContent = label;
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    try {
+      await archiveWorkspaceForDeletion(workspace);
+      await refreshBoard();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  return button;
 }
 
 async function submitQuickUpload() {
@@ -1689,6 +1710,7 @@ function renderWorkspaceTiles() {
     const pendingStat = fragment.querySelector(".pending-stat");
     const hint = fragment.querySelector(".workspace-hint");
     const moreButton = fragment.querySelector(".more-button");
+    const footer = fragment.querySelector(".workspace-footer");
     const pendingCount = pendingTracks(workspace.id).length;
     const currentStage = currentPipelineStage(workspace);
 
@@ -1712,25 +1734,12 @@ function renderWorkspaceTiles() {
       ? "Approve one or both candidates"
       : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
 
-    if (isFailedWorkspace(workspace)) {
-      moreButton.textContent = "Delete";
-      moreButton.classList.add("danger-more-button");
-      moreButton.addEventListener("click", async (event) => {
-        event.stopPropagation();
-        try {
-          await archiveWorkspaceForDeletion(workspace);
-          await refreshBoard();
-        } catch (error) {
-          alert(error.message);
-        }
-      });
-    } else {
-      moreButton.textContent = "Open";
-      moreButton.addEventListener("click", (event) => {
-        event.stopPropagation();
-        openWorkspaceFocus(workspace.id);
-      });
-    }
+    moreButton.textContent = "Open";
+    moreButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openWorkspaceFocus(workspace.id);
+    });
+    footer.appendChild(workspaceDeleteButton(workspace));
 
     tile.addEventListener("click", () => openWorkspaceFocus(workspace.id));
     workspaceGrid.appendChild(fragment);
@@ -1844,9 +1853,9 @@ function renderWorkspaceDetail() {
   backButton.textContent = "All Releases";
   backButton.addEventListener("click", () => closeWorkspaceFocus());
   detailActions.appendChild(backButton);
-  if (!workspace.hidden && isFailedWorkspace(workspace)) {
+  if (!workspace.hidden) {
     detailActions.appendChild(
-      actionButton("Delete Failed Release", "action-button danger-button", async () => {
+      actionButton("Delete Release", "action-button danger-button", async () => {
         await archiveWorkspaceForDeletion(workspace);
       })
     );

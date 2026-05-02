@@ -665,6 +665,10 @@ button:disabled {
   font-size: 0.88rem;
 }
 
+.workspace-footer .danger-more-button {
+  padding-inline: 13px;
+}
+
 .detail-panel {
   min-height: 680px;
   background:
