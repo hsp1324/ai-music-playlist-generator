@@ -1683,6 +1683,11 @@ button:disabled {
   gap: 9px;
 }
 
+.approved-grid {
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
 .queue-card {
   display: grid;
   grid-template-columns: 70px minmax(220px, 1.15fr) minmax(260px, 0.85fr) minmax(300px, auto);
@@ -1946,6 +1951,7 @@ audio {
   gap: 8px;
   align-items: center;
   min-height: 48px;
+  min-width: 760px;
   padding: 6px 8px;
   box-shadow: none;
   border-color: rgba(23, 19, 15, 0.2);
@@ -1963,6 +1969,7 @@ audio {
   grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
   gap: 7px;
   min-height: 46px;
+  min-width: 740px;
   padding: 6px 8px;
   border-width: 1.5px;
   border-radius: 13px;
@@ -2036,6 +2043,8 @@ audio {
   gap: 6px;
   align-items: center;
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .release-focus-mode .approved-main {
@@ -2218,17 +2227,17 @@ select:focus {
   }
 
   .approved-card {
-    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
     align-items: center;
   }
 
   .approved-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: none;
   }
 
   .approved-card .track-player,
   .approved-actions {
-    grid-column: 2;
+    grid-column: auto;
   }
 
   .release-focus-mode .queue-card {
@@ -2236,7 +2245,7 @@ select:focus {
   }
 
   .release-focus-mode .approved-card {
-    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
   }
 
   .release-focus-mode .queue-media,
@@ -2251,7 +2260,7 @@ select:focus {
 
   .release-focus-mode .approved-card .track-player,
   .release-focus-mode .approved-actions {
-    grid-column: 2;
+    grid-column: auto;
   }
 
   .release-focus-mode .queue-controls,
