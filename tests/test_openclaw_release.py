@@ -11,6 +11,7 @@ from scripts.openclaw_release import (
     auto_publish_playlist,
     auto_publish_single,
     infer_youtube_channel_title,
+    is_pop_family_vocal_request,
     release_has_uploaded_cover,
     release_has_uploaded_thumbnail,
     resolve_lyrics_items,
@@ -122,6 +123,11 @@ def test_resolve_style_items_allows_shared_and_per_track() -> None:
     assert resolve_style_items(2, styles=["style one", "style two"]) == ["style one", "style two"]
     with pytest.raises(RuntimeError, match="exactly one per --audio"):
         resolve_style_items(2, styles=["one", "two", "three"])
+
+
+def test_pop_family_vocal_detection_allows_explicit_bgm_exception() -> None:
+    assert is_pop_family_vocal_request("Tokyo J-pop single", "bright anime opening")
+    assert not is_pop_family_vocal_request("J-pop style BGM", "가사 없는 배경음악")
 
 
 def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
@@ -361,6 +367,38 @@ def test_auto_publish_single_requires_thumbnail_before_side_effects(tmp_path) ->
                 release_id="",
                 release_title="J-pop Single",
                 cover=str(cover_path),
+                actor="openclaw:auto-single",
+            ),
+        )
+
+    assert requested_paths == []
+
+
+def test_auto_publish_single_requires_lyrics_for_jpop_before_side_effects(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    cover_path = tmp_path / "cover.png"
+    cover_path.write_bytes(b"fake cover")
+    thumbnail_path = tmp_path / "thumb.png"
+    thumbnail_path.write_bytes(b"fake thumb")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="lyrics are required"):
+        auto_publish_single(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="Tokyo Night J-pop Single",
+                cover=str(cover_path),
+                thumbnail=str(thumbnail_path),
+                tags="Jpop,Tokyo",
                 actor="openclaw:auto-single",
             ),
         )

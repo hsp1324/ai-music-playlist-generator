@@ -1909,6 +1909,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         )
         assert localized_metadata_response.status_code == 200
         assert localized_metadata_response.json()["youtube_localizations"]["ja"]["title"] == "日本語タイトル"
+        assert "#jpop #playlist" in localized_metadata_response.json()["youtube_description"]
+        assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["ja"]["description"]
+        assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["en"]["description"]
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             meta = dict(playlist.metadata_json or {})

@@ -54,6 +54,52 @@ JAPAN_CHANNEL_KEYWORDS = (
     "애니메이션",
     "제이팝",
 )
+POP_FAMILY_KEYWORDS = (
+    "anime pop",
+    "anime-pop",
+    "anime opening",
+    "j-pop",
+    "jpop",
+    "japanese pop",
+    "k-pop",
+    "kpop",
+    "korean pop",
+    "pop song",
+    "pop vocal",
+    "제이팝",
+    "일본 팝",
+    "케이팝",
+    "팝송",
+    "팝 보컬",
+    "ポップ",
+    "jポップ",
+)
+INSTRUMENTAL_INTENT_KEYWORDS = (
+    "background music",
+    "bgm",
+    "instrumental",
+    "instrumentals",
+    "karaoke",
+    "lofi",
+    "lo-fi",
+    "no lyric",
+    "no lyrics",
+    "no vocal",
+    "no vocals",
+    "non-vocal",
+    "vocal off",
+    "without lyrics",
+    "without vocals",
+    "가사 없는",
+    "가사없",
+    "보컬 없는",
+    "보컬없",
+    "연주곡",
+    "배경음악",
+    "インスト",
+    "歌なし",
+    "ボーカルなし",
+)
 
 
 def file_stem(path: Path) -> str:
@@ -173,6 +219,37 @@ def resolve_style_items(audio_count: int, *, styles: list[str]) -> list[str]:
     if len(values) != audio_count:
         raise RuntimeError("When using per-track styles, provide either one shared value or exactly one per --audio.")
     return values
+
+
+def _flatten_text_values(*values: Any) -> str:
+    parts: list[str] = []
+    for value in values:
+        if isinstance(value, (list, tuple, set)):
+            parts.extend(str(item or "") for item in value)
+        else:
+            parts.append(str(value or ""))
+    return " ".join(parts).lower()
+
+
+def is_pop_family_vocal_request(*values: Any) -> bool:
+    haystack = _flatten_text_values(*values)
+    if any(keyword in haystack for keyword in INSTRUMENTAL_INTENT_KEYWORDS):
+        return False
+    return any(keyword in haystack for keyword in POP_FAMILY_KEYWORDS)
+
+
+def require_pop_family_lyrics(*, lyrics_items: list[str], context: str, concept_values: list[Any]) -> None:
+    if not is_pop_family_vocal_request(*concept_values):
+        return
+    missing = [index + 1 for index, lyrics in enumerate(lyrics_items) if not str(lyrics or "").strip()]
+    if not missing:
+        return
+    joined = ", ".join(str(index) for index in missing)
+    raise RuntimeError(
+        f"{context} looks like a J-pop/K-pop/pop vocal release, so lyrics are required for track(s): {joined}. "
+        "Generate or capture original lyrics and pass --lyrics or --lyrics-file for every track. "
+        "Only omit lyrics when the human explicitly requested BGM/instrumental/no-vocal music."
+    )
 
 
 def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
@@ -303,6 +380,13 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
     cover_path = resolve_cover_path(args.cover)
 
     title = upload_track_title(args.title or file_stem(audio_path))
+    lyrics = read_single_lyrics(args)
+    if args.new_single:
+        require_pop_family_lyrics(
+            lyrics_items=[lyrics],
+            context="upload-audio",
+            concept_values=[args.release_title, title, args.prompt, args.style, args.tags],
+        )
     release: dict[str, Any]
     created_release = False
 
@@ -324,7 +408,11 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         raise RuntimeError("Use --new-single, --release-id, or --release-title.")
 
     auto_approve_playlist = release["workspace_mode"] == "playlist" and not args.pending_review
-    lyrics = read_single_lyrics(args)
+    require_pop_family_lyrics(
+        lyrics_items=[lyrics],
+        context="upload-audio",
+        concept_values=[release.get("title"), title, args.prompt, args.style, args.tags],
+    )
     track = upload_audio_file_to_release(
         client,
         release_id=release["id"],
@@ -388,15 +476,6 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
             raise RuntimeError(f"Audio path is not a file: {audio_path}")
 
     release_title = args.release_title or file_stem(audio_paths[0])
-    release = create_single_release(
-        client,
-        release_title,
-        description=(
-            f"Single release candidate set created by OpenClaw from "
-            f"{', '.join(path.name for path in audio_paths)}."
-        ),
-    )
-
     raw_titles = [
         args.title[index - 1] if args.title and index <= len(args.title) else file_stem(audio_path)
         for index, audio_path in enumerate(audio_paths, start=1)
@@ -406,6 +485,19 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
     style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
+    require_pop_family_lyrics(
+        lyrics_items=lyrics_items,
+        context="upload-single-candidates",
+        concept_values=[release_title, raw_titles, args.prompt, args.style, args.tags],
+    )
+    release = create_single_release(
+        client,
+        release_title,
+        description=(
+            f"Single release candidate set created by OpenClaw from "
+            f"{', '.join(path.name for path in audio_paths)}."
+        ),
+    )
 
     tracks = []
     for index, audio_path in enumerate(audio_paths, start=1):
@@ -625,6 +717,14 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     cover_path = resolve_cover_path(args.cover)
     thumbnail_path = resolve_thumbnail_path(args.thumbnail)
     loop_video_path = resolve_loop_video_path(args.loop_video)
+    raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
+    if args.title and len(args.title) != len(audio_paths):
+        raise RuntimeError("When using --title, provide exactly one --title per --audio.")
+    display_titles = display_track_titles(
+        [{"title": title, "duration_seconds": 0} for title in raw_titles]
+    )
+    lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
+    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-playlist requires --cover when creating a new Playlist Release. "
@@ -635,6 +735,20 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "auto-publish-playlist requires --thumbnail when creating a new Playlist Release. "
             "Generate a YouTube thumbnail with readable text first, then pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH. "
             "Only pass --allow-cover-as-thumbnail if the human explicitly wants one image for both video and thumbnail."
+        )
+    if not args.release_id:
+        require_pop_family_lyrics(
+            lyrics_items=lyrics_items,
+            context="auto-publish-playlist",
+            concept_values=[
+                args.release_title,
+                raw_titles,
+                args.description,
+                args.prompt,
+                args.style,
+                args.tags,
+                args.youtube_channel_title,
+            ],
         )
 
     release = (
@@ -661,6 +775,20 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first. "
             "Only pass --allow-cover-as-thumbnail if the human explicitly wants to reuse the video cover as the YouTube thumbnail."
         )
+    require_pop_family_lyrics(
+        lyrics_items=lyrics_items,
+        context="auto-publish-playlist",
+        concept_values=[
+            release.get("title"),
+            raw_titles,
+            args.release_title,
+            args.description,
+            args.prompt,
+            args.style,
+            args.tags,
+            args.youtube_channel_title,
+        ],
+    )
 
     if loop_video_path:
         content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
@@ -675,15 +803,6 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 },
                 files={"loop_video_file": (loop_video_path.name, handle, content_type)},
             )
-
-    raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
-    if args.title and len(args.title) != len(audio_paths):
-        raise RuntimeError("When using --title, provide exactly one --title per --audio.")
-    display_titles = display_track_titles(
-        [{"title": title, "duration_seconds": 0} for title in raw_titles]
-    )
-    lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
-    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
 
     uploaded_tracks = []
     for audio_path, track_title, lyrics, style in zip(audio_paths, display_titles, lyrics_items, style_items):
@@ -866,6 +985,14 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     cover_path = resolve_cover_path(args.cover)
     thumbnail_path = resolve_thumbnail_path(args.thumbnail)
     loop_video_path = resolve_loop_video_path(args.loop_video)
+    raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
+    if args.title and len(args.title) != len(audio_paths):
+        raise RuntimeError("When using --title, provide exactly one --title per --audio.")
+    track_titles = display_track_titles(
+        [{"title": title, "duration_seconds": 0} for title in raw_titles]
+    )
+    lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
+    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-single requires --cover when creating a new Single Release. "
@@ -875,6 +1002,20 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires --thumbnail when creating a new Single Release. "
             "Generate a YouTube thumbnail with readable text first, then pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH."
+        )
+    if not args.release_id:
+        require_pop_family_lyrics(
+            lyrics_items=lyrics_items,
+            context="auto-publish-single",
+            concept_values=[
+                args.release_title,
+                raw_titles,
+                args.description,
+                args.prompt,
+                args.style,
+                args.tags,
+                args.youtube_channel_title,
+            ],
         )
 
     release = (
@@ -903,6 +1044,20 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "auto-publish-single requires a YouTube thumbnail image before YouTube upload. "
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first."
         )
+    require_pop_family_lyrics(
+        lyrics_items=lyrics_items,
+        context="auto-publish-single",
+        concept_values=[
+            release.get("title"),
+            raw_titles,
+            args.release_title,
+            args.description,
+            args.prompt,
+            args.style,
+            args.tags,
+            args.youtube_channel_title,
+        ],
+    )
 
     if loop_video_path:
         content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
@@ -917,15 +1072,6 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 },
                 files={"loop_video_file": (loop_video_path.name, handle, content_type)},
             )
-
-    raw_titles = args.title if args.title else [file_stem(path) for path in audio_paths]
-    if args.title and len(args.title) != len(audio_paths):
-        raise RuntimeError("When using --title, provide exactly one --title per --audio.")
-    track_titles = display_track_titles(
-        [{"title": title, "duration_seconds": 0} for title in raw_titles]
-    )
-    lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
-    style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
 
     uploaded_tracks = []
     for audio_path, track_title, lyrics, style in zip(audio_paths, track_titles, lyrics_items, style_items):

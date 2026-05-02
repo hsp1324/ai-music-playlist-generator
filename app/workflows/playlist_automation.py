@@ -25,6 +25,7 @@ FAILED_WORKFLOW_STATES = {
     "youtube_upload_failed",
     "publish_failed",
 }
+FALLBACK_DESCRIPTION_HASHTAGS = ["AIMusic", "Playlist", "BackgroundMusic", "Visualizer"]
 
 
 def _utcnow() -> datetime:
@@ -72,6 +73,47 @@ def _normalize_youtube_tags(tags: list[str] | str) -> list[str]:
         seen.add(key)
         normalized.append(value)
     return normalized[:15]
+
+
+def _hashtag_from_tag(tag: str) -> str | None:
+    value = "".join(character for character in str(tag).strip().lstrip("#") if character.isalnum() or character == "_")
+    if not value:
+        return None
+    return f"#{value}"
+
+
+def _description_hashtag_line(tags: list[str] | str | None) -> str:
+    normalized_tags = _normalize_youtube_tags(tags or FALLBACK_DESCRIPTION_HASHTAGS)
+    hashtags: list[str] = []
+    seen: set[str] = set()
+    for tag in [*normalized_tags, *FALLBACK_DESCRIPTION_HASHTAGS]:
+        hashtag = _hashtag_from_tag(tag)
+        if not hashtag:
+            continue
+        key = hashtag.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        hashtags.append(hashtag)
+        if len(hashtags) >= 8:
+            break
+    return " ".join(hashtags)
+
+
+def _description_has_hashtag_line(description: str) -> bool:
+    lines = [line.strip() for line in str(description or "").splitlines() if line.strip()]
+    for line in lines[-4:]:
+        if sum(1 for token in line.split() if token.startswith("#") and len(token) > 1) >= 2:
+            return True
+    return False
+
+
+def _ensure_description_hashtags(description: str, tags: list[str] | str | None) -> str:
+    description = str(description or "").strip()
+    if not description or _description_has_hashtag_line(description):
+        return description
+    hashtag_line = _description_hashtag_line(tags)
+    return f"{description}\n\n{hashtag_line}" if hashtag_line else description
 
 
 def _workspace_mode(playlist: Playlist) -> str:
@@ -1083,6 +1125,12 @@ def generate_playlist_metadata(
         default_description=youtube_metadata.description,
         default_language=meta["youtube_default_language"],
     )
+    meta["youtube_description"] = _ensure_description_hashtags(meta["youtube_description"], meta["youtube_tags"])
+    for localized_copy in meta["youtube_localizations"].values():
+        localized_copy["description"] = _ensure_description_hashtags(
+            localized_copy.get("description") or "",
+            meta["youtube_tags"],
+        )
     meta["metadata_provider"] = youtube_metadata.provider
     if youtube_metadata.error:
         meta["metadata_generation_error"] = youtube_metadata.error
@@ -1146,6 +1194,27 @@ def approve_playlist_metadata(
             meta["youtube_description"] = default_copy["description"]
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing. Generate metadata first.")
+    meta["youtube_description"] = _ensure_description_hashtags(
+        str(meta.get("youtube_description") or ""),
+        meta.get("youtube_tags"),
+    )
+    if meta.get("youtube_localizations"):
+        localized_metadata = normalize_youtube_localizations(
+            meta.get("youtube_localizations"),
+            default_title=meta.get("youtube_title"),
+            default_description=meta.get("youtube_description"),
+            default_language=default_language,
+        )
+        for localized_copy in localized_metadata.values():
+            localized_copy["description"] = _ensure_description_hashtags(
+                localized_copy.get("description") or "",
+                meta.get("youtube_tags"),
+            )
+        meta["youtube_localizations"] = localized_metadata
+        default_copy = localized_metadata.get(default_language)
+        if default_copy:
+            meta["youtube_title"] = default_copy["title"]
+            meta["youtube_description"] = default_copy["description"]
 
     history = list(meta.get("metadata_approval_history") or [])
     history.append(

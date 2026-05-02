@@ -21,6 +21,8 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Do not publish or re-upload to YouTube unless the human explicitly asks.
 - The release must already have a rendered video before metadata can be approved.
 - For tags, provide comma-separated plain tags without `#`, for example `Piano,CafePiano,StudyMusic,WorkMusic`.
+- YouTube API tags and public description hashtags are separate. `--tags` sends hidden YouTube tags; the description text itself must also end with one public hashtag line.
+- Every main description and every localized description must end with 5-8 public hashtags, for example `#Jpop #TokyoDaydreamRadio #CityPop #DriveMusic #WorkMusic`. Do not assume `--tags` will appear publicly.
 - Keep the title under 100 characters.
 - For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Good Korean patterns: `공부·산책할 때 듣기 좋은 숲길 BGM 1시간`, `산책·드라이브할 때 듣기 좋은 해변 BGM 1시간`, `작업할 때 틀어놓기 좋은 카페 피아노 1시간`.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
@@ -58,6 +60,7 @@ If a displayed title still reads like A/B, 1/2, or a paired alternative, rewrite
 If the release is one hour or longer, keep all timestamps in HH:MM:SS form, including 00:00:00 at the first row.
 For Japan/J-pop/Tokyo Daydream Radio releases, write Korean, Japanese, and English descriptions. In the Korean/default tracklist, use Japanese title plus Korean translation in parentheses. In the Japanese tracklist, use Japanese title only. In the English tracklist, use English title only.
 In Korean title/description/localizations, never write `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Say `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
+End the description with one public hashtag line containing 5-8 relevant hashtags. Also include equivalent hashtag lines in Japanese and English localized descriptions.
 Write metadata in this shape:
 
 Title:
