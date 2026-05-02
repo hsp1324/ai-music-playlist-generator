@@ -1111,13 +1111,67 @@ button:disabled {
 
 .detail-links {
   display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(340px, 1.3fr);
-  align-items: stretch;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
   margin-bottom: 20px;
+}
+
+.detail-group {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  padding: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 17px;
+  background: rgba(255, 253, 248, 0.76);
+}
+
+.detail-group-production {
+  grid-column: span 5;
+}
+
+.detail-group-visuals {
+  grid-column: span 4;
+}
+
+.detail-group-distribution {
+  grid-column: span 3;
 }
 
 .detail-links .metadata-review-panel {
   grid-column: 1 / -1;
+}
+
+.detail-group-head {
+  display: grid;
+  gap: 2px;
+  padding: 1px 2px 0;
+}
+
+.detail-group-head strong {
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.detail-group-head span {
+  color: var(--muted);
+  display: block;
+  overflow: hidden;
+  font-size: 0.64rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-group-body {
+  display: grid;
+  gap: 6px;
 }
 
 .render-status {
@@ -1125,11 +1179,11 @@ button:disabled {
   --render-progress-color: var(--line);
   position: relative;
   display: grid;
-  gap: 6px;
-  min-height: 116px;
-  padding: 18px;
-  border: 2px solid var(--line);
-  border-radius: var(--radius-lg);
+  gap: 3px;
+  min-height: 48px;
+  padding: 7px 8px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 13px;
   background: #fffdf8;
   overflow: hidden;
 }
@@ -1137,10 +1191,10 @@ button:disabled {
 .render-status::after {
   content: "";
   position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 16px;
-  height: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 7px;
+  height: 5px;
   border: 1.5px solid var(--line);
   border-radius: 999px;
   background:
@@ -1152,7 +1206,8 @@ button:disabled {
   position: relative;
   z-index: 1;
   font-family: "Archivo", "Noto Sans KR", sans-serif;
-  font-size: 1.12rem;
+  font-size: 0.78rem;
+  line-height: 1.1;
 }
 
 .render-status span {
@@ -1160,7 +1215,12 @@ button:disabled {
   z-index: 1;
   max-width: 520px;
   color: var(--muted);
-  line-height: 1.5;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.66rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
 }
 
 .render-queued,
@@ -1198,11 +1258,11 @@ button:disabled {
 
 .render-player {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  gap: 9px;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 7px;
   align-items: center;
-  min-height: 68px;
-  padding: 7px;
+  min-height: 58px;
+  padding: 6px;
   border: 1.5px solid var(--line);
   border-radius: 16px;
   background:
@@ -1211,8 +1271,8 @@ button:disabled {
 }
 
 .render-player-art {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border: 1.5px solid var(--line);
   border-radius: 13px;
   background:
@@ -1235,7 +1295,7 @@ button:disabled {
 }
 
 .render-player-copy strong {
-  font-size: clamp(0.86rem, 1.3vw, 1.05rem);
+  font-size: 0.76rem;
   line-height: 1;
 }
 
@@ -1253,8 +1313,8 @@ button:disabled {
 }
 
 .render-player audio {
-  min-width: min(100%, 240px);
-  flex: 1 1 240px;
+  min-width: min(100%, 180px);
+  flex: 1 1 180px;
   height: 30px;
 }
 
@@ -1262,15 +1322,15 @@ button:disabled {
 .metadata-preview {
   display: grid;
   gap: 8px;
-  min-height: 64px;
-  padding: 7px;
+  min-height: 54px;
+  padding: 6px;
   border: 1.5px solid var(--line);
   border-radius: 16px;
   background: #fffdf8;
 }
 
 .asset-preview {
-  grid-template-columns: 82px minmax(0, 1fr);
+  grid-template-columns: 72px minmax(0, 1fr);
   align-items: center;
 }
 
@@ -1294,7 +1354,7 @@ button:disabled {
 }
 
 .asset-preview img {
-  width: 82px;
+  width: 72px;
   aspect-ratio: 16 / 9;
   border: 1.5px solid var(--line);
   border-radius: 11px;
@@ -1343,7 +1403,7 @@ button:disabled {
   font-size: 0.7rem;
   line-height: 1.32;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
 }
 
 .asset-preview-actions {
@@ -2217,6 +2277,10 @@ select:focus {
 
   .detail-action-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-group {
+    grid-column: 1 / -1;
   }
 }
 

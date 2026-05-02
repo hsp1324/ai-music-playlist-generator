@@ -938,6 +938,52 @@ function renderJobStatusText(workspace) {
   return `Render job: ${status}`;
 }
 
+const DETAIL_GROUP_CONFIG = {
+  production: {
+    title: "Production",
+    copy: "Render status and final audio mix.",
+  },
+  visuals: {
+    title: "Visual Assets",
+    copy: "Cover, thumbnail, loop video, and rendered video files.",
+  },
+  distribution: {
+    title: "Distribution",
+    copy: "Published YouTube output and external links.",
+  },
+};
+
+function appendDetailGroupItem(groupKey, element) {
+  const config = DETAIL_GROUP_CONFIG[groupKey] || { title: groupKey, copy: "" };
+  let section = detailLinks.querySelector(`[data-detail-group="${groupKey}"]`);
+  if (!section) {
+    section = document.createElement("section");
+    section.className = `detail-group detail-group-${groupKey}`;
+    section.dataset.detailGroup = groupKey;
+
+    const header = document.createElement("div");
+    header.className = "detail-group-head";
+
+    const title = document.createElement("strong");
+    title.textContent = config.title;
+    header.appendChild(title);
+
+    if (config.copy) {
+      const copy = document.createElement("span");
+      copy.textContent = config.copy;
+      header.appendChild(copy);
+    }
+
+    const body = document.createElement("div");
+    body.className = "detail-group-body";
+    section.appendChild(header);
+    section.appendChild(body);
+    detailLinks.appendChild(section);
+  }
+
+  section.querySelector(".detail-group-body")?.appendChild(element);
+}
+
 function appendRenderStatus(workspace) {
   const card = document.createElement("div");
   const job = workspace.render_job;
@@ -968,7 +1014,7 @@ function appendRenderStatus(workspace) {
 
   card.appendChild(title);
   card.appendChild(message);
-  detailLinks.appendChild(card);
+  appendDetailGroupItem("production", card);
 }
 
 function appendRenderedAudioPlayer(workspace) {
@@ -1012,7 +1058,7 @@ function appendRenderedAudioPlayer(workspace) {
   body.appendChild(actions);
   player.appendChild(art);
   player.appendChild(body);
-  detailLinks.appendChild(player);
+  appendDetailGroupItem("production", player);
 }
 
 function appendCoverPreview(workspace) {
@@ -1044,7 +1090,7 @@ function appendCoverPreview(workspace) {
   body.appendChild(actions);
   card.appendChild(image);
   card.appendChild(body);
-  detailLinks.appendChild(card);
+  appendDetailGroupItem("visuals", card);
 }
 
 function appendThumbnailPreview(workspace) {
@@ -1076,7 +1122,7 @@ function appendThumbnailPreview(workspace) {
   body.appendChild(actions);
   card.appendChild(image);
   card.appendChild(body);
-  detailLinks.appendChild(card);
+  appendDetailGroupItem("visuals", card);
 }
 
 function appendLoopVideoPreview(workspace) {
@@ -1113,7 +1159,7 @@ function appendLoopVideoPreview(workspace) {
   body.appendChild(video);
   body.appendChild(actions);
   card.appendChild(body);
-  detailLinks.appendChild(card);
+  appendDetailGroupItem("visuals", card);
 }
 
 function appendVideoPreview(workspace) {
@@ -1148,7 +1194,7 @@ function appendVideoPreview(workspace) {
   body.appendChild(video);
   body.appendChild(actions);
   card.appendChild(body);
-  detailLinks.appendChild(card);
+  appendDetailGroupItem("visuals", card);
 }
 
 function appendYouTubePreview(workspace) {
@@ -1189,7 +1235,7 @@ function appendYouTubePreview(workspace) {
   body.appendChild(idLine);
   body.appendChild(actions);
   card.appendChild(body);
-  detailLinks.appendChild(card);
+  appendDetailGroupItem("distribution", card);
 }
 
 function appendMetadataDraft(workspace) {
