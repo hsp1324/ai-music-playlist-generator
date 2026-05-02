@@ -750,26 +750,41 @@ button:disabled {
 }
 
 .workspace-tile .workspace-pipeline {
-  max-width: 220px;
+  max-width: none;
 }
 
 .workspace-tile .compact-pipeline {
-  grid-template-columns: repeat(5, 18px);
-  gap: 4px;
+  grid-template-columns: repeat(5, minmax(46px, 1fr));
+  gap: 5px;
 }
 
 .workspace-tile .compact-pipeline .pipeline-step {
-  min-height: 18px;
-  padding: 0;
-  border-width: 0;
-  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 0 5px;
+  border-width: 1px;
+  border-radius: 999px;
+  background: #fffdf8;
 }
 
 .workspace-tile .compact-pipeline .pipeline-marker {
-  width: 18px;
-  height: 18px;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
   border-width: 1px;
+  font-size: 0.48rem;
+}
+
+.workspace-tile .compact-pipeline .pipeline-label {
+  display: inline;
+  color: var(--ink-soft);
   font-size: 0.58rem;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
 }
 
 .workspace-footer {

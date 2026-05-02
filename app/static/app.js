@@ -446,6 +446,13 @@ function renderPipeline(container, workspace, options = {}) {
   const stages = releasePipeline(workspace);
   const rail = document.createElement("div");
   rail.className = options.compact ? "pipeline-rail compact-pipeline" : "pipeline-rail";
+  const compactLabels = {
+    audio: "Audio",
+    cover: "Cover",
+    video: "Video",
+    metadata: "Meta",
+    publish: "Post",
+  };
 
   stages.forEach((stage) => {
     const item = document.createElement("div");
@@ -457,7 +464,7 @@ function renderPipeline(container, workspace, options = {}) {
 
     const label = document.createElement("span");
     label.className = "pipeline-label";
-    label.textContent = stage.label;
+    label.textContent = options.compact ? compactLabels[stage.key] || stage.label : stage.label;
 
     item.title = stage.detail;
     item.appendChild(marker);
