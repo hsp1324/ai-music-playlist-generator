@@ -1949,8 +1949,9 @@ audio {
 
 .approved-card {
   position: relative;
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 5px 8px;
   align-items: center;
   min-height: 48px;
   min-width: 0;
@@ -1969,7 +1970,7 @@ audio {
 }
 
 .release-focus-mode .approved-card {
-  gap: 7px;
+  gap: 5px 7px;
   min-height: 46px;
   min-width: 0;
   padding: 6px 8px;
@@ -2016,7 +2017,6 @@ audio {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 26px;
   min-width: 26px;
   color: var(--muted);
   font-family: "Archivo", "Noto Sans KR", sans-serif;
@@ -2097,8 +2097,9 @@ audio {
 }
 
 .approved-card .track-player {
-  flex: 0 1 320px;
-  min-width: 180px;
+  grid-column: 2;
+  width: 100%;
+  min-width: 0;
 }
 
 .form-stack {
