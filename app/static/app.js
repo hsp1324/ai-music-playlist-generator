@@ -2510,16 +2510,20 @@ function renderWorkspaceDetail() {
       if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
       if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
     }
-    if (lyricsText) {
-      const lyricsButton = actionButton("Lyrics", "pill-action reorder", async () => {
+    {
+      const lyricsButton = localActionButton("Lyrics", "pill-action reorder", () => {
         alert(lyricsText);
       });
+      lyricsButton.disabled = !lyricsText;
+      lyricsButton.title = lyricsText ? "Show saved lyrics" : "No lyrics saved";
       actions.appendChild(lyricsButton);
     }
-    if (styleText) {
-      const styleButton = actionButton("Style", "pill-action reorder", async () => {
+    {
+      const styleButton = localActionButton("Style", "pill-action reorder", () => {
         alert(styleText);
       });
+      styleButton.disabled = !styleText;
+      styleButton.title = styleText ? "Show saved style" : "No style saved";
       actions.appendChild(styleButton);
     }
     if (showTrackReviewColumns && workspace.tracks.length > 1) {

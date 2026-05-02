@@ -1782,6 +1782,8 @@ button:disabled {
 }
 
 .approved-title {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   font-size: 0.9rem;
   text-overflow: ellipsis;
@@ -1830,6 +1832,10 @@ button:disabled {
   min-height: 24px;
   padding: 0 9px;
   font-size: 0.62rem;
+}
+
+.approved-duration {
+  flex: 0 0 auto;
 }
 
 audio {
@@ -1936,7 +1942,7 @@ audio {
 .approved-card {
   position: relative;
   display: grid;
-  grid-template-columns: 34px minmax(180px, 0.9fr) minmax(260px, 1.2fr) minmax(180px, auto);
+  grid-template-columns: 34px minmax(320px, 1fr) minmax(260px, 0.92fr);
   gap: 8px;
   align-items: center;
   min-height: 48px;
@@ -1954,7 +1960,7 @@ audio {
 }
 
 .release-focus-mode .approved-card {
-  grid-template-columns: 30px minmax(170px, 0.9fr) minmax(240px, 1.3fr) minmax(160px, auto);
+  grid-template-columns: 30px minmax(320px, 1fr) minmax(260px, 0.9fr);
   gap: 7px;
   min-height: 46px;
   padding: 6px 8px;
@@ -2026,9 +2032,8 @@ audio {
 }
 
 .approved-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 7px;
+  display: flex;
+  gap: 6px;
   align-items: center;
   min-width: 0;
 }
@@ -2051,6 +2056,7 @@ audio {
   display: flex;
   gap: 4px;
   align-items: center;
+  flex: 0 0 auto;
   justify-content: flex-start;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -2066,6 +2072,11 @@ audio {
   min-height: 26px;
   padding-inline: 8px;
   font-size: 0.62rem;
+}
+
+.approved-actions .pill-action:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
 }
 
 .approved-card .track-player audio {
