@@ -2097,7 +2097,7 @@ audio {
 }
 
 .approved-card .track-player {
-  grid-column: 2;
+  grid-column: 2 / -1;
   width: 100%;
   min-width: 0;
 }
@@ -2240,9 +2240,8 @@ select:focus {
     align-items: center;
   }
 
-  .approved-card .track-player,
-  .approved-actions {
-    grid-column: auto;
+  .approved-card .track-player {
+    grid-column: 2 / -1;
   }
 
   .release-focus-mode .queue-card {
@@ -2263,9 +2262,8 @@ select:focus {
     grid-column: auto;
   }
 
-  .release-focus-mode .approved-card .track-player,
-  .release-focus-mode .approved-actions {
-    grid-column: auto;
+  .release-focus-mode .approved-card .track-player {
+    grid-column: 2 / -1;
   }
 
   .release-focus-mode .queue-controls,
