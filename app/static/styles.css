@@ -948,7 +948,64 @@ button:disabled {
 }
 
 .detail-actions {
+  display: block;
+  justify-self: end;
+  width: min(620px, 48vw);
+}
+
+.detail-action-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.detail-action-group {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+  padding: 10px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 20px;
+  background: rgba(255, 248, 234, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.detail-action-group[data-empty="true"] {
+  display: none;
+}
+
+.detail-action-group-title {
+  color: var(--muted);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.detail-action-group-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
   justify-content: flex-end;
+}
+
+.detail-action-group .toolbar-button,
+.detail-action-group .action-button {
+  min-height: 38px;
+  padding-inline: 13px;
+  font-size: 0.72rem;
+}
+
+.detail-action-group .publish-channel-picker,
+.detail-action-group .manual-upload-box {
+  flex: 1 1 100%;
+}
+
+.detail-action-group .publish-channel-picker select {
+  min-height: 40px;
 }
 
 .publish-channel-picker {
@@ -2046,6 +2103,15 @@ select:focus {
   }
 
   .detail-actions {
+    justify-self: stretch;
+    width: 100%;
+  }
+
+  .detail-action-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-action-group-buttons {
     justify-content: flex-start;
   }
 

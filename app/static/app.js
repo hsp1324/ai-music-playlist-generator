@@ -815,6 +815,42 @@ function localActionButton(label, className, handler) {
   return button;
 }
 
+function createDetailActionGroups() {
+  const element = document.createElement("div");
+  element.className = "detail-action-groups";
+  const groups = {};
+  [
+    ["release", "Release"],
+    ["audio", "Audio"],
+    ["visuals", "Visuals"],
+    ["metadata", "Metadata"],
+    ["publish", "Publish"],
+  ].forEach(([key, label]) => {
+    const group = document.createElement("section");
+    group.className = "detail-action-group";
+    group.dataset.empty = "true";
+
+    const title = document.createElement("div");
+    title.className = "detail-action-group-title";
+    title.textContent = label;
+
+    const buttons = document.createElement("div");
+    buttons.className = "detail-action-group-buttons";
+
+    group.appendChild(title);
+    group.appendChild(buttons);
+    element.appendChild(group);
+    groups[key] = group;
+  });
+  return { element, groups };
+}
+
+function appendDetailAction(group, action) {
+  if (!group || !action) return;
+  group.dataset.empty = "false";
+  group.querySelector(".detail-action-group-buttons")?.appendChild(action);
+}
+
 async function reorderApprovedTrack(workspace, currentIndex, direction) {
   const targetIndex = currentIndex + direction;
   if (targetIndex < 0 || targetIndex >= workspace.tracks.length) return;
@@ -1905,14 +1941,18 @@ function renderWorkspaceDetail() {
   queueGrid.innerHTML = "";
   approvedGrid.innerHTML = "";
 
+  const { element: detailActionGroupsElement, groups: detailActionGroups } = createDetailActionGroups();
+  detailActions.appendChild(detailActionGroupsElement);
+
   const backButton = document.createElement("button");
   backButton.type = "button";
   backButton.className = "toolbar-button";
   backButton.textContent = "All Releases";
   backButton.addEventListener("click", () => closeWorkspaceFocus());
-  detailActions.appendChild(backButton);
+  appendDetailAction(detailActionGroups.release, backButton);
   if (!workspace.hidden) {
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.release,
       actionButton("Delete Release", "action-button danger-button", async () => {
         await archiveWorkspaceForDeletion(workspace);
         await refreshBoard();
@@ -1945,9 +1985,10 @@ function renderWorkspaceDetail() {
       button.className = "action-button secondary-button";
       button.textContent = "Rendering Audio...";
       button.disabled = true;
-      detailActions.appendChild(button);
+      appendDetailAction(detailActionGroups.audio, button);
     } else if (!releaseLockedForPublish && !videoBusy && (!isSingleRelease(workspace) || !workspace.output_audio_path)) {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.audio,
         actionButton(
           isSingleRelease(workspace)
             ? "Use Approved Audio"
@@ -1972,7 +2013,8 @@ function renderWorkspaceDetail() {
   const canManageCover = workspace.output_audio_path && !assetChangeLocked && !coverChangeBlocked;
   if (canManageCover) {
     if (workspace.cover_image_path && !workspace.cover_approved) {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.visuals,
         actionButton("Approve Cover, then Render Video", "action-button primary-button", async () => {
           await api(`/api/playlists/${workspace.id}/cover/approve`, {
             method: "POST",
@@ -1986,7 +2028,8 @@ function renderWorkspaceDetail() {
       );
     }
 
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.visuals,
       actionButton(
         "Upload Cover",
         workspace.cover_image_path ? "action-button secondary-button" : "action-button primary-button",
@@ -1996,7 +2039,8 @@ function renderWorkspaceDetail() {
       )
     );
 
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.visuals,
       actionButton(
         workspace.youtube_thumbnail_path ? "Replace Thumbnail" : "Upload Thumbnail",
         workspace.youtube_thumbnail_path ? "action-button secondary-button" : "action-button primary-button",
@@ -2006,7 +2050,8 @@ function renderWorkspaceDetail() {
       )
     );
 
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.visuals,
       actionButton(
         workspace.loop_video_path ? "Replace 8s Loop Video" : "Upload 8s Loop Video",
         "action-button secondary-button",
@@ -2016,7 +2061,8 @@ function renderWorkspaceDetail() {
       )
     );
 
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.visuals,
       actionButton(
         workspace.cover_image_path ? "Generate New Draft Cover" : "Generate Draft Cover",
         "action-button secondary-button",
@@ -2040,9 +2086,10 @@ function renderWorkspaceDetail() {
       button.className = "action-button secondary-button";
       button.textContent = "Rendering Video...";
       button.disabled = true;
-      detailActions.appendChild(button);
+      appendDetailAction(detailActionGroups.visuals, button);
     } else {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.visuals,
         actionButton("Render Video", "action-button primary-button", async () => {
           if (!workspace.loop_video_path) {
             const proceed = window.confirm(
@@ -2062,7 +2109,8 @@ function renderWorkspaceDetail() {
   }
 
   if (workspace.output_video_path && !workspace.youtube_title && !workspace.publish_approved) {
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.metadata,
       actionButton("Generate Metadata", "action-button secondary-button", async () => {
         await api(`/api/playlists/${workspace.id}/metadata/generate`, {
           method: "POST",
@@ -2074,19 +2122,22 @@ function renderWorkspaceDetail() {
     );
   } else if (workspace.output_video_path && workspace.youtube_title && workspace.metadata_approved) {
     if (metadataEditing) {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.metadata,
         actionButton("Save Metadata Changes", "action-button primary-button", async () => {
           await saveMetadataChanges(workspace);
         })
       );
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.metadata,
         localActionButton("Cancel Metadata Edit", "action-button secondary-button", () => {
           state.editingMetadataReleaseId = "";
           renderWorkspaceDetail();
         })
       );
     } else {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.metadata,
         localActionButton("Edit Metadata", "action-button primary-button", () => {
           state.editingMetadataReleaseId = workspace.id;
           renderWorkspaceDetail();
@@ -2100,7 +2151,8 @@ function renderWorkspaceDetail() {
       );
     }
     if (!metadataEditing) {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.metadata,
         actionButton("Regenerate Metadata Draft", "action-button secondary-button", async () => {
           const proceed = window.confirm("승인된 metadata를 새 초안으로 다시 생성할까요? 다시 승인해야 publish/re-upload할 수 있습니다.");
           if (!proceed) return;
@@ -2114,12 +2166,14 @@ function renderWorkspaceDetail() {
       );
     }
   } else if (workspace.youtube_title && !workspace.metadata_approved) {
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.metadata,
       actionButton("Approve Metadata", "action-button primary-button", async () => {
         await saveMetadataChanges(workspace);
       })
     );
-    detailActions.appendChild(
+    appendDetailAction(
+      detailActionGroups.metadata,
       actionButton("Regenerate Metadata", "action-button secondary-button", async () => {
         await api(`/api/playlists/${workspace.id}/metadata/generate`, {
           method: "POST",
@@ -2137,7 +2191,7 @@ function renderWorkspaceDetail() {
     button.className = "action-button secondary-button";
     button.textContent = workspace.youtube_video_id ? "Render Video Before Re-upload" : "Render Video Before Publish";
     button.disabled = true;
-    detailActions.appendChild(button);
+    appendDetailAction(detailActionGroups.publish, button);
   } else if (workspace.metadata_approved && !metadataEditing) {
     const publishBusy = workspace.workflow_state === "publish_queued";
     const needsYouTubeConnection = !youtubeReady;
@@ -2148,9 +2202,10 @@ function renderWorkspaceDetail() {
       button.className = "action-button secondary-button";
       button.textContent = workspace.youtube_video_id ? "Re-upload Queued..." : "Publishing...";
       button.disabled = true;
-      detailActions.appendChild(button);
+      appendDetailAction(detailActionGroups.publish, button);
     } else if (waitingForYouTubeAuth || needsYouTubeConnection || !connectedYouTubeChannels.length) {
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.publish,
         actionButton("Connect YouTube Channel", "action-button primary-button", async () => {
           window.location.href = `/api/youtube/connect?playlist_id=${encodeURIComponent(workspace.id)}`;
         })
@@ -2158,9 +2213,10 @@ function renderWorkspaceDetail() {
     } else {
       const channelPicker = buildYouTubeChannelPicker();
       if (channelPicker) {
-        detailActions.appendChild(channelPicker.element);
+        appendDetailAction(detailActionGroups.publish, channelPicker.element);
       }
-      detailActions.appendChild(
+      appendDetailAction(
+        detailActionGroups.publish,
         actionButton(workspace.youtube_video_id ? "Re-upload to YouTube" : workspace.publish_approved ? "Retry Publish" : "Approve Publish", "action-button primary-button", async () => {
           const youtubeChannelId = await activateYouTubeChannelForUpload(channelPicker?.select.value);
           const channel = (state.youtubeStatus?.channels || []).find((item) => item.id === youtubeChannelId);
@@ -2228,7 +2284,7 @@ function renderWorkspaceDetail() {
     content.appendChild(button);
     manualBox.appendChild(summary);
     manualBox.appendChild(content);
-    detailActions.appendChild(manualBox);
+    appendDetailAction(detailActionGroups.publish, manualBox);
   }
 
   const showTrackReviewColumns = !isReleaseReviewStage(workspace);
