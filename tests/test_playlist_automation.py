@@ -15,6 +15,7 @@ from app.main import create_app
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes.tracks import _extract_embedded_cover
+from app.services.background_worker import BackgroundJobWorker
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 
@@ -35,6 +36,26 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     get_settings.cache_clear()
+
+
+def test_dreamina_prompt_requires_animated_text_free_visuals() -> None:
+    playlist = Playlist(title="Tokyo Daydream", metadata_json={})
+    track = Track(
+        title="Neon Walk",
+        prompt="upbeat J-pop night walk",
+        metadata_json={
+            "lyrics": "bright city chorus",
+            "style": "J-pop, anime opening, synth",
+            "tags": "jpop, tokyo",
+        },
+    )
+
+    prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
+
+    assert "animated, anime, illustrated, or stylized" in prompt
+    assert "Do not use photorealistic" in prompt
+    assert "no text" in prompt
+    assert "exactly three people seen from behind" in prompt
 
 
 def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:

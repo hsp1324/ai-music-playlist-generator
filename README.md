@@ -263,7 +263,7 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that clip during final video render with a smooth 2 second forward crossfade loop. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 clean video cover and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that clip during final video render with a smooth 2 second forward crossfade loop. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
 - The web release detail view exposes separate upload/replace buttons for clean cover, text YouTube thumbnail, and 8 second loop video.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
@@ -310,7 +310,7 @@ Runtime behavior:
 - OpenClaw can run `scripts/openclaw-release auto-publish-playlist` to upload playlist tracks as approved, render audio/video, approve generated metadata, and publish privately to the selected connected YouTube channel. It can also run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a standalone single to be privately uploaded end-to-end. The helpers default general background releases to `Soft Hour Radio` and route Japan/Tokyo/city-pop/anime/J-pop concepts to `Tokyo Daydream Radio`.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
-Single releases can approve one candidate directly, or approve two related candidates and combine them into one single-style release audio before cover/video/publish.
+Single releases can approve one candidate directly, or approve two related candidates as separate Single Releases before cover/video/publish.
 Track uploads can include optional `lyrics` content. The app stores it in track metadata and exposes it in release context so OpenClaw can later create better thumbnails, Dreamina loop videos, metadata, or standalone single releases from strong playlist tracks.
 
 ## Dreamina Loop Video
@@ -335,9 +335,9 @@ When a `single_track_video` workspace is ready and auto-publish is enabled, the 
 - loop that clip to match the full song duration with `ffmpeg`
 - upload the finished MP4 to YouTube with generated metadata
 
-OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Dreamina is only for animating the final thumbnail into a moving visual.
+OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Dreamina is only for animating a clean text-free cover or first-frame image into a moving visual.
 
-OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the final YouTube thumbnail image, set `16:9`, `720p`, and exactly `8 seconds` when selectable, download the MP4 locally, then upload it with:
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the clean text-free cover or a separate clean text-free first-frame image, set `16:9`, `720p`, and exactly `8 seconds` when selectable, download the MP4 locally, then upload it with:
 
 ```bash
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
@@ -349,7 +349,7 @@ For full playlist automation, pass it directly:
 scripts/openclaw-release auto-publish-playlist ... --loop-video /absolute/path/to/clip.mp4
 ```
 
-The app repeats short clips with smooth 2 second forward crossfade looping by default, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds, and crossfades the end of each forward pass into the next forward pass to avoid a hard jump. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion.
+The app repeats short clips with smooth 2 second forward crossfade looping by default, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds, and crossfades the end of each forward pass into the next forward pass to avoid a hard jump. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. Do not put title text or brand text inside the loop video because generated text can flicker, vanish, or reappear during the repeated clip. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage.
 
 ## Slack App Setup
 

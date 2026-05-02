@@ -672,11 +672,13 @@ class BackgroundJobWorker:
                 f"{lyrics_context}"
                 f"{style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
+                "Use animated, anime, illustrated, or stylized visual language. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
                 "Signature composition: exactly three people seen from behind, walking away from the camera into the scene. "
                 "The viewer sees their backs and backs of heads, not front-facing faces. "
                 "One continuous forward-moving shot with subtle camera-follow movement from behind, stable composition, no repeated segment, no hard cuts, no subtitles, no text, no extra people or characters."
             )
         return (
             "Cinematic music visualizer shot with exactly three people seen from behind walking away from the camera into the scene, "
+            "animated/anime/illustrated style, not photorealistic or live-action, "
             "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, no repeated segment, no text."
         )
