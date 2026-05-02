@@ -1578,10 +1578,14 @@ async function archiveWorkspaceForDeletion(workspace) {
       revive_rejected: false,
     }),
   });
-  state.workspaceTab = "archive";
-  state.selectedWorkspaceId = "";
-  state.releaseFocus = false;
-  updateReleaseUrl("", true);
+  if (state.selectedWorkspaceId === workspace.id) {
+    state.selectedWorkspaceId = "";
+    if (state.releaseFocus) {
+      closeWorkspaceFocus(true);
+    } else {
+      updateReleaseUrl("", true);
+    }
+  }
 }
 
 function workspaceDeleteButton(workspace, label = "Delete") {
@@ -1893,6 +1897,7 @@ function renderWorkspaceDetail() {
     detailActions.appendChild(
       actionButton("Delete Release", "action-button danger-button", async () => {
         await archiveWorkspaceForDeletion(workspace);
+        await refreshBoard();
       })
     );
   }
