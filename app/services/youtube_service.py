@@ -24,7 +24,8 @@ from app.utils.youtube_localizations import (
 
 YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly"
-YOUTUBE_SCOPES = [YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READONLY_SCOPE]
+YOUTUBE_UPDATE_SCOPE = "https://www.googleapis.com/auth/youtube.force-ssl"
+YOUTUBE_SCOPES = [YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READONLY_SCOPE, YOUTUBE_UPDATE_SCOPE]
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 YOUTUBE_THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
