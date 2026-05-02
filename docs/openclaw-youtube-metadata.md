@@ -31,6 +31,12 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Treat each timestamp as a fixed playback position. If a title is corrected, only change the title text; do not move or swap the timestamp.
 - Do not sort track titles alphabetically or by A/B label in the metadata. The playback order is the source of truth.
 - Do not show trailing `A` / `B`, `1` / `2`, or pair labels like `Morning` / `Evening` in the YouTube description. If two tracks would read like variants of the same title, rename only the displayed title text so every row feels like a standalone song.
+- For releases that reach or exceed one hour, keep every timestamp in `HH:MM:SS` format. The first row should be `00:00:00`, and rows after one hour should be like `01:02:03`. This keeps YouTube timestamp links reliable past the one-hour mark.
+- For Japan/J-pop/Tokyo Daydream Radio releases with localized metadata, write the timestamped tracklist differently per language:
+- Korean/default description: use the Japanese track title first, followed by the Korean translation in parentheses, for example `00:03:22 海辺のきらめき (해변의 반짝임)`.
+- Japanese description: use the Japanese title only, for example `00:03:22 海辺のきらめき`.
+- English description: use the English translated title only, for example `00:03:22 Seaside Sparkle`.
+- Keep the exact same timestamps and playback order in Korean, Japanese, and English descriptions.
 - If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
 
 ## Metadata Style Prompt
@@ -47,6 +53,8 @@ scripts/openclaw-release metadata-context --release-id RELEASE_ID
 Use the returned timestamps exactly for the tracklist.
 Use `display_timestamp_lines` as the starting point when present.
 If a displayed title still reads like A/B, 1/2, or a paired alternative, rewrite only the title text so it is natural and unique.
+If the release is one hour or longer, keep all timestamps in HH:MM:SS form, including 00:00:00 at the first row.
+For Japan/J-pop/Tokyo Daydream Radio releases, write Korean, Japanese, and English descriptions. In the Korean/default tracklist, use Japanese title plus Korean translation in parentheses. In the Japanese tracklist, use Japanese title only. In the English tracklist, use English title only.
 Write metadata in this shape:
 
 Title:

@@ -124,6 +124,7 @@ For `single_track_video`, the intended publish path is:
 - The web release detail UI now supports direct upload/replace actions for clean cover, text YouTube thumbnail, and 8 second loop video as separate assets.
 - After a successful YouTube upload, the app deletes the long rendered local MP4 and keeps the YouTube video id/link as the watch surface. Re-uploading requires rendering a new local video first.
 - Track uploads now accept optional lyrics/content notes and Suno style/settings. Both are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, remake, and standalone single workflows.
+- YouTube metadata timelines now use `HH:MM:SS` for one-hour-plus releases, starting at `00:00:00`, so timestamps after one hour remain linkable. Japan/J-pop localized descriptions should use Japanese track titles plus Korean translations in the Korean/default version, Japanese titles in the Japanese version, and English titles in the English version.
 
 ### Cover art
 

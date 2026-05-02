@@ -39,6 +39,8 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass `--youtube-channel-title "Tokyo Daydream Radio"` when the Japan routing intent is clear.
 - YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
 - YouTube metadata supports localized title/description for `ko`, `ja`, and `en`. For `Tokyo Daydream Radio` or any Japan/J-pop release, OpenClaw must write all three versions: Korean, Japanese, and English. Use Korean as the default metadata (`--title`, `--description-file`) and also pass `--ko-title`, `--ko-description-file`, `--ja-title`, `--ja-description-file`, `--en-title`, and `--en-description-file` to `scripts/openclaw-release approve-metadata`.
+- In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, and English translated titles only in the English description. Keep the same timestamps and order in all languages.
+- For releases one hour or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
 - Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
 - Full playlist publishing needs two 16:9 images:

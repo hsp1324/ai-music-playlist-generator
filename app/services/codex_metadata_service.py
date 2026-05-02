@@ -111,6 +111,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 default_description=description,
                 default_language="ko",
             )
+            localizations = self._normalize_localization_timestamps(localizations, tracks)
             return YouTubeMetadata(
                 title=title[:100],
                 description=description,
@@ -150,10 +151,10 @@ class CodexMetadataService(ReleaseMetadataService):
                 "",
                 "Rules:",
                 "- Do not run shell commands or inspect files; use only the release context JSON below.",
-            "- Write primarily in Korean unless the release title strongly suggests another language.",
-            "- Also write localized YouTube metadata for Korean, Japanese, and English in localizations. Use language keys exactly: ko, ja, en.",
-            "- The ko localization should match the main title and description. The ja and en localizations should be natural translations/adaptations, not machine-looking literal copies.",
-            "- Keep title under 100 characters.",
+                "- Write primarily in Korean unless the release title strongly suggests another language.",
+                "- Also write localized YouTube metadata for Korean, Japanese, and English in localizations. Use language keys exactly: ko, ja, en.",
+                "- The ko localization should match the main title and description. The ja and en localizations should be natural translations/adaptations, not machine-looking literal copies.",
+                "- Keep title under 100 characters.",
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
                 "- For playlist releases, write the title like: <mood/genre/duration> | <listening use cases>.",
                 "- For playlist releases, do not append 'Official AI Visualizer' or similar branding to the title.",
@@ -168,6 +169,9 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- For single-track releases, do not present the release as a playlist and do not include a timestamp tracklist unless the release title explicitly asks for it.",
                 "- Use prompt, style, tags, and lyrics as private creative context; do not paste raw generation settings into the public description.",
                 "- For timestamped tracklists, use each timeline item's start exactly and keep the same row order.",
+                "- If release.timeline_timestamp_format is HH:MM:SS, keep every timestamp in that exact three-part form, including 00:00:00 at the first row and 01:00:00+ for rows past one hour.",
+                "- For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows this way: Korean description = Japanese title plus Korean translation in parentheses, Japanese description = Japanese title only, English description = English translated title only.",
+                "- Example Korean timeline row for a Japan release: 00:03:22 海辺のきらめき (해변의 반짝임). Example Japanese: 00:03:22 海辺のきらめき. Example English: 00:03:22 Seaside Sparkle.",
                 "- Do not show A/B, 1/2, or artificial pair labels in metadata titles. If two tracks read like variants of the same title, rewrite only the displayed title text so each row is unique and natural.",
                 "- Use display_title_hint as a starting point, but you may make the displayed titles more natural while preserving each row's timestamp.",
                 "- Timestamp positions are fixed playback positions. Never swap timestamps between tracks to make titles alphabetical or A/B ordered.",
@@ -185,6 +189,8 @@ class CodexMetadataService(ReleaseMetadataService):
         meta = playlist.metadata_json or {}
         timeline = []
         offset = 0
+        total_seconds = sum(max(int(track.duration_seconds or 0), 0) for track in tracks)
+        force_hours = total_seconds >= 3600
         display_titles = self._display_track_titles(tracks)
         for index, (track, display_title) in enumerate(zip(tracks, display_titles), start=1):
             track_meta = track.metadata_json or {}
@@ -192,7 +198,7 @@ class CodexMetadataService(ReleaseMetadataService):
             timeline.append(
                 {
                     "index": index,
-                    "start": self._format_timestamp(offset),
+                    "start": self._format_timestamp(offset, force_hours=force_hours),
                     "title": track.title,
                     "display_title_hint": display_title,
                     "duration_seconds": duration,
@@ -215,6 +221,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "target_duration_seconds": playlist.target_duration_seconds,
                 "default_hashtags": self.settings.youtube_default_hashtags,
             },
+            "timeline_timestamp_format": "HH:MM:SS" if force_hours else "MM:SS",
             "timeline": timeline,
             "display_timestamp_lines": [f"{item['start']} {item['display_title_hint']}" for item in timeline],
             "raw_timestamp_lines": [f"{item['start']} {item['title']}" for item in timeline],
@@ -223,10 +230,21 @@ class CodexMetadataService(ReleaseMetadataService):
     def _clean_description_timestamps(self, description: str, tracks: list[Track]) -> str:
         display_titles = self._display_track_titles(tracks)
         offset = 0
-        replacements: dict[str, tuple[str, str]] = {}
+        replacements: dict[str, tuple[str, str, str]] = {}
+        force_hours = sum(max(int(track.duration_seconds or 0), 0) for track in tracks) >= 3600
         for track, display_title in zip(tracks, display_titles):
-            start = self._format_timestamp(offset)
-            replacements[start] = (track.title, display_title)
+            canonical_start = self._format_timestamp(offset, force_hours=force_hours)
+            replacements[canonical_start] = (track.title, display_title, canonical_start)
+            replacements[self._format_timestamp(offset, force_hours=not force_hours)] = (
+                track.title,
+                display_title,
+                canonical_start,
+            )
+            replacements[self._format_unpadded_hour_timestamp(offset)] = (
+                track.title,
+                display_title,
+                canonical_start,
+            )
             offset += max(int(track.duration_seconds or 0), 0)
 
         cleaned_lines = []
@@ -239,12 +257,47 @@ class CodexMetadataService(ReleaseMetadataService):
             if start not in replacements:
                 cleaned_lines.append(line)
                 continue
-            original_title, display_title = replacements[start]
+            original_title, display_title, canonical_start = replacements[start]
             if line_title.strip() == original_title or self._has_trailing_ab_label(line_title):
-                cleaned_lines.append(f"{start} {display_title}")
+                cleaned_lines.append(f"{canonical_start} {display_title}")
             else:
-                cleaned_lines.append(line)
+                cleaned_lines.append(f"{canonical_start} {line_title}")
         return "\n".join(cleaned_lines).strip()
+
+    def _normalize_localization_timestamps(
+        self,
+        localizations: dict[str, dict[str, str]],
+        tracks: list[Track],
+    ) -> dict[str, dict[str, str]]:
+        if not localizations:
+            return localizations
+        timestamp_map = self._timestamp_aliases(tracks)
+        normalized: dict[str, dict[str, str]] = {}
+        for language, payload in localizations.items():
+            description_lines = []
+            for line in str(payload.get("description") or "").splitlines():
+                match = re.match(r"^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$", line.strip())
+                if match and match.group(1) in timestamp_map:
+                    description_lines.append(f"{timestamp_map[match.group(1)]} {match.group(2)}")
+                else:
+                    description_lines.append(line)
+            normalized[language] = {
+                "title": str(payload.get("title") or "").strip()[:100],
+                "description": "\n".join(description_lines).strip(),
+            }
+        return normalized
+
+    def _timestamp_aliases(self, tracks: list[Track]) -> dict[str, str]:
+        aliases: dict[str, str] = {}
+        offset = 0
+        force_hours = sum(max(int(track.duration_seconds or 0), 0) for track in tracks) >= 3600
+        for track in tracks:
+            canonical_start = self._format_timestamp(offset, force_hours=force_hours)
+            aliases[canonical_start] = canonical_start
+            aliases[self._format_timestamp(offset, force_hours=not force_hours)] = canonical_start
+            aliases[self._format_unpadded_hour_timestamp(offset)] = canonical_start
+            offset += max(int(track.duration_seconds or 0), 0)
+        return aliases
 
     def _has_trailing_ab_label(self, title: str) -> bool:
         return bool(re.search(r"\s*(?:[-_]\s*)?\(?[AB]\)?$", title.strip(), flags=re.IGNORECASE))
@@ -318,14 +371,23 @@ class CodexMetadataService(ReleaseMetadataService):
             normalized.append(tag)
         return normalized[:15]
 
-    def _format_timestamp(self, seconds: int) -> str:
+    def _format_timestamp(self, seconds: int, *, force_hours: bool = False) -> str:
         seconds = max(seconds, 0)
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
         remainder = seconds % 60
+        if force_hours:
+            return f"{hours:02d}:{minutes:02d}:{remainder:02d}"
         if hours:
             return f"{hours}:{minutes:02d}:{remainder:02d}"
         return f"{minutes:02d}:{remainder:02d}"
+
+    def _format_unpadded_hour_timestamp(self, seconds: int) -> str:
+        seconds = max(seconds, 0)
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        remainder = seconds % 60
+        return f"{hours}:{minutes:02d}:{remainder:02d}"
 
     def _format_duration(self, seconds: int) -> str:
         minutes = max(seconds, 0) // 60

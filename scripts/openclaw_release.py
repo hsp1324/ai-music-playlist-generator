@@ -120,11 +120,13 @@ def resolve_release(client: httpx.Client, *, release_id: str = "", release_title
     raise RuntimeError("Use --release-id or --release-title.")
 
 
-def format_timestamp(seconds: int) -> str:
+def format_timestamp(seconds: int, *, force_hours: bool = False) -> str:
     seconds = max(int(seconds or 0), 0)
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     remainder = seconds % 60
+    if force_hours:
+        return f"{hours:02d}:{minutes:02d}:{remainder:02d}"
     if hours:
         return f"{hours}:{minutes:02d}:{remainder:02d}"
     return f"{minutes:02d}:{remainder:02d}"
@@ -177,6 +179,8 @@ def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
     offset = 0
     timeline = []
     tracks = release.get("tracks") or []
+    total_seconds = sum(max(int(track.get("duration_seconds") or 0), 0) for track in tracks)
+    force_hours = total_seconds >= 3600
     display_titles = display_track_titles(tracks)
     for index, (track, display_title) in enumerate(zip(tracks, display_titles), start=1):
         duration = max(int(track.get("duration_seconds") or 0), 0)
@@ -184,7 +188,7 @@ def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
             {
                 "index": index,
                 "start_seconds": offset,
-                "start": format_timestamp(offset),
+                "start": format_timestamp(offset, force_hours=force_hours),
                 "title": track.get("title") or f"Track {index}",
                 "display_title_hint": display_title,
                 "duration_seconds": duration,
@@ -1196,6 +1200,7 @@ def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
 def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
     timeline = release_timeline(release)
+    total_seconds = sum(item["duration_seconds"] for item in timeline)
     timestamp_lines = [f"{item['start']} {item['title']}" for item in timeline]
     display_timestamp_lines = [f"{item['start']} {item['display_title_hint']}" for item in timeline]
     return {
@@ -1218,11 +1223,13 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
         "timeline": timeline,
         "timestamp_lines": timestamp_lines,
         "display_timestamp_lines": display_timestamp_lines,
-        "total_seconds": sum(item["duration_seconds"] for item in timeline),
-        "total_duration": format_timestamp(sum(item["duration_seconds"] for item in timeline)),
+        "total_seconds": total_seconds,
+        "total_duration": format_timestamp(total_seconds, force_hours=total_seconds >= 3600),
         "instructions": (
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
+            "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
+            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English description uses English translated title only. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols. "
             "For Tokyo/J-pop/Japan releases, write Korean, Japanese, and English title/description versions and pass them to approve-metadata."

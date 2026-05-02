@@ -125,9 +125,10 @@ class ReleaseMetadataService:
     def _timestamp_lines(self, tracks: list[Track]) -> list[str]:
         offset = 0
         lines = []
+        force_hours = sum(max(int(track.duration_seconds or 0), 0) for track in tracks) >= 3600
         display_titles = self._display_track_titles(tracks)
         for track, display_title in zip(tracks, display_titles):
-            lines.append(f"{self._format_timestamp(offset)} {display_title}")
+            lines.append(f"{self._format_timestamp(offset, force_hours=force_hours)} {display_title}")
             offset += max(int(track.duration_seconds or 0), 0)
         return lines
 
@@ -137,11 +138,13 @@ class ReleaseMetadataService:
     def _clean_track_display_title(self, title: str) -> str:
         return clean_track_display_title(title)
 
-    def _format_timestamp(self, seconds: int) -> str:
+    def _format_timestamp(self, seconds: int, *, force_hours: bool = False) -> str:
         seconds = max(seconds, 0)
         hours = seconds // 3600
         minutes = (seconds % 3600) // 60
         remainder = seconds % 60
+        if force_hours:
+            return f"{hours:02d}:{minutes:02d}:{remainder:02d}"
         if hours:
             return f"{hours}:{minutes:02d}:{remainder:02d}"
         return f"{minutes:02d}:{remainder:02d}"
