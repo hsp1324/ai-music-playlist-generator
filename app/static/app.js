@@ -10,6 +10,7 @@ const state = {
   autoRefreshInFlight: false,
   youtubeStatus: null,
   editingMetadataReleaseId: "",
+  metadataExpandedByRelease: {},
   metadataLanguageByRelease: {},
   workspaceTab: "active",
 };
@@ -1195,11 +1196,17 @@ function appendMetadataDraft(workspace) {
   if (!workspace.youtube_title && !workspace.youtube_description) return;
 
   const metadataEditing = state.editingMetadataReleaseId === workspace.id;
-  const card = document.createElement("div");
+  const card = document.createElement("details");
   card.className = `metadata-preview metadata-review-panel ${workspace.metadata_approved ? "approved" : "review"}${
     metadataEditing ? " editing" : ""
   }`;
+  card.open = Boolean(metadataEditing || state.metadataExpandedByRelease[workspace.id]);
+  card.addEventListener("toggle", () => {
+    state.metadataExpandedByRelease[workspace.id] = card.open;
+  });
 
+  const summaryRow = document.createElement("summary");
+  summaryRow.className = "metadata-summary";
   const header = document.createElement("div");
   header.className = "metadata-review-header";
 
@@ -1242,6 +1249,11 @@ function appendMetadataDraft(workspace) {
 
   header.appendChild(titleBlock);
   header.appendChild(source);
+
+  summaryRow.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "metadata-review-body";
 
   const fields = document.createElement("div");
   fields.className = "metadata-fields";
@@ -1346,6 +1358,7 @@ function appendMetadataDraft(workspace) {
       inlineActions.appendChild(
         localActionButton("Edit Metadata", "action-button primary-button", () => {
           state.editingMetadataReleaseId = workspace.id;
+          state.metadataExpandedByRelease[workspace.id] = true;
           renderWorkspaceDetail();
           window.setTimeout(() => {
             const language = activeMetadataLanguage(workspace);
@@ -1366,12 +1379,13 @@ function appendMetadataDraft(workspace) {
     tags.appendChild(chip);
   });
 
-  card.appendChild(header);
-  card.appendChild(fields);
+  card.appendChild(summaryRow);
+  body.appendChild(fields);
   if (inlineActions.children.length) {
-    card.appendChild(inlineActions);
+    body.appendChild(inlineActions);
   }
-  card.appendChild(tags);
+  body.appendChild(tags);
+  card.appendChild(body);
   detailLinks.appendChild(card);
 }
 
@@ -2140,6 +2154,7 @@ function renderWorkspaceDetail() {
         detailActionGroups.metadata,
         localActionButton("Edit Metadata", "action-button primary-button", () => {
           state.editingMetadataReleaseId = workspace.id;
+          state.metadataExpandedByRelease[workspace.id] = true;
           renderWorkspaceDetail();
           window.setTimeout(() => {
             const language = activeMetadataLanguage(workspace);
@@ -2432,6 +2447,7 @@ function renderWorkspaceDetail() {
     const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
     const imageUrl = trackCoverUrl(track);
     const styleText = track.style || track.metadata_json?.style || "";
+    const lyricsText = track.lyrics || track.metadata_json?.lyrics || "";
 
     card.dataset.trackId = track.id;
     if (order) order.textContent = String(index + 1).padStart(2, "0");
@@ -2468,17 +2484,21 @@ function renderWorkspaceDetail() {
       });
     }
 
-    image.src = imageUrl;
-    image.alt = displayTitle(track.title, "Track");
+    if (image) {
+      image.src = imageUrl;
+      image.alt = displayTitle(track.title, "Track");
+    }
     title.textContent = displayTitle(track.title, "Untitled Track");
-    meta.textContent = shortText(
-      [
-        track.tags || "",
-        styleText ? "style saved" : "",
-        track.lyrics ? "lyrics saved" : "",
-      ].filter(Boolean).join(" · ") || "approved track",
-      90
-    );
+    if (meta) {
+      meta.textContent = shortText(
+        [
+          track.tags || "",
+          styleText ? "style saved" : "",
+          lyricsText ? "lyrics saved" : "",
+        ].filter(Boolean).join(" · ") || "approved track",
+        90
+      );
+    }
     duration.textContent = formatDuration(track.duration_seconds);
 
     if (audioUrl) {
@@ -2486,11 +2506,13 @@ function renderWorkspaceDetail() {
     } else {
       audio.remove();
     }
-    if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
-    if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
-    if (track.lyrics) {
+    if (links) {
+      if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
+      if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
+    }
+    if (lyricsText) {
       const lyricsButton = actionButton("Lyrics", "pill-action reorder", async () => {
-        alert(track.lyrics);
+        alert(lyricsText);
       });
       actions.appendChild(lyricsButton);
     }
@@ -2529,7 +2551,7 @@ function renderWorkspaceDetail() {
     } else {
       const status = document.createElement("span");
       status.className = "approved-lock-note";
-      status.textContent = "Published";
+      status.textContent = workspace.youtube_video_id ? "Published" : "Locked";
       actions.appendChild(status);
     }
 
