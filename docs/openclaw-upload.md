@@ -67,6 +67,8 @@ Style behavior:
 
 - `--style` is optional, but OpenClaw should provide it whenever the Suno style/settings are known.
 - Use one `--style` for a shared prompt style, or one `--style` per `--audio` when candidates used different settings.
+- For playlist releases, prefer one `--style` per `--audio`. Do not reuse the exact same style string for many tracks unless the human explicitly asks for a very uniform BGM set.
+- Even inside the same genre, vary tempo, energy, instruments, rhythm feel, vocal tone, mood, and production details across tracks. The goal is a coherent playlist, not duplicated songs.
 - Style is stored with the track so future remake, thumbnail, Dreamina loop-video, and metadata work can see how the song was generated.
 
 ## Upload One New Single Candidate
@@ -122,6 +124,7 @@ Only use `--pending-review` if the human explicitly asks to review playlist trac
 If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
 Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics are available. For BGM/background/instrumental tracks, empty lyrics are correct. For J-pop/K-pop/pop/Japanese pop/anime-pop releases, lyrics are expected by default and should be uploaded for every track unless the human explicitly requested instrumental/BGM/lofi/no vocals. Pass one shared `--style` or one `--style` per `--audio` whenever Suno style/settings are known.
 For pop-family releases, do not proceed without lyrics. If Suno returns a vocal song but no lyric text is visible, write/capture the final intended lyrics before uploading. If the human explicitly wants a J-pop-feeling instrumental, include BGM/instrumental/no-vocal wording in the prompt/title/tags so the helper treats empty lyrics as intentional.
+For vocal playlist releases, write a different lyric concept for every track before generation. Do not reuse the same chorus hook, verse structure, or only swap a few words between songs. Each track should have a distinct emotional angle and memorable phrase.
 
 For full automatic playlist publishing, two final 16:9 images are required.
 
@@ -396,6 +399,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - If lyrics or meaningful song-content notes are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value for instrumentals or unknown lyrics.
 - For BGM/background/lofi/study/sleep/cafe singles and playlists, empty lyrics are the default. For J-pop/K-pop/pop/Japanese pop/anime-pop singles and playlists, do not leave lyrics empty by default. Generate/capture original lyrics and upload them; only use empty lyrics when the human explicitly asked for instrumental/no-vocal music or when Suno did not provide lyrics and OpenClaw reports that limitation.
 - If Suno style/settings are available, upload them in the same command with `--style`.
+- Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
 - Static cover and thumbnail images must follow the channel visual signature: exactly three people seen from behind, walking forward away from the viewer into the scene. In thumbnails, keep the three people centered; text must not push them sideways.
