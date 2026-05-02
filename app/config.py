@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     youtube_oauth_redirect_uri: str = ""
     youtube_privacy_status: Literal["private", "unlisted", "public"] = "private"
     youtube_category_id: str = "10"
+    youtube_contains_synthetic_media: bool = False
     youtube_auto_upload_on_publish: bool = True
     youtube_title_suffix: str = "Official AI Visualizer"
     youtube_default_hashtags: str = "#aimusic #visualizer #electronicmusic"
