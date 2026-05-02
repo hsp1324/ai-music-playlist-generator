@@ -506,7 +506,7 @@ button:disabled {
 
 .workspace-grid {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .archived-workspace-section {
@@ -526,9 +526,10 @@ button:disabled {
 .workspace-tile {
   position: relative;
   display: grid;
-  gap: 16px;
-  min-height: 226px;
-  padding: 18px;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  padding: 11px;
   overflow: hidden;
   transition:
     transform 160ms ease,
@@ -537,16 +538,7 @@ button:disabled {
 }
 
 .workspace-tile::after {
-  content: "";
-  position: absolute;
-  inset: auto 16px 14px auto;
-  width: 48px;
-  height: 48px;
-  border: 2px solid rgba(23, 19, 15, 0.18);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, transparent 0 28%, rgba(23, 19, 15, 0.2) 29% 32%, transparent 33%),
-    rgba(213, 106, 45, 0.12);
+  content: none;
 }
 
 .workspace-tile:hover,
@@ -569,16 +561,60 @@ button:disabled {
   opacity: 0.92;
 }
 
+.workspace-art {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(241, 181, 71, 0.5), transparent 58%),
+    var(--panel-muted);
+}
+
+.workspace-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.workspace-cover-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: rgba(23, 19, 15, 0.7);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.workspace-main {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
 .workspace-tile-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-tile-head > div {
+  min-width: 0;
 }
 
 .workspace-name {
-  font-size: 1.45rem;
-  line-height: 1.04;
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .workspace-state,
@@ -618,11 +654,13 @@ button:disabled {
 }
 
 .workspace-copy {
+  display: none;
   margin: 0;
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
 .workspace-next {
+  display: none;
   margin: -2px 0 0;
   color: var(--ink-soft);
   font-size: 0.86rem;
@@ -646,6 +684,7 @@ button:disabled {
 
 .workspace-stats {
   align-self: end;
+  gap: 6px;
 }
 
 .workspace-stat {
@@ -653,20 +692,81 @@ button:disabled {
   text-transform: none;
 }
 
+.workspace-tile .workspace-mode {
+  margin-bottom: 3px;
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+}
+
+.workspace-tile .workspace-state,
+.workspace-tile .workspace-stat {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 0.62rem;
+}
+
+.workspace-tile .workspace-pipeline {
+  max-width: 220px;
+}
+
+.workspace-tile .compact-pipeline {
+  grid-template-columns: repeat(5, 18px);
+  gap: 4px;
+}
+
+.workspace-tile .compact-pipeline .pipeline-step {
+  min-height: 18px;
+  padding: 0;
+  border-width: 0;
+  background: transparent;
+}
+
+.workspace-tile .compact-pipeline .pipeline-marker {
+  width: 18px;
+  height: 18px;
+  border-width: 1px;
+  font-size: 0.58rem;
+}
+
 .workspace-footer {
   align-items: center;
   justify-content: space-between;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 0;
 }
 
 .workspace-hint {
+  min-width: 0;
   max-width: 150px;
+  overflow: hidden;
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tile .more-button,
+.workspace-footer .danger-more-button {
+  min-height: 32px;
+  padding-inline: 11px;
+  font-size: 0.7rem;
 }
 
 .workspace-footer .danger-more-button {
-  padding-inline: 13px;
+  padding-inline: 10px;
+}
+
+.archived-tile .workspace-copy,
+.archived-tile .workspace-next {
+  display: block;
+  font-size: 0.76rem;
+}
+
+.archived-tile .workspace-copy {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .detail-panel {

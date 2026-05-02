@@ -220,6 +220,26 @@ function releaseOptionLabel(workspace) {
   return `${displayTitle(workspace.title)} · ${isSingleRelease(workspace) ? "Single" : "Playlist"}`;
 }
 
+function releaseArtworkUrl(workspace) {
+  const trackImage = workspace?.tracks?.find((track) => track.metadata_json?.image_url)?.metadata_json?.image_url;
+  return normalizeMediaUrl(workspace?.cover_image_path || workspace?.youtube_thumbnail_path || trackImage || "");
+}
+
+function renderWorkspaceArtwork(fragment, workspace) {
+  const img = fragment.querySelector(".workspace-cover");
+  const placeholder = fragment.querySelector(".workspace-cover-placeholder");
+  const url = releaseArtworkUrl(workspace);
+  if (!img || !placeholder) return;
+  if (!url) {
+    img.hidden = true;
+    placeholder.hidden = false;
+    return;
+  }
+  img.src = url;
+  img.hidden = false;
+  placeholder.hidden = true;
+}
+
 function updateReleaseUrl(releaseId, replace = false) {
   const url = new URL(window.location.href);
   if (releaseId) {
@@ -1714,6 +1734,8 @@ function renderWorkspaceTiles() {
     const pendingCount = pendingTracks(workspace.id).length;
     const currentStage = currentPipelineStage(workspace);
 
+    renderWorkspaceArtwork(fragment, workspace);
+
     if (workspace.id === state.selectedWorkspaceId) {
       tile.classList.add("active");
     }
@@ -1778,6 +1800,7 @@ function renderArchivedWorkspaceTiles() {
       (track) => track.status === "rejected" && track.metadata_json?.pending_workspace_id === workspace.id
     ).length;
 
+    renderWorkspaceArtwork(fragment, workspace);
     tile.classList.add("archived-tile");
     mode.textContent = `${releaseModeLabel(workspace)} · Archived`;
     name.textContent = displayTitle(workspace.title, "Archived Release");

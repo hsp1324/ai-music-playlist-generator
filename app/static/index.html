@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260502a" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260502b" />
   </head>
   <body>
     <div class="shell">
@@ -275,23 +275,29 @@
 
     <template id="workspace-tile-template">
       <article class="workspace-tile">
-        <div class="workspace-tile-head">
-          <div>
-            <p class="workspace-mode"></p>
-            <h3 class="workspace-name"></h3>
+        <div class="workspace-art" aria-hidden="true">
+          <img class="workspace-cover" alt="" loading="lazy" />
+          <span class="workspace-cover-placeholder">♪</span>
+        </div>
+        <div class="workspace-main">
+          <div class="workspace-tile-head">
+            <div>
+              <p class="workspace-mode"></p>
+              <h3 class="workspace-name"></h3>
+            </div>
+            <span class="workspace-state"></span>
           </div>
-          <span class="workspace-state"></span>
-        </div>
-        <p class="workspace-copy"></p>
-        <div class="workspace-pipeline"></div>
-        <p class="workspace-next"></p>
-        <div class="workspace-stats">
-          <span class="workspace-stat approved-stat"></span>
-          <span class="workspace-stat pending-stat"></span>
-        </div>
-        <div class="workspace-footer">
-          <span class="workspace-hint"></span>
-          <button class="more-button" type="button">More</button>
+          <p class="workspace-copy"></p>
+          <div class="workspace-pipeline"></div>
+          <p class="workspace-next"></p>
+          <div class="workspace-stats">
+            <span class="workspace-stat approved-stat"></span>
+            <span class="workspace-stat pending-stat"></span>
+          </div>
+          <div class="workspace-footer">
+            <span class="workspace-hint"></span>
+            <button class="more-button" type="button">More</button>
+          </div>
         </div>
       </article>
     </template>
