@@ -143,6 +143,47 @@ def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, 
     }
 
 
+def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    mode_aliases = {
+        "playlist": "playlist",
+        "single": "single_track_video",
+        "single_track_video": "single_track_video",
+    }
+    workspace_mode = mode_aliases.get(str(args.workspace_mode).strip().lower())
+    if not workspace_mode:
+        raise RuntimeError("--workspace-mode must be playlist or single.")
+
+    release = request_json(
+        client,
+        "POST",
+        "/playlists/workspaces",
+        json={
+            "title": args.release_title,
+            "target_duration_seconds": args.target_seconds,
+            "workspace_mode": workspace_mode,
+            "auto_publish_when_ready": False,
+            "description": args.description,
+            "cover_prompt": "",
+            "dreamina_prompt": "",
+        },
+    )
+    return {
+        "ok": True,
+        "action": "create-release",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workspace_mode": release["workspace_mode"],
+            "workflow_state": release["workflow_state"],
+            "target_duration_seconds": release["target_duration_seconds"],
+        },
+        "next": (
+            "Use this release.id while generating Suno output, then upload every related audio file with --release-id. "
+            "Do not create another workspace for the same prompt/run."
+        ),
+    }
+
+
 def find_release_by_title(client: httpx.Client, title: str) -> dict[str, Any]:
     releases = request_json(client, "GET", "/playlists/workspaces")
     matches = [release for release in releases if release["title"] == title]
@@ -490,14 +531,22 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         context="upload-single-candidates",
         concept_values=[release_title, raw_titles, args.prompt, args.style, args.tags],
     )
-    release = create_single_release(
-        client,
-        release_title,
-        description=(
-            f"Single release candidate set created by OpenClaw from "
-            f"{', '.join(path.name for path in audio_paths)}."
-        ),
-    )
+    if args.release_id:
+        release = get_release(client, args.release_id)
+        if release["workspace_mode"] != "single_track_video":
+            raise RuntimeError("upload-single-candidates with --release-id requires a Single Release workspace.")
+        existing_count = len(release.get("tracks") or [])
+        if existing_count + len(audio_paths) > 2:
+            raise RuntimeError("A Single Release can contain at most two candidate tracks.")
+    else:
+        release = create_single_release(
+            client,
+            release_title,
+            description=(
+                f"Single release candidate set created by OpenClaw from "
+                f"{', '.join(path.name for path in audio_paths)}."
+            ),
+        )
 
     tracks = []
     for index, audio_path in enumerate(audio_paths, start=1):
@@ -1486,6 +1535,21 @@ def build_parser() -> argparse.ArgumentParser:
     list_parser = subparsers.add_parser("list-releases", help="List visible releases and ids.")
     list_parser.set_defaults(func=list_releases)
 
+    create_parser = subparsers.add_parser(
+        "create-release",
+        help="Create an empty Single or Playlist Release workspace before generating Suno audio.",
+    )
+    create_parser.add_argument("--release-title", required=True, help="Release/workspace title to create before Suno generation.")
+    create_parser.add_argument(
+        "--workspace-mode",
+        choices=["single", "single_track_video", "playlist"],
+        required=True,
+        help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
+    )
+    create_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Ignored for single releases.")
+    create_parser.add_argument("--description", default="", help="Short concept description for the release.")
+    create_parser.set_defaults(func=create_release)
+
     context_parser = subparsers.add_parser(
         "metadata-context",
         help="Return release context and final-order timestamps for OpenClaw YouTube metadata writing.",
@@ -1517,6 +1581,7 @@ def build_parser() -> argparse.ArgumentParser:
     candidates_parser.add_argument("--audio", action="append", required=True, help="Candidate audio path. Repeat up to two times.")
     candidates_parser.add_argument("--title", action="append", default=[], help="Candidate title. Repeat in the same order as --audio.")
     candidates_parser.add_argument("--cover", action="append", default=[], help="Optional candidate cover path. Repeat once for a shared cover or once per --audio.")
+    candidates_parser.add_argument("--release-id", default="", help="Existing Single Release workspace id created before Suno generation.")
     candidates_parser.add_argument("--release-title", default="", help="Single release title. Defaults to first audio filename stem.")
     candidates_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by the candidates.")
     candidates_parser.add_argument("--style", action="append", default=[], help="Suno style/settings. Repeat once per --audio, or provide one shared value.")

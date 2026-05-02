@@ -10,12 +10,14 @@ from scripts.openclaw_release import (
     approve_metadata,
     auto_publish_playlist,
     auto_publish_single,
+    create_release,
     infer_youtube_channel_title,
     is_pop_family_vocal_request,
     release_has_uploaded_cover,
     release_has_uploaded_thumbnail,
     resolve_lyrics_items,
     resolve_style_items,
+    upload_single_candidates,
 )
 
 
@@ -95,6 +97,84 @@ def test_infer_youtube_channel_routes_japanese_releases_to_tokyo_daydream() -> N
             release_title="Cafe Piano",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def test_create_release_creates_empty_workspace_before_suno_generation() -> None:
+    captured_payloads = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_payloads.append(json.loads(request.read()))
+        return httpx.Response(
+            201,
+            json={
+                "id": "release-123",
+                "title": "Night Walk J-pop",
+                "workspace_mode": "single_track_video",
+                "workflow_state": "collecting",
+                "target_duration_seconds": 1,
+            },
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = create_release(
+        client,
+        SimpleNamespace(
+            release_title="Night Walk J-pop",
+            workspace_mode="single",
+            target_seconds=3600,
+            description="Create workspace before Suno generation.",
+        ),
+    )
+
+    assert captured_payloads[-1]["workspace_mode"] == "single_track_video"
+    assert captured_payloads[-1]["auto_publish_when_ready"] is False
+    assert result["release"]["id"] == "release-123"
+    assert "--release-id" in result["next"]
+
+
+def test_upload_single_candidates_can_target_existing_precreated_release(tmp_path) -> None:
+    first_audio = tmp_path / "first.mp3"
+    second_audio = tmp_path / "second.mp3"
+    first_audio.write_bytes(b"fake mp3")
+    second_audio.write_bytes(b"fake mp3")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "release-123",
+                        "title": "Precreated Single",
+                        "workspace_mode": "single_track_video",
+                        "tracks": [{"id": "existing-track"}],
+                    }
+                ],
+            )
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="at most two candidate"):
+        upload_single_candidates(
+            client,
+            SimpleNamespace(
+                audio=[str(first_audio), str(second_audio)],
+                title=[],
+                cover=[],
+                release_id="release-123",
+                release_title="",
+                prompt="cafe piano",
+                style=[],
+                tags="cafe,piano",
+                lyrics=[],
+                lyrics_file=[],
+            ),
+        )
+
+    assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
 
 
 def test_resolve_lyrics_items_allows_empty_shared_and_per_track(tmp_path) -> None:

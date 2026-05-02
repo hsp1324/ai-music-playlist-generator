@@ -17,9 +17,16 @@ Do not use the public `https://ai-music...sslip.io` URL from OpenClaw. Public tr
 
 Use this when Suno/OpenClaw produced one or two candidates for the same single release. Suno usually returns two songs; upload both to the same new Single Release so a human can choose. If both are good, the second approved candidate becomes its own Single Release instead of being combined.
 
+Preferred flow: create the Single Release before opening Suno, then upload the candidates to the returned `release.id`.
+
 ```bash
-scripts/openclaw-release upload-single-candidates \
+scripts/openclaw-release create-release \
+  --workspace-mode single \
   --release-title "Song Title" \
+  --description "Short concept for this single candidate set"
+
+scripts/openclaw-release upload-single-candidates \
+  --release-id RELEASE_ID \
   --audio /absolute/path/to/song-a.mp3 \
   --audio /absolute/path/to/song-b.mp3 \
   --cover /absolute/path/to/cover-a.png \
@@ -43,6 +50,7 @@ After this, both candidates appear in the web/Slack review queue. A human can ap
 Cover behavior:
 
 - `--cover` is optional.
+- `--release-id` should be the id returned by `create-release` before Suno generation. Use `--release-title` only as a fallback when OpenClaw did not precreate the workspace.
 - Use one `--cover` to share the same cover across all uploaded candidates.
 - Use one `--cover` per `--audio` to upload candidate-specific covers.
 - When a Single Release candidate is approved, its uploaded cover is automatically registered as that release's cover. If both candidates are approved, each approved song should continue with its own cover/thumbnail/loop-video assets.
@@ -317,16 +325,24 @@ The web UI also has `Generate Draft Cover`, but that only creates a simple local
 
 ## Suggested OpenClaw Instruction
 
-Give OpenClaw this instruction when it finishes a song:
+Give OpenClaw this instruction before it starts Suno:
 
 ```text
-When the final audio file is ready, upload it to the local AI Music app from /opt/ai-music-playlist-generator.
-Before uploading Suno output, decide whether this belongs to a Single Release workspace or a Playlist Release workspace.
-For a new single candidate set, create one Single Release by using --release-title with upload-single-candidates.
+Before opening Suno or generating audio, create or select the destination release in the local AI Music app from /opt/ai-music-playlist-generator.
+For a new single candidate set, first create one Single Release:
+
+scripts/openclaw-release create-release --workspace-mode single --release-title "TITLE" --description "CONCEPT"
+
+For a new playlist/mix, first create one Playlist Release:
+
+scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 3600 --description "CONCEPT"
+
+Keep the returned release.id. Do not create Suno songs before the release.id exists.
 For an existing release, use --release-id and keep all related Suno outputs in that same workspace.
+When the final audio file is ready, upload it to that same release.
 When Suno returns two candidate songs for one single release, run:
 
-scripts/openclaw-release upload-single-candidates --release-title "TITLE" --audio ABSOLUTE_AUDIO_PATH_A --audio ABSOLUTE_AUDIO_PATH_B --cover ABSOLUTE_COVER_PATH_A --cover ABSOLUTE_COVER_PATH_B --style "SUNO_STYLE_OR_SETTINGS" --prompt "PROMPT" --tags "TAGS"
+scripts/openclaw-release upload-single-candidates --release-id RELEASE_ID --audio ABSOLUTE_AUDIO_PATH_A --audio ABSOLUTE_AUDIO_PATH_B --cover ABSOLUTE_COVER_PATH_A --cover ABSOLUTE_COVER_PATH_B --style "SUNO_STYLE_OR_SETTINGS" --prompt "PROMPT" --tags "TAGS"
 
 Return the JSON result, especially release.id and tracks[].id.
 Do not approve, render, or publish unless explicitly asked.
@@ -354,7 +370,7 @@ Generate or obtain:
 Then run:
 
 scripts/openclaw-release auto-publish-single \
-  --release-title "SINGLE_TITLE" \
+  --release-id RELEASE_ID \
   --description "CONCEPT_FOR_METADATA" \
   --audio ABSOLUTE_AUDIO_PATH_01 \
   --title "INDEPENDENT_TRACK_TITLE_01" \
@@ -374,6 +390,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 ## Safety Rules
 
 - Do not call `Approve Publish` automatically unless the human explicitly asks for full private publishing.
+- Do not open Suno or generate audio before creating/selecting the app release workspace. Fresh work starts with `scripts/openclaw-release create-release`; continuing work starts with `scripts/openclaw-release list-releases` and `--release-id`.
 - Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - If lyrics or meaningful song-content notes are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value for instrumentals or unknown lyrics.

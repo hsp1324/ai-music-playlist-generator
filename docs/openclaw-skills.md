@@ -17,8 +17,9 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 ## Shared Rules
 
 - Never approve, reject, render, publish, or upload to YouTube unless the human explicitly asks.
-- Before generating audio in Suno, decide the target app workspace/release. Use one Single Release workspace for one standalone song candidate set, and one Playlist Release workspace for one playlist/mix. Do not scatter one Suno request or one playlist run across multiple workspaces.
-- If continuing existing work, use the existing `release.id` with `--release-id`. If starting fresh, create the right workspace through the helper command by passing `--release-title`.
+- Before opening Suno or generating audio, create or select the target app workspace/release. Use one Single Release workspace for one standalone song candidate set, and one Playlist Release workspace for one playlist/mix. Do not scatter one Suno request or one playlist run across multiple workspaces.
+- If continuing existing work, run `scripts/openclaw-release list-releases` and use the existing `release.id` with `--release-id`. If starting fresh, first run `scripts/openclaw-release create-release` and keep the returned `release.id`; then generate Suno audio and upload everything into that same `release.id`.
+- Do not wait until after Suno generation to create the app workspace. The release id should exist before the first Suno prompt is submitted so all later audio, lyrics, style, cover, thumbnail, and video assets have one clear destination.
 - OpenClaw creates audio candidates and uploads them to the app review queue.
 - If cover art is ready with the audio, upload the cover in the same command with `--cover`.
 - Human review happens in Slack or the web UI.
@@ -79,10 +80,10 @@ Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use the local app API only through scripts/openclaw-release.
 
 Goal:
-- Create or select one Single Release workspace before uploading Suno results.
+- Create or select one Single Release workspace before opening Suno or generating audio.
 - Generate one standalone song/single.
-- If Suno returns two candidates, upload both candidates to one new Single Release.
-- If only one usable candidate exists, upload one candidate to one new Single Release.
+- If Suno returns two candidates, upload both candidates to the precreated Single Release.
+- If only one usable candidate exists, upload one candidate to the precreated Single Release.
 - If candidate cover images exist, upload them with the audio candidates.
 - If candidate lyrics exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. If a candidate is instrumental/BGM, leave lyrics empty. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, lyrics are expected by default unless the human explicitly asked for instrumental/no-vocal.
 - If the Suno style/settings are known, upload them with `--style`. Use one shared `--style` or one per candidate.
@@ -92,11 +93,20 @@ Goal:
 - Do not approve, reject, render, publish, or upload to YouTube.
 - Return release.id, release.title, and all uploaded track ids.
 
+Before opening Suno, run this first:
+
+scripts/openclaw-release create-release \
+  --workspace-mode single \
+  --release-title "RELEASE_TITLE" \
+  --description "Short concept for this single candidate set"
+
+Keep the returned `release.id`. All Suno outputs from this prompt must be uploaded to that same release.
+
 After audio generation, run one of these:
 
 For two Suno candidates:
 scripts/openclaw-release upload-single-candidates \
-  --release-title "RELEASE_TITLE" \
+  --release-id RELEASE_ID \
   --audio ABSOLUTE_AUDIO_PATH_A \
   --audio ABSOLUTE_AUDIO_PATH_B \
   --cover ABSOLUTE_COVER_PATH_A \
@@ -109,7 +119,7 @@ scripts/openclaw-release upload-single-candidates \
 
 For one candidate:
 scripts/openclaw-release upload-single-candidates \
-  --release-title "RELEASE_TITLE" \
+  --release-id RELEASE_ID \
   --audio ABSOLUTE_AUDIO_PATH \
   --cover ABSOLUTE_COVER_PATH \
   --lyrics-file ABSOLUTE_LYRICS_PATH \
@@ -165,7 +175,7 @@ Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use scripts/openclaw-release only.
 
 Goal:
-- Create or select one Single Release workspace before uploading Suno results.
+- Create or select one Single Release workspace before opening Suno or generating audio.
 - Generate an original standalone song/single.
 - If the human references an existing artist such as YOASOBI, treat it only as mood/style guidance. Do not copy melodies, lyrics, titles, or a specific song.
 - For J-pop/K-pop/pop/Japanese pop/anime-pop singles, generate a vocal song by default with original lyrics and a clear verse/pre-chorus/chorus structure. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not set instrumental/no-vocal unless the human explicitly asks for it.
@@ -188,6 +198,13 @@ Goal:
 - Render audio/video, generate and approve YouTube metadata, and upload privately.
 - Publish Japanese/J-pop/Tokyo content to `Tokyo Daydream Radio`.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
+
+First, before opening Suno, create the destination release:
+
+scripts/openclaw-release create-release \
+  --workspace-mode single \
+  --release-title "SINGLE_RELEASE_TITLE" \
+  --description "Short concept description for metadata generation."
 ```
 
 ### Run The Full Automation
@@ -196,7 +213,7 @@ After one generated audio file, final cover, text thumbnail, and optional 8 seco
 
 ```bash
 scripts/openclaw-release auto-publish-single \
-  --release-title "SINGLE_RELEASE_TITLE" \
+  --release-id RELEASE_ID \
   --description "Short concept description for metadata generation." \
   --audio ABSOLUTE_AUDIO_PATH \
   --title "INDEPENDENT_TRACK_TITLE" \
@@ -273,7 +290,7 @@ Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use scripts/openclaw-release only.
 
 Goal:
-- Create or select one Playlist Release workspace before uploading Suno results.
+- Create or select one Playlist Release workspace before opening Suno or generating audio.
 - Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental tracks by default and leave lyrics empty unless the human explicitly asks for vocals.
 - For J-pop/K-pop/pop/Japanese pop/anime-pop playlist requests, generate vocal songs by default with original lyrics for each track. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not make the batch instrumental/no-vocal unless the human explicitly asks for instrumental/BGM/lofi/no vocals.
@@ -307,6 +324,14 @@ Goal:
 - Generate and approve YouTube metadata.
 - Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for Japan-related releases; otherwise use `Soft Hour Radio`.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
+
+First, before opening Suno or submitting the first playlist prompt, create the destination release:
+
+scripts/openclaw-release create-release \
+  --workspace-mode playlist \
+  --release-title "PLAYLIST_TITLE" \
+  --target-seconds 3600 \
+  --description "Short mood/use-case description for metadata generation."
 ```
 
 ### Slack Command Example
@@ -333,7 +358,7 @@ After all generated audio files are ready, run one command:
 
 ```bash
 scripts/openclaw-release auto-publish-playlist \
-  --release-title "PLAYLIST_TITLE" \
+  --release-id RELEASE_ID \
   --description "Short mood/use-case description for metadata generation." \
   --audio ABSOLUTE_AUDIO_PATH_01 \
   --title "INDEPENDENT_TRACK_TITLE_01" \
