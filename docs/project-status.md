@@ -108,6 +108,7 @@ For `single_track_video`, the intended publish path is:
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
 - YouTube metadata can now store `ko`, `ja`, and `en` localized title/description drafts. Tokyo/J-pop releases should provide all three; the publish flow sends Korean as the default metadata and Japanese/English as YouTube localizations.
+- Playlist/BGM YouTube titles should include listening use cases directly in the title, such as study, work, walk, drive, sleep, reading, or rest, instead of only mood/genre wording.
 - Korean YouTube metadata must not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`; use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 - OpenClaw can get exact final-order timestamps through `scripts/openclaw-release metadata-context` and should use `display_timestamp_lines` in YouTube descriptions when available, so awkward `A` / `B` suffixes are not shown while timestamps stay fixed
 - When `AIMP_CODEX_METADATA_ENABLED=true`, the web `Generate Metadata` / `Regenerate Metadata Draft` actions ask the VM's local Codex CLI to write the YouTube title, description, and tags. The app limits this to one Codex run at a time and falls back to the template generator on CLI failure, timeout, or invalid JSON.

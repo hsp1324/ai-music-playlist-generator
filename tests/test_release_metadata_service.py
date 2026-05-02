@@ -156,6 +156,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "timeline_timestamp_format" in input
         assert "Japanese title plus Korean translation in parentheses" in input
         assert "never use the transliterated words" in input
+        assert "listening use cases directly in the title" in input
         output_path.write_text(
             json.dumps(
                 {
