@@ -1994,7 +1994,7 @@ function renderWorkspaceDetail() {
             ? "Use Approved Audio"
             : workspace.output_audio_path
             ? "Re-render Audio"
-            : "Render Playlist Audio",
+            : "Render Mix",
           "action-button secondary-button",
           async () => {
             await api(`/api/playlists/${workspace.id}/render-audio`, {
@@ -2015,7 +2015,7 @@ function renderWorkspaceDetail() {
     if (workspace.cover_image_path && !workspace.cover_approved) {
       appendDetailAction(
         detailActionGroups.visuals,
-        actionButton("Approve Cover, then Render Video", "action-button primary-button", async () => {
+        actionButton("Approve Cover", "action-button primary-button", async () => {
           await api(`/api/playlists/${workspace.id}/cover/approve`, {
             method: "POST",
             body: JSON.stringify({
@@ -2053,7 +2053,7 @@ function renderWorkspaceDetail() {
     appendDetailAction(
       detailActionGroups.visuals,
       actionButton(
-        workspace.loop_video_path ? "Replace 8s Loop Video" : "Upload 8s Loop Video",
+        workspace.loop_video_path ? "Replace Loop Video" : "Upload Loop Video",
         "action-button secondary-button",
         async () => {
           await pickLoopVideoFile(workspace);
@@ -2064,7 +2064,7 @@ function renderWorkspaceDetail() {
     appendDetailAction(
       detailActionGroups.visuals,
       actionButton(
-        workspace.cover_image_path ? "Generate New Draft Cover" : "Generate Draft Cover",
+        workspace.cover_image_path ? "New Draft Cover" : "Draft Cover",
         "action-button secondary-button",
         async () => {
           await api(`/api/playlists/${workspace.id}/cover/generate`, {
@@ -2153,7 +2153,7 @@ function renderWorkspaceDetail() {
     if (!metadataEditing) {
       appendDetailAction(
         detailActionGroups.metadata,
-        actionButton("Regenerate Metadata Draft", "action-button secondary-button", async () => {
+        actionButton("Regenerate Draft", "action-button secondary-button", async () => {
           const proceed = window.confirm("승인된 metadata를 새 초안으로 다시 생성할까요? 다시 승인해야 publish/re-upload할 수 있습니다.");
           if (!proceed) return;
           await api(`/api/playlists/${workspace.id}/metadata/generate`, {
