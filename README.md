@@ -311,7 +311,7 @@ Runtime behavior:
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
 Single releases can approve one candidate directly, or approve two related candidates as separate Single Releases before cover/video/publish.
-Track uploads can include optional `lyrics` content. The app stores it in track metadata and exposes it in release context so OpenClaw can later create better thumbnails, Dreamina loop videos, metadata, or standalone single releases from strong playlist tracks.
+Track uploads can include optional `lyrics` content. The app stores it in track metadata and exposes it in release context so OpenClaw can later create better thumbnails, Dreamina loop videos, metadata, or standalone single releases from strong playlist tracks. BGM/background/lofi/study/sleep/cafe production defaults to instrumental music with empty lyrics. J-pop/K-pop/pop/Japanese pop/anime-pop production defaults to vocal songs with lyrics, so OpenClaw should upload lyrics for every pop-family track unless the human explicitly requested instrumental/no-vocal music.
 
 ## Dreamina Loop Video
 

@@ -51,6 +51,8 @@ Lyrics/content behavior:
 
 - `--lyrics` or `--lyrics-file` is optional, but OpenClaw should provide it whenever Suno generated lyrics or meaningful song content.
 - If the track is instrumental or lyrics are unknown, omit the flag or pass an empty value.
+- BGM/background/lofi/study/sleep/cafe tracks are instrumental by default, so empty lyrics are correct unless the human explicitly asks for vocals.
+- J-pop/K-pop/pop/Japanese pop/anime-pop tracks are vocal by default. Unless the human explicitly requested instrumental/BGM/lofi/no vocals, create or capture original lyrics and pass them with `--lyrics` or `--lyrics-file` for every uploaded pop-family track. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop.
 - Lyrics are stored with the track so future thumbnail, Dreamina loop-video, metadata, or standalone single publishing work has song-content context.
 
 Style behavior:
@@ -110,7 +112,7 @@ The JSON result should include:
 Only use `--pending-review` if the human explicitly asks to review playlist tracks one by one.
 
 If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
-Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics are available. For instrumental tracks, empty lyrics are acceptable. Pass one shared `--style` or one `--style` per `--audio` whenever Suno style/settings are known.
+Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics are available. For BGM/background/instrumental tracks, empty lyrics are correct. For J-pop/K-pop/pop/Japanese pop/anime-pop releases, lyrics are expected by default and should be uploaded for every track unless the human explicitly requested instrumental/BGM/lofi/no vocals. Pass one shared `--style` or one `--style` per `--audio` whenever Suno style/settings are known.
 
 For full automatic playlist publishing, two final 16:9 images are required.
 
@@ -365,6 +367,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - If lyrics or meaningful song-content notes are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value for instrumentals or unknown lyrics.
+- For BGM/background/lofi/study/sleep/cafe singles and playlists, empty lyrics are the default. For J-pop/K-pop/pop/Japanese pop/anime-pop singles and playlists, do not leave lyrics empty by default. Generate/capture original lyrics and upload them; only use empty lyrics when the human explicitly asked for instrumental/no-vocal music or when Suno did not provide lyrics and OpenClaw reports that limitation.
 - If Suno style/settings are available, upload them in the same command with `--style`.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
