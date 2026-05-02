@@ -14,7 +14,7 @@ from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.release_metadata_service import ReleaseMetadataService, YouTubeMetadata
-from app.utils.youtube_localizations import normalize_youtube_localizations
+from app.utils.youtube_localizations import normalize_youtube_localizations, sanitize_youtube_copy
 
 
 class CodexMetadataService(ReleaseMetadataService):
@@ -97,9 +97,9 @@ class CodexMetadataService(ReleaseMetadataService):
                 raise RuntimeError("codex did not write a metadata output file")
 
             payload = self._parse_json_output(output_path.read_text(encoding="utf-8"))
-            title = str(payload.get("title") or "").strip()
+            title = sanitize_youtube_copy(payload.get("title")).strip()
             description = self._clean_description_timestamps(
-                str(payload.get("description") or "").strip(),
+                sanitize_youtube_copy(payload.get("description")).strip(),
                 tracks,
             )
             tags = self._normalize_tags(payload.get("tags") or [])
@@ -152,6 +152,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "Rules:",
                 "- Do not run shell commands or inspect files; use only the release context JSON below.",
                 "- Write primarily in Korean unless the release title strongly suggests another language.",
+                "- In Korean title/description/localizations, never use the transliterated words '인스트루멘털', '인스투르멘털', or '인스트루멘탈'. Use natural Korean such as 'BGM', '가사 없는 BGM', '보컬 없는 BGM', or '연주곡' instead.",
                 "- Also write localized YouTube metadata for Korean, Japanese, and English in localizations. Use language keys exactly: ko, ja, en.",
                 "- The ko localization should match the main title and description. The ja and en localizations should be natural translations/adaptations, not machine-looking literal copies.",
                 "- Keep title under 100 characters.",

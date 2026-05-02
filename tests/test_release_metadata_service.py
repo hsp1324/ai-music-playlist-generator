@@ -7,6 +7,7 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.codex_metadata_service import CodexMetadataService
 from app.services.release_metadata_service import ReleaseMetadataService
+from app.utils.youtube_localizations import normalize_youtube_localizations, sanitize_youtube_copy
 from app.workflows.playlist_automation import _normalize_youtube_tags
 from scripts.openclaw_release import release_timeline
 from app.utils.track_titles import upload_track_title
@@ -46,6 +47,21 @@ def test_metadata_approval_accepts_comma_separated_tags() -> None:
         "StudyMusic",
         "WorkMusic",
     ]
+
+
+def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:
+    assert sanitize_youtube_copy("숲길 산책 J-pop 감성 인스트루멘털 플레이리스트") == "숲길 산책 J-pop 감성 BGM 플레이리스트"
+    localizations = normalize_youtube_localizations(
+        {
+            "ko": {
+                "title": "해변 산책 인스투르멘털 1시간",
+                "description": "가사가 없는 인스트루멘털 음악입니다.",
+            }
+        }
+    )
+
+    assert localizations["ko"]["title"] == "해변 산책 BGM 1시간"
+    assert localizations["ko"]["description"] == "가사가 없는 BGM입니다."
 
 
 def test_openclaw_metadata_context_timeline_uses_final_order() -> None:
@@ -139,6 +155,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "Use prompt, style, tags, and lyrics as private creative context" in input
         assert "timeline_timestamp_format" in input
         assert "Japanese title plus Korean translation in parentheses" in input
+        assert "never use the transliterated words" in input
         output_path.write_text(
             json.dumps(
                 {

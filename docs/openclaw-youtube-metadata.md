@@ -23,6 +23,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - For tags, provide comma-separated plain tags without `#`, for example `Piano,CafePiano,StudyMusic,WorkMusic`.
 - Keep the title under 100 characters.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
+- In Korean titles/descriptions, never use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use natural Korean such as `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 - If the release is a playlist, include a timestamped tracklist from the final order.
 - Always run `scripts/openclaw-release metadata-context` first and use its timeline in the description.
 - `metadata-context` includes track `prompt`, `style`, `tags`, and `lyrics` when available. Use them as private creative context, but do not paste raw Suno settings into the public description.
@@ -55,6 +56,7 @@ Use `display_timestamp_lines` as the starting point when present.
 If a displayed title still reads like A/B, 1/2, or a paired alternative, rewrite only the title text so it is natural and unique.
 If the release is one hour or longer, keep all timestamps in HH:MM:SS form, including 00:00:00 at the first row.
 For Japan/J-pop/Tokyo Daydream Radio releases, write Korean, Japanese, and English descriptions. In the Korean/default tracklist, use Japanese title plus Korean translation in parentheses. In the Japanese tracklist, use Japanese title only. In the English tracklist, use English title only.
+In Korean title/description/localizations, never write `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Say `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 Write metadata in this shape:
 
 Title:

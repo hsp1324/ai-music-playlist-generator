@@ -7,6 +7,31 @@ DEFAULT_YOUTUBE_LANGUAGE = "ko"
 SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en")
 
 
+def sanitize_youtube_copy(value: Any) -> str:
+    text = str(value or "")
+    replacements = (
+        ("가사가 없는 인스투르멘털 음악", "가사가 없는 BGM"),
+        ("가사가 없는 인스트루멘털 음악", "가사가 없는 BGM"),
+        ("보컬 없는 인스투르멘털 음악", "보컬 없는 BGM"),
+        ("보컬 없는 인스트루멘털 음악", "보컬 없는 BGM"),
+        ("J-pop 감성 인스투르멘털", "J-pop 감성 BGM"),
+        ("J-pop 감성 인스트루멘털", "J-pop 감성 BGM"),
+        ("인스투르멘털 J-pop", "가사 없는 J-pop 감성 BGM"),
+        ("인스트루멘털 J-pop", "가사 없는 J-pop 감성 BGM"),
+        ("인스투르멘털 음악", "가사 없는 BGM"),
+        ("인스트루멘털 음악", "가사 없는 BGM"),
+        ("인스투르멘털 플레이리스트", "BGM 플레이리스트"),
+        ("인스트루멘털 플레이리스트", "BGM 플레이리스트"),
+        ("인스투르멘탈", "BGM"),
+        ("인스트루멘탈", "BGM"),
+        ("인스투르멘털", "BGM"),
+        ("인스트루멘털", "BGM"),
+    )
+    for source, target in replacements:
+        text = text.replace(source, target)
+    return text
+
+
 def normalize_youtube_language(value: Any, *, fallback: str = DEFAULT_YOUTUBE_LANGUAGE) -> str:
     language = str(value or "").strip().lower().replace("_", "-")
     if language in SUPPORTED_YOUTUBE_LANGUAGES:
@@ -28,16 +53,16 @@ def normalize_youtube_localizations(
             language = normalize_youtube_language(raw_language, fallback="")
             if language not in SUPPORTED_YOUTUBE_LANGUAGES or not isinstance(raw_payload, dict):
                 continue
-            title = str(raw_payload.get("title") or "").strip()
-            description = str(raw_payload.get("description") or "").strip()
+            title = sanitize_youtube_copy(raw_payload.get("title")).strip()
+            description = sanitize_youtube_copy(raw_payload.get("description")).strip()
             if title and description:
                 result[language] = {
                     "title": title[:100],
                     "description": description,
                 }
 
-    fallback_title = str(default_title or "").strip()
-    fallback_description = str(default_description or "").strip()
+    fallback_title = sanitize_youtube_copy(default_title).strip()
+    fallback_description = sanitize_youtube_copy(default_description).strip()
     if fallback_title and fallback_description and default_language not in result:
         result[default_language] = {
             "title": fallback_title[:100],

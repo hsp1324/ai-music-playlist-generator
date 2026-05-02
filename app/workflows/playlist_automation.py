@@ -14,6 +14,7 @@ from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
     normalize_youtube_language,
     normalize_youtube_localizations,
+    sanitize_youtube_copy,
 )
 
 
@@ -1070,8 +1071,8 @@ def generate_playlist_metadata(
         }
     )
     meta["metadata_history"] = history
-    meta["youtube_title"] = youtube_metadata.title
-    meta["youtube_description"] = youtube_metadata.description
+    meta["youtube_title"] = sanitize_youtube_copy(youtube_metadata.title)[:100]
+    meta["youtube_description"] = sanitize_youtube_copy(youtube_metadata.description)
     meta["youtube_tags"] = youtube_metadata.tags
     meta["youtube_default_language"] = normalize_youtube_language(
         getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
@@ -1124,9 +1125,9 @@ def approve_playlist_metadata(
 
     meta = _playlist_meta(playlist)
     if title is not None:
-        meta["youtube_title"] = title[:100]
+        meta["youtube_title"] = sanitize_youtube_copy(title)[:100]
     if description is not None:
-        meta["youtube_description"] = description
+        meta["youtube_description"] = sanitize_youtube_copy(description)
     if tags is not None:
         meta["youtube_tags"] = _normalize_youtube_tags(tags)
     default_language = normalize_youtube_language(default_language or meta.get("youtube_default_language"))

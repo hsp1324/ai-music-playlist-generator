@@ -19,6 +19,7 @@ from app.utils.youtube_localizations import (
     localizations_for_youtube_api,
     normalize_youtube_language,
     normalize_youtube_localizations,
+    sanitize_youtube_copy,
 )
 
 
@@ -215,6 +216,8 @@ class YouTubeService:
 
         youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
         default_language = normalize_youtube_language(default_language)
+        title = sanitize_youtube_copy(title)[:100]
+        description = sanitize_youtube_copy(description)
         normalized_localizations = normalize_youtube_localizations(
             localizations,
             default_title=title,
