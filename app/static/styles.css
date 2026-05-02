@@ -993,23 +993,20 @@ button:disabled {
 }
 
 .detail-action-groups {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  align-items: stretch;
-  overflow-x: auto;
-  padding: 2px 2px 6px;
-  scrollbar-width: thin;
+  align-items: start;
 }
 
 .detail-action-group {
-  flex: 0 0 auto;
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  min-width: max-content;
-  padding: 6px 8px;
+  display: grid;
+  gap: 7px;
+  align-content: start;
+  min-width: 0;
+  padding: 8px;
   border: 1.5px solid var(--line-soft);
-  border-radius: 999px;
+  border-radius: 16px;
   background: rgba(255, 248, 234, 0.84);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
@@ -1019,19 +1016,22 @@ button:disabled {
 }
 
 .detail-action-group-title {
-  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
   color: var(--muted);
   font-family: "Archivo", "Noto Sans KR", sans-serif;
   font-size: 0.6rem;
   font-weight: 900;
   letter-spacing: 0.12em;
   line-height: 1;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .detail-action-group-buttons {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
   align-items: center;
   justify-content: flex-start;
@@ -1048,8 +1048,8 @@ button:disabled {
 
 .detail-action-group .publish-channel-picker,
 .detail-action-group .manual-upload-box {
-  flex: 0 0 auto;
-  width: min(280px, 72vw);
+  flex: 1 1 100%;
+  width: 100%;
 }
 
 .detail-action-group .publish-channel-picker select {
@@ -2066,6 +2066,10 @@ select:focus {
   }
 
   .workspace-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-action-groups {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
