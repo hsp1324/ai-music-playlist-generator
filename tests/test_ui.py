@@ -9,5 +9,5 @@ def test_root_serves_ui_console() -> None:
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "AI Music Workspace" in response.text
+    assert "Release Console" in response.text
     assert "/assets/app.js" in response.text

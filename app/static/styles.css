@@ -78,28 +78,30 @@ button:disabled {
   z-index: 1;
   width: min(1640px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 28px 0 72px;
+  padding: 18px 0 72px;
 }
 
 .app-header {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
-  gap: 24px;
-  align-items: stretch;
-  padding: 28px;
-  border: 3px solid var(--line);
-  border-radius: var(--radius-xl);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 26px;
   background:
-    linear-gradient(135deg, rgba(213, 106, 45, 0.16), transparent 34%),
-    linear-gradient(150deg, var(--studio) 0%, var(--studio-2) 62%, #382514 100%);
+    linear-gradient(135deg, rgba(213, 106, 45, 0.2), transparent 42%),
+    linear-gradient(150deg, var(--studio) 0%, var(--studio-2) 100%);
   color: #fff8ea;
-  box-shadow: var(--shadow-hard), var(--shadow-soft);
+  box-shadow: 5px 5px 0 rgba(23, 19, 15, 0.92), var(--shadow-soft);
 }
 
 .hero-copy {
-  display: grid;
-  align-content: center;
-  min-height: 210px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  min-height: 0;
 }
 
 .app-kicker,
@@ -136,40 +138,43 @@ button:disabled {
 
 .app-title {
   max-width: 900px;
-  font-size: clamp(3.1rem, 7vw, 7.8rem);
-  line-height: 0.86;
+  font-size: clamp(1.8rem, 4vw, 3.4rem);
+  line-height: 0.92;
   text-transform: uppercase;
 }
 
 .hero-lede {
-  max-width: 680px;
-  margin: 22px 0 0;
+  max-width: none;
+  margin: 0;
   color: rgba(255, 248, 234, 0.78);
-  font-size: clamp(1rem, 1.5vw, 1.18rem);
-  line-height: 1.75;
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .toolbar {
-  align-self: end;
-  display: grid;
-  gap: 14px;
-  padding: 18px;
-  border: 2px solid rgba(255, 248, 234, 0.26);
-  border-radius: 28px;
-  background: rgba(255, 248, 234, 0.08);
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   backdrop-filter: blur(16px);
 }
 
 .toolbar-summary {
-  min-height: 74px;
+  min-height: 44px;
   display: grid;
   align-items: center;
-  padding: 18px;
-  border-radius: 22px;
+  padding: 0 14px;
+  border-radius: 999px;
   background: #fff8ea;
   color: var(--ink);
   font-family: "Archivo", "Noto Sans KR", sans-serif;
-  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-size: 0.82rem;
   font-weight: 800;
 }
 
@@ -273,9 +278,15 @@ button:disabled {
 
 .quick-upload-panel {
   display: grid;
-  grid-template-columns: 0.85fr 1.1fr 0.9fr;
-  gap: 18px;
-  margin: 30px 0 24px;
+  grid-template-columns: 0.6fr 1fr 1.1fr;
+  gap: 10px;
+  align-items: stretch;
+  margin: 14px 0 18px;
+  padding: 10px;
+  border: 2px solid var(--line);
+  border-radius: 28px;
+  background: rgba(255, 249, 238, 0.74);
+  box-shadow: 5px 5px 0 rgba(23, 19, 15, 0.68);
 }
 
 .quick-upload-copy,
@@ -296,15 +307,17 @@ button:disabled {
 .quick-upload-copy,
 .upload-dropzone,
 .quick-upload-controls {
-  min-height: 220px;
-  padding: 22px;
+  min-height: 132px;
+  padding: 14px;
+  box-shadow: none;
 }
 
 .quick-upload-copy {
   display: grid;
-  align-content: space-between;
+  align-content: center;
+  gap: 8px;
   background:
-    linear-gradient(135deg, rgba(241, 181, 71, 0.42), transparent 50%),
+    linear-gradient(135deg, rgba(241, 181, 71, 0.34), transparent 60%),
     var(--panel);
 }
 
@@ -331,13 +344,14 @@ button:disabled {
 
 .upload-dropzone {
   display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 10px;
-  text-align: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  place-items: stretch;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
   border-style: dashed;
   background:
-    radial-gradient(circle at 50% 0%, rgba(213, 106, 45, 0.25), transparent 46%),
+    radial-gradient(circle at 0% 0%, rgba(213, 106, 45, 0.25), transparent 46%),
     linear-gradient(180deg, #fffaf1, #f4e4c9);
 }
 
@@ -352,19 +366,37 @@ button:disabled {
 .upload-dropzone-title {
   margin: 0;
   font-family: "Archivo", "Noto Sans KR", sans-serif;
-  font-size: clamp(1.8rem, 3vw, 3.1rem);
+  font-size: clamp(1.2rem, 2vw, 1.8rem);
   font-weight: 800;
-  letter-spacing: -0.055em;
-  line-height: 0.92;
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
 .upload-dropzone-copy {
-  margin: 0 0 8px;
+  margin: 5px 0 0;
+}
+
+.upload-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .quick-upload-controls {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.quick-upload-controls label {
+  margin: 0;
+}
+
+.quick-upload-controls .quick-upload-file-list,
+.quick-upload-controls .compact-status {
+  grid-column: 1 / -1;
 }
 
 .quick-upload-file-list,
@@ -377,14 +409,26 @@ button:disabled {
 }
 
 .quick-upload-file-list {
-  min-height: 58px;
-  padding: 13px 14px;
+  min-height: 42px;
+  max-height: 104px;
+  overflow: auto;
+  padding: 10px 12px;
   color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.quick-upload-file-list.empty {
+  display: grid;
+  align-items: center;
 }
 
 .compact-status {
-  min-height: 64px;
+  min-height: 44px;
+  max-height: 110px;
   margin: 0;
+  overflow: auto;
+  font-size: 0.78rem;
 }
 
 .utility-drawer {
@@ -1943,11 +1987,23 @@ select:focus {
   }
 
   .app-title {
-    font-size: clamp(2.8rem, 17vw, 4.9rem);
+    font-size: clamp(1.9rem, 12vw, 3rem);
   }
 
   .hero-copy {
-    min-height: 250px;
+    min-height: 0;
+  }
+
+  .app-header,
+  .toolbar,
+  .quick-upload-controls,
+  .upload-dropzone {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar,
+  .upload-picker-actions {
+    justify-content: flex-start;
   }
 
   .workspace-grid,

@@ -1474,19 +1474,32 @@ function renderQuickUploadFiles() {
   if (!quickUploadFileList) return;
   if (!quickUploadFiles.length && !quickUploadCoverFiles.length) {
     quickUploadFileList.textContent = "No files selected.";
+    quickUploadFileList.classList.add("empty");
     return;
   }
-  const lines = [];
+  quickUploadFileList.classList.remove("empty");
+  const audioCount = quickUploadFiles.length;
+  const coverCount = quickUploadCoverFiles.length;
+  const matchedCount = quickUploadFiles.filter((file, index) => matchingQuickUploadCover(file, index)).length;
+  const summary = [`Audio ${audioCount}`];
+  if (coverCount) summary.push(`Covers ${coverCount}`);
+  if (matchedCount) summary.push(`Matched ${matchedCount}`);
+  const lines = [summary.join(" · ")];
   if (quickUploadFiles.length) {
-    lines.push("Audio:");
-    quickUploadFiles.forEach((file, index) => {
+    lines.push("");
+    quickUploadFiles.slice(0, 4).forEach((file, index) => {
       const cover = matchingQuickUploadCover(file, index);
-      lines.push(`${index + 1}. ${file.name}${cover ? ` + cover ${cover.name}` : ""}`);
+      lines.push(`${index + 1}. ${file.name}${cover ? ` + ${cover.name}` : ""}`);
     });
-  }
-  if (quickUploadCoverFiles.length) {
-    lines.push("Covers:");
-    quickUploadCoverFiles.forEach((file, index) => lines.push(`${index + 1}. ${file.name}`));
+    if (quickUploadFiles.length > 4) {
+      lines.push(`+ ${quickUploadFiles.length - 4} more`);
+    }
+  } else if (quickUploadCoverFiles.length) {
+    lines.push("");
+    quickUploadCoverFiles.slice(0, 3).forEach((file, index) => lines.push(`${index + 1}. ${file.name}`));
+    if (quickUploadCoverFiles.length > 3) {
+      lines.push(`+ ${quickUploadCoverFiles.length - 3} more`);
+    }
   }
   quickUploadFileList.textContent = lines.join("\n");
 }

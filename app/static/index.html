@@ -10,17 +10,15 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260502b" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260502c" />
   </head>
   <body>
     <div class="shell">
       <header class="app-header">
         <div class="hero-copy">
-          <p class="app-kicker">AI Music Workspace</p>
-          <h1 class="app-title">Release Control Room</h1>
-          <p class="hero-lede">
-            Single과 Playlist를 같은 파이프라인에서 관리하고, 각 release가 지금 어느 단계인지 바로 확인합니다.
-          </p>
+          <p class="app-kicker">Release Console</p>
+          <h1 class="app-title">AI Music</h1>
+          <p class="hero-lede">Upload, review, render, publish.</p>
         </div>
         <section class="toolbar" aria-label="Primary toolbar">
           <button id="menu-toggle-button" class="toolbar-button menu-button" type="button" aria-expanded="false">
@@ -37,16 +35,20 @@
       <section class="quick-upload-panel">
         <div class="quick-upload-copy">
           <p class="section-kicker">Intake</p>
-          <h2>새 음악을 release 큐로 보내기</h2>
-          <p class="detail-copy">Single은 한 곡, Playlist는 여러 곡을 검수한 뒤 같은 Cover/Video/YouTube 단계로 이어집니다.</p>
+          <h2>Upload Music</h2>
+          <p class="detail-copy">Audio와 cover를 넣고 release만 선택하세요.</p>
         </div>
         <div id="upload-dropzone" class="upload-dropzone" tabindex="0">
           <input id="quick-upload-input" type="file" accept="audio/*" multiple hidden />
           <input id="quick-upload-cover-input" type="file" accept="image/*" multiple hidden />
-          <p class="upload-dropzone-title">Drop audio here</p>
-          <p class="upload-dropzone-copy">MP3와 optional cover 이미지를 같이 올릴 수 있습니다.</p>
-          <button id="quick-upload-pick-button" class="toolbar-button" type="button">Choose Files</button>
-          <button id="quick-upload-cover-pick-button" class="toolbar-button" type="button">Choose Covers</button>
+          <div>
+            <p class="upload-dropzone-title">Drop files</p>
+            <p class="upload-dropzone-copy">MP3 + optional cover</p>
+          </div>
+          <div class="upload-picker-actions">
+            <button id="quick-upload-pick-button" class="toolbar-button" type="button">Audio</button>
+            <button id="quick-upload-cover-pick-button" class="toolbar-button" type="button">Cover</button>
+          </div>
         </div>
         <div class="quick-upload-controls">
           <label>
@@ -55,7 +57,7 @@
               <option value="">Choose release</option>
             </select>
           </label>
-          <button id="quick-upload-submit-button" class="action-button primary-button" type="button">Upload Audio</button>
+          <button id="quick-upload-submit-button" class="action-button primary-button" type="button">Upload</button>
           <div id="quick-upload-file-list" class="quick-upload-file-list">No files selected.</div>
           <pre id="quick-upload-status" class="status-box compact-status">대기 중</pre>
         </div>
