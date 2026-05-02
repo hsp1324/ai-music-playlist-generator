@@ -1,6 +1,7 @@
 import subprocess
 import time
 from dataclasses import dataclass
+from math import ceil
 from mimetypes import guess_type
 from pathlib import Path
 from selectors import EVENT_READ, DefaultSelector
@@ -338,13 +339,16 @@ class FFMpegPlaylistBuilder:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         loop_source_path = clip_path
         loop_unit_path: Path | None = None
+        concat_list_path: Path | None = None
         command: list[str]
         if smooth_loop:
             intro_path, loop_unit_path = self._build_smooth_loop_assets(clip_path, output_path)
-            loop_filter = (
-                "[0:v]setpts=PTS-STARTPTS[intro];"
-                "[1:v]fps=30,setpts=N/(30*TB)[loop];"
-                "[intro][loop]concat=n=2:v=1:a=0,format=yuv420p[loopv]"
+            concat_list_path = self._write_loop_concat_list(
+                intro_path,
+                loop_unit_path,
+                output_path,
+                total_duration_seconds=total_duration_seconds,
+                audio_path=audio_path,
             )
             command = [
                 self.settings.ffmpeg_binary,
@@ -353,26 +357,20 @@ class FFMpegPlaylistBuilder:
                 "-nostats",
                 "-progress",
                 "pipe:1",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
                 "-i",
-                str(intro_path),
-                "-stream_loop",
-                "-1",
-                "-i",
-                str(loop_unit_path),
+                str(concat_list_path),
                 "-i",
                 str(audio_path),
-                "-filter_complex",
-                loop_filter,
                 "-map",
-                "[loopv]",
+                "0:v:0",
                 "-map",
-                "2:a:0",
+                "1:a:0",
                 "-c:v",
-                "libx264",
-                "-preset",
-                "veryfast",
-                "-pix_fmt",
-                "yuv420p",
+                "copy",
                 "-c:a",
                 "aac",
                 "-b:a",
@@ -426,9 +424,63 @@ class FFMpegPlaylistBuilder:
         finally:
             if loop_unit_path:
                 loop_unit_path.unlink(missing_ok=True)
+            if concat_list_path:
+                concat_list_path.unlink(missing_ok=True)
             if smooth_loop:
                 intro_path.unlink(missing_ok=True)
         return output_path
+
+    def _write_loop_concat_list(
+        self,
+        intro_path: Path,
+        loop_unit_path: Path,
+        output_path: Path,
+        *,
+        total_duration_seconds: int | float | None,
+        audio_path: Path,
+    ) -> Path:
+        total_duration = float(total_duration_seconds or 0)
+        if total_duration <= 0:
+            total_duration = self._probe_media_duration(audio_path)
+        if total_duration <= 0:
+            total_duration = LOOP_VIDEO_SOURCE_SECONDS
+
+        intro_duration = LOOP_VIDEO_SOURCE_SECONDS - LOOP_VIDEO_TRANSITION_SECONDS
+        loop_unit_duration = intro_duration
+        repeat_count = max(1, ceil(max(total_duration - intro_duration, 0) / loop_unit_duration) + 1)
+        list_path = output_path.with_name(f"{output_path.stem}-loop-concat.txt")
+
+        def escape_concat_path(path: Path) -> str:
+            return str(path).replace("'", "'\\''")
+
+        lines = [f"file '{escape_concat_path(intro_path)}'"]
+        lines.extend(f"file '{escape_concat_path(loop_unit_path)}'" for _ in range(repeat_count))
+        list_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        return list_path
+
+    def _probe_media_duration(self, media_path: Path) -> float:
+        ffprobe_binary = str(Path(self.settings.ffmpeg_binary).with_name("ffprobe"))
+        if not Path(ffprobe_binary).exists():
+            ffprobe_binary = "ffprobe"
+        try:
+            result = subprocess.run(
+                [
+                    ffprobe_binary,
+                    "-v",
+                    "error",
+                    "-show_entries",
+                    "format=duration",
+                    "-of",
+                    "default=noprint_wrappers=1:nokey=1",
+                    str(media_path),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return max(float(result.stdout.strip()), 0.0)
+        except (OSError, subprocess.CalledProcessError, ValueError):
+            return 0.0
 
     def _build_smooth_loop_assets(self, clip_path: Path, output_path: Path) -> tuple[Path, Path]:
         intro_path = output_path.with_name(f"{output_path.stem}-loop-intro.mp4")

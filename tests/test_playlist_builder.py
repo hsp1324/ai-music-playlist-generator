@@ -46,6 +46,7 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
 
 def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> None:
     calls_path = tmp_path / "ffmpeg-calls.jsonl"
+    concat_path = tmp_path / "concat-list.txt"
     ffmpeg_path = tmp_path / "fake-ffmpeg.py"
     ffmpeg_path.write_text(
         "\n".join(
@@ -56,6 +57,9 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
                 "import sys",
                 f"with pathlib.Path({str(calls_path)!r}).open('a', encoding='utf-8') as handle:",
                 "    handle.write(json.dumps(sys.argv[1:]) + '\\n')",
+                "for arg in sys.argv[1:]:",
+                "    if arg.endswith('-loop-concat.txt') and pathlib.Path(arg).exists():",
+                f"        pathlib.Path({str(concat_path)!r}).write_text(pathlib.Path(arg).read_text(encoding='utf-8'), encoding='utf-8')",
                 "pathlib.Path(sys.argv[-1]).write_bytes(b'fake-video')",
             ]
         ),
@@ -103,9 +107,14 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
     assert "concat=n=2:v=1:a=0" in loop_unit_filter
 
     render_call = calls[5]
-    assert render_call[render_call.index("-stream_loop") + 1] == "-1"
-    render_filter = render_call[render_call.index("-filter_complex") + 1]
-    assert "concat=n=2:v=1:a=0" in render_filter
-    assert render_call[render_call.index("-map") + 1] == "[loopv]"
-    assert "2:a:0" in render_call
+    assert render_call[render_call.index("-f") + 1] == "concat"
+    assert render_call[render_call.index("-safe") + 1] == "0"
+    assert "-filter_complex" not in render_call
+    assert "-stream_loop" not in render_call
+    assert render_call[render_call.index("-c:v") + 1] == "copy"
+    assert render_call[render_call.index("-map") + 1] == "0:v:0"
+    assert "1:a:0" in render_call
+    concat_lines = concat_path.read_text(encoding="utf-8").splitlines()
+    assert concat_lines[0].endswith("-loop-intro.mp4'")
+    assert all(line.endswith("-loop-unit.mp4'") for line in concat_lines[1:])
     assert output_path.read_bytes() == b"fake-video"
