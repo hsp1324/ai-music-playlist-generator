@@ -229,6 +229,7 @@ For automatic playlist publishing, `scripts/openclaw-release auto-publish-playli
 - Use `Tokyo Daydream Radio` for Japan, Tokyo, Shibuya, Shinjuku, Japanese lofi, city pop, J-pop, anime, vaporwave, 일본, 도쿄, 시티팝, 애니, 제이팝, 日本, 東京, 渋谷, 新宿, アニメ, or シティポップ concepts.
 - Pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly when the human asks for Japanese/Tokyo/city-pop/anime music.
 - Do not use `MusicSun` unless the human explicitly requests it.
+- After publish, `/api/playlists/workspaces` exposes `youtube_video_id`, `youtube_channel_id`, and `youtube_channel_title`. OpenClaw can use those fields to confirm which channel received the private upload; web UI layout changes do not affect OpenClaw because it should use the helper script or local API, not click the dashboard.
 
 ## Web Review Surface
 

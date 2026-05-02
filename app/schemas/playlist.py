@@ -154,6 +154,8 @@ class PlaylistWorkspaceRead(BaseModel):
     metadata_provider: str | None = None
     metadata_generation_error: str | None = None
     youtube_video_id: str | None
+    youtube_channel_id: str | None = None
+    youtube_channel_title: str | None = None
     note: str | None = None
     render_job: PlaylistJobRead | None = None
     created_at: datetime

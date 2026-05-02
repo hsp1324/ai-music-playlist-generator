@@ -220,6 +220,11 @@ function releaseOptionLabel(workspace) {
   return `${displayTitle(workspace.title)} · ${isSingleRelease(workspace) ? "Single" : "Playlist"}`;
 }
 
+function releasePublishedChannelLabel(workspace) {
+  if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
+  return workspace.youtube_channel_title || workspace.youtube_channel_id || "YouTube";
+}
+
 function releaseArtworkUrl(workspace) {
   const trackImage = workspace?.tracks?.find((track) => track.metadata_json?.image_url)?.metadata_json?.image_url;
   return normalizeMediaUrl(workspace?.cover_image_path || workspace?.youtube_thumbnail_path || trackImage || "");
@@ -1776,9 +1781,15 @@ function renderWorkspaceTiles() {
     renderPipeline(pipeline, workspace, { compact: true });
     next.textContent = currentStage?.detail || "Next action is ready.";
 
-    hint.textContent = workspace.workspace_mode === "single_track_video"
-      ? "Approve one or both candidates"
-      : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
+    const publishedChannel = releasePublishedChannelLabel(workspace);
+    if (publishedChannel) {
+      hint.textContent = `Published · ${publishedChannel}`;
+      hint.classList.add("published-hint");
+    } else {
+      hint.textContent = workspace.workspace_mode === "single_track_video"
+        ? "Approve one or both candidates"
+        : `${formatDuration(workspace.actual_duration_seconds)} / ${formatDuration(workspace.target_duration_seconds)}`;
+    }
 
     moreButton.textContent = "Open";
     moreButton.addEventListener("click", (event) => {

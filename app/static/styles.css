@@ -796,12 +796,17 @@ button:disabled {
 
 .workspace-hint {
   min-width: 0;
-  max-width: 150px;
+  max-width: 210px;
   overflow: hidden;
   color: var(--muted);
   font-size: 0.74rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.workspace-hint.published-hint {
+  color: var(--green);
+  font-weight: 800;
 }
 
 .workspace-tile .more-button,

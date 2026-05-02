@@ -245,6 +245,8 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         metadata_provider=meta.get("metadata_provider"),
         metadata_generation_error=meta.get("metadata_generation_error"),
         youtube_video_id=playlist.youtube_video_id,
+        youtube_channel_id=meta.get("youtube_channel_id"),
+        youtube_channel_title=meta.get("youtube_channel_title"),
         note=meta.get("note"),
         render_job=_latest_render_job(playlist),
         created_at=playlist.created_at,
