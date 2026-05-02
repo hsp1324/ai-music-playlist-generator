@@ -2178,6 +2178,7 @@ def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypa
     assert captured["body"]["snippet"]["defaultLanguage"] == "ko"
     assert captured["body"]["status"]["privacyStatus"] == "private"
     assert captured["body"]["status"]["containsSyntheticMedia"] is False
+    assert captured["body"]["status"]["selfDeclaredMadeForKids"] is False
     assert captured["body"]["localizations"] == {
         "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
         "en": {"title": "English Title", "description": "English description"},

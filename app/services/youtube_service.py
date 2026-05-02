@@ -243,6 +243,7 @@ class YouTubeService:
             "status": {
                 "privacyStatus": self.settings.youtube_privacy_status,
                 "containsSyntheticMedia": self.settings.youtube_contains_synthetic_media,
+                "selfDeclaredMadeForKids": False,
             },
         }
         parts = ["snippet", "status"]
