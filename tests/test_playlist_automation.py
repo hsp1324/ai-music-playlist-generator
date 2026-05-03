@@ -301,6 +301,26 @@ def test_manual_upload_requires_audio_source(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_manual_upload_rejects_empty_audio_file(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+
+        response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Empty Audio",
+                "prompt": "manual upload",
+                "duration_seconds": "123",
+            },
+            files={"audio_file": ("empty.mp3", b"", "audio/mpeg")},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Uploaded audio file is empty."
+    finally:
+        clear_isolated_client_env()
+
+
 def test_manual_upload_deduplicates_original_filename(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
