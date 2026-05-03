@@ -315,6 +315,7 @@ Single releases can approve one candidate directly, or approve two related candi
 Track uploads can include optional `lyrics` content. The app stores it in track metadata and exposes it in release context so OpenClaw can later create better thumbnails, Dreamina loop videos, metadata, or standalone single releases from strong playlist tracks. BGM/background/lofi/study/sleep/cafe production defaults to instrumental music with empty lyrics. J-pop/K-pop/pop/Japanese pop/anime-pop production defaults to vocal songs with lyrics, so OpenClaw should upload lyrics for every pop-family track unless the human explicitly requested instrumental/no-vocal music.
 
 Uploaded local audio is probed with `ffprobe`; the app uses the real file duration when available and rejects empty uploads. Playlist audio rendering also validates source files and fails if the final rendered MP3 is materially shorter than the uploaded tracks, so corrupt or 0-byte files are caught before YouTube publishing.
+OpenClaw helper uploads retry each audio file up to 3 times. If a playlist track still fails, the helper sends a Slack warning, continues uploading the remaining tracks, and stops before render/publish until the failed source is re-uploaded.
 
 ## Dreamina Loop Video
 

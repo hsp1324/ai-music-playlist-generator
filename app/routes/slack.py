@@ -5,6 +5,7 @@ from urllib.parse import parse_qs
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -24,6 +25,12 @@ from app.workflows.playlist_automation import (
 from app.workflows.slack_sync import sync_slack_review_decision
 
 router = APIRouter(prefix="/slack", tags=["slack"])
+
+
+class SlackNotifyRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=3000)
+    team_id: str | None = None
+    channel_id: str | None = None
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -102,6 +109,29 @@ async def list_installations(
         }
         for installation in installations
     ]
+
+
+@router.post("/notify")
+async def slack_notify(
+    payload: SlackNotifyRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    services = get_services(request)
+    token = _bot_token_for_team(services, db, payload.team_id)
+    result = await services.slack.post_plain_message(
+        text=payload.text,
+        token=token,
+        channel=payload.channel_id,
+    )
+    return JSONResponse(
+        {
+            "ok": result.ok,
+            "channel": result.channel,
+            "ts": result.ts,
+            "raw": result.raw,
+        }
+    )
 
 
 @router.post("/events")

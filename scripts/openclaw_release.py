@@ -22,6 +22,7 @@ from app.utils.track_titles import clean_track_display_title, display_track_titl
 
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
+MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 JAPAN_CHANNEL_KEYWORDS = (
@@ -124,6 +125,48 @@ def request_json(client: httpx.Client, method: str, path: str, **kwargs) -> Any:
         detail = payload.get("detail") if isinstance(payload, dict) else payload
         raise RuntimeError(f"{response.status_code} {response.reason_phrase}: {detail}")
     return payload
+
+
+def notify_slack(client: httpx.Client, text: str) -> dict[str, Any]:
+    try:
+        return request_json(client, "POST", "/slack/notify", json={"text": text})
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": str(exc)}
+
+
+def upload_failure_notice(
+    *,
+    release: dict[str, Any],
+    failures: list[dict[str, str]],
+    uploaded_count: int,
+    action: str,
+) -> str:
+    release_title = release.get("title") or release.get("id") or "unknown release"
+    lines = [
+        "*OpenClaw audio upload problem*",
+        f"Release: `{release_title}`",
+        f"Action: `{action}`",
+        f"Uploaded remaining tracks: `{uploaded_count}`",
+        f"Failed after {MAX_AUDIO_UPLOAD_ATTEMPTS} attempts:",
+    ]
+    for failure in failures[:10]:
+        title = failure.get("title") or Path(failure.get("audio_path") or "").name
+        audio_name = Path(failure.get("audio_path") or "").name
+        error = failure.get("error") or "unknown error"
+        lines.append(f"- `{title}` (`{audio_name}`): {error[:300]}")
+    if len(failures) > 10:
+        lines.append(f"- ...and {len(failures) - 10} more")
+    lines.append("Render/publish was stopped. Re-download or re-export the failed source files and upload them again.")
+    return "\n".join(lines)
+
+
+def validate_local_audio_file(audio_path: Path) -> None:
+    if not audio_path.exists():
+        raise RuntimeError(f"Audio file does not exist: {audio_path}")
+    if not audio_path.is_file():
+        raise RuntimeError(f"Audio path is not a file: {audio_path}")
+    if audio_path.stat().st_size <= 0:
+        raise RuntimeError(f"Audio file is empty: {audio_path}")
 
 
 def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
@@ -350,36 +393,54 @@ def upload_audio_file_to_release(
     style: str = "",
     cover_path: Path | None = None,
     dispatch_review: bool = True,
+    attempts: int = MAX_AUDIO_UPLOAD_ATTEMPTS,
 ) -> dict[str, Any]:
+    validate_local_audio_file(audio_path)
     content_type = mimetypes.guess_type(str(audio_path))[0] or "audio/mpeg"
-    files: dict[str, tuple[str, Any, str]] = {}
-    with audio_path.open("rb") as handle:
-        files["audio_file"] = (audio_path.name, handle, content_type)
-        cover_handle = None
-        if cover_path:
-            cover_content_type = mimetypes.guess_type(str(cover_path))[0] or "image/png"
-            cover_handle = cover_path.open("rb")
-            files["cover_file"] = (cover_path.name, cover_handle, cover_content_type)
-        try:
-            return request_json(
-                client,
-                "POST",
-                "/tracks/manual-upload",
-                data={
-                    "title": title,
-                    "prompt": prompt or "OpenClaw generated audio upload",
-                    "duration_seconds": "0",
-                    "pending_workspace_id": release_id,
-                    "tags": tags or "",
-                    "lyrics": lyrics or "",
-                    "style": style or "",
-                    "dispatch_review": str(dispatch_review).lower(),
-                },
-                files=files,
-            )
-        finally:
-            if cover_handle:
-                cover_handle.close()
+    last_error: Exception | None = None
+    for attempt in range(1, max(attempts, 1) + 1):
+        files: dict[str, tuple[str, Any, str]] = {}
+        with audio_path.open("rb") as handle:
+            files["audio_file"] = (audio_path.name, handle, content_type)
+            cover_handle = None
+            if cover_path:
+                cover_content_type = mimetypes.guess_type(str(cover_path))[0] or "image/png"
+                cover_handle = cover_path.open("rb")
+                files["cover_file"] = (cover_path.name, cover_handle, cover_content_type)
+            try:
+                track = request_json(
+                    client,
+                    "POST",
+                    "/tracks/manual-upload",
+                    data={
+                        "title": title,
+                        "prompt": prompt or "OpenClaw generated audio upload",
+                        "duration_seconds": "0",
+                        "pending_workspace_id": release_id,
+                        "tags": tags or "",
+                        "lyrics": lyrics or "",
+                        "style": style or "",
+                        "dispatch_review": str(dispatch_review).lower(),
+                    },
+                    files=files,
+                )
+                duration_seconds = int(track.get("duration_seconds") or 0)
+                if duration_seconds <= 0:
+                    raise RuntimeError(
+                        f"Upload returned invalid duration_seconds={track.get('duration_seconds')!r}"
+                    )
+                return track
+            except (RuntimeError, httpx.HTTPError) as exc:
+                last_error = exc
+                if attempt >= max(attempts, 1):
+                    break
+                time.sleep(min(2.0 * attempt, 5.0))
+            finally:
+                if cover_handle:
+                    cover_handle.close()
+    raise RuntimeError(
+        f"Audio upload failed after {max(attempts, 1)} attempts for {audio_path.name}: {last_error}"
+    ) from last_error
 
 
 def resolve_cover_path(value: str | None) -> Path | None:
@@ -454,26 +515,38 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         context="upload-audio",
         concept_values=[release.get("title"), title, args.prompt, args.style, args.tags],
     )
-    track = upload_audio_file_to_release(
-        client,
-        release_id=release["id"],
-        audio_path=audio_path,
-        title=title,
-        prompt=args.prompt,
-        tags=args.tags,
-        lyrics=lyrics,
-        style=args.style,
-        cover_path=cover_path,
-        dispatch_review=not auto_approve_playlist,
-    )
-    if auto_approve_playlist:
-        track = approve_track_to_playlist(
+    try:
+        track = upload_audio_file_to_release(
             client,
-            track_id=track["id"],
             release_id=release["id"],
-            actor=args.actor,
+            audio_path=audio_path,
+            title=title,
+            prompt=args.prompt,
+            tags=args.tags,
+            lyrics=lyrics,
+            style=args.style,
+            cover_path=cover_path,
+            dispatch_review=not auto_approve_playlist,
         )
-        release = get_release(client, release["id"])
+        if auto_approve_playlist:
+            track = approve_track_to_playlist(
+                client,
+                track_id=track["id"],
+                release_id=release["id"],
+                actor=args.actor,
+            )
+            release = get_release(client, release["id"])
+    except Exception as exc:  # noqa: BLE001
+        notify_slack(
+            client,
+            upload_failure_notice(
+                release=release,
+                failures=[{"title": title, "audio_path": str(audio_path), "error": str(exc)}],
+                uploaded_count=0,
+                action="upload-audio",
+            ),
+        )
+        raise
 
     return {
         "ok": True,
@@ -490,6 +563,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "id": track["id"],
             "title": track["title"],
             "status": track["status"],
+            "duration_seconds": track["duration_seconds"],
             "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
             "lyrics_present": bool((track.get("metadata_json") or {}).get("lyrics")),
             "style": (track.get("metadata_json") or {}).get("style") or "",
@@ -549,33 +623,58 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         )
 
     tracks = []
+    failed_uploads: list[dict[str, str]] = []
     for index, audio_path in enumerate(audio_paths, start=1):
         track_title = track_titles[index - 1]
         cover_path = None
         if cover_paths:
             cover_path = cover_paths[index - 1] if len(cover_paths) == len(audio_paths) else cover_paths[0]
-        track = upload_audio_file_to_release(
-            client,
-            release_id=release["id"],
-            audio_path=audio_path,
-            title=track_title,
-            prompt=args.prompt,
-            tags=args.tags,
-            lyrics=lyrics_items[index - 1],
-            style=style_items[index - 1],
-            cover_path=cover_path,
-        )
+        try:
+            track = upload_audio_file_to_release(
+                client,
+                release_id=release["id"],
+                audio_path=audio_path,
+                title=track_title,
+                prompt=args.prompt,
+                tags=args.tags,
+                lyrics=lyrics_items[index - 1],
+                style=style_items[index - 1],
+                cover_path=cover_path,
+            )
+        except Exception as exc:  # noqa: BLE001
+            failed_uploads.append(
+                {
+                    "title": track_title,
+                    "audio_path": str(audio_path),
+                    "error": str(exc),
+                }
+            )
+            continue
         tracks.append(
             {
                 "id": track["id"],
                 "title": track["title"],
                 "status": track["status"],
+                "duration_seconds": track["duration_seconds"],
                 "cover_image_path": (track.get("metadata_json") or {}).get("image_url"),
                 "lyrics_present": bool((track.get("metadata_json") or {}).get("lyrics")),
                 "style": (track.get("metadata_json") or {}).get("style") or "",
                 "style_present": bool((track.get("metadata_json") or {}).get("style")),
             }
         )
+
+    if failed_uploads:
+        notice = upload_failure_notice(
+            release=release,
+            failures=failed_uploads,
+            uploaded_count=len(tracks),
+            action="upload-single-candidates",
+        )
+        notify_slack(client, notice)
+        if not tracks:
+            raise RuntimeError(
+                f"All candidate audio uploads failed after {MAX_AUDIO_UPLOAD_ATTEMPTS} attempts."
+            )
 
     return {
         "ok": True,
@@ -587,6 +686,7 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
             "workflow_state": release["workflow_state"],
         },
         "tracks": tracks,
+        "failed_uploads": failed_uploads,
         "next": (
             "Human review can approve one candidate. If both candidates are good, approve the second one too; "
             "the app will split it into its own Single Release instead of combining the two songs. "
@@ -854,25 +954,36 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             )
 
     uploaded_tracks = []
+    failed_uploads: list[dict[str, str]] = []
     for audio_path, track_title, lyrics, style in zip(audio_paths, display_titles, lyrics_items, style_items):
-        track = upload_audio_file_to_release(
-            client,
-            release_id=release["id"],
-            audio_path=audio_path,
-            title=track_title,
-            prompt=args.prompt,
-            tags=args.tags,
-            lyrics=lyrics,
-            style=style,
-            cover_path=None,
-            dispatch_review=False,
-        )
-        approved = approve_track_to_playlist(
-            client,
-            track_id=track["id"],
-            release_id=release["id"],
-            actor=args.actor,
-        )
+        try:
+            track = upload_audio_file_to_release(
+                client,
+                release_id=release["id"],
+                audio_path=audio_path,
+                title=track_title,
+                prompt=args.prompt,
+                tags=args.tags,
+                lyrics=lyrics,
+                style=style,
+                cover_path=None,
+                dispatch_review=False,
+            )
+            approved = approve_track_to_playlist(
+                client,
+                track_id=track["id"],
+                release_id=release["id"],
+                actor=args.actor,
+            )
+        except Exception as exc:  # noqa: BLE001
+            failed_uploads.append(
+                {
+                    "title": track_title,
+                    "audio_path": str(audio_path),
+                    "error": str(exc),
+                }
+            )
+            continue
         uploaded_tracks.append(
             {
                 "id": approved["id"],
@@ -883,6 +994,20 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 "style": (approved.get("metadata_json") or {}).get("style") or "",
                 "style_present": bool((approved.get("metadata_json") or {}).get("style")),
             }
+        )
+
+    if failed_uploads:
+        notice = upload_failure_notice(
+            release=release,
+            failures=failed_uploads,
+            uploaded_count=len(uploaded_tracks),
+            action="auto-publish-playlist",
+        )
+        slack_result = notify_slack(client, notice)
+        raise RuntimeError(
+            f"{len(failed_uploads)} audio upload(s) failed after {MAX_AUDIO_UPLOAD_ATTEMPTS} attempts; "
+            f"uploaded {len(uploaded_tracks)} remaining track(s); render/publish stopped. "
+            f"Slack notified: {bool(slack_result.get('ok'))}."
         )
 
     release = request_json(
@@ -1124,25 +1249,37 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
 
     uploaded_tracks = []
     for audio_path, track_title, lyrics, style in zip(audio_paths, track_titles, lyrics_items, style_items):
-        track = upload_audio_file_to_release(
-            client,
-            release_id=release["id"],
-            audio_path=audio_path,
-            title=track_title,
-            prompt=args.prompt,
-            tags=args.tags,
-            lyrics=lyrics,
-            style=style,
-            cover_path=None,
-            dispatch_review=False,
-        )
-        approved = approve_track_to_release(
-            client,
-            track_id=track["id"],
-            release_id=release["id"],
-            actor=args.actor,
-            rationale="Auto-approved for private single publishing explicitly requested by the human.",
-        )
+        try:
+            track = upload_audio_file_to_release(
+                client,
+                release_id=release["id"],
+                audio_path=audio_path,
+                title=track_title,
+                prompt=args.prompt,
+                tags=args.tags,
+                lyrics=lyrics,
+                style=style,
+                cover_path=None,
+                dispatch_review=False,
+            )
+            approved = approve_track_to_release(
+                client,
+                track_id=track["id"],
+                release_id=release["id"],
+                actor=args.actor,
+                rationale="Auto-approved for private single publishing explicitly requested by the human.",
+            )
+        except Exception as exc:  # noqa: BLE001
+            notify_slack(
+                client,
+                upload_failure_notice(
+                    release=release,
+                    failures=[{"title": track_title, "audio_path": str(audio_path), "error": str(exc)}],
+                    uploaded_count=0,
+                    action="auto-publish-single",
+                ),
+            )
+            raise
         uploaded_tracks.append(
             {
                 "id": approved["id"],

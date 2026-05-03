@@ -285,6 +285,49 @@ class SlackService:
                 raw=data,
             )
 
+    async def post_plain_message(
+        self,
+        *,
+        text: str,
+        token: str | None = None,
+        channel: str | None = None,
+    ) -> SlackPostResult:
+        target_channel = channel or self.settings.slack_review_channel_id
+        auth_token = token or self.settings.slack_bot_token
+        if not auth_token or not target_channel:
+            return SlackPostResult(ok=False, raw={"reason": "slack_bot_token or slack_review_channel_id missing"})
+
+        payload = {
+            "channel": target_channel,
+            "text": text,
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": self._short_text(text, 2900),
+                    },
+                }
+            ],
+        }
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                "https://slack.com/api/chat.postMessage",
+                headers={
+                    "Authorization": f"Bearer {auth_token}",
+                    "Content-Type": "application/json; charset=utf-8",
+                },
+                json=payload,
+            )
+            data = response.json()
+            return SlackPostResult(
+                ok=bool(data.get("ok")),
+                channel=data.get("channel"),
+                ts=data.get("ts"),
+                raw=data,
+            )
+
     async def update_review_message(
         self,
         track: Track,

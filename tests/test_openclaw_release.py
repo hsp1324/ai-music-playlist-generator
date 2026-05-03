@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
+import scripts.openclaw_release as openclaw_release
 from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
@@ -17,6 +18,7 @@ from scripts.openclaw_release import (
     release_has_uploaded_thumbnail,
     resolve_lyrics_items,
     resolve_style_items,
+    upload_audio_file_to_release,
     upload_single_candidates,
 )
 
@@ -205,6 +207,43 @@ def test_resolve_style_items_allows_shared_and_per_track() -> None:
         resolve_style_items(2, styles=["one", "two", "three"])
 
 
+def test_upload_audio_file_retries_and_returns_probed_duration(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(openclaw_release.time, "sleep", lambda _seconds: None)
+    audio_path = tmp_path / "retry.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        assert request.url.path.endswith("/tracks/manual-upload")
+        attempts += 1
+        if attempts < 3:
+            return httpx.Response(400, json={"detail": "Uploaded audio file is empty."})
+        return httpx.Response(
+            201,
+            json={
+                "id": "track-1",
+                "title": "Retry Track",
+                "status": "pending_review",
+                "duration_seconds": 123,
+                "metadata_json": {},
+            },
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    track = upload_audio_file_to_release(
+        client,
+        release_id="release-1",
+        audio_path=audio_path,
+        title="Retry Track",
+        prompt="",
+        tags="",
+    )
+
+    assert attempts == 3
+    assert track["duration_seconds"] == 123
+
+
 def test_pop_family_vocal_detection_allows_explicit_bgm_exception() -> None:
     assert is_pop_family_vocal_request("Tokyo J-pop single", "bright anime opening")
     assert not is_pop_family_vocal_request("J-pop style BGM", "가사 없는 배경음악")
@@ -381,6 +420,88 @@ def test_auto_publish_playlist_requires_thumbnail_before_creating_new_release(tm
         )
 
     assert requested_paths == []
+
+
+def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_failed_track(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(openclaw_release.time, "sleep", lambda _seconds: None)
+    failed_audio = tmp_path / "failed.mp3"
+    good_audio = tmp_path / "good.mp3"
+    failed_audio.write_bytes(b"failed audio")
+    good_audio.write_bytes(b"good audio")
+    requested_paths = []
+    failed_upload_attempts = 0
+    render_requested = False
+    slack_notices = []
+
+    release = {
+        "id": "release-1",
+        "title": "Cafe BGM Playlist",
+        "workspace_mode": "playlist",
+        "workflow_state": "collecting",
+        "cover_image_path": "/tmp/final-cover.png",
+        "cover_source": "manual-upload",
+        "youtube_thumbnail_path": "/tmp/thumb.png",
+        "youtube_thumbnail_source": "manual-upload",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal failed_upload_attempts, render_requested
+        requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(200, json=[release])
+        if request.method == "POST" and request.url.path.endswith("/tracks/manual-upload"):
+            body = request.read()
+            if b'filename="failed.mp3"' in body:
+                failed_upload_attempts += 1
+                return httpx.Response(400, json={"detail": "Uploaded audio file is empty."})
+            return httpx.Response(
+                201,
+                json={
+                    "id": "track-good",
+                    "title": "Good Track",
+                    "status": "pending_review",
+                    "duration_seconds": 150,
+                    "metadata_json": {},
+                },
+            )
+        if request.method == "POST" and request.url.path.endswith("/tracks/track-good/decisions"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "track-good",
+                    "title": "Good Track",
+                    "status": "approved",
+                    "duration_seconds": 150,
+                    "metadata_json": {},
+                },
+            )
+        if request.method == "POST" and request.url.path.endswith("/slack/notify"):
+            slack_notices.append(json.loads(request.read())["text"])
+            return httpx.Response(200, json={"ok": True})
+        if request.method == "POST" and request.url.path.endswith("/playlists/release-1/render-audio"):
+            render_requested = True
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="1 audio upload"):
+        auto_publish_playlist(
+            client,
+            _auto_publish_args(
+                str(failed_audio),
+                audio=[str(failed_audio), str(good_audio)],
+                title=["Broken Track", "Good Track"],
+                release_title="Cafe BGM Playlist",
+                description="instrumental cafe BGM",
+                tags="BGM,instrumental",
+            ),
+        )
+
+    assert failed_upload_attempts == 3
+    assert any(path.endswith("/tracks/track-good/decisions") for path in requested_paths)
+    assert slack_notices
+    assert "Broken Track" in slack_notices[-1]
+    assert not render_requested
 
 
 def test_auto_publish_single_requires_final_cover_before_side_effects(tmp_path) -> None:

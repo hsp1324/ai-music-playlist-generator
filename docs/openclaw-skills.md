@@ -305,6 +305,8 @@ Generate enough material before publishing:
 - Target at least `3600` seconds for a one-hour playlist.
 - A practical buffer of `3900` seconds is acceptable.
 - Do not publish under target unless the human explicitly says a shorter playlist is acceptable.
+- Every helper audio upload retries up to 3 times. If a track still fails, the helper posts a Slack warning, continues uploading the rest of the batch, and stops before render/publish. Re-download or re-export only the failed source files, upload them again, then render/publish after the full intended track set is present.
+- After every successful upload, use the returned JSON as the receipt: confirm `track.id`, `track.status`, and `duration_seconds`. The duration must be close to the actual local audio length.
 
 ### OpenClaw Skill Prompt
 
