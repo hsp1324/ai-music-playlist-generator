@@ -21,6 +21,7 @@ from app.utils.youtube_localizations import (
     normalize_youtube_language,
     normalize_youtube_localizations,
 )
+from app.utils.openclaw_slack_loop import post_next_playlist_request
 
 
 def _utcnow():
@@ -654,6 +655,23 @@ class BackgroundJobWorker:
                     for item in playlist.items:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)
+                    if self.settings.openclaw_auto_request_next_on_publish:
+                        sent_for_video_id = str(meta.get("openclaw_next_request_youtube_video_id") or "").strip()
+                        if playlist.youtube_video_id and sent_for_video_id != playlist.youtube_video_id:
+                            try:
+                                next_request_result = asyncio.run(
+                                    post_next_playlist_request(
+                                        db,
+                                        self.services,
+                                        playlist,
+                                    )
+                                )
+                            except Exception as slack_exc:  # noqa: BLE001
+                                next_request_result = {"ok": False, "error": str(slack_exc)}
+                            meta["openclaw_next_request"] = next_request_result
+                            meta["openclaw_next_request_at"] = _utcnow().isoformat()
+                            if next_request_result.get("ok"):
+                                meta["openclaw_next_request_youtube_video_id"] = playlist.youtube_video_id
                 except Exception as exc:  # noqa: BLE001
                     playlist.status = PlaylistStatus.ready
                     meta["workflow_state"] = "youtube_upload_failed"

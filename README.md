@@ -295,6 +295,9 @@ AIMP_YOUTUBE_AUTO_UPLOAD_ON_PUBLISH=true
 AIMP_CODEX_METADATA_ENABLED=false
 AIMP_CODEX_METADATA_COMMAND=codex
 AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
+AIMP_OPENCLAW_SLACK_CHANNEL_ID=C0AVBUYP150
+AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=false
+AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT=
 ```
 
 Runtime behavior:
@@ -309,6 +312,7 @@ Runtime behavior:
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
 - OpenClaw can run `scripts/openclaw-release auto-publish-playlist` to upload playlist tracks as approved, render audio/video, approve generated metadata, and publish privately to the selected connected YouTube channel. It can also run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a standalone single to be privately uploaded end-to-end. The helpers default general background releases to `Soft Hour Radio` and route Japan/Tokyo/city-pop/anime/J-pop concepts to `Tokyo Daydream Radio`.
+- Published releases show `Request Next Playlist`, which posts a Slack command into the configured OpenClaw channel. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` only when you intentionally want publish completion to trigger the next playlist automatically.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.
 Single releases can approve one candidate directly, or approve two related candidates as separate Single Releases before cover/video/publish.

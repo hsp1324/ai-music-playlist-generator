@@ -18,6 +18,7 @@ from app.schemas.playlist import (
     PlaylistCoverGenerateRequest,
     PlaylistMetadataApproveRequest,
     PlaylistMetadataGenerateRequest,
+    PlaylistOpenClawNextRequest,
     PlaylistPublishApproveRequest,
     PlaylistRead,
     PlaylistRenderRequest,
@@ -49,6 +50,7 @@ from app.workflows.playlist_automation import (
     serialize_playlist_workspace,
     set_playlist_workspace_archive_state,
 )
+from app.utils.openclaw_slack_loop import post_next_playlist_request
 
 router = APIRouter(prefix="/playlists", tags=["playlists"])
 
@@ -508,3 +510,39 @@ def mark_playlist_uploaded(
     db.commit()
     db.refresh(playlist)
     return PlaylistRead.model_validate(playlist)
+
+
+@router.post("/{playlist_id}/openclaw/request-next")
+async def request_next_playlist_from_openclaw(
+    playlist_id: str,
+    payload: PlaylistOpenClawNextRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict:
+    services = get_services(request)
+    playlist = db.get(Playlist, playlist_id)
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    if not playlist.youtube_video_id:
+        raise HTTPException(status_code=400, detail="YouTube publish must complete before requesting the next playlist.")
+
+    result = await post_next_playlist_request(
+        db,
+        services,
+        playlist,
+        prompt_override=payload.prompt,
+    )
+
+    meta = dict(playlist.metadata_json or {})
+    meta["openclaw_next_request"] = result
+    meta["openclaw_next_request_at"] = _utcnow().isoformat()
+    if result.get("ok"):
+        meta["openclaw_next_request_youtube_video_id"] = playlist.youtube_video_id
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    db.refresh(playlist)
+
+    if not result.get("ok"):
+        raise HTTPException(status_code=502, detail=result)
+    return result

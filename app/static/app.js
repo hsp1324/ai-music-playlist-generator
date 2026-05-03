@@ -2318,6 +2318,27 @@ function renderWorkspaceDetail() {
     }
   }
 
+  if (workspace.youtube_video_id) {
+    appendDetailAction(
+      detailActionGroups.publish,
+      actionButton("Request Next Playlist", "action-button secondary-button", async () => {
+        const proceed = window.confirm(
+          "OpenClaw Slack 채널에 다음 1시간 playlist 제작/비공개 publish 요청을 보낼까요?"
+        );
+        if (!proceed) return;
+        const result = await api(`/api/playlists/${workspace.id}/openclaw/request-next`, {
+          method: "POST",
+          body: JSON.stringify({
+            actor: "web-ui",
+          }),
+        });
+        if (result?.ok) {
+          alert("OpenClaw Slack 채널에 다음 playlist 요청을 보냈습니다.");
+        }
+      })
+    );
+  }
+
   if (workspace.publish_approved && !workspace.youtube_video_id) {
     const manualBox = document.createElement("details");
     manualBox.className = "manual-upload-box";

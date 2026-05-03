@@ -82,6 +82,11 @@ class PlaylistUploadMarkRequest(BaseModel):
     note: str | None = None
 
 
+class PlaylistOpenClawNextRequest(BaseModel):
+    actor: str = "web-ui"
+    prompt: str | None = Field(default=None, max_length=3000)
+
+
 class PlaylistItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

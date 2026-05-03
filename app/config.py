@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     codex_metadata_model: str = ""
     codex_metadata_timeout_seconds: int = 180
 
+    openclaw_slack_channel_id: str = ""
+    openclaw_auto_request_next_on_publish: bool = False
+    openclaw_next_playlist_prompt: str = ""
+
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"
     dreamina_api_token: str = ""

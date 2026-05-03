@@ -14,6 +14,7 @@ from PIL import Image
 from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.main import create_app
+from app.models.enums import PlaylistStatus
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes.tracks import _extract_embedded_cover
@@ -37,6 +38,10 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_WORKER_AUTOSTART", None)
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
+    os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
+    os.environ.pop("AIMP_OPENCLAW_SLACK_CHANNEL_ID", None)
+    os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH", None)
+    os.environ.pop("AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT", None)
     get_settings.cache_clear()
 
 
@@ -112,6 +117,49 @@ def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> N
     assert "Soft Hour Radio/background-music visual system" in prompt
     assert 'lower-left channel label "Soft Hour Radio"' in prompt
     assert "exactly three people seen from behind" not in prompt
+
+
+def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        client.app.state.services.slack.post_plain_message = fake_post_plain_message
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Published Cafe Playlist",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=3600,
+                actual_duration_seconds=3600,
+                youtube_video_id="yt-next-123",
+                metadata_json={"youtube_channel_title": "Soft Hour Radio"},
+            )
+            db.add(playlist)
+            db.commit()
+            playlist_id = playlist.id
+
+        response = client.post(
+            f"/api/playlists/{playlist_id}/openclaw/request-next",
+            json={"actor": "test-suite"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["ok"] is True
+        assert calls[0]["channel"] == "C0AVBUYP150"
+        assert "다음 1시간 Playlist Release" in calls[0]["text"]
+        assert "https://youtu.be/yt-next-123" in calls[0]["text"]
+        assert "Soft Hour Radio" in calls[0]["text"]
+        with SessionLocal() as db:
+            updated = db.get(Playlist, playlist_id)
+            assert updated.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-next-123"
+    finally:
+        clear_isolated_client_env()
 
 
 def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:
