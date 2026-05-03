@@ -87,5 +87,6 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 ## Other Channels Or Explicit Requests
 
 - If the channel is neither `Tokyo Daydream Radio` nor `Soft Hour Radio`, derive a visual system from the channel name, release concept, and human request.
+- If the human explicitly names the target channel, that channel's visual skill wins over automatic genre routing. Example: if the human says `Soft Hour Radio`, use the Soft Hour visual skill even if the concept contains Japan/J-pop/city-pop references, unless the human also explicitly asks for the Tokyo three-person walking signature.
 - Keep the shared asset contract.
 - Do not borrow the Tokyo three-person signature unless the release is Japan/J-pop/Tokyo-related or the human explicitly asks for it.

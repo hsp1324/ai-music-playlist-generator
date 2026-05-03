@@ -50,6 +50,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - For playlist publishing, choose the YouTube channel by release concept:
 - Default background/cafe/sleep/study/chill playlists go to `Soft Hour Radio`.
 - Japan-related releases go to `Tokyo Daydream Radio`. Treat these as Japan-related when the title, prompt, tags, or concept includes Japan, Tokyo, Shibuya, Shinjuku, Japanese lofi, city pop, J-pop, anime, vaporwave, 일본, 도쿄, 시티팝, 애니, 제이팝, 日本, 東京, 渋谷, 新宿, アニメ, or シティポップ.
+- If the human explicitly names a target channel, that explicit channel overrides automatic channel inference and also controls the visual skill. Example: `Soft Hour Radio에 올려줘` means use Soft Hour calm atmospheric visuals and do not use the Tokyo three-person walking signature, even if the music has light Japan/city-pop influence.
 - Do not use `MusicSun` unless the human explicitly requests it.
 - `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass `--youtube-channel-title "Tokyo Daydream Radio"` when the Japan routing intent is clear.
 - YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
@@ -75,6 +76,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - Channel visual signatures are separate:
 - Tokyo Daydream Radio/Japan/J-pop uses exactly three people walking forward away from the viewer by default. The camera/viewer sees their backs and backs of heads; no front-facing faces as the main composition.
 - Soft Hour Radio/default BGM uses calm atmospheric visuals by default, such as cafe windows, piano rooms, rain, moonlit rooms, nature, candles, desk lamps, ocean horizons, or abstract warm light. Do not use the Tokyo three-person walking signature for Soft Hour unless the human explicitly asks.
+- Explicit channel requests override genre-based visual routing. If the requested channel is `Soft Hour Radio`, use the Soft Hour visual skill, not the Tokyo/J-pop three-person walking skill.
 - Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - When a channel/default signature is used, the main subject must stay centered in thumbnails. Text must not push it to the side, crop it, cover it, or make it feel secondary. Place text in safe negative space, usually lower-left or lower area.
 - When a human visual request overrides the default, keep the requested subject/action/composition centered and visually important in thumbnails; text must fit around the requested composition rather than replacing it.
