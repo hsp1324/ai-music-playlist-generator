@@ -80,12 +80,19 @@ def test_release_has_uploaded_thumbnail_requires_manual_upload_source() -> None:
     assert not release_has_uploaded_thumbnail({"youtube_thumbnail_path": "/tmp/thumb.png"})
 
 
-def test_infer_youtube_channel_routes_japanese_releases_to_tokyo_daydream() -> None:
+def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="Tokyo Night City Pop",
-            description="Japanese lofi playlist",
+            description="J-pop night drive playlist",
+        )
+    ) == JAPAN_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Japanese Dance Pop",
+            description="mainstream vocal pop playlist",
         )
     ) == JAPAN_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(
@@ -98,6 +105,13 @@ def test_infer_youtube_channel_routes_japanese_releases_to_tokyo_daydream() -> N
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="Cafe Piano",
+        )
+    ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Japanese Lofi Cafe BGM",
+            description="instrumental study background music",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
 

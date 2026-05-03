@@ -35,26 +35,31 @@ CHANNEL_PROFILE_NAMES = {
 }
 JAPAN_CHANNEL_KEYWORDS = (
     "anime",
+    "anime pop",
+    "anime-pop",
     "city pop",
     "citypop",
     "j-pop",
+    "j pop",
     "jpop",
-    "japanese",
-    "japan",
-    "lofi japan",
+    "japanese pop",
+    "japan pop",
+    "japanese dance-pop",
+    "japanese dance pop",
+    "japanese synth-pop",
+    "japanese synth pop",
+    "japanese pop-rock",
+    "japanese pop rock",
     "shibuya",
     "shinjuku",
     "tokyo",
     "vaporwave",
     "アニメ",
+    "jポップ",
     "シティポップ",
-    "チル",
-    "ローファイ",
-    "日本",
     "東京",
     "渋谷",
     "新宿",
-    "일본",
     "도쿄",
     "시부야",
     "신주쿠",
@@ -188,6 +193,12 @@ def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, 
                 "workflow_state": release["workflow_state"],
                 "archived": release.get("hidden", False),
                 "tracks": len(release["tracks"]),
+                "duration_seconds": release.get("actual_duration_seconds", 0),
+                "youtube_video_id": release.get("youtube_video_id"),
+                "youtube_channel_id": release.get("youtube_channel_id"),
+                "youtube_channel_title": release.get("youtube_channel_title"),
+                "created_at": release.get("created_at"),
+                "updated_at": release.get("updated_at"),
             }
             for release in releases
         ]
@@ -1794,7 +1805,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; Japanese/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
@@ -1822,7 +1833,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; Japanese/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
     auto_single_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")

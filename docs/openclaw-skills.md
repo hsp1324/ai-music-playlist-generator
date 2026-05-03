@@ -14,6 +14,10 @@ Use the local API or the helper script. Do not use the public `https://ai-music.
 export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 ```
 
+## Continuous Next Release Planning
+
+When the app asks OpenClaw to create the next release after a publish completes, first use [openclaw-next-release-planner.md](openclaw-next-release-planner.md). That planner chooses the next channel and fresh concept, then hands off to this document's automatic private playlist publisher.
+
 ## Channel-First Workflow
 
 Before generating cover art, YouTube thumbnails, or Dreamina/Seedance loop videos, OpenClaw must choose the target channel first and read that channel's profile.
@@ -72,7 +76,7 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - Every YouTube description, including `ko`, `ja`, `en`, and `es` localized descriptions, must end with a visible public hashtag line. The `--tags` option is separate API metadata and does not create visible hashtags in the description.
 - For playlist publishing, choose the YouTube channel by release concept:
 - Default background/cafe/sleep/study/chill playlists go to `Soft Hour Radio`.
-- Japan-related releases go to `Tokyo Daydream Radio`. Treat these as Japan-related when the title, prompt, tags, or concept includes Japan, Tokyo, Shibuya, Shinjuku, Japanese lofi, city pop, J-pop, anime, vaporwave, 일본, 도쿄, 시티팝, 애니, 제이팝, 日本, 東京, 渋谷, 新宿, アニメ, or シティポップ.
+- Mainstream J-pop/Japanese pop releases go to `Tokyo Daydream Radio`. Treat these as Tokyo Daydream candidates when the title, prompt, tags, or concept includes Tokyo, Shibuya, Shinjuku, J-pop, Japanese pop, city pop, Japanese dance-pop, Japanese synth-pop, Japanese pop-rock, anime-pop, vaporwave, 도쿄, 시티팝, 제이팝, 東京, 渋谷, 新宿, Jポップ, or シティポップ. Anime/OST-like music is allowed inside the channel, but the channel is broader mainstream J-pop/pop, not anime OST-only.
 - If the human explicitly names a target channel, that explicit channel overrides automatic channel inference and also controls the visual skill. Example: `Soft Hour Radio에 올려줘` means use the Soft Hour channel profile even if the music has light Japan/city-pop influence.
 - Do not use `MusicSun` unless the human explicitly requests it.
 - `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass `--youtube-channel-title "Tokyo Daydream Radio"` when the Japan routing intent is clear.
@@ -218,7 +222,7 @@ Create one Single Release for one final song, generate the needed audio, auto-ap
 
 This is different from `Single Release Candidate Set`: that skill stops for human candidate review. Use this automatic publisher only when the human says to publish/upload the single.
 
-For Japan, Tokyo, city pop, J-pop, anime, Japanese lofi, or similar Japan-themed singles, publish to `Tokyo Daydream Radio`.
+For mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop singles, publish to `Tokyo Daydream Radio`.
 
 ### OpenClaw Skill Prompt
 
@@ -325,7 +329,7 @@ Use this skill when the user asks for a playlist, mix, compilation, or approxima
 
 Create one Playlist Release, generate enough tracks, upload them as approved tracks, render audio/video, generate and approve metadata, and upload the result privately to YouTube on the correct channel.
 
-Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for Japan, Tokyo, city pop, J-pop, anime, Japanese lofi, or similar Japan-themed releases.
+Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases.
 
 The human does not review every playlist track before rendering. The human reviews the final private YouTube upload later and only intervenes if something sounds wrong.
 
@@ -385,7 +389,7 @@ Goal:
 - Approve the cover.
 - Render video.
 - Generate and approve YouTube metadata.
-- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for Japan-related releases; otherwise use `Soft Hour Radio`.
+- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases; otherwise use `Soft Hour Radio`.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 
 First, before opening Suno or submitting the first playlist prompt, create the destination release:
@@ -447,7 +451,7 @@ Do not omit `--cover` or `--thumbnail` for a full private publish run. If either
 
 `--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the generated clip should end close to its opening composition so it can be reused across the full audio duration.
 
-If the release is Japan-related, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
+If the release is mainstream J-pop/Japanese pop/Tokyo pop, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
 
 If the run is continuing an existing release, use `--release-id RELEASE_ID` instead of creating a new title.
 
@@ -476,7 +480,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not create a Single Release for playlist candidates.
 - Do not use the `MusicSun` channel for playlist publishing unless the human explicitly overrides the channel.
 - Do not upload public. The final upload must be private.
-- Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general releases and `Tokyo Daydream Radio` for Japan-related releases.
+- Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general BGM releases and `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop releases.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
 - Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
 - Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the cover or first-frame image into an 8 second loop video. This image must include only the lower-left selected-channel-name watermark.

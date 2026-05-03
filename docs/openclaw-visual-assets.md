@@ -23,7 +23,7 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 
 ## Tokyo Daydream Radio Visual Skill
 
-Use this for `Tokyo Daydream Radio`, Japan, Tokyo, city-pop, J-pop, anime-pop, Japanese lofi, or similar Japan-themed releases.
+Use this for `Tokyo Daydream Radio`, mainstream J-pop/Japanese pop, Tokyo/Japan pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases.
 
 Default visual signature:
 

@@ -242,7 +242,7 @@ Thumbnail text rules for OpenClaw:
 
 - Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
 - Prefer the approved full-bleed style: strong image background, no card or panel, large bottom-left genre/mood text, and a smaller channel-brand line directly below.
-- For Japan-related releases routed to `Tokyo Daydream Radio`, use the channel name as the brand line. The approved J-pop pattern is large `J-POP` with `TOKYO DAYDREAM RADIO` beneath it. Keep this same two-line treatment for Tokyo/city, forest/nature, and beach versions to create channel consistency.
+- For Tokyo Daydream Radio releases, use the channel name as the brand line. The approved mainstream J-pop pattern is large `J-POP` with `TOKYO DAYDREAM RADIO` beneath it. Keep this same two-line treatment for Tokyo/city, forest/nature, and beach versions to create channel consistency.
 - Do not add support text or duration badges. The thumbnail should not say `1 HOUR`, `60 MIN`, `1時間`, or show a time badge.
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
@@ -251,7 +251,7 @@ Thumbnail text rules for OpenClaw:
 Localized YouTube metadata rules for OpenClaw:
 
 - The app can upload YouTube localized metadata for `ko`, `ja`, `en`, and `es`.
-- For `Tokyo Daydream Radio`, Japan, Tokyo, city-pop, J-pop, anime, or Japanese lofi releases, always write all four language versions.
+- For `Tokyo Daydream Radio`, mainstream J-pop/Japanese pop, Tokyo/Japan pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar releases, always write all four language versions.
 - Use Korean as the default upload metadata. Pass Korean through `--title` and `--description-file`, and also pass `--ko-title` and `--ko-description-file`.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
 - Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
@@ -287,8 +287,8 @@ scripts/openclaw-release approve-metadata \
 For automatic playlist publishing, `scripts/openclaw-release auto-publish-playlist` chooses the YouTube channel from the release concept when `--youtube-channel-title` is omitted.
 
 - Use `Soft Hour Radio` for default background/cafe/sleep/study/chill playlists.
-- Use `Tokyo Daydream Radio` for Japan, Tokyo, Shibuya, Shinjuku, Japanese lofi, city pop, J-pop, anime, vaporwave, 일본, 도쿄, 시티팝, 애니, 제이팝, 日本, 東京, 渋谷, 新宿, アニメ, or シティポップ concepts.
-- Pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly when the human asks for Japanese/Tokyo/city-pop/anime music.
+- Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, vaporwave, 도쿄, 시티팝, 제이팝, 東京, Jポップ, or シティポップ concepts.
+- Pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly when the human asks for J-pop, Japanese pop, Tokyo/Japan pop, city-pop, anime-pop, or similar vocal pop music.
 - Do not use `MusicSun` unless the human explicitly requests it.
 - After publish, `/api/playlists/workspaces` exposes `youtube_video_id`, `youtube_channel_id`, and `youtube_channel_title`. OpenClaw can use those fields to confirm which channel received the private upload; web UI layout changes do not affect OpenClaw because it should use the helper script or local API, not click the dashboard.
 - YouTube publish/re-upload uses the app setting `AIMP_YOUTUBE_CONTAINS_SYNTHETIC_MEDIA=false` by default, meaning uploads are submitted as not containing realistic altered/synthetic media. Do not override this unless the requested video realistically depicts altered or synthetic people, places, or events.

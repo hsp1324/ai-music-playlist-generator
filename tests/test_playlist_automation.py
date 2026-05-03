@@ -157,7 +157,9 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert response.json()["ok"] is True
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
-        assert "다음 1시간 Playlist Release" in calls[0]["text"]
+        assert "OpenClaw Next Release Planner Skill" in calls[0]["text"]
+        assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
+        assert "현재 활성 채널을 순서대로 번갈아 운영" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]
         with SessionLocal() as db:

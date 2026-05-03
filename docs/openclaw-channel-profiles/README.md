@@ -62,7 +62,8 @@ YouTube thumbnail:
 
 Cover / first frame:
 
-- 16:9 illustrated/anime/stylized image for Japan, Tokyo, J-pop, city-pop, anime-pop, or similar releases.
+- 16:9 illustrated/anime/stylized image for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar releases.
+- Anime/OST-like music is included, but the channel is broader mainstream J-pop/pop and should not feel anime OST-only.
 - Default signature is exactly three people seen from behind, walking forward away from the viewer.
 - Keep the three people centered and visually important unless the human explicitly requested a different visual concept.
 - Only text allowed is the medium-sized lower-left `Tokyo Daydream Radio` watermark.

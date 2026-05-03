@@ -4,12 +4,14 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 ## Routing Contract
 
-- This profile is for Japan, Tokyo, Shibuya, Shinjuku, J-pop, city-pop, anime-pop, Japanese lofi, vaporwave, and similar Japan-themed releases.
+- This profile is for mainstream J-pop/Japanese pop and Japan-themed vocal pop releases: J-pop, city-pop, dance-pop, synth-pop, pop-rock, emotional pop ballads, summer pop, night-drive pop, anime-pop, and similar releases.
+- Anime/OST-like music is allowed as one lane inside the channel, but this is not an anime OST-only channel.
 - If the human explicitly names a different channel such as `Soft Hour Radio`, do not use this profile unless the human also explicitly asks for Tokyo Daydream visuals.
 - Keep `Tokyo Daydream Radio` visually distinct from Soft Hour Radio.
 
 ## Visual Identity
 
+- Music identity: popular J-pop first. Keep the sound accessible, hook-driven, vocal, and playlist-friendly. Do not make every release feel like anime OST.
 - Default signature: exactly three people seen from behind, walking forward away from the viewer into the scene.
 - The camera/viewer sees backs and backs of heads, not front-facing faces.
 - The three people stay centered and visually important.
@@ -65,7 +67,8 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Provide Korean, Japanese, English, and Spanish metadata.
 - Use Korean as the default API metadata unless the human changes this app convention.
-- Do not over-emphasize the language in titles. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases.
+- Do not over-emphasize the language in titles. Prefer `J-POP`, Tokyo/Japan scene, mainstream pop substyle, mood, and listening use cases.
+- Avoid making every title sound like anime OST. Use anime/OST wording only when that is the actual concept.
 - Localized timestamp rows:
 - Korean/default description: Japanese title plus Korean translation in parentheses.
 - Japanese description: Japanese title only.

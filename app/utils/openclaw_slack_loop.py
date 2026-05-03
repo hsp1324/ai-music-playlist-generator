@@ -28,7 +28,8 @@ def build_next_playlist_request_message(
         return _with_trigger_prefix(prompt_override, trigger_prefix)
 
     previous_context = [
-        "다음 1시간 Playlist Release를 만들어서 private YouTube publish까지 진행해줘.",
+        "OpenClaw Next Release Planner Skill을 실행해줘.",
+        "목표: 다음에 만들 1시간 Playlist Release의 채널과 컨셉을 결정하고, private YouTube publish까지 진행해줘.",
         "",
         "이전 publish 완료 정보:",
         f"- release: {playlist.title}",
@@ -42,9 +43,10 @@ def build_next_playlist_request_message(
             "",
             "작업 기준:",
             "- /opt/ai-music-playlist-generator 리포에서 최신 main을 pull 해줘.",
-            "- docs/openclaw-skills.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
-            "- 이전 release와 같은 채널/비슷한 목적의 새 playlist를 하나 더 만들어줘.",
-            "- audio 생성, cover, thumbnail, 8s loop video, metadata, private publish까지 완료해줘.",
+            "- 먼저 docs/openclaw-next-release-planner.md를 읽고 그대로 따라줘.",
+            "- 그 다음 docs/openclaw-skills.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
+            "- 현재 활성 채널을 순서대로 번갈아 운영하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
+            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, metadata, private publish까지 완료해줘.",
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
         ]
     )
