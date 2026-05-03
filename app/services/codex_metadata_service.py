@@ -153,8 +153,8 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- Do not run shell commands or inspect files; use only the release context JSON below.",
                 "- Write primarily in Korean unless the release title strongly suggests another language.",
                 "- In Korean title/description/localizations, never use the transliterated words '인스트루멘털', '인스투르멘털', or '인스트루멘탈'. Use natural Korean such as 'BGM', '가사 없는 BGM', '보컬 없는 BGM', or '연주곡' instead.",
-                "- Also write localized YouTube metadata for Korean, Japanese, and English in localizations. Use language keys exactly: ko, ja, en.",
-                "- The ko localization should match the main title and description. The ja and en localizations should be natural translations/adaptations, not machine-looking literal copies.",
+                "- Also write localized YouTube metadata for Korean, Japanese, English, and Spanish in localizations. Use language keys exactly: ko, ja, en, es.",
+                "- The ko localization should match the main title and description. The ja, en, and es localizations should be natural translations/adaptations, not machine-looking literal copies.",
                 "- Keep title under 100 characters.",
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
                 "- For playlist releases, put listening use cases directly in the title, not only the description. Prefer titles like: <study/walk/drive/rest use case> + <mood/genre/duration> | <secondary use cases>.",
@@ -173,8 +173,8 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- Use prompt, style, tags, and lyrics as private creative context; do not paste raw generation settings into the public description.",
                 "- For timestamped tracklists, use each timeline item's start exactly and keep the same row order.",
                 "- If release.timeline_timestamp_format is HH:MM:SS, keep every timestamp in that exact three-part form, including 00:00:00 at the first row and 01:00:00+ for rows past one hour.",
-                "- For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows this way: Korean description = Japanese title plus Korean translation in parentheses, Japanese description = Japanese title only, English description = English translated title only.",
-                "- Example Korean timeline row for a Japan release: 00:03:22 海辺のきらめき (해변의 반짝임). Example Japanese: 00:03:22 海辺のきらめき. Example English: 00:03:22 Seaside Sparkle.",
+                "- For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows this way: Korean description = Japanese title plus Korean translation in parentheses, Japanese description = Japanese title only, English description = English translated title only, Spanish description = Spanish translated title only.",
+                "- Example Korean timeline row for a Japan release: 00:03:22 海辺のきらめき (해변의 반짝임). Example Japanese: 00:03:22 海辺のきらめき. Example English: 00:03:22 Seaside Sparkle. Example Spanish: 00:03:22 Destello junto al mar.",
                 "- Do not show A/B, 1/2, or artificial pair labels in metadata titles. If two tracks read like variants of the same title, rewrite only the displayed title text so each row is unique and natural.",
                 "- Use display_title_hint as a starting point, but you may make the displayed titles more natural while preserving each row's timestamp.",
                 "- Timestamp positions are fixed playback positions. Never swap timestamps between tracks to make titles alphabetical or A/B ordered.",
@@ -309,7 +309,7 @@ class CodexMetadataService(ReleaseMetadataService):
         return {
             "type": "object",
             "additionalProperties": False,
-            "required": ["title", "description", "tags"],
+            "required": ["title", "description", "tags", "localizations"],
             "properties": {
                 "title": {"type": "string", "minLength": 1, "maxLength": 100},
                 "description": {"type": "string", "minLength": 1},
@@ -321,10 +321,12 @@ class CodexMetadataService(ReleaseMetadataService):
                 "localizations": {
                     "type": "object",
                     "additionalProperties": False,
+                    "required": ["ko", "ja", "en", "es"],
                     "properties": {
                         "ko": {"$ref": "#/$defs/localizedMetadata"},
                         "ja": {"$ref": "#/$defs/localizedMetadata"},
                         "en": {"$ref": "#/$defs/localizedMetadata"},
+                        "es": {"$ref": "#/$defs/localizedMetadata"},
                     },
                 },
             },

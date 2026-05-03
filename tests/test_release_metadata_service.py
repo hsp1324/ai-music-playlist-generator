@@ -223,6 +223,10 @@ def test_codex_metadata_service_normalizes_one_hour_timestamps_and_localizations
                             "title": "Seaside Walk J-Pop",
                             "description": "0:00:00 Seaside Song\n1:00:05 Summer Light",
                         },
+                        "es": {
+                            "title": "J-Pop para caminar junto al mar",
+                            "description": "0:00:00 Cancion junto al mar\n1:00:05 Luz de verano",
+                        },
                     },
                 },
                 ensure_ascii=False,
@@ -242,6 +246,7 @@ def test_codex_metadata_service_normalizes_one_hour_timestamps_and_localizations
     assert "00:00:00 海辺の歌 (해변의 노래)" in metadata.localizations["ko"]["description"]
     assert "01:00:05 夏の光" in metadata.localizations["ja"]["description"]
     assert "01:00:05 Summer Light" in metadata.localizations["en"]["description"]
+    assert "01:00:05 Luz de verano" in metadata.localizations["es"]["description"]
     assert metadata.tags == ["Jpop", "Beach"]
 
 

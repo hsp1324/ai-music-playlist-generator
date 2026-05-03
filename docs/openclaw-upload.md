@@ -227,17 +227,18 @@ Thumbnail text rules for OpenClaw:
 
 Localized YouTube metadata rules for OpenClaw:
 
-- The app can upload YouTube localized metadata for `ko`, `ja`, and `en`.
-- For `Tokyo Daydream Radio`, Japan, Tokyo, city-pop, J-pop, anime, or Japanese lofi releases, always write all three language versions.
+- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, and `es`.
+- For `Tokyo Daydream Radio`, Japan, Tokyo, city-pop, J-pop, anime, or Japanese lofi releases, always write all four language versions.
 - Use Korean as the default upload metadata. Pass Korean through `--title` and `--description-file`, and also pass `--ko-title` and `--ko-description-file`.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
 - Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
+- Pass Spanish through `--es-title` and `--es-description-file`. This should be natural Spanish YouTube copy for Spanish-speaking listeners.
 - End every localized description with a public hashtag line. `--tags` is still required, but it only sends YouTube API tags and does not replace visible description hashtags.
 - For playlist/BGM titles, include listening use cases in the title itself, for example study, work, walk, drive, sleep, reading, or rest. The title should not be only mood plus genre.
 - For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead; the thumbnail/channel branding can carry `J-POP`.
 - In Korean title/description/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; translate only the displayed title text and surrounding description.
-- For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and English uses English translated title only.
+- For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, English uses English translated title only, and Spanish uses Spanish translated title only.
 - If the release is one hour or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
 
 Example localized metadata approval:
@@ -253,7 +254,9 @@ scripts/openclaw-release approve-metadata \
   --ja-title "気分が上がるJ-POP 1時間 | 散歩・ドライブ・作業用プレイリスト" \
   --ja-description-file /tmp/metadata-ja.txt \
   --en-title "Feel-Good J-Pop 1 Hour | Walk, Drive, Work Playlist" \
-  --en-description-file /tmp/metadata-en.txt
+  --en-description-file /tmp/metadata-en.txt \
+  --es-title "J-Pop alegre 1 hora | Playlist para caminar, conducir y trabajar" \
+  --es-description-file /tmp/metadata-es.txt
 ```
 
 ## YouTube Channel Routing

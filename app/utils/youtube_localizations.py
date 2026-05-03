@@ -4,7 +4,7 @@ from typing import Any
 
 
 DEFAULT_YOUTUBE_LANGUAGE = "ko"
-SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en")
+SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es")
 
 
 def sanitize_youtube_copy(value: Any) -> str:

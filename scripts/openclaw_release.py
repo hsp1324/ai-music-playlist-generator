@@ -1561,10 +1561,10 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
             "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
-            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English description uses English translated title only. "
+            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, English description uses English translated title only, and Spanish description uses Spanish translated title only. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols. "
-            "For Tokyo/J-pop/Japan releases, write Korean, Japanese, and English title/description versions and pass them to approve-metadata."
+            "For Tokyo/J-pop/Japan releases, write Korean, Japanese, English, and Spanish title/description versions and pass them to approve-metadata."
         ),
     }
 
@@ -1605,6 +1605,10 @@ def metadata_localizations_from_args(args: argparse.Namespace, *, title: str, de
         "en": {
             "title": read_optional_text(args.en_title, "", label="English title"),
             "description": read_optional_text(args.en_description, args.en_description_file, label="English description"),
+        },
+        "es": {
+            "title": read_optional_text(args.es_title, "", label="Spanish title"),
+            "description": read_optional_text(args.es_description, args.es_description_file, label="Spanish description"),
         },
     }
     return {
@@ -1824,6 +1828,9 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--en-title", default="", help="English localized YouTube title.")
     metadata_parser.add_argument("--en-description", default="", help="English localized YouTube description. Prefer --en-description-file for multiline copy.")
     metadata_parser.add_argument("--en-description-file", default="", help="UTF-8 English description file.")
+    metadata_parser.add_argument("--es-title", default="", help="Spanish localized YouTube title.")
+    metadata_parser.add_argument("--es-description", default="", help="Spanish localized YouTube description. Prefer --es-description-file for multiline copy.")
+    metadata_parser.add_argument("--es-description-file", default="", help="UTF-8 Spanish description file.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)

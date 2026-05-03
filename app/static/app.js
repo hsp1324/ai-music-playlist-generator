@@ -73,6 +73,7 @@ const METADATA_LANGUAGES = [
   { code: "ko", label: "Korean", shortLabel: "KO" },
   { code: "ja", label: "Japanese", shortLabel: "JA" },
   { code: "en", label: "English", shortLabel: "EN" },
+  { code: "es", label: "Spanish", shortLabel: "ES" },
 ];
 
 let quickUploadFiles = [];

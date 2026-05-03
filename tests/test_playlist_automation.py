@@ -2075,6 +2075,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
                     "ko": {"title": "한국어 제목", "description": "한국어 설명"},
                     "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
                     "en": {"title": "English Title", "description": "English description"},
+                    "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
                 },
             },
         )
@@ -2083,6 +2084,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert "#jpop #playlist" in localized_metadata_response.json()["youtube_description"]
         assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["ja"]["description"]
         assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["en"]["description"]
+        assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["es"]["description"]
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             meta = dict(playlist.metadata_json or {})
@@ -2340,6 +2342,7 @@ def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypa
             "ko": {"title": "한국어 제목", "description": "한국어 설명"},
             "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
             "en": {"title": "English Title", "description": "English description"},
+            "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
         },
         default_language="ko",
     )
@@ -2353,6 +2356,7 @@ def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypa
     assert captured["body"]["localizations"] == {
         "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
         "en": {"title": "English Title", "description": "English description"},
+        "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
     }
 
 

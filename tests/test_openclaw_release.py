@@ -253,9 +253,11 @@ def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
     ko_description = tmp_path / "ko.txt"
     ja_description = tmp_path / "ja.txt"
     en_description = tmp_path / "en.txt"
+    es_description = tmp_path / "es.txt"
     ko_description.write_text("한국어 설명", encoding="utf-8")
     ja_description.write_text("日本語の説明", encoding="utf-8")
     en_description.write_text("English description", encoding="utf-8")
+    es_description.write_text("Descripcion en espanol", encoding="utf-8")
     captured_payloads = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -274,6 +276,7 @@ def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
                     "ko": {"title": "한국어 제목", "description": "한국어 설명"},
                     "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
                     "en": {"title": "English Title", "description": "English description"},
+                    "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
                 },
             },
         )
@@ -297,6 +300,9 @@ def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
             en_title="English Title",
             en_description="",
             en_description_file=str(en_description),
+            es_title="Titulo en espanol",
+            es_description="",
+            es_description_file=str(es_description),
             actor="openclaw",
             note="",
         ),
@@ -306,6 +312,7 @@ def test_approve_metadata_sends_language_localizations(tmp_path) -> None:
     assert payload["default_language"] == "ko"
     assert payload["localizations"]["ja"]["title"] == "日本語タイトル"
     assert payload["localizations"]["en"]["description"] == "English description"
+    assert payload["localizations"]["es"]["title"] == "Titulo en espanol"
     assert result["release"]["youtube_localizations"]["ko"]["title"] == "한국어 제목"
 
 
