@@ -533,6 +533,10 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         client.app.state.settings.auto_build_playlists = False
+        client.app.state.services.youtube.get_channel = lambda channel_id: {
+            "id": channel_id,
+            "title": "Soft Hour Radio",
+        }
         marker = uuid4().hex
 
         track_response = client.post(
@@ -575,6 +579,7 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
             f"/api/playlists/{playlist['id']}/mark-uploaded",
             json={
                 "youtube_video_id": f"yt-{marker}",
+                "youtube_channel_id": "UC-soft-hour",
                 "output_video_path": str(local_video),
                 "actor": "test-suite",
                 "note": "uploaded manually",
@@ -585,6 +590,8 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
         assert uploaded["status"] == "uploaded"
         assert uploaded["youtube_video_id"] == f"yt-{marker}"
         assert uploaded["output_video_path"] is None
+        assert uploaded["metadata_json"]["youtube_channel_id"] == "UC-soft-hour"
+        assert uploaded["metadata_json"]["youtube_channel_title"] == "Soft Hour Radio"
         assert not local_video.exists()
 
         track_after = client.get(f"/api/tracks/{track_id}")
@@ -1752,6 +1759,65 @@ def test_publish_approval_rejects_incomplete_workspace(tmp_path) -> None:
 
         assert publish_response.status_code == 400
         assert publish_response.json()["detail"] == "Playlist has no tracks to publish."
+    finally:
+        clear_isolated_client_env()
+
+
+def test_publish_approval_with_manual_video_id_stores_channel_title(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        client.app.state.services.youtube.get_channel = lambda channel_id: {
+            "id": channel_id,
+            "title": "Soft Hour Radio",
+        }
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Manual YouTube Id Workspace",
+                "target_duration_seconds": 300,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+        local_audio = tmp_path / "manual-youtube-id.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Manual YouTube Id Track",
+                "prompt": "manual youtube id channel test",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        publish_response = client.post(
+            f"/api/playlists/{workspace_id}/approve-publish",
+            json={
+                "actor": "test-suite",
+                "youtube_video_id": "manual-video-123",
+                "youtube_channel_id": "UC-soft-hour",
+                "force_under_target": True,
+            },
+        )
+
+        assert publish_response.status_code == 200
+        payload = publish_response.json()
+        assert payload["youtube_video_id"] == "manual-video-123"
+        assert payload["youtube_channel_id"] == "UC-soft-hour"
+        assert payload["youtube_channel_title"] == "Soft Hour Radio"
     finally:
         clear_isolated_client_env()
 

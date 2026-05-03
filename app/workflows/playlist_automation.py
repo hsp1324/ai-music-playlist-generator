@@ -40,6 +40,33 @@ def _playlist_meta(playlist: Playlist) -> dict:
     return dict(playlist.metadata_json or {})
 
 
+def _resolve_youtube_channel_title(services: ServiceRegistry, channel_id: str | None) -> str | None:
+    if not channel_id:
+        return None
+    try:
+        channel = services.youtube.get_channel(channel_id)
+    except Exception:  # noqa: BLE001
+        return None
+    if not channel:
+        return None
+    title = str(channel.get("title") or "").strip()
+    return title or None
+
+
+def _store_youtube_channel_metadata(
+    meta: dict,
+    services: ServiceRegistry,
+    *,
+    channel_id: str | None,
+) -> None:
+    if not channel_id:
+        return
+    meta["youtube_channel_id"] = channel_id
+    channel_title = _resolve_youtube_channel_title(services, channel_id)
+    if channel_title:
+        meta["youtube_channel_title"] = channel_title
+
+
 def _parse_metadata_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -1985,6 +2012,8 @@ def approve_playlist_publish(
         meta["publish_approved"] = True
         meta["publish_approved_by"] = actor
         meta["note"] = note
+        _store_youtube_channel_metadata(meta, services, channel_id=youtube_channel_id)
+        playlist.metadata_json = meta
         db.add(playlist)
 
         job = Job(
@@ -2025,6 +2054,9 @@ def approve_playlist_publish(
         raise ValueError("YouTube metadata must be approved before final publish approval.")
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing before final publish approval.")
+
+    _store_youtube_channel_metadata(meta, services, channel_id=youtube_channel_id)
+    playlist.metadata_json = meta
 
     _queue_publish_job(
         db,

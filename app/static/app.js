@@ -2337,6 +2337,7 @@ function renderWorkspaceDetail() {
         body: JSON.stringify({
           actor: "web-ui",
           youtube_video_id: input.value || null,
+          youtube_channel_id: workspace.youtube_channel_id || state.youtubeStatus?.selected_channel_id || null,
           note: "Marked uploaded from workspace detail.",
         }),
       });

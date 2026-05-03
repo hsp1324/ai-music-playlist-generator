@@ -29,6 +29,7 @@ from app.schemas.playlist import (
 )
 from app.services.registry import ServiceRegistry
 from app.workflows.playlist_automation import (
+    _store_youtube_channel_metadata,
     _utcnow,
     approve_playlist_cover,
     approve_playlist_metadata,
@@ -450,8 +451,10 @@ def approve_publish(
 def mark_playlist_uploaded(
     playlist_id: str,
     payload: PlaylistUploadMarkRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> PlaylistRead:
+    services = get_services(request)
     playlist = db.get(Playlist, playlist_id)
     if not playlist:
         raise HTTPException(status_code=404, detail="Playlist not found")
@@ -469,6 +472,11 @@ def mark_playlist_uploaded(
         "publish_ready": True,
         "publish_approved": True,
     }
+    _store_youtube_channel_metadata(
+        meta,
+        services,
+        channel_id=payload.youtube_channel_id or meta.get("youtube_channel_id"),
+    )
     cleanup = _delete_uploaded_video_file(playlist.output_video_path if playlist.youtube_video_id else None)
     if cleanup["deleted"]:
         playlist.output_video_path = None

@@ -76,6 +76,7 @@ class PlaylistTrackReorderRequest(BaseModel):
 
 class PlaylistUploadMarkRequest(BaseModel):
     youtube_video_id: str | None = None
+    youtube_channel_id: str | None = None
     output_video_path: str | None = None
     actor: str = "manual-upload"
     note: str | None = None
