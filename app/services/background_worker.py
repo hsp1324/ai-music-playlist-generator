@@ -823,7 +823,9 @@ class BackgroundJobWorker:
             "Soft Hour Radio/background-music visual system: calm, restrained visual concept matched to the release. "
             "Let the release concept and first frame decide the subject; do not force a fixed recurring mascot, "
             "character count, scene list, or camera composition. Use subtle motion derived from the first frame. "
-            "The final moment should return close to the opening composition without becoming frozen. "
+            "Keep the camera locked in the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. "
+            "Animate only ambient environmental details already present in the first frame. "
+            "The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ. "
             "No repeated segment, no hard cuts, no subtitles, no logos, no UI. "
             f"{watermark_prompt}"
         )
@@ -853,7 +855,7 @@ class BackgroundJobWorker:
             )
         return (
             "Cinematic background-music visualizer shot for Soft Hour Radio: calm, restrained illustrated scene matched to the release concept. "
-            "Animated/anime/illustrated style, not photorealistic or live-action. Subtle motion derived from the first frame, final moment close to the opening composition, stable composition, no fixed recurring character/scene template, no repeated segment. "
+            "Animated/anime/illustrated style, not photorealistic or live-action. Locked camera with the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. Subtle ambient motion derived from the first frame, stable composition, no fixed recurring character/scene template, no repeated segment. "
             f"{watermark_prompt}"
         )
 

@@ -37,7 +37,9 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
 - Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
 - The loop video should use subtle motion derived from the cover itself. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
-- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+- Keep the camera locked. Do not ask for zoom, push-in, pull-back, dolly, camera breathing, camera drift, camera follow, or parallax camera movement unless the human explicitly requests camera movement.
+- Animate only environmental details already present in the first frame, such as light flicker, particles, water/rain shimmer, leaf movement, smoke, curtains, or small atmosphere changes.
+- The final moment should keep the same crop, framing, camera distance, lighting, palette, and subject placement. The app handles smooth repetition with crossfade, so do not force the model to zoom out or return the camera to the opening frame.
 
 Prompt shape:
 
@@ -47,9 +49,10 @@ Create one continuous calm animated music visualizer shot for a Soft Hour Radio 
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
 Preserve the lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
 Animate only natural, subtle details already implied by the first frame and release mood.
+Keep the camera locked in the same crop and framing for the full clip. No zoom, no push-in, no pull-back, no dolly, no camera breathing, no camera drift, no camera follow, no parallax camera movement.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ.
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
 ```
 

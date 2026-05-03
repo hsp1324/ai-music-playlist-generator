@@ -81,9 +81,10 @@ Create one continuous calm animated music visualizer shot for a background-music
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
 Preserve the lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
 Animate only natural, subtle details already implied by the first frame and release mood.
+Keep the camera locked in the same crop and framing for the full clip. No zoom, no push-in, no pull-back, no dolly, no camera breathing, no camera drift, no camera follow, no parallax camera movement.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ.
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
 ```
 

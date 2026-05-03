@@ -95,7 +95,8 @@ def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:
 
     assert "Soft Hour Radio/background-music visual system" in prompt
     assert "do not force a fixed recurring mascot" in prompt
-    assert "final moment should return close to the opening composition" in prompt
+    assert "Keep the camera locked in the same crop and framing" in prompt
+    assert "no zoom" in prompt
     assert 'lower-left channel label "Soft Hour Radio"' in prompt
     assert "Preserve this text exactly" in prompt
     assert "exactly three people seen from behind" not in prompt
