@@ -264,8 +264,8 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 clean video cover and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that clip during final video render with a smooth 2 second forward crossfade loop. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
-- The web release detail view exposes separate upload/replace buttons for clean cover, text YouTube thumbnail, and 8 second loop video.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name watermark and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- The web release detail view exposes separate upload/replace buttons for video cover, text YouTube thumbnail, and 8 second loop video.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
 - For best YouTube output, use a 16:9 image such as `1280x720` or `1920x1080`.
@@ -300,9 +300,9 @@ AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
 Runtime behavior:
 
 - If the playlist has a rendered local audio file and YouTube is connected, publish approval will queue a background job that:
-  - uses the approved clean cover image as the still visual fallback
+  - uses the approved cover image as the still visual fallback
   - uses the uploaded 8 second loop video as the moving visual when `--loop-video` is provided
-  - renders the final MP4 from audio plus either the loop video or the clean cover fallback
+  - renders the final MP4 from audio plus either the loop video or the cover fallback
   - uploads the video to YouTube
   - uploads the separate text-based YouTube thumbnail as the custom thumbnail
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
@@ -339,9 +339,9 @@ When a `single_track_video` workspace is ready and auto-publish is enabled, the 
 - loop that clip to match the full song duration with `ffmpeg`
 - upload the finished MP4 to YouTube with generated metadata
 
-OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Create the final clean cover first, then generate the YouTube thumbnail from that exact cover as a reference/edit derivative so characters, positions, outfit colors, lighting, palette, and background remain consistent while text/branding is added. The default visual signature is three people walking away from the viewer, but an explicit human request for a different scene, subject, action, or camera angle overrides that default and should be applied consistently to cover, thumbnail, and loop video. Dreamina is only for animating the cover or first-frame image into a moving visual; by default that image is clean and text-free, while an explicit video-text request may use only a lower-left channel label.
+OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Create the final cover first with only the lower-left channel-name watermark, then generate the YouTube thumbnail from that exact cover as a reference/edit derivative so characters, positions, outfit colors, lighting, palette, and background remain consistent while click text/branding is added. The default visual signature is three people walking away from the viewer for Tokyo Daydream Radio, but an explicit human request for a different scene, subject, action, or camera angle overrides that default and should be applied consistently to cover, thumbnail, and loop video. Dreamina is only for animating the cover or first-frame image into a moving visual, and it must preserve the lower-left channel label for the full clip.
 
-OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the clean text-free cover or a separate clean text-free first-frame image by default, set `16:9`, `720p`, and exactly `8 seconds` when selectable, download the MP4 locally, then upload it with the command below. If the human explicitly requested channel text inside the video, the first-frame image may instead include only the lower-left channel label:
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the cover or a separate first-frame image that contains only the lower-left channel-name watermark, set `16:9`, `720p`, and exactly `8 seconds` when selectable, download the MP4 locally, then upload it with the command below:
 
 ```bash
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
@@ -353,7 +353,7 @@ For full playlist automation, pass it directly:
 scripts/openclaw-release auto-publish-playlist ... --loop-video /absolute/path/to/clip.mp4
 ```
 
-The app repeats short clips with smooth 2 second forward crossfade looping by default, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds, and crossfades the end of each forward pass into the next forward pass to avoid a hard jump. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. By default, avoid text inside the loop video because generated text can flicker, vanish, or reappear during the repeated clip. If the human explicitly requests video text, OpenClaw may create the cover/first-frame with only a lower-left channel label such as `Tokyo Daydream Radio`, let GPT Image design scene-matched typography, and instruct Dreamina/Seedance to preserve that exact text for the full 8 seconds; reject/regenerate if the text flickers, morphs, disappears, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage.
+The app repeats short clips internally, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. The cover/first-frame must contain only the lower-left channel label such as `Tokyo Daydream Radio`; instruct Dreamina/Seedance to preserve that exact text for the full clip and reject/regenerate if the text flickers, morphs, disappears, changes spelling/style, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage.
 
 ## Slack App Setup
 

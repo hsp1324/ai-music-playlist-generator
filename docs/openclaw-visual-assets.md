@@ -13,9 +13,11 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 - Create the YouTube thumbnail from that final cover as an image-to-image edit/reference derivative, not as a fresh unrelated scene.
 - Keep cover, thumbnail, and loop video visually continuous: same subject count, subject placement, silhouettes, clothing colors, props, background landmarks, lighting, palette, and camera angle.
 - The thumbnail is the click image and should contain short readable text plus channel branding.
-- The cover is the playback visual and Dreamina/Seedance first-frame reference. It is text-free by default.
+- The cover is the playback visual and Dreamina/Seedance first-frame reference. It must include only a small lower-left selected-channel-name watermark.
 - Do not use the text thumbnail as the Dreamina first-frame reference.
-- If the human explicitly requests channel text inside the moving video, the cover/first-frame may include only a small lower-left channel label. No title text, lyrics, subtitles, UI, logos, or unrelated words.
+- The cover/first-frame watermark is mandatory for every channel. Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words.
+- The Dreamina/Seedance loop video must preserve the exact lower-left channel label for the full clip. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
+- The thumbnail should use larger click text plus a smaller channel-brand line whose size/style stays consistent with the cover watermark when possible.
 - Human visual requests override the channel default. If the human asks for a specific scene, subject, action, camera angle, animal, object, or character type, apply that concept consistently to the cover, thumbnail, and loop video.
 - All generated visuals should look animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage unless the human explicitly asks and the YouTube synthetic-media policy is handled.
 
@@ -41,16 +43,17 @@ Thumbnail text:
 Dreamina/Seedance prompt shape:
 
 ```text
-Use the uploaded clean text-free first-frame image as the exact starting frame.
+Use the uploaded first-frame image as the exact starting frame. It contains the exact lower-left channel label "Tokyo Daydream Radio".
 Create one continuous forward-moving animated music visualizer shot.
 Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, walking away from the camera into the scene.
 The viewer should see backs and backs of heads, not front-facing faces.
 The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
+Preserve the lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
 Adapt the background and atmosphere to the release concept.
 Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI, no extra people or characters.
+Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI, no extra people or characters.
 ```
 
 ## Soft Hour Radio Visual Skill
@@ -73,14 +76,15 @@ Thumbnail text:
 Dreamina/Seedance prompt shape:
 
 ```text
-Use the uploaded clean text-free first-frame image as the exact starting frame.
+Use the uploaded first-frame image as the exact starting frame. It contains the exact lower-left channel label "Soft Hour Radio".
 Create one continuous calm animated music visualizer shot for a background-music release.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
+Preserve the lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
 Animate only natural, subtle details already implied by the first frame and release mood.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI.
+Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
 ```
 
 ## Other Channels Or Explicit Requests

@@ -67,7 +67,9 @@ def test_dreamina_prompt_uses_tokyo_daydream_three_person_signature() -> None:
 
     assert "animated, anime, illustrated, or stylized" in prompt
     assert "Do not use photorealistic" in prompt
-    assert "no text" in prompt
+    assert 'lower-left channel label "Tokyo Daydream Radio"' in prompt
+    assert "Preserve this text exactly" in prompt
+    assert "No other text" in prompt
     assert "exactly three people seen from behind" in prompt
 
 
@@ -88,6 +90,8 @@ def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:
     assert "Soft Hour Radio/background-music visual system" in prompt
     assert "do not force a fixed recurring mascot" in prompt
     assert "final moment should return close to the opening composition" in prompt
+    assert 'lower-left channel label "Soft Hour Radio"' in prompt
+    assert "Preserve this text exactly" in prompt
     assert "exactly three people seen from behind" not in prompt
 
 
@@ -106,6 +110,7 @@ def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> N
     prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
 
     assert "Soft Hour Radio/background-music visual system" in prompt
+    assert 'lower-left channel label "Soft Hour Radio"' in prompt
     assert "exactly three people seen from behind" not in prompt
 
 

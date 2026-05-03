@@ -783,19 +783,30 @@ class BackgroundJobWorker:
         if explicit_prompt:
             return explicit_prompt
         is_tokyo_visual = BackgroundJobWorker._uses_tokyo_daydream_visuals(playlist, tracks)
+        channel_title = str(meta.get("youtube_channel_title") or "").strip()
+        if not channel_title:
+            channel_title = "Tokyo Daydream Radio" if is_tokyo_visual else "Soft Hour Radio"
+        watermark_prompt = (
+            f'The uploaded first-frame image contains the exact lower-left channel label "{channel_title}". '
+            "Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, "
+            "flicker, or change it. Keep the text area stable and animate only the surrounding scene subtly. "
+            "No other text, subtitles, logos, UI, or title words."
+        )
         signature_prompt = (
             "Signature composition for Tokyo Daydream Radio/J-pop only: exactly three people seen from behind, "
             "walking away from the camera into the scene. The viewer sees their backs and backs of heads, "
             "not front-facing faces. One continuous forward-moving shot with subtle camera-follow movement from behind, "
             "final moment close to the opening composition without becoming frozen, "
-            "stable composition, no repeated segment, no hard cuts, no subtitles, no text, no extra people or characters."
+            "stable composition, no repeated segment, no hard cuts, no subtitles, no extra people or characters. "
+            f"{watermark_prompt}"
         )
         soft_hour_prompt = (
             "Soft Hour Radio/background-music visual system: calm, restrained visual concept matched to the release. "
             "Let the release concept and first frame decide the subject; do not force a fixed recurring mascot, "
             "character count, scene list, or camera composition. Use subtle motion derived from the first frame. "
             "The final moment should return close to the opening composition without becoming frozen. "
-            "No repeated segment, no hard cuts, no subtitles, no text, no logos, no UI."
+            "No repeated segment, no hard cuts, no subtitles, no logos, no UI. "
+            f"{watermark_prompt}"
         )
         if tracks:
             track = tracks[0]
@@ -818,11 +829,13 @@ class BackgroundJobWorker:
             return (
                 "Cinematic music visualizer shot for Tokyo Daydream Radio/J-pop with exactly three people seen from behind walking away from the camera into the scene, "
                 "animated/anime/illustrated style, not photorealistic or live-action, "
-                "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, final moment close to the opening composition, no repeated segment, no text."
+                "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, final moment close to the opening composition, no repeated segment. "
+                f"{watermark_prompt}"
             )
         return (
             "Cinematic background-music visualizer shot for Soft Hour Radio: calm, restrained illustrated scene matched to the release concept. "
-            "Animated/anime/illustrated style, not photorealistic or live-action. Subtle motion derived from the first frame, final moment close to the opening composition, stable composition, no fixed recurring character/scene template, no repeated segment, no text."
+            "Animated/anime/illustrated style, not photorealistic or live-action. Subtle motion derived from the first frame, final moment close to the opening composition, stable composition, no fixed recurring character/scene template, no repeated segment. "
+            f"{watermark_prompt}"
         )
 
     @staticmethod

@@ -17,17 +17,18 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 ## Cover
 
-- Create one final clean 16:9 cover first.
+- Create one final 16:9 cover first.
 - The cover is the playback visual and Dreamina/Seedance first frame.
-- Keep it text-free by default.
-- If the human explicitly asks for channel text inside the video, the cover may contain only a small lower-left `Soft Hour Radio` label.
+- The cover must include only a small lower-left `Soft Hour Radio` channel watermark.
+- Keep the channel name readable, subtle, and consistent in size/style with the thumbnail brand line.
+- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable use-case/mood text, for example `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, `RAINY NIGHT`, or `CALM READING`.
-- Add smaller `SOFT HOUR RADIO` as the brand line.
+- Add smaller `SOFT HOUR RADIO` as the brand line. Keep this brand line visually consistent with the lower-left cover watermark.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, or clocks unless the human explicitly asks.
 
 ## Loop Video
@@ -41,14 +42,15 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 Prompt shape:
 
 ```text
-Use the uploaded clean text-free first-frame image as the exact starting frame.
+Use the uploaded first-frame image as the exact starting frame. It contains the exact lower-left channel label "Soft Hour Radio".
 Create one continuous calm animated music visualizer shot for a Soft Hour Radio background-music release.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
+Preserve the lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
 Animate only natural, subtle details already implied by the first frame and release mood.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI.
+Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
 ```
 
 ## Metadata
