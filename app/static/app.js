@@ -2323,7 +2323,7 @@ function renderWorkspaceDetail() {
       detailActionGroups.publish,
       actionButton("Request Next Playlist", "action-button secondary-button", async () => {
         const proceed = window.confirm(
-          "OpenClaw Slack 채널에 다음 1시간 playlist 제작/비공개 publish 요청을 보낼까요?"
+          "OpenClaw Slack 채널에 OPENCLAW_RUN 명령으로 다음 1시간 playlist 제작/비공개 publish 요청을 보낼까요?"
         );
         if (!proceed) return;
         const result = await api(`/api/playlists/${workspace.id}/openclaw/request-next`, {
@@ -2333,7 +2333,7 @@ function renderWorkspaceDetail() {
           }),
         });
         if (result?.ok) {
-          alert("OpenClaw Slack 채널에 다음 playlist 요청을 보냈습니다.");
+          alert("OpenClaw Slack 채널에 OPENCLAW_RUN next playlist 요청을 보냈습니다.");
         }
       })
     );

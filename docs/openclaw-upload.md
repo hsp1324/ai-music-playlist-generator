@@ -323,6 +323,7 @@ Mobile browsers can stop playback when they stream directly from temporary Suno/
 
 Operational rules for OpenClaw:
 
+- If OpenClaw is listening in Slack, execute production work only when the message starts with `OPENCLAW_RUN:` or explicitly mentions the OpenClaw bot. Ignore ordinary channel messages and test messages.
 - Prefer uploading a local audio file path when possible.
 - If only a remote Suno/CDN URL is available, submit it as `audio_url` or `audio_path`; the app will download it into local storage before creating the track.
 - Do not leave release candidates pointing directly at `cdn1.suno.ai` unless the local cache step fails and the failure is reported to the human.

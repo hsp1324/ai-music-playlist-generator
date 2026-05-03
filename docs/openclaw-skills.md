@@ -14,6 +14,15 @@ Use the local API or the helper script. Do not use the public `https://ai-music.
 export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 ```
 
+## Slack Trigger Safety
+
+If OpenClaw is connected to Slack, do not execute every message in the channel. Treat normal messages as conversation only.
+
+- Execute a Slack message only when it starts with the exact prefix `OPENCLAW_RUN:` or when the human explicitly mentions the OpenClaw bot.
+- Ignore `[NO ACTION]`, test messages, status chatter, and ordinary channel conversation.
+- When the AI Music app asks for the next playlist, it posts a message that starts with `OPENCLAW_RUN:`. That prefix marks a real production command.
+- If a message is not prefixed or mentioned, do not call Suno, do not upload files, do not render, and do not publish.
+
 ## Channel-First Workflow
 
 Before generating cover art, YouTube thumbnails, or Dreamina/Seedance loop videos, OpenClaw must choose the target channel first and read that channel's profile.

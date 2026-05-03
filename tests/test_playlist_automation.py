@@ -41,6 +41,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH", None)
+    os.environ.pop("AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX", None)
     os.environ.pop("AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT", None)
     get_settings.cache_clear()
 
@@ -152,6 +153,7 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert response.status_code == 200
         assert response.json()["ok"] is True
         assert calls[0]["channel"] == "C0AVBUYP150"
+        assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
         assert "다음 1시간 Playlist Release" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]

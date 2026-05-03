@@ -7,12 +7,25 @@ from sqlalchemy.orm import Session
 from app.models.playlist import Playlist
 
 
-def build_next_playlist_request_message(playlist: Playlist, *, prompt_override: str | None = None) -> str:
+def _with_trigger_prefix(text: str, trigger_prefix: str | None) -> str:
+    stripped_text = text.strip()
+    prefix = (trigger_prefix or "").strip()
+    if not prefix or stripped_text.startswith(prefix):
+        return stripped_text
+    return f"{prefix}\n{stripped_text}"
+
+
+def build_next_playlist_request_message(
+    playlist: Playlist,
+    *,
+    prompt_override: str | None = None,
+    trigger_prefix: str | None = "OPENCLAW_RUN:",
+) -> str:
     meta = dict(playlist.metadata_json or {})
     channel_title = str(meta.get("youtube_channel_title") or "").strip() or str(meta.get("youtube_channel_id") or "").strip()
     youtube_link = f"https://youtu.be/{playlist.youtube_video_id}" if playlist.youtube_video_id else "not uploaded yet"
     if prompt_override and prompt_override.strip():
-        return prompt_override.strip()
+        return _with_trigger_prefix(prompt_override, trigger_prefix)
 
     previous_context = [
         "다음 1시간 Playlist Release를 만들어서 private YouTube publish까지 진행해줘.",
@@ -35,7 +48,7 @@ def build_next_playlist_request_message(playlist: Playlist, *, prompt_override: 
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
         ]
     )
-    return "\n".join(previous_context)
+    return _with_trigger_prefix("\n".join(previous_context), trigger_prefix)
 
 
 async def post_next_playlist_request(
@@ -57,6 +70,7 @@ async def post_next_playlist_request(
     text = build_next_playlist_request_message(
         playlist,
         prompt_override=prompt_override or services.settings.openclaw_next_playlist_prompt,
+        trigger_prefix=services.settings.openclaw_slack_trigger_prefix,
     )
     result = await services.slack.post_plain_message(
         text=text,
