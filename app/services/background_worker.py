@@ -29,6 +29,21 @@ def _utcnow():
     return datetime.now(timezone.utc)
 
 
+def _playlist_track_ids(playlist: Playlist) -> list[str]:
+    return [
+        item.track_id
+        for item in sorted(playlist.items, key=lambda item: item.order_index)
+        if item.track_id
+    ]
+
+
+def _rendered_snapshot_matches_current_tracks(playlist: Playlist, key: str) -> bool:
+    rendered_track_ids = (playlist.metadata_json or {}).get(key)
+    if not rendered_track_ids:
+        return True
+    return list(rendered_track_ids) == _playlist_track_ids(playlist)
+
+
 @dataclass
 class WorkerLoopState:
     running: bool = False
@@ -166,12 +181,70 @@ class BackgroundJobWorker:
         if missing:
             raise ValueError(f"Playlist contains non-renderable tracks: {', '.join(missing)}")
 
+        rendered_track_ids = [track.id for track in tracks]
         output_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp3"
         rendered_path = self.services.playlist_builder.build_audio(tracks, output_path)
+        db.expire_all()
+        playlist = db.scalars(
+            select(Playlist)
+            .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+            .where(Playlist.id == job.playlist_id)
+        ).first()
+        if not playlist:
+            raise ValueError("Playlist not found after audio render.")
+        current_track_ids = _playlist_track_ids(playlist)
+        if current_track_ids != rendered_track_ids:
+            meta = dict(playlist.metadata_json or {})
+            meta["render_ready"] = False
+            meta["workflow_state"] = "render_queued"
+            meta["note"] = "Track list changed while audio was rendering. Re-render queued with the current track order."
+            meta["stale_audio_render"] = {
+                "rendered_track_ids": rendered_track_ids,
+                "current_track_ids": current_track_ids,
+                "detected_at": _utcnow().isoformat(),
+            }
+            meta.pop("rendered_track_ids", None)
+            meta.pop("rendered_track_count", None)
+            meta.pop("rendered_duration_seconds", None)
+            meta.pop("rendered_video_track_ids", None)
+            meta.pop("rendered_video_track_count", None)
+            playlist.output_audio_path = None
+            playlist.output_video_path = None
+            playlist.status = PlaylistStatus.building
+            playlist.metadata_json = meta
+            job.result_json = {
+                **(job.result_json or {}),
+                "playlist_id": playlist.id,
+                "stale_output_audio_path": str(rendered_path),
+                "requeued": True,
+                "rendered_track_ids": rendered_track_ids,
+                "current_track_ids": current_track_ids,
+            }
+            db.add(playlist)
+            db.add(job)
+            db.add(
+                Job(
+                    type=JobType.build_playlist,
+                    status=JobStatus.queued,
+                    source="system:stale-render-retry",
+                    payload_json={
+                        "playlist_id": playlist.id,
+                        "trigger": "track-list-changed-during-render",
+                    },
+                    result_json={},
+                    playlist=playlist,
+                )
+            )
+            return
+
         playlist.output_audio_path = str(rendered_path)
 
         meta = dict(playlist.metadata_json or {})
         meta["render_ready"] = True
+        meta["rendered_track_ids"] = rendered_track_ids
+        meta["rendered_track_count"] = len(rendered_track_ids)
+        meta["rendered_duration_seconds"] = playlist.actual_duration_seconds
+        meta.pop("stale_audio_render", None)
         meta["workflow_state"] = "audio_ready" if meta.get("publish_ready") else "rendered"
         meta.pop("render_error", None)
         meta["note"] = "Audio render completed in background. Generate cover art next."
@@ -213,6 +286,9 @@ class BackgroundJobWorker:
             raise ValueError("Approved cover image is missing on disk.")
         if not meta.get("cover_approved"):
             raise ValueError("Cover image must be approved before video render.")
+        if not _rendered_snapshot_matches_current_tracks(playlist, "rendered_track_ids"):
+            raise ValueError("Rendered audio is stale because the track list changed. Re-render audio before video render.")
+        video_track_ids = _playlist_track_ids(playlist)
 
         meta["workflow_state"] = "video_rendering"
         meta["note"] = "Rendering release video."
@@ -290,6 +366,49 @@ class BackgroundJobWorker:
                 )
             )
 
+        rendered_video_path = playlist.output_video_path
+        db.expire_all()
+        playlist = db.scalars(
+            select(Playlist)
+            .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+            .where(Playlist.id == job.playlist_id)
+        ).first()
+        if not playlist:
+            raise ValueError("Playlist not found after video render.")
+        current_track_ids = _playlist_track_ids(playlist)
+        if current_track_ids != video_track_ids:
+            meta = dict(playlist.metadata_json or {})
+            meta["metadata_approved"] = False
+            meta["publish_approved"] = False
+            meta["workflow_state"] = "pending_audio_render"
+            meta["note"] = "Track list changed while video was rendering. Re-render audio/video before publishing."
+            meta["stale_video_render"] = {
+                "rendered_track_ids": video_track_ids,
+                "current_track_ids": current_track_ids,
+                "detected_at": _utcnow().isoformat(),
+            }
+            meta.pop("rendered_video_track_ids", None)
+            meta.pop("rendered_video_track_count", None)
+            playlist.output_video_path = None
+            playlist.status = PlaylistStatus.ready
+            playlist.metadata_json = meta
+            job.result_json = {
+                **(job.result_json or {}),
+                "playlist_id": playlist.id,
+                "stale_output_video_path": rendered_video_path,
+                "rendered_track_ids": video_track_ids,
+                "current_track_ids": current_track_ids,
+            }
+            db.add(playlist)
+            db.add(job)
+            return
+
+        playlist.output_video_path = rendered_video_path
+        tracks = [
+            item.track
+            for item in sorted(playlist.items, key=lambda item: item.order_index)
+            if item.track is not None
+        ]
         youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
         render_meta = meta
         meta = self._current_playlist_meta(db, playlist.id, fallback=meta)
@@ -317,6 +436,9 @@ class BackgroundJobWorker:
         )
         meta["metadata_approved"] = False
         meta["publish_approved"] = False
+        meta["rendered_video_track_ids"] = video_track_ids
+        meta["rendered_video_track_count"] = len(video_track_ids)
+        meta.pop("stale_video_render", None)
         meta["workflow_state"] = "metadata_review"
         meta["note"] = "Video render completed. Review YouTube metadata next."
         meta["video_render_progress"] = {
@@ -462,6 +584,8 @@ class BackgroundJobWorker:
             meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
         if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
             raise ValueError("Rendered video is required before final YouTube upload.")
+        if not _rendered_snapshot_matches_current_tracks(playlist, "rendered_video_track_ids"):
+            raise ValueError("Rendered video is stale because the track list changed. Re-render video before final YouTube upload.")
         cover_image_path = meta.get("cover_image_path")
         if not cover_image_path or not Path(cover_image_path).exists():
             raise ValueError("Approved cover image is missing on disk.")

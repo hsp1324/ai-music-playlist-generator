@@ -556,6 +556,75 @@ def _playlist_tracks(playlist: Playlist) -> list[Track]:
     ]
 
 
+def _playlist_track_ids(playlist: Playlist) -> list[str]:
+    return [
+        item.track_id
+        for item in sorted(playlist.items, key=lambda item: item.order_index)
+        if item.track_id
+    ]
+
+
+def _rendered_audio_matches_current_tracks(playlist: Playlist) -> bool:
+    rendered_track_ids = (playlist.metadata_json or {}).get("rendered_track_ids")
+    if not rendered_track_ids:
+        return True
+    return list(rendered_track_ids) == _playlist_track_ids(playlist)
+
+
+def _invalidate_playlist_render_after_content_change(playlist: Playlist) -> None:
+    meta = _playlist_meta(playlist)
+    rendered_workflow_states = {
+        "rendering",
+        "render_queued",
+        "audio_ready",
+        "rendered",
+        "video_required",
+        "video_queued",
+        "video_rendering",
+        "metadata_review",
+        "publish_ready",
+        "publish_queued",
+        "uploaded",
+    }
+    has_rendered_state = bool(
+        playlist.output_audio_path
+        or playlist.output_video_path
+        or playlist.youtube_video_id
+        or meta.get("render_ready")
+        or meta.get("metadata_approved")
+        or meta.get("publish_approved")
+        or meta.get("rendered_track_ids")
+        or meta.get("rendered_video_track_ids")
+        or meta.get("workflow_state") in rendered_workflow_states
+    )
+    if not has_rendered_state:
+        return
+
+    playlist.output_audio_path = None
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    meta["render_ready"] = False
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["workflow_state"] = "pending_audio_render"
+    meta["note"] = "Track list changed. Re-render audio/video before publishing."
+    for key in (
+        "rendered_track_ids",
+        "rendered_track_count",
+        "rendered_duration_seconds",
+        "rendered_video_track_ids",
+        "rendered_video_track_count",
+        "youtube_title",
+        "youtube_description",
+        "youtube_tags",
+        "youtube_localizations",
+        "youtube_default_language",
+        "publish_approved_by",
+    ):
+        meta.pop(key, None)
+    playlist.metadata_json = meta
+
+
 def _all_tracks_renderable(playlist: Playlist) -> bool:
     tracks = _playlist_tracks(playlist)
     return bool(tracks) and all(_has_local_audio(track) for track in tracks)
@@ -1045,6 +1114,8 @@ def queue_workspace_video_render(
         raise ValueError("Playlist not found")
     if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
         raise ValueError("Rendered audio is required before rendering video.")
+    if not _rendered_audio_matches_current_tracks(playlist):
+        raise ValueError("Rendered audio is stale because the track list changed. Re-render audio before rendering video.")
 
     meta = _playlist_meta(playlist)
     cover_image_path = meta.get("cover_image_path")
@@ -1472,6 +1543,7 @@ async def assign_track_to_playlist(
         await _update_publish_state(db, services, split_playlist, trigger=f"assignment:{track.id}")
         return _load_playlist_with_tracks(db, split_playlist.id)
 
+    content_changed = existing_item is None
     if existing_item is None:
         order_index = (max((item.order_index for item in playlist.items), default=0) + 1)
         db.add(
@@ -1500,6 +1572,11 @@ async def assign_track_to_playlist(
             playlist,
             reset_downstream_assets=existing_item is None,
         )
+        meta = _playlist_meta(playlist)
+        meta["assignment_history"] = history
+    elif content_changed:
+        playlist.metadata_json = meta
+        _invalidate_playlist_render_after_content_change(playlist)
         meta = _playlist_meta(playlist)
         meta["assignment_history"] = history
     playlist.metadata_json = meta

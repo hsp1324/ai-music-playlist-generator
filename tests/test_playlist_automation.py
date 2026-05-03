@@ -851,6 +851,88 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         clear_isolated_client_env()
 
 
+def test_track_added_during_audio_render_requeues_fresh_render(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        injected = False
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Race Render Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        def upload_and_assign(title: str, duration_seconds: int) -> str:
+            local_audio = tmp_path / f"{title}.mp3"
+            local_audio.write_bytes(b"fake-audio")
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": title,
+                    "prompt": "render race test",
+                    "duration_seconds": duration_seconds,
+                    "audio_path": str(local_audio),
+                    "metadata": {"source": "test"},
+                },
+            )
+            assert track_response.status_code == 201
+            track_id = track_response.json()["id"]
+            approve_response = client.post(
+                f"/api/tracks/{track_id}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+            return track_id
+
+        first_track_id = upload_and_assign("Race Track 1", 60)
+
+        def fake_build_audio(tracks, output_path):
+            nonlocal injected
+            output_path.write_bytes("|".join(track.title for track in tracks).encode("utf-8"))
+            if not injected:
+                injected = True
+                upload_and_assign("Race Track 2", 60)
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+
+        assert drain_background_jobs(client, max_jobs=3) == 2
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert workspace["output_audio_path"].endswith(".mp3")
+        assert workspace["actual_duration_seconds"] == 120
+        assert Path(workspace["output_audio_path"]).read_text(encoding="utf-8") == "Race Track 1|Race Track 2"
+        assert [track["title"] for track in workspace["tracks"]] == ["Race Track 1", "Race Track 2"]
+        assert workspace["render_job"]["source"] == "system:stale-render-retry"
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            assert playlist is not None
+            meta = playlist.metadata_json
+            assert meta["rendered_track_ids"] != [first_track_id]
+            assert meta["rendered_track_count"] == 2
+            assert "stale_audio_render" not in meta
+    finally:
+        clear_isolated_client_env()
+
+
 def test_slack_approve_assigns_track_to_pending_workspace(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
