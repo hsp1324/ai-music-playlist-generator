@@ -656,6 +656,7 @@ class BackgroundJobWorker:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)
                     if self.settings.openclaw_auto_request_next_on_publish:
+                        playlist.metadata_json = meta
                         sent_for_video_id = str(meta.get("openclaw_next_request_youtube_video_id") or "").strip()
                         if playlist.youtube_video_id and sent_for_video_id != playlist.youtube_video_id:
                             try:
