@@ -142,19 +142,22 @@ Do not rely on the app's generated draft cover for YouTube upload. Do not reuse 
 
 Static image creation rules:
 
+- Follow the channel-specific visual skill rules in [openclaw-visual-assets.md](openclaw-visual-assets.md). Do not apply the Tokyo/J-pop three-people-walking signature to every channel.
 - Do not use Dreamina for static cover or YouTube thumbnail images.
 - Use OpenAI GPT Image models for static image generation. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running OpenAI/Image tool environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
 - If `gpt-image-2` is unavailable in the actual tool/API environment, fall back to the best available GPT Image model instead of using Dreamina for static images.
 - Produce 16:9 images, preferably `1280x720` or `1920x1080`.
 - Create the final clean cover first. Then create the YouTube thumbnail from that exact final cover as an image-to-image edit/reference derivative. Do not make the thumbnail as a fresh unrelated generation.
-- Apply the default channel visual signature to every final cover and thumbnail unless the human requested a different visual concept: exactly three people walking forward away from the viewer into the scene. The viewer should see their backs and backs of heads, not front-facing faces.
-- Human visual requests override the default signature. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video instead of forcing the three-people-walking default.
+- For `Tokyo Daydream Radio` or Japan/J-pop releases, use the Tokyo Daydream Radio visual skill: exactly three people seen from behind, walking forward away from the viewer into the scene, unless the human requests a different visual concept.
+- For `Soft Hour Radio` or default BGM/cafe/sleep/study/chill releases, use the Soft Hour Radio visual skill: calm atmospheric scenes such as cafe windows, piano rooms, rain, moonlit rooms, nature, candles, desk lamps, or abstract warm light. Do not use the three-people-walking signature by default.
+- Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - For thumbnails, the main default/requested subject must stay centered and visually important. Text must not push it to the side, crop it, cover it, or make it feel secondary. Put text into safe negative space around the centered composition.
 - Keep every static visual animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
-- The cover should be a clean text-free version of the default/requested scene. The YouTube thumbnail should use the same composition plus large readable click text and channel branding.
+- The cover should be a clean text-free version of the channel/requested scene. The YouTube thumbnail should use the same composition plus large readable click text and channel branding.
 - When deriving the thumbnail from the cover, preserve exact subject count, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add text, channel branding, crop/contrast/readability adjustments, and small layout refinements. Example: if a cloak is red in the cover, it must stay red in the thumbnail.
 - If the thumbnail changes character identity, clothing color, subject placement, or core background compared with the cover, reject it and regenerate before upload.
-- For Japan/J-pop releases on `Tokyo Daydream Radio`, keep a consistent channel thumbnail system across Tokyo/city, forest/nature, and beach variants: large `J-POP` text with smaller `TOKYO DAYDREAM RADIO` directly beneath it. Use the same full-bleed layout as the approved channel examples, with either the default centered three-person back-view composition or the centered human-requested visual composition.
+- For Japan/J-pop releases on `Tokyo Daydream Radio`, keep a consistent channel thumbnail system across Tokyo/city, forest/nature, and beach variants: large `J-POP` text with smaller `TOKYO DAYDREAM RADIO` directly beneath it. Use the same full-bleed layout as the approved channel examples, with either the Tokyo three-person back-view composition or the centered human-requested visual composition.
+- For `Soft Hour Radio`, use thumbnail wording such as `DEEP SLEEP`, `CAFE PIANO`, `FOCUS MUSIC`, `RAINY NIGHT`, `STUDY BGM`, or `CALM READING`, with smaller `SOFT HOUR RADIO` branding.
 - Do not add duration text or badges to thumbnails. Avoid `1 HOUR`, `60 MIN`, `1時間`, clocks, timers, and duration stickers.
 - Use the clean cover or a separate clean no-text first-frame image for Dreamina/Seedance video generation by default. Do not use the final text thumbnail as the first-frame reference; generated video often makes text flicker, disappear, or reappear in the loop.
 - Text-in-video exception: if the human explicitly asks for channel text inside the video, create the cover/first-frame with a small lower-left channel label such as `Tokyo Daydream Radio`. Let GPT Image design the font/lettering to match the scene, channel, and genre, while keeping the exact requested spelling readable. This cover/first-frame may then be used in Dreamina/Seedance.
@@ -188,20 +191,22 @@ Dreamina/Seedance motion prompt guidance:
 - Do not ask Dreamina for a loop. By default, ask for one continuous forward-moving video shot. If the human requested a different motion/camera concept, ask for that requested continuous shot instead.
 - Do not put duration, ratio, or quality in the prompt. Set those in Dreamina controls only.
 - Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
-- Ask Dreamina/Seedance to preserve the clean first-frame image's composition, lighting, palette, illustrated/anime style, and default/requested subject/action in the first shot.
-- Use subtle default camera-follow movement from behind, or the human-requested camera motion if specified. Always require stable composition, no hard cuts, no text overlays, no subtitles, no logos, no UI, no photorealism, and no extra unwanted people or characters.
+- Ask Dreamina/Seedance to preserve the clean first-frame image's composition, lighting, palette, illustrated/anime style, and channel/requested subject/action in the first shot.
+- Use Tokyo-style camera-follow movement from behind only for Tokyo Daydream Radio/J-pop visuals. For Soft Hour Radio, prefer slow environmental motion such as rain, candle flicker, curtains, moonlight, ocean shimmer, forest light, or piano-room ambience. Always require stable composition, no hard cuts, no text overlays, no subtitles, no logos, no UI, no photorealism, and no extra unwanted people or characters.
 - If the first-frame image intentionally includes a lower-left channel label, ask Dreamina/Seedance to preserve that exact text, spelling, font/lettering, placement, color, and readability for the full clip. Ask it not to rewrite, translate, blur, morph, move, hide, flicker, or change the text. Keep the text area stable and animate only the surrounding scene subtly.
 - After generation, inspect the downloaded MP4. Reject and regenerate if the lower-left channel label is missing, unreadable, misspelled, flickering, morphing, moving drastically, or changing style.
 - Do not include `start and end frames match` or equivalent wording. The app handles smooth repeat with forward crossfade rendering, and forcing the last frame to match can make the clip too static.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
 
-Recommended Dreamina prompt shape:
+Recommended Dreamina prompt shapes are in [openclaw-visual-assets.md](openclaw-visual-assets.md). Use the Tokyo prompt only for Tokyo/J-pop releases and the Soft Hour prompt for Soft Hour/default BGM releases.
+
+Tokyo/J-pop Dreamina prompt shape:
 
 ```text
 Use the uploaded clean text-free first-frame image as the exact starting frame.
 Create one continuous forward-moving animated music visualizer shot.
-Keep the default channel signature: exactly three people seen from behind, walking away from the camera into the scene.
+Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, walking away from the camera into the scene.
 The viewer should see backs and backs of heads, not front-facing faces.
 The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
@@ -211,7 +216,20 @@ Add subtle camera-follow movement from behind, gentle environmental motion, refl
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI, no extra people or characters.
 ```
 
-If the human provided a specific visual/video request, replace the default `forward-moving`, `exactly three people seen from behind`, and `camera-follow movement from behind` lines with the requested scene, subject, action, motion, and camera angle. Keep the rest of the constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, no text, no subtitles, no logos, no UI, and no extra unwanted subjects.
+Soft Hour/default BGM Dreamina prompt shape:
+
+```text
+Use the uploaded clean text-free first-frame image as the exact starting frame.
+Create one continuous calm animated music visualizer shot for a background-music release.
+Do not use the Tokyo three-people-walking signature unless explicitly requested.
+Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
+Adapt the motion to the release mood: soft rain, candle flicker, drifting dust, slow moonlight, gentle curtains, ocean shimmer, forest light, piano-room ambience, or warm abstract light.
+The motion must progress naturally for the full clip.
+Do not repeat any segment. Do not ping-pong or restart motion.
+Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI, no unwanted people or characters.
+```
+
+If the human provided a specific visual/video request, replace the selected channel default subject/action/camera details with the requested scene, subject, action, motion, and camera angle. Keep the rest of the constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, no text, no subtitles, no logos, no UI, and no extra unwanted subjects.
 
 If the human explicitly requested lower-left channel text inside the video, replace `no text` with: `The uploaded first frame contains the exact lower-left channel label "{CHANNEL_NAME}" (for example, "Tokyo Daydream Radio"). Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change the text. Keep the text area stable; animate only the surrounding scene subtly. No other text, subtitles, logos, UI, or title words.`
 
@@ -429,7 +447,8 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
-- Static cover and thumbnail images must follow the default channel visual signature unless the human requested a different visual concept: exactly three people seen from behind, walking forward away from the viewer into the scene. In thumbnails, keep the main default/requested subject centered; text must not push it sideways.
+- Static cover and thumbnail images must follow the channel-specific visual skills in [openclaw-visual-assets.md](openclaw-visual-assets.md). Tokyo/J-pop releases use the three-person back-view walking signature by default. Soft Hour Radio/default BGM releases use calm atmospheric visuals by default and must not use the Tokyo three-person walking signature unless explicitly requested.
+- In thumbnails, keep the main channel/requested subject centered; text must not push it sideways.
 - Generate the thumbnail from the final clean cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, and background continuity; only add text/branding and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.

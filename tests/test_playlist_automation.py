@@ -51,7 +51,7 @@ def wav_bytes(duration_seconds: float = 1.0, *, sample_rate: int = 8000) -> byte
     return buffer.getvalue()
 
 
-def test_dreamina_prompt_requires_animated_text_free_visuals() -> None:
+def test_dreamina_prompt_uses_tokyo_daydream_three_person_signature() -> None:
     playlist = Playlist(title="Tokyo Daydream", metadata_json={})
     track = Track(
         title="Neon Walk",
@@ -69,6 +69,43 @@ def test_dreamina_prompt_requires_animated_text_free_visuals() -> None:
     assert "Do not use photorealistic" in prompt
     assert "no text" in prompt
     assert "exactly three people seen from behind" in prompt
+
+
+def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:
+    playlist = Playlist(title="Deep Sleep Piano", metadata_json={"youtube_channel_title": "Soft Hour Radio"})
+    track = Track(
+        title="Quiet Moon Keys",
+        prompt="soft piano sleep bgm",
+        metadata_json={
+            "lyrics": "[Instrumental only - no vocals]",
+            "style": "felt piano, warm room tone, sleep music",
+            "tags": "sleep,piano,bgm",
+        },
+    )
+
+    prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
+
+    assert "Soft Hour Radio/background-music visual system" in prompt
+    assert "No default three-person walking composition" in prompt
+    assert "exactly three people seen from behind" not in prompt
+
+
+def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> None:
+    playlist = Playlist(title="Japanese Cafe BGM", metadata_json={"youtube_channel_title": "Soft Hour Radio"})
+    track = Track(
+        title="Quiet Cafe Notes",
+        prompt="Japanese cafe jazz bgm for focus",
+        metadata_json={
+            "lyrics": "[Instrumental only - no vocals]",
+            "style": "Japanese cafe jazz, soft bossa nova, no vocals",
+            "tags": "japanese,cafe,bgm",
+        },
+    )
+
+    prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
+
+    assert "Soft Hour Radio/background-music visual system" in prompt
+    assert "exactly three people seen from behind" not in prompt
 
 
 def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:

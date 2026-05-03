@@ -782,6 +782,20 @@ class BackgroundJobWorker:
         explicit_prompt = str(meta.get("dreamina_prompt") or "").strip()
         if explicit_prompt:
             return explicit_prompt
+        is_tokyo_visual = BackgroundJobWorker._uses_tokyo_daydream_visuals(playlist, tracks)
+        signature_prompt = (
+            "Signature composition for Tokyo Daydream Radio/J-pop only: exactly three people seen from behind, "
+            "walking away from the camera into the scene. The viewer sees their backs and backs of heads, "
+            "not front-facing faces. One continuous forward-moving shot with subtle camera-follow movement from behind, "
+            "stable composition, no repeated segment, no hard cuts, no subtitles, no text, no extra people or characters."
+        )
+        soft_hour_prompt = (
+            "Soft Hour Radio/background-music visual system: calm atmospheric scene matched to the release, "
+            "such as a cafe window, piano room, moonlit bedroom, soft rain, forest light, ocean horizon, candle detail, "
+            "or abstract warm light. Use slow gentle environmental motion and stable composition. "
+            "No default three-person walking composition unless the human explicitly asks for it. "
+            "No repeated segment, no hard cuts, no subtitles, no text, no logos, no UI, no unwanted characters."
+        )
         if tracks:
             track = tracks[0]
             track_meta = track.metadata_json or {}
@@ -797,12 +811,63 @@ class BackgroundJobWorker:
                 f"{style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
                 "Use animated, anime, illustrated, or stylized visual language. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
-                "Signature composition: exactly three people seen from behind, walking away from the camera into the scene. "
-                "The viewer sees their backs and backs of heads, not front-facing faces. "
-                "One continuous forward-moving shot with subtle camera-follow movement from behind, stable composition, no repeated segment, no hard cuts, no subtitles, no text, no extra people or characters."
+                f"{signature_prompt if is_tokyo_visual else soft_hour_prompt}"
+            )
+        if is_tokyo_visual:
+            return (
+                "Cinematic music visualizer shot for Tokyo Daydream Radio/J-pop with exactly three people seen from behind walking away from the camera into the scene, "
+                "animated/anime/illustrated style, not photorealistic or live-action, "
+                "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, no repeated segment, no text."
             )
         return (
-            "Cinematic music visualizer shot with exactly three people seen from behind walking away from the camera into the scene, "
-            "animated/anime/illustrated style, not photorealistic or live-action, "
-            "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, no repeated segment, no text."
+            "Cinematic background-music visualizer shot for Soft Hour Radio: calm atmospheric illustrated scene such as a cafe window, piano room, moonlit bedroom, soft rain, forest light, ocean horizon, candle detail, or abstract warm light. "
+            "Animated/anime/illustrated style, not photorealistic or live-action. Slow gentle environmental motion, stable composition, no default three-person walking composition, no repeated segment, no text."
         )
+
+    @staticmethod
+    def _uses_tokyo_daydream_visuals(playlist: Playlist, tracks: list) -> bool:
+        meta = dict(playlist.metadata_json or {})
+        haystack_parts = [
+            playlist.title,
+            str(meta.get("description") or ""),
+            str(meta.get("youtube_channel_title") or ""),
+            str(meta.get("youtube_title") or ""),
+        ]
+        channel_title = str(meta.get("youtube_channel_title") or "").strip().lower()
+        if channel_title == "soft hour radio":
+            return False
+        if channel_title == "tokyo daydream radio":
+            return True
+        for track in tracks:
+            track_meta = getattr(track, "metadata_json", None) or {}
+            haystack_parts.extend(
+                [
+                    getattr(track, "title", ""),
+                    getattr(track, "prompt", ""),
+                    str(track_meta.get("tags") or ""),
+                    str(track_meta.get("style") or ""),
+                ]
+            )
+        haystack = " ".join(str(part or "") for part in haystack_parts).lower()
+        tokyo_markers = (
+            "tokyo daydream radio",
+            "tokyo",
+            "j-pop",
+            "jpop",
+            "japanese pop",
+            "city pop",
+            "citypop",
+            "anime",
+            "shibuya",
+            "shinjuku",
+            "일본",
+            "도쿄",
+            "제이팝",
+            "시티팝",
+            "애니",
+            "日本",
+            "東京",
+            "シティポップ",
+            "アニメ",
+        )
+        return any(marker in haystack for marker in tokyo_markers)
