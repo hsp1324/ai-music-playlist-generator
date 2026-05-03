@@ -86,7 +86,8 @@ def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:
     prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
 
     assert "Soft Hour Radio/background-music visual system" in prompt
-    assert "No default three-person walking composition" in prompt
+    assert "do not force a fixed recurring mascot" in prompt
+    assert "final moment should return close to the opening composition" in prompt
     assert "exactly three people seen from behind" not in prompt
 
 

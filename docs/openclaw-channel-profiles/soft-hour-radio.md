@@ -5,14 +5,14 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 ## Routing Contract
 
 - Explicit channel request wins. If the human says `Soft Hour Radio에 올려줘`, this profile is mandatory even if the music mentions Japan, J-pop, city-pop, or anime influence.
-- Do not use the Tokyo Daydream Radio three-people-walking signature unless the human explicitly asks for that exact visual.
 - Default content is background/cafe/sleep/study/work/chill/BGM. These releases are usually instrumental/no-vocal unless the human asks for vocals.
 
 ## Visual Identity
 
 - Mood: calm, useful, warm, focused, restful, long-listening friendly.
-- Good scenes: cafe window, piano room, moonlit bedroom, soft rain on glass, forest light, ocean horizon, candle detail, desk lamp, bookshelf, slow landscape, warm abstract light, close-up instrument detail.
-- Human presence is optional and subtle. If people appear, do not default to three people walking away from the camera.
+- Let the specific release concept decide the subject. Do not force a fixed recurring mascot, character count, scene list, or camera composition.
+- Prefer restrained, uncluttered compositions that can sit behind long listening sessions without becoming visually noisy.
+- Human presence is optional and should serve the release concept rather than act as a channel signature.
 - Style must be animated, anime, illustrated, or stylized. Avoid photorealistic/live-action looks.
 
 ## Cover
@@ -35,19 +35,20 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Use Dreamina/Seedance only for the moving clip.
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
 - Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
-- The loop video should be calm environmental motion: soft rain, candle flicker, drifting dust, slow moonlight, gentle curtains, ocean shimmer, forest light, piano-room ambience, or warm abstract light.
+- The loop video should use subtle motion derived from the cover itself. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
+- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
 
 Prompt shape:
 
 ```text
 Use the uploaded clean text-free first-frame image as the exact starting frame.
 Create one continuous calm animated music visualizer shot for a Soft Hour Radio background-music release.
-Do not use the Tokyo three-people-walking signature unless explicitly requested.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
-Adapt the motion to the release mood with slow environmental motion.
+Animate only natural, subtle details already implied by the first frame and release mood.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI, no unwanted people or characters.
+The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI.
 ```
 
 ## Metadata

@@ -787,14 +787,15 @@ class BackgroundJobWorker:
             "Signature composition for Tokyo Daydream Radio/J-pop only: exactly three people seen from behind, "
             "walking away from the camera into the scene. The viewer sees their backs and backs of heads, "
             "not front-facing faces. One continuous forward-moving shot with subtle camera-follow movement from behind, "
+            "final moment close to the opening composition without becoming frozen, "
             "stable composition, no repeated segment, no hard cuts, no subtitles, no text, no extra people or characters."
         )
         soft_hour_prompt = (
-            "Soft Hour Radio/background-music visual system: calm atmospheric scene matched to the release, "
-            "such as a cafe window, piano room, moonlit bedroom, soft rain, forest light, ocean horizon, candle detail, "
-            "or abstract warm light. Use slow gentle environmental motion and stable composition. "
-            "No default three-person walking composition unless the human explicitly asks for it. "
-            "No repeated segment, no hard cuts, no subtitles, no text, no logos, no UI, no unwanted characters."
+            "Soft Hour Radio/background-music visual system: calm, restrained visual concept matched to the release. "
+            "Let the release concept and first frame decide the subject; do not force a fixed recurring mascot, "
+            "character count, scene list, or camera composition. Use subtle motion derived from the first frame. "
+            "The final moment should return close to the opening composition without becoming frozen. "
+            "No repeated segment, no hard cuts, no subtitles, no text, no logos, no UI."
         )
         if tracks:
             track = tracks[0]
@@ -817,11 +818,11 @@ class BackgroundJobWorker:
             return (
                 "Cinematic music visualizer shot for Tokyo Daydream Radio/J-pop with exactly three people seen from behind walking away from the camera into the scene, "
                 "animated/anime/illustrated style, not photorealistic or live-action, "
-                "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, no repeated segment, no text."
+                "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, final moment close to the opening composition, no repeated segment, no text."
             )
         return (
-            "Cinematic background-music visualizer shot for Soft Hour Radio: calm atmospheric illustrated scene such as a cafe window, piano room, moonlit bedroom, soft rain, forest light, ocean horizon, candle detail, or abstract warm light. "
-            "Animated/anime/illustrated style, not photorealistic or live-action. Slow gentle environmental motion, stable composition, no default three-person walking composition, no repeated segment, no text."
+            "Cinematic background-music visualizer shot for Soft Hour Radio: calm, restrained illustrated scene matched to the release concept. "
+            "Animated/anime/illustrated style, not photorealistic or live-action. Subtle motion derived from the first frame, final moment close to the opening composition, stable composition, no fixed recurring character/scene template, no repeated segment, no text."
         )
 
     @staticmethod

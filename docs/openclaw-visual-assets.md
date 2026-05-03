@@ -59,10 +59,9 @@ Use this for `Soft Hour Radio`, default background music, cafe, piano, sleep, st
 
 Default visual direction:
 
-- Do not use the Tokyo three-people-walking signature by default.
-- Prefer calm atmospheric scenes matched to the music use case.
-- Good subjects: cafe window, piano room, moonlit bedroom, soft rain on glass, forest light, ocean horizon, candle detail, desk lamp, bookshelf, slow landscape, warm abstract light, close-up instrument detail.
-- Human presence is optional and should be subtle. If people appear, they do not need to be three people and do not need to walk away from camera.
+- Prefer calm, restrained visuals matched to the music use case.
+- Let the specific release concept decide the subject. Do not force a fixed recurring mascot, character count, scene list, or camera composition.
+- Human presence is optional and should serve the release concept.
 - Keep the composition uncluttered, warm, readable, and suitable for long background listening.
 
 Thumbnail text:
@@ -76,17 +75,17 @@ Dreamina/Seedance prompt shape:
 ```text
 Use the uploaded clean text-free first-frame image as the exact starting frame.
 Create one continuous calm animated music visualizer shot for a background-music release.
-Do not use the Tokyo three-people-walking signature unless explicitly requested.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
-Adapt the motion to the release mood: soft rain, candle flicker, drifting dust, slow moonlight, gentle curtains, ocean shimmer, forest light, piano-room ambience, or warm abstract light.
+Animate only natural, subtle details already implied by the first frame and release mood.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI, no unwanted people or characters.
+The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI.
 ```
 
 ## Other Channels Or Explicit Requests
 
 - If the channel is neither `Tokyo Daydream Radio` nor `Soft Hour Radio`, derive a visual system from the channel name, release concept, and human request.
-- If the human explicitly names the target channel, that channel's visual skill wins over automatic genre routing. Example: if the human says `Soft Hour Radio`, use the Soft Hour visual skill even if the concept contains Japan/J-pop/city-pop references, unless the human also explicitly asks for the Tokyo three-person walking signature.
+- If the human explicitly names the target channel, that channel's visual skill wins over automatic genre routing.
 - Keep the shared asset contract.
-- Do not borrow the Tokyo three-person signature unless the release is Japan/J-pop/Tokyo-related or the human explicitly asks for it.
+- Do not borrow another channel's visual signature unless the human explicitly asks for it.

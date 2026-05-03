@@ -39,6 +39,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
 - Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
 - The loop video should keep the three people walking forward away from the camera with subtle forward camera-follow motion and environmental motion.
+- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
 
 Prompt shape:
 
@@ -49,6 +50,7 @@ Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, 
 The viewer should see backs and backs of heads, not front-facing faces.
 The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
+The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
 Adapt the background and atmosphere to the release concept.
 Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
