@@ -140,13 +140,14 @@ Static image creation rules:
 - If `gpt-image-2` is unavailable in the actual tool/API environment, fall back to the best available GPT Image model instead of using Dreamina for static images.
 - Produce 16:9 images, preferably `1280x720` or `1920x1080`.
 - Create the final clean cover first. Then create the YouTube thumbnail from that exact final cover as an image-to-image edit/reference derivative. Do not make the thumbnail as a fresh unrelated generation.
-- Apply the channel visual signature to every final cover and thumbnail: exactly three people walking forward away from the viewer into the scene. The viewer should see their backs and backs of heads, not front-facing faces. If the human explicitly requests animals or stylized characters, those may replace the three people, but keep exactly three subjects, back view, and forward walking action.
-- For thumbnails, the three people must stay centered. Text must not push them to the side, crop them, cover them, or make them feel secondary. Put text into safe negative space around the centered figures.
+- Apply the default channel visual signature to every final cover and thumbnail unless the human requested a different visual concept: exactly three people walking forward away from the viewer into the scene. The viewer should see their backs and backs of heads, not front-facing faces.
+- Human visual requests override the default signature. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video instead of forcing the three-people-walking default.
+- For thumbnails, the main default/requested subject must stay centered and visually important. Text must not push it to the side, crop it, cover it, or make it feel secondary. Put text into safe negative space around the centered composition.
 - Keep every static visual animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
-- The cover should be a clean text-free version of this signature scene. The YouTube thumbnail should use the same three-person walking composition plus large readable click text and channel branding.
+- The cover should be a clean text-free version of the default/requested scene. The YouTube thumbnail should use the same composition plus large readable click text and channel branding.
 - When deriving the thumbnail from the cover, preserve exact subject count, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add text, channel branding, crop/contrast/readability adjustments, and small layout refinements. Example: if a cloak is red in the cover, it must stay red in the thumbnail.
 - If the thumbnail changes character identity, clothing color, subject placement, or core background compared with the cover, reject it and regenerate before upload.
-- For Japan/J-pop releases on `Tokyo Daydream Radio`, keep a consistent channel thumbnail system across Tokyo/city, forest/nature, and beach variants: large `J-POP` text with smaller `TOKYO DAYDREAM RADIO` directly beneath it. Use the same full-bleed layout and centered three-person back-view composition as the approved channel examples.
+- For Japan/J-pop releases on `Tokyo Daydream Radio`, keep a consistent channel thumbnail system across Tokyo/city, forest/nature, and beach variants: large `J-POP` text with smaller `TOKYO DAYDREAM RADIO` directly beneath it. Use the same full-bleed layout as the approved channel examples, with either the default centered three-person back-view composition or the centered human-requested visual composition.
 - Do not add duration text or badges to thumbnails. Avoid `1 HOUR`, `60 MIN`, `1時間`, clocks, timers, and duration stickers.
 - Use the clean cover or a separate clean no-text first-frame image for Dreamina/Seedance video generation. Do not use the final text thumbnail as the first-frame reference; generated video often makes text flicker, disappear, or reappear in the loop.
 
@@ -164,7 +165,7 @@ Dreamina website workflow for OpenClaw:
 - Use Dreamina/Seedance `2.0 Fast`.
 - Do not use Omni Reference.
 - Use the first/last-frame workflow if the UI asks which mode to use, but provide only the first-frame image.
-- Start from the clean text-free cover image or a separate clean text-free first-frame image. It should match the YouTube thumbnail scene and composition, but it must not contain title text or channel text.
+- Start from the clean text-free cover image or a separate clean text-free first-frame image. It should match the YouTube thumbnail scene and composition, including any explicit human visual request, but it must not contain title text or channel text.
 - Leave the last-frame input empty. Do not upload a last-frame reference; it makes the generated motion too static.
 - Set ratio to `16:9` when selectable.
 - Set quality to `720p` when selectable.
@@ -175,11 +176,11 @@ Dreamina website workflow for OpenClaw:
 
 Dreamina/Seedance motion prompt guidance:
 
-- Do not ask Dreamina for a loop. Ask for one continuous forward-moving video shot.
+- Do not ask Dreamina for a loop. By default, ask for one continuous forward-moving video shot. If the human requested a different motion/camera concept, ask for that requested continuous shot instead.
 - Do not put duration, ratio, or quality in the prompt. Set those in Dreamina controls only.
 - Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
-- Ask Dreamina/Seedance to preserve the clean first-frame image's composition, lighting, palette, illustrated/anime style, and three-person back-view walking signature in the first shot.
-- Use subtle camera-follow movement from behind, stable composition, no hard cuts, no text overlays, no subtitles, no logos, no UI, no photorealism, and no extra people or characters.
+- Ask Dreamina/Seedance to preserve the clean first-frame image's composition, lighting, palette, illustrated/anime style, and default/requested subject/action in the first shot.
+- Use subtle default camera-follow movement from behind, or the human-requested camera motion if specified. Always require stable composition, no hard cuts, no text overlays, no subtitles, no logos, no UI, no photorealism, and no extra unwanted people or characters.
 - Do not include `start and end frames match` or equivalent wording. The app handles smooth repeat with forward crossfade rendering, and forcing the last frame to match can make the clip too static.
 - Prefer atmospheric scenes that match the channel mood: cafe window, moonlit room, soft rain, abstract light, slow landscape, piano/candle detail.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
@@ -189,7 +190,7 @@ Recommended Dreamina prompt shape:
 ```text
 Use the uploaded clean text-free first-frame image as the exact starting frame.
 Create one continuous forward-moving animated music visualizer shot.
-Keep the channel signature: exactly three people seen from behind, walking away from the camera into the scene.
+Keep the default channel signature: exactly three people seen from behind, walking away from the camera into the scene.
 The viewer should see backs and backs of heads, not front-facing faces.
 The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
@@ -199,6 +200,8 @@ Add subtle camera-follow movement from behind, gentle environmental motion, refl
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no text, no subtitles, no logos, no UI, no extra people or characters.
 ```
 
+If the human provided a specific visual/video request, replace the default `forward-moving`, `exactly three people seen from behind`, and `camera-follow movement from behind` lines with the requested scene, subject, action, motion, and camera angle. Keep the rest of the constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, no text, no subtitles, no logos, no UI, and no extra unwanted subjects.
+
 Thumbnail text rules for OpenClaw:
 
 - Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
@@ -207,7 +210,7 @@ Thumbnail text rules for OpenClaw:
 - Do not add support text or duration badges. The thumbnail should not say `1 HOUR`, `60 MIN`, `1時間`, or show a time badge.
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
-- Keep the three-person back-view walking signature centered and visible even when thumbnail text is added.
+- Keep the main default/requested subject centered and visible even when thumbnail text is added.
 
 Localized YouTube metadata rules for OpenClaw:
 
@@ -407,12 +410,12 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
-- Static cover and thumbnail images must follow the channel visual signature: exactly three people seen from behind, walking forward away from the viewer into the scene. In thumbnails, keep the three people centered; text must not push them sideways.
+- Static cover and thumbnail images must follow the default channel visual signature unless the human requested a different visual concept: exactly three people seen from behind, walking forward away from the viewer into the scene. In thumbnails, keep the main default/requested subject centered; text must not push it sideways.
 - Generate the thumbnail from the final clean cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, and background continuity; only add text/branding and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - If OpenClaw creates a Dreamina/Seedance loop clip, pass the 8 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
-- Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text; `--cover` and `--loop-video` should be clean visuals without text. Never feed the text thumbnail into Dreamina/Seedance as the first frame; use the clean cover or a clean no-text first-frame image.
+- Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text; `--cover` and `--loop-video` should be clean visuals without text. Never feed the text thumbnail into Dreamina/Seedance as the first frame; use the clean cover or a clean no-text first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
