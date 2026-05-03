@@ -2,7 +2,7 @@
 
 Use this when OpenClaw creates cover images, YouTube thumbnails, or Dreamina/Seedance loop videos for this repo.
 
-The visual rules are channel-specific. Do not apply one channel's visual signature to every release.
+The visual rules are channel-specific. Do not apply one channel's visual signature to every release. The source of truth for production work is now [openclaw-channel-profiles](openclaw-channel-profiles/README.md). OpenClaw should run `scripts/openclaw-release channel-profile` first, then read the returned `profile_doc`.
 
 ## Shared Asset Contract
 

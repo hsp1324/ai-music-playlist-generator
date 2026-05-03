@@ -4,6 +4,7 @@ Use this when OpenClaw has generated an audio file and needs to hand it to the A
 
 For higher-level OpenClaw skill instructions, including "make one single", "build a one-hour playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
+For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned profile in [openclaw-channel-profiles](openclaw-channel-profiles/README.md).
 
 Run these commands on the Oracle VM from the repo root:
 
@@ -142,6 +143,7 @@ Do not rely on the app's generated draft cover for YouTube upload. Do not reuse 
 
 Static image creation rules:
 
+- Before static image creation, run `scripts/openclaw-release channel-profile` and read the returned `profile_doc`. That profile controls cover, thumbnail, and loop-video direction.
 - Follow the channel-specific visual skill rules in [openclaw-visual-assets.md](openclaw-visual-assets.md). Do not apply the Tokyo/J-pop three-people-walking signature to every channel.
 - Do not use Dreamina for static cover or YouTube thumbnail images.
 - Use OpenAI GPT Image models for static image generation. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running OpenAI/Image tool environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.

@@ -14,6 +14,29 @@ Use the local API or the helper script. Do not use the public `https://ai-music.
 export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 ```
 
+## Channel-First Workflow
+
+Before generating cover art, YouTube thumbnails, or Dreamina/Seedance loop videos, OpenClaw must choose the target channel first and read that channel's profile.
+
+```bash
+scripts/openclaw-release channel-profile \
+  --release-title "RELEASE_TITLE" \
+  --description "RELEASE_CONCEPT" \
+  --prompt "PROMPT_OR_STYLE" \
+  --tags "comma,separated,tags"
+```
+
+If the human explicitly named a channel, pass it:
+
+```bash
+scripts/openclaw-release channel-profile \
+  --release-title "RELEASE_TITLE" \
+  --description "RELEASE_CONCEPT" \
+  --youtube-channel-title "Soft Hour Radio"
+```
+
+Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-channel-profiles/README.md). Do not mix visual signatures across profiles.
+
 ## Shared Rules
 
 - Never approve, reject, render, publish, or upload to YouTube unless the human explicitly asks.
@@ -69,6 +92,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 - `cover`: video visual shown during playback. It should look good for the full video duration. For moving-video releases it is text-free by default; if the human explicitly asks for channel text inside the video, it may include only the lower-left channel label used as the Dreamina/Seedance first-frame text reference.
 - `thumbnail`: YouTube click thumbnail. It should include short readable text such as `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `TOKYO NIGHT`, `CITY POP`, or `J-POP`, plus a small brand mark for the selected channel. Do not add duration text such as `1 HOUR`, `60 MIN`, `1時間`, or time badges.
 - For cover, thumbnail, and loop-video visual creation, follow [openclaw-visual-assets.md](openclaw-visual-assets.md).
+- Channel-specific cover, thumbnail, and loop-video rules are split into [openclaw-channel-profiles](openclaw-channel-profiles/README.md). Use `scripts/openclaw-release channel-profile` first, then read the returned `profile_doc`.
 - Asset generation order is mandatory: create the final clean cover first, then create the YouTube thumbnail as an image-to-image edit/reference derivative of that exact final cover. Do not create the thumbnail as a fresh unrelated image.
 - When generating the thumbnail from the cover reference, preserve the exact channel/requested subject, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add click text, channel branding, crop/contrast/readability adjustments, and small layout refinements. Example: if the right subject has a red cloak in the cover, the thumbnail must keep that cloak red.
 - If the generated thumbnail changes character identity, clothing color, subject count, subject placement, or core background compared with the cover, reject it and regenerate before uploading.

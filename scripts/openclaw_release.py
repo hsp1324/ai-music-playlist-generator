@@ -25,6 +25,14 @@ DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
+CHANNEL_PROFILE_DOCS = {
+    DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/soft-hour-radio.md",
+    JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/tokyo-daydream-radio.md",
+}
+CHANNEL_PROFILE_NAMES = {
+    DEFAULT_YOUTUBE_CHANNEL_TITLE: "soft-hour-radio",
+    JAPAN_YOUTUBE_CHANNEL_TITLE: "tokyo-daydream-radio",
+}
 JAPAN_CHANNEL_KEYWORDS = (
     "anime",
     "city pop",
@@ -774,6 +782,25 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
         return JAPAN_YOUTUBE_CHANNEL_TITLE
     return DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
+    title = infer_youtube_channel_title(args)
+    profile_doc = CHANNEL_PROFILE_DOCS.get(title, "docs/openclaw-channel-profiles/custom-channel.md")
+    return {
+        "youtube_channel_title": title,
+        "profile": CHANNEL_PROFILE_NAMES.get(title, "custom-channel"),
+        "profile_doc": profile_doc,
+        "explicit_channel_requested": bool(str(getattr(args, "youtube_channel_title", "") or "").strip()),
+        "metadata_doc": "docs/openclaw-youtube-metadata.md",
+        "shared_upload_doc": "docs/openclaw-upload.md",
+        "rule": "Pick the channel first, then read only that channel profile for cover, thumbnail, and loop-video visuals. Do not mix visual signatures across channels.",
+    }
+
+
+def channel_profile(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    del client
+    return build_channel_profile(args)
 
 
 def resolve_youtube_channel_id(client: httpx.Client, *, title: str, channel_id: str = "") -> str:
@@ -1698,6 +1725,21 @@ def build_parser() -> argparse.ArgumentParser:
     context_parser.add_argument("--release-id", default="", help="Existing release id.")
     context_parser.add_argument("--release-title", default="", help="Existing release title.")
     context_parser.set_defaults(func=metadata_context)
+
+    profile_parser = subparsers.add_parser(
+        "channel-profile",
+        help="Infer the target YouTube channel and return the channel-specific OpenClaw visual profile doc.",
+    )
+    profile_parser.add_argument("--release-title", default="", help="Release title or human request title.")
+    profile_parser.add_argument("--description", default="", help="Release concept description.")
+    profile_parser.add_argument("--prompt", default="", help="Suno/image/video prompt or concept.")
+    profile_parser.add_argument("--tags", default="", help="Comma-separated concept tags.")
+    profile_parser.add_argument(
+        "--youtube-channel-title",
+        default="",
+        help="Explicit target channel title. Overrides automatic inference and visual routing.",
+    )
+    profile_parser.set_defaults(func=channel_profile)
 
     audio_parser = subparsers.add_parser("upload-audio", help="Upload an audio file to an existing release or new single.")
     audio_parser.add_argument("--audio", required=True, help="Path to generated audio file.")

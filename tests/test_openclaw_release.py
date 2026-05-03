@@ -11,6 +11,7 @@ from scripts.openclaw_release import (
     approve_metadata,
     auto_publish_playlist,
     auto_publish_single,
+    build_channel_profile,
     create_release,
     infer_youtube_channel_title,
     is_pop_family_vocal_request,
@@ -99,6 +100,32 @@ def test_infer_youtube_channel_routes_japanese_releases_to_tokyo_daydream() -> N
             release_title="Cafe Piano",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+
+
+def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> None:
+    tokyo = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Tokyo Night City Pop",
+            description="Japanese city pop playlist",
+        )
+    )
+    assert tokyo["youtube_channel_title"] == JAPAN_YOUTUBE_CHANNEL_TITLE
+    assert tokyo["profile"] == "tokyo-daydream-radio"
+    assert tokyo["profile_doc"] == "docs/openclaw-channel-profiles/tokyo-daydream-radio.md"
+    assert tokyo["explicit_channel_requested"] is False
+
+    soft_hour = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Tokyo Night City Pop",
+            youtube_channel_title="Soft Hour Radio",
+        )
+    )
+    assert soft_hour["youtube_channel_title"] == DEFAULT_YOUTUBE_CHANNEL_TITLE
+    assert soft_hour["profile"] == "soft-hour-radio"
+    assert soft_hour["profile_doc"] == "docs/openclaw-channel-profiles/soft-hour-radio.md"
+    assert soft_hour["explicit_channel_requested"] is True
 
 
 def test_create_release_creates_empty_workspace_before_suno_generation() -> None:
