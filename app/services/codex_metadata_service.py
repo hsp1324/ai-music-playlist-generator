@@ -159,6 +159,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
                 "- For playlist releases, put listening use cases directly in the title, not only the description. Prefer titles like: <study/walk/drive/rest use case> + <mood/genre/duration> | <secondary use cases>.",
                 "- For BGM playlists, the title should answer why someone would click now: studying, working, walking, driving, reading, sleeping, or resting.",
+                "- For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer 'J-POP', 'Tokyo', city-pop, mood, and listening use cases. Avoid Korean title phrases like '일본어 J-pop', '일본어 보컬', or '일본어 카페 재즈' unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead.",
                 "- For playlist releases, do not append 'Official AI Visualizer' or similar branding to the title.",
                 "- For playlist releases, the description must follow this structure:",
                 "  1. One short Korean mood paragraph.",
