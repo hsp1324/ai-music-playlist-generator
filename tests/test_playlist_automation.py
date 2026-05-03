@@ -109,6 +109,21 @@ def prepare_release_for_final_publish(client: TestClient, workspace_id: str) -> 
     return approved
 
 
+def render_workspace_audio(client: TestClient, workspace_id: str) -> dict:
+    render_response = client.post(
+        f"/api/playlists/{workspace_id}/render-audio",
+        json={"actor": "test-suite"},
+    )
+    assert render_response.status_code == 200
+    assert render_response.json()["workflow_state"] == "render_queued"
+    assert drain_background_jobs(client) == 1
+    workspaces_response = client.get("/api/playlists/workspaces")
+    assert workspaces_response.status_code == 200
+    workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+    assert workspace["output_audio_path"]
+    return workspace
+
+
 def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -1257,7 +1272,7 @@ def test_release_pipeline_generates_cover_video_and_metadata_before_publish(tmp_
             },
         )
         assert approve_response.status_code == 200
-        assert drain_background_jobs(client) == 1
+        render_workspace_audio(client, workspace_id)
 
         staged = prepare_release_for_final_publish(client, workspace_id)
         assert staged["cover_approved"] is True
@@ -1334,7 +1349,7 @@ def test_cover_image_can_be_uploaded_for_review(tmp_path) -> None:
             },
         )
         assert approve_response.status_code == 200
-        assert drain_background_jobs(client) == 1
+        render_workspace_audio(client, workspace_id)
 
         upload_response = client.post(
             f"/api/playlists/{workspace_id}/cover/upload",
@@ -1425,7 +1440,7 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
             },
         )
         assert approve_response.status_code == 200
-        assert drain_background_jobs(client) == 1
+        render_workspace_audio(client, workspace_id)
 
         cover_response = client.post(
             f"/api/playlists/{workspace_id}/cover/upload",
@@ -1678,7 +1693,7 @@ def test_publish_approval_reports_video_build_failure(tmp_path) -> None:
             },
         )
         assert approve_response.status_code == 200
-        assert drain_background_jobs(client) == 1
+        render_workspace_audio(client, workspace_id)
 
         cover_response = client.post(
             f"/api/playlists/{workspace_id}/cover/generate",
@@ -1753,7 +1768,7 @@ def test_failed_workspace_archive_is_purged_after_retention(tmp_path) -> None:
             },
         )
         assert approve_response.status_code == 200
-        assert drain_background_jobs(client) == 1
+        render_workspace_audio(client, workspace_id)
 
         cover_response = client.post(
             f"/api/playlists/{workspace_id}/cover/generate",
@@ -1971,7 +1986,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             },
         )
         assert approve_response.status_code == 200
-        assert drain_background_jobs(client) == 1
+        render_workspace_audio(client, workspace_id)
 
         prepared_release = prepare_release_for_final_publish(client, workspace_id)
         localized_metadata_response = client.post(

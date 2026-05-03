@@ -1477,16 +1477,10 @@ async def _update_publish_state(
                         source="system:auto-publish",
                     )
             else:
-                _queue_playlist_render_job(
-                    db,
-                    playlist,
-                    source="system:workspace-queue",
-                    trigger=trigger,
-                )
-                playlist.status = PlaylistStatus.building
+                playlist.status = PlaylistStatus.ready
                 meta["render_ready"] = False
                 meta.pop("render_error", None)
-                meta["note"] = "Playlist audio render queued in background."
+                meta["note"] = "Playlist reached target duration. Start audio render when all intended tracks are uploaded."
         else:
             meta["render_ready"] = False
             meta["render_error"] = "Some tracks are remote-only and must be uploaded locally before rendering."

@@ -248,9 +248,10 @@ The main operating surface is now the web UI.
 2. Create one or more playlist workspaces
 3. Approve a queued track into a specific workspace
 4. Keep collecting until the workspace reaches its target duration
-5. Approve publishing from the workspace card
+5. Start audio render only after all intended tracks are uploaded and ordered
 6. Upload a 16:9 cover manually, or generate a local draft cover and replace it later if needed
-7. If YouTube is not connected yet, connect it and approve publishing again
+7. Render video, review metadata, then approve publishing from the workspace card
+8. If YouTube is not connected yet, connect it and approve publishing again
 
 You can also create a `single_track_video` workspace:
 
