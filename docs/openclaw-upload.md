@@ -139,10 +139,13 @@ Static image creation rules:
 - Use OpenAI GPT Image models for static image generation. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running OpenAI/Image tool environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
 - If `gpt-image-2` is unavailable in the actual tool/API environment, fall back to the best available GPT Image model instead of using Dreamina for static images.
 - Produce 16:9 images, preferably `1280x720` or `1920x1080`.
+- Create the final clean cover first. Then create the YouTube thumbnail from that exact final cover as an image-to-image edit/reference derivative. Do not make the thumbnail as a fresh unrelated generation.
 - Apply the channel visual signature to every final cover and thumbnail: exactly three people walking forward away from the viewer into the scene. The viewer should see their backs and backs of heads, not front-facing faces. If the human explicitly requests animals or stylized characters, those may replace the three people, but keep exactly three subjects, back view, and forward walking action.
 - For thumbnails, the three people must stay centered. Text must not push them to the side, crop them, cover them, or make them feel secondary. Put text into safe negative space around the centered figures.
 - Keep every static visual animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
 - The cover should be a clean text-free version of this signature scene. The YouTube thumbnail should use the same three-person walking composition plus large readable click text and channel branding.
+- When deriving the thumbnail from the cover, preserve exact subject count, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add text, channel branding, crop/contrast/readability adjustments, and small layout refinements. Example: if a cloak is red in the cover, it must stay red in the thumbnail.
+- If the thumbnail changes character identity, clothing color, subject placement, or core background compared with the cover, reject it and regenerate before upload.
 - For Japan/J-pop releases on `Tokyo Daydream Radio`, keep a consistent channel thumbnail system across Tokyo/city, forest/nature, and beach variants: large `J-POP` text with smaller `TOKYO DAYDREAM RADIO` directly beneath it. Use the same full-bleed layout and centered three-person back-view composition as the approved channel examples.
 - Do not add duration text or badges to thumbnails. Avoid `1 HOUR`, `60 MIN`, `1時間`, clocks, timers, and duration stickers.
 - Use the clean cover or a separate clean no-text first-frame image for Dreamina/Seedance video generation. Do not use the final text thumbnail as the first-frame reference; generated video often makes text flicker, disappear, or reappear in the loop.
@@ -405,6 +408,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
 - Static cover and thumbnail images must follow the channel visual signature: exactly three people seen from behind, walking forward away from the viewer into the scene. In thumbnails, keep the three people centered; text must not push them sideways.
+- Generate the thumbnail from the final clean cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, and background continuity; only add text/branding and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - If OpenClaw creates a Dreamina/Seedance loop clip, pass the 8 second MP4 as `--loop-video`. The app handles smooth crossfade repeat and long video rendering.
