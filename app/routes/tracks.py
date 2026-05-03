@@ -140,7 +140,22 @@ def _probe_duration_seconds(audio_path: str | None) -> int | None:
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
 
+    if value <= 0:
+        return None
     return max(1, round(value))
+
+
+def _resolve_audio_duration_seconds(audio_path: str | None, supplied_duration_seconds: int) -> int:
+    inferred_duration = _probe_duration_seconds(audio_path)
+    if inferred_duration is not None:
+        return inferred_duration
+
+    if audio_path and not _is_remote_url(audio_path):
+        source = Path(audio_path)
+        if source.exists() and source.stat().st_size == 0:
+            raise HTTPException(status_code=400, detail="Uploaded audio file is empty or unreadable.")
+
+    return max(supplied_duration_seconds, 0)
 
 
 def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | None:
@@ -291,9 +306,14 @@ async def create_track(
         if services.settings.cache_remote_audio_on_intake
         else _remote_audio_cache_disabled_metadata(payload)
     )
-    if payload.duration_seconds <= 0:
-        inferred_duration = _probe_duration_seconds(payload.audio_path) or 0
-        payload = payload.model_copy(update={"duration_seconds": inferred_duration})
+    payload = payload.model_copy(
+        update={
+            "duration_seconds": _resolve_audio_duration_seconds(
+                payload.audio_path,
+                payload.duration_seconds,
+            )
+        }
+    )
     track = _create_track_record(db, payload)
     track = await dispatch_track_review(db, services, track)
     return TrackRead.model_validate(track)
@@ -331,14 +351,15 @@ async def manual_upload_track(
         with destination.open("wb") as handle:
             shutil.copyfileobj(audio_file.file, handle)
         audio_path = str(destination)
-        if inferred_duration_seconds <= 0:
-            inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
+        if not destination.exists() or destination.stat().st_size == 0:
+            destination.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
     elif audio_url and services.settings.cache_remote_audio_on_intake:
         audio_path = _cache_remote_audio_url(audio_url, services.settings.tracks_dir, title=title)
-        if inferred_duration_seconds <= 0:
-            inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
-    elif inferred_duration_seconds <= 0:
-        inferred_duration_seconds = _probe_duration_seconds(audio_path) or 0
+        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
+    else:
+        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
 
     uploaded_cover_path = _store_cover_upload(cover_file, services.settings.covers_dir)
     resolved_image_url = uploaded_cover_path or image_url or _extract_embedded_cover(audio_path, services.settings.covers_dir)

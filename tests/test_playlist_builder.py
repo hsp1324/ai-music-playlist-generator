@@ -1,6 +1,9 @@
 import json
 
+import pytest
+
 from app.config import Settings
+from app.models.track import Track
 from app.services.playlist_builder import FFMpegPlaylistBuilder, YOUTUBE_STILL_IMAGE_FILTER
 
 
@@ -42,6 +45,22 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
     args = json.loads(args_path.read_text(encoding="utf-8"))
     assert args[args.index("-vf") + 1] == YOUTUBE_STILL_IMAGE_FILTER
     assert "scale=1280:720" in args[args.index("-vf") + 1]
+
+
+def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
+    audio_path = tmp_path / "empty.mp3"
+    output_path = tmp_path / "release.mp3"
+    audio_path.write_bytes(b"")
+
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+
+    with pytest.raises(ValueError, match="unreadable audio"):
+        builder.build_audio(
+            [Track(title="Broken Upload", duration_seconds=210, audio_path=str(audio_path))],
+            output_path,
+        )
+
+    assert not output_path.exists()
 
 
 def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> None:

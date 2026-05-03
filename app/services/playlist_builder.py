@@ -229,6 +229,17 @@ class FFMpegPlaylistBuilder:
         if missing:
             raise FileNotFoundError(f"Some track files do not exist: {missing}")
 
+        probed_durations: list[float] = []
+        unreadable: list[str] = []
+        for track, audio_path in zip(tracks, audio_paths, strict=True):
+            duration = self._probe_media_duration(audio_path)
+            if duration <= 0:
+                unreadable.append(f"{track.title} ({audio_path})")
+            else:
+                probed_durations.append(duration)
+        if unreadable:
+            raise ValueError("Playlist contains unreadable audio files: " + "; ".join(unreadable))
+
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as handle:
@@ -258,6 +269,17 @@ class FFMpegPlaylistBuilder:
             self._run_ffmpeg(command)
         finally:
             manifest_path.unlink(missing_ok=True)
+
+        expected_duration = sum(probed_durations)
+        actual_duration = self._probe_media_duration(output_path)
+        if actual_duration <= 0:
+            raise RuntimeError(f"Rendered playlist audio is unreadable: {output_path}")
+        tolerance_seconds = max(2.0, expected_duration * 0.01)
+        if actual_duration + tolerance_seconds < expected_duration:
+            raise RuntimeError(
+                "Rendered playlist audio is shorter than the source tracks: "
+                f"{actual_duration:.1f}s rendered vs {expected_duration:.1f}s expected."
+            )
 
         return output_path
 

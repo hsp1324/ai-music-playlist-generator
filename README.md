@@ -314,6 +314,8 @@ For `single_track_video` workspaces, the app also auto-generates YouTube title, 
 Single releases can approve one candidate directly, or approve two related candidates as separate Single Releases before cover/video/publish.
 Track uploads can include optional `lyrics` content. The app stores it in track metadata and exposes it in release context so OpenClaw can later create better thumbnails, Dreamina loop videos, metadata, or standalone single releases from strong playlist tracks. BGM/background/lofi/study/sleep/cafe production defaults to instrumental music with empty lyrics. J-pop/K-pop/pop/Japanese pop/anime-pop production defaults to vocal songs with lyrics, so OpenClaw should upload lyrics for every pop-family track unless the human explicitly requested instrumental/no-vocal music.
 
+Uploaded local audio is probed with `ffprobe`; the app uses the real file duration when available and rejects empty uploads. Playlist audio rendering also validates source files and fails if the final rendered MP3 is materially shorter than the uploaded tracks, so corrupt or 0-byte files are caught before YouTube publishing.
+
 ## Dreamina Loop Video
 
 Dreamina integration is implemented for `useapi.net`'s Dreamina API layer. This is a third-party API wrapper around Dreamina, not an official public Dreamina developer API.

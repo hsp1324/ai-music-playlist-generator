@@ -1,5 +1,7 @@
 import json
 import os
+import io
+import wave
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -36,6 +38,17 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     get_settings.cache_clear()
+
+
+def wav_bytes(duration_seconds: float = 1.0, *, sample_rate: int = 8000) -> bytes:
+    buffer = io.BytesIO()
+    frame_count = max(1, int(duration_seconds * sample_rate))
+    with wave.open(buffer, "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(sample_rate)
+        handle.writeframes(b"\x00\x00" * frame_count)
+    return buffer.getvalue()
 
 
 def test_dreamina_prompt_requires_animated_text_free_visuals() -> None:
@@ -153,6 +166,47 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         assert track["metadata_json"]["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
         assert track["lyrics"] == "달빛 아래 조용한 후렴"
         assert track["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_manual_upload_uses_actual_audio_duration_over_supplied_value(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        marker = uuid4().hex
+
+        response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": f"Duration Probe {marker}",
+                "prompt": "duration probe",
+                "duration_seconds": "999",
+            },
+            files={"audio_file": ("duration-probe.wav", wav_bytes(2.0), "audio/wav")},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["duration_seconds"] == 2
+    finally:
+        clear_isolated_client_env()
+
+
+def test_manual_upload_rejects_empty_audio_file_even_with_supplied_duration(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+
+        response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Empty Upload",
+                "prompt": "empty upload",
+                "duration_seconds": "210",
+            },
+            files={"audio_file": ("empty.mp3", b"", "audio/mpeg")},
+        )
+
+        assert response.status_code == 400
+        assert "empty" in response.json()["detail"].lower()
     finally:
         clear_isolated_client_env()
 
