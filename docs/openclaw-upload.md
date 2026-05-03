@@ -436,6 +436,9 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 ## Safety Rules
 
 - Do not call `Approve Publish` automatically unless the human explicitly asks for full private publishing.
+- Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release auto-publish-single`, `scripts/openclaw-release auto-publish-playlist`, or the app's local `/approve-publish` API only. The app performs the real YouTube upload through the YouTube Data API.
+- YouTube Studio is only for human final review after the private API upload, such as watching the result, changing visibility to Public, reviewing automatic captions, or manual fixes.
+- Do not try to turn on automatic captions through browser automation. The app does not upload caption tracks or toggle caption settings. For vocal releases, API upload can send the inferred `snippet.defaultAudioLanguage`; YouTube may generate automatic captions later. For BGM/instrumental/no-vocal releases, leave captions/audio language alone unless the human explicitly asks for manual captions.
 - Do not open Suno or generate audio before creating/selecting the app release workspace. Fresh work starts with `scripts/openclaw-release create-release`; continuing work starts with `scripts/openclaw-release list-releases` and `--release-id`.
 - Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.

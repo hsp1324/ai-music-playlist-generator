@@ -104,6 +104,8 @@ For `single_track_video`, the intended publish path is:
 - Publish/re-upload shows a `Publish Channel` dropdown directly in the release action area
 - Published releases still show the final track list and inline audio players, but review/reorder controls are locked
 - YouTube OAuth now requests both upload and readonly scopes so the app can identify the selected channel after OAuth
+- YouTube uploads are API-only through the app's YouTube Data API flow (`videos.insert` plus thumbnail/localization calls). OpenClaw must not upload directly in YouTube Studio; Studio is only for human review, visibility changes, and manual cleanup after the private API upload.
+- Caption tracks are not uploaded or managed by the app. Vocal releases infer and send `snippet.defaultAudioLanguage` when the title/description/tags clearly identify J-pop/K-pop/pop language; BGM/instrumental/no-vocal releases omit it so YouTube is not told to expect speech.
 - Cafe/solo-piano playlist metadata now generates a Korean YouTube title, use-case description, timestamped tracklist, and music hashtags
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags

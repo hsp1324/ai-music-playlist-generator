@@ -2387,6 +2387,7 @@ def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypa
     assert result.video_id == "yt-localized"
     assert captured["part"] == "snippet,status,localizations"
     assert captured["body"]["snippet"]["defaultLanguage"] == "ko"
+    assert captured["body"]["snippet"]["defaultAudioLanguage"] == "ja"
     assert captured["body"]["status"]["privacyStatus"] == "private"
     assert captured["body"]["status"]["containsSyntheticMedia"] is False
     assert captured["body"]["status"]["selfDeclaredMadeForKids"] is False
@@ -2395,6 +2396,89 @@ def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypa
         "en": {"title": "English Title", "description": "English description"},
         "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
     }
+
+
+def test_youtube_upload_audio_language_inference_marks_pop_vocals(tmp_path) -> None:
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage"))
+
+    assert (
+        service._infer_default_audio_language(
+            title="Night Park J-POP",
+            description="Japanese vocals with city pop energy.",
+            tags=["J-pop", "Japanese vocals"],
+        )
+        == "ja"
+    )
+
+
+def test_youtube_upload_audio_language_inference_skips_instrumental_bgm(tmp_path) -> None:
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage"))
+
+    assert (
+        service._infer_default_audio_language(
+            title="Beach Walk BGM",
+            description="No-vocal instrumental music for walking.",
+            tags=["J-pop inspired BGM", "Instrumental"],
+        )
+        is None
+    )
+
+
+def test_youtube_upload_retries_without_default_audio_language_if_api_rejects(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    video_path = tmp_path / "release.mp4"
+    video_path.write_bytes(b"fake video")
+    captured_bodies = []
+
+    class FakeResponse:
+        status = 400
+        reason = "Bad Request"
+
+    class FakeInsertRequest:
+        def __init__(self, reject_default_audio_language: bool) -> None:
+            self.reject_default_audio_language = reject_default_audio_language
+
+        def next_chunk(self):
+            if self.reject_default_audio_language:
+                raise youtube_service_module.HttpError(
+                    FakeResponse(),
+                    b'{"error":{"message":"defaultAudioLanguage is invalid"}}',
+                )
+            return None, {"id": "yt-retried"}
+
+    class FakeVideos:
+        def insert(self, *, part, body, media_body):
+            del part, media_body
+            captured_bodies.append(json.loads(json.dumps(body)))
+            return FakeInsertRequest("defaultAudioLanguage" in body["snippet"])
+
+    class FakeYouTube:
+        def videos(self):
+            return FakeVideos()
+
+    monkeypatch.setattr(youtube_service_module, "build", lambda *args, **kwargs: FakeYouTube())
+    monkeypatch.setattr(
+        youtube_service_module,
+        "MediaFileUpload",
+        lambda *args, **kwargs: {"args": args, "kwargs": kwargs},
+    )
+
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage"))
+    service._load_credentials = lambda youtube_channel_id=None: object()
+
+    result = service.upload_playlist_video(
+        SimpleNamespace(output_video_path=str(video_path)),
+        title="Tokyo Night J-POP",
+        description="Japanese vocals over neon drums.",
+        tags=["J-pop"],
+    )
+
+    assert result.video_id == "yt-retried"
+    assert "defaultAudioLanguage" in captured_bodies[0]["snippet"]
+    assert "defaultAudioLanguage" not in captured_bodies[1]["snippet"]
+    assert "default_audio_language" not in result.response
 
 
 def test_youtube_channel_selection_updates_active_channel(tmp_path) -> None:

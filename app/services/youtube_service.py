@@ -9,6 +9,7 @@ from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
 from PIL import Image
 
@@ -246,18 +247,36 @@ class YouTubeService:
                 "selfDeclaredMadeForKids": False,
             },
         }
+        default_audio_language = self._infer_default_audio_language(
+            title=title,
+            description=description,
+            tags=tags,
+        )
+        if default_audio_language:
+            body["snippet"]["defaultAudioLanguage"] = default_audio_language
         parts = ["snippet", "status"]
         if api_localizations:
             body["localizations"] = api_localizations
             parts.append("localizations")
-        request = youtube.videos().insert(
-            part=",".join(parts),
-            body=body,
-            media_body=MediaFileUpload(playlist.output_video_path, resumable=True),
-        )
-        response = None
-        while response is None:
-            _, response = request.next_chunk()
+        try:
+            response = self._execute_video_insert(
+                youtube,
+                parts=parts,
+                body=body,
+                video_path=playlist.output_video_path,
+            )
+        except HttpError as exc:
+            if default_audio_language and self._is_default_audio_language_rejected(exc):
+                body["snippet"].pop("defaultAudioLanguage", None)
+                default_audio_language = None
+                response = self._execute_video_insert(
+                    youtube,
+                    parts=parts,
+                    body=body,
+                    video_path=playlist.output_video_path,
+                )
+            else:
+                raise
 
         video_id = response["id"]
         channel = self.get_channel(youtube_channel_id)
@@ -267,6 +286,8 @@ class YouTubeService:
                 "title": channel.get("title"),
             }
         response["default_language"] = default_language
+        if default_audio_language:
+            response["default_audio_language"] = default_audio_language
         if normalized_localizations:
             response["localizations"] = normalized_localizations
         if thumbnail_path and Path(thumbnail_path).exists():
@@ -280,6 +301,102 @@ class YouTubeService:
                 response["thumbnail_upload_error"] = str(exc)
 
         return YouTubeUploadResult(video_id=video_id, response=response)
+
+    def _execute_video_insert(
+        self,
+        youtube: Any,
+        *,
+        parts: list[str],
+        body: dict[str, Any],
+        video_path: str,
+    ) -> dict[str, Any]:
+        request = youtube.videos().insert(
+            part=",".join(parts),
+            body=body,
+            media_body=MediaFileUpload(video_path, resumable=True),
+        )
+        response = None
+        while response is None:
+            _, response = request.next_chunk()
+        return response
+
+    def _is_default_audio_language_rejected(self, exc: HttpError) -> bool:
+        if getattr(exc.resp, "status", None) not in {400, 403}:
+            return False
+        error_text = str(exc).lower()
+        return "defaultaudiolanguage" in error_text or "default audio language" in error_text
+
+    def _infer_default_audio_language(
+        self,
+        *,
+        title: str,
+        description: str,
+        tags: list[str],
+    ) -> str | None:
+        haystack = " ".join([title, description, " ".join(tags)]).lower()
+        no_vocal_markers = (
+            "instrumental",
+            "bgm",
+            "no-vocal",
+            "no vocal",
+            "no vocals",
+            "without vocals",
+            "background music",
+            "가사 없는",
+            "보컬 없는",
+            "연주곡",
+            "歌なし",
+            "インスト",
+        )
+        if any(marker in haystack for marker in no_vocal_markers):
+            return None
+        language_markers = (
+            (
+                "ja",
+                (
+                    "j-pop",
+                    "jpop",
+                    "japanese pop",
+                    "japanese vocal",
+                    "japanese vocals",
+                    "japanese lyrics",
+                    "일본어 보컬",
+                    "일본어 노래",
+                    "日本語ボーカル",
+                    "日本語歌詞",
+                ),
+            ),
+            (
+                "ko",
+                (
+                    "k-pop",
+                    "kpop",
+                    "korean pop",
+                    "korean vocal",
+                    "korean vocals",
+                    "korean lyrics",
+                    "한국어 보컬",
+                    "한국어 노래",
+                ),
+            ),
+            (
+                "es",
+                (
+                    "spanish pop",
+                    "spanish vocal",
+                    "spanish vocals",
+                    "spanish lyrics",
+                    "español",
+                    "voz española",
+                    "letra española",
+                ),
+            ),
+            ("en", ("english pop", "english vocal", "english vocals", "english lyrics")),
+        )
+        for language, markers in language_markers:
+            if any(marker in haystack for marker in markers):
+                return language
+        return None
 
     def _prepare_thumbnail_upload(self, thumbnail_path: str) -> Path:
         source = Path(thumbnail_path)
