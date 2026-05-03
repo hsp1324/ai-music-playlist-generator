@@ -19,8 +19,9 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and Dreamina/Seedance first frame.
-- The cover must include only a small lower-left `Soft Hour Radio` channel watermark.
-- Keep the channel name readable, subtle, and consistent in size/style with the thumbnail brand line.
+- The cover must include only a medium-sized lower-left `Soft Hour Radio` channel watermark.
+- Make `Soft Hour Radio` clearly readable on mobile playback. Do not make it tiny; target roughly 7-9% of the image width, with enough contrast or a subtle backing shadow/glow to survive video compression.
+- Keep the channel name calm and tasteful, but larger than a fine-print signature. It should feel like a quiet channel mark, not hidden text.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
@@ -28,7 +29,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable use-case/mood text, for example `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, `RAINY NIGHT`, or `CALM READING`.
-- Add smaller `SOFT HOUR RADIO` as the brand line. Keep this brand line visually consistent with the lower-left cover watermark.
+- Add `SOFT HOUR RADIO` as the brand line. Keep this brand line visually consistent with the larger lower-left cover watermark.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, or clocks unless the human explicitly asks.
 
 ## Loop Video
@@ -44,10 +45,10 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact lower-left channel label "Soft Hour Radio".
+Use the uploaded first-frame image as the exact starting frame. It contains the exact medium-sized lower-left channel label "Soft Hour Radio".
 Create one continuous calm animated music visualizer shot for a Soft Hour Radio background-music release.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
-Preserve the lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
+Preserve the medium-sized lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 Animate only natural, subtle details already implied by the first frame and release mood.
 Keep the camera locked in the same crop and framing for the full clip. No zoom, no push-in, no pull-back, no dolly, no camera breathing, no camera drift, no camera follow, no parallax camera movement.
 The motion must progress naturally for the full clip.

@@ -264,7 +264,7 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name watermark and a separate 16:9 YouTube thumbnail with readable text. They can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name watermark and a separate 16:9 YouTube thumbnail with readable text. Every channel watermark should be medium-sized and readable on mobile, not tiny; target roughly 7-9% of the image width. Runs can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
 - The web release detail view exposes separate upload/replace buttons for video cover, text YouTube thumbnail, and 8 second loop video.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.

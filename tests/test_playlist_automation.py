@@ -73,6 +73,7 @@ def test_dreamina_prompt_uses_tokyo_daydream_three_person_signature() -> None:
 
     assert "animated, anime, illustrated, or stylized" in prompt
     assert "Do not use photorealistic" in prompt
+    assert "medium-sized lower-left channel label" in prompt
     assert 'lower-left channel label "Tokyo Daydream Radio"' in prompt
     assert "Preserve this text exactly" in prompt
     assert "No other text" in prompt
@@ -95,6 +96,7 @@ def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:
 
     assert "Soft Hour Radio/background-music visual system" in prompt
     assert "do not force a fixed recurring mascot" in prompt
+    assert "medium-sized lower-left channel label" in prompt
     assert "Keep the camera locked in the same crop and framing" in prompt
     assert "no zoom" in prompt
     assert 'lower-left channel label "Soft Hour Radio"' in prompt

@@ -21,8 +21,9 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and Dreamina/Seedance first frame.
-- The cover must include only a small lower-left `Tokyo Daydream Radio` channel watermark.
-- Keep the channel name readable, subtle, and consistent in size/style with the thumbnail brand line.
+- The cover must include only a medium-sized lower-left `Tokyo Daydream Radio` channel watermark.
+- Make `Tokyo Daydream Radio` clearly readable on mobile playback. Do not make it tiny; target roughly 7-9% of the image width, with enough contrast or a subtle backing shadow/glow to survive video compression.
+- Keep the channel name tasteful and integrated into the scene, but it should feel like a visible channel mark, not hidden fine print.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
@@ -30,7 +31,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same three people, subject placement, clothing colors, silhouettes, lighting, palette, background landmarks, and camera angle from the cover.
 - Use large `J-POP`.
-- Use smaller `TOKYO DAYDREAM RADIO` directly beneath it. Keep this brand line visually consistent with the lower-left cover watermark.
+- Use `TOKYO DAYDREAM RADIO` directly beneath it. Keep this brand line visually consistent with the larger lower-left cover watermark.
 - Keep the same full-bleed two-line treatment for Tokyo/city, forest/nature, and beach versions.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, `1時間`, clocks, or timers.
 
@@ -45,7 +46,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact lower-left channel label "Tokyo Daydream Radio".
+Use the uploaded first-frame image as the exact starting frame. It contains the exact medium-sized lower-left channel label "Tokyo Daydream Radio".
 Create one continuous forward-moving animated music visualizer shot for Tokyo Daydream Radio.
 Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, walking away from the camera into the scene.
 The viewer should see backs and backs of heads, not front-facing faces.
@@ -53,7 +54,7 @@ The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
-Preserve the lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
+Preserve the medium-sized lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 Adapt the background and atmosphere to the release concept.
 Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI, no extra people or characters.

@@ -806,9 +806,9 @@ class BackgroundJobWorker:
         if not channel_title:
             channel_title = "Tokyo Daydream Radio" if is_tokyo_visual else "Soft Hour Radio"
         watermark_prompt = (
-            f'The uploaded first-frame image contains the exact lower-left channel label "{channel_title}". '
+            f'The uploaded first-frame image contains the exact medium-sized lower-left channel label "{channel_title}". '
             "Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, "
-            "flicker, or change it. Keep the text area stable and animate only the surrounding scene subtly. "
+            "shrink, flicker, or change it. Keep the text area stable and animate only the surrounding scene subtly. "
             "No other text, subtitles, logos, UI, or title words."
         )
         signature_prompt = (
