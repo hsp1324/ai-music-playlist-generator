@@ -25,10 +25,10 @@ The command returns `youtube_channel_title` and `profile_doc`. Read that `profil
 
 Global branding rule for every channel:
 
-- Every final cover/first-frame image must include the selected channel name as a medium-sized, readable lower-left watermark. Do not make channel names tiny. Target roughly 7-9% of the image width and keep enough contrast or subtle backing shadow/glow for mobile playback and video compression.
+- Every final cover/first-frame image must include the selected channel name as a large, readable lower-left brand label. It should match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
 - The cover/first-frame should contain only that channel name. Do not add title text, genre text, duration text, lyrics, UI, logos, or unrelated words to the cover/first-frame.
 - The Dreamina/Seedance loop video must preserve the exact lower-left channel name for the full clip. Reject/regenerate clips where the channel name disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
-- The YouTube thumbnail still needs large click text above or near a channel-brand line. Keep the channel-brand line size/style consistent with the cover watermark when possible.
+- The YouTube thumbnail still needs large click text above or near a channel-brand line. Keep the channel-brand line size/style consistent with the large cover channel label.
 
 ## Quick Asset Summary
 
@@ -41,13 +41,14 @@ Cover / first frame:
 - 16:9 illustrated/anime/stylized image for long background listening.
 - Subject, scene, color, and camera are decided by the specific release concept.
 - No fixed mascot, fixed character count, or repeated channel composition.
-- Only text allowed is the medium-sized lower-left `Soft Hour Radio` watermark.
+- Only text allowed is the large lower-left `Soft Hour Radio` brand label.
 
 Loop video:
 
-- Animate the cover/first-frame with subtle, calm motion derived from the release concept.
+- Animate the cover/first-frame with calm but clearly visible natural motion derived from the release concept.
 - Keep the composition stable and long-listening friendly.
-- Preserve the lower-left `Soft Hour Radio` watermark exactly for the whole clip.
+- Preserve the large lower-left `Soft Hour Radio` brand label exactly for the whole clip.
+- Use several environmental motion layers when the first frame supports them so Soft Hour clips have continuous visible motion without becoming visually noisy.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 
 YouTube thumbnail:
@@ -55,7 +56,7 @@ YouTube thumbnail:
 - Start from the final cover as an image-to-image/reference edit.
 - Keep the same subject, placement, lighting, palette, props, and camera angle.
 - Add large readable use-case or mood text such as `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, `RAINY NIGHT`, or `CALM READING`.
-- Add `SOFT HOUR RADIO` brand line, visually consistent with the larger cover watermark.
+- Add `SOFT HOUR RADIO` brand line, visually consistent with the large cover channel label.
 - Do not add duration badges like `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ### Tokyo Daydream Radio
@@ -66,13 +67,13 @@ Cover / first frame:
 - Anime/OST-like music is included, but the channel is broader mainstream J-pop/pop and should not feel anime OST-only.
 - Default signature is exactly three people seen from behind, walking forward away from the viewer.
 - Keep the three people centered and visually important unless the human explicitly requested a different visual concept.
-- Only text allowed is the medium-sized lower-left `Tokyo Daydream Radio` watermark.
+- Only text allowed is the large lower-left `Tokyo Daydream Radio` brand label.
 
 Loop video:
 
 - Animate the cover/first-frame as one continuous forward-moving shot.
 - Keep the three people walking away from the camera with subtle camera-follow and environmental motion.
-- Preserve the medium-sized lower-left `Tokyo Daydream Radio` watermark exactly for the whole clip; do not shrink it.
+- Preserve the large lower-left `Tokyo Daydream Radio` brand label exactly for the whole clip; do not shrink it.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 
 YouTube thumbnail:
@@ -80,7 +81,7 @@ YouTube thumbnail:
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same three people, positions, clothing colors, silhouettes, lighting, palette, background landmarks, and camera angle.
 - Use large `J-POP`.
-- Use `TOKYO DAYDREAM RADIO` directly beneath it, visually consistent with the larger cover watermark.
+- Use `TOKYO DAYDREAM RADIO` directly beneath it, visually consistent with the large cover channel label.
 - Keep the centered people important; text must fit around them and must not push them sideways.
 - Do not add duration badges like `1 HOUR`, `60 MIN`, `1時間`, clocks, or timers.
 

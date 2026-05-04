@@ -823,10 +823,11 @@ class BackgroundJobWorker:
         channel_title = str(meta.get("youtube_channel_title") or "").strip()
         if not channel_title:
             channel_title = "Tokyo Daydream Radio" if is_tokyo_visual else "Soft Hour Radio"
-        watermark_prompt = (
-            f'The uploaded first-frame image contains the exact medium-sized lower-left channel label "{channel_title}". '
+        channel_label_prompt = (
+            f'The uploaded first-frame image contains the exact large, readable lower-left channel brand label "{channel_title}". '
+            "It should be the same visual scale as the channel-brand line used on the YouTube thumbnail, roughly 18-24% of image width or 5-6% of image height for text cap height. "
             "Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, "
-            "shrink, flicker, or change it. Keep the text area stable and animate only the surrounding scene subtly. "
+            "shrink, flicker, or change it. Keep the text area stable and animate the surrounding scene naturally. "
             "No other text, subtitles, logos, UI, or title words."
         )
         signature_prompt = (
@@ -835,17 +836,18 @@ class BackgroundJobWorker:
             "not front-facing faces. One continuous forward-moving shot with subtle camera-follow movement from behind, "
             "final moment close to the opening composition without becoming frozen, "
             "stable composition, no repeated segment, no hard cuts, no subtitles, no extra people or characters. "
-            f"{watermark_prompt}"
+            f"{channel_label_prompt}"
         )
         soft_hour_prompt = (
             "Soft Hour Radio/background-music visual system: calm, restrained visual concept matched to the release. "
             "Let the release concept and first frame decide the subject; do not force a fixed recurring mascot, "
-            "character count, scene list, or camera composition. Use subtle motion derived from the first frame. "
+            "character count, scene list, or camera composition. Use motion derived from the first frame. "
             "Keep the camera locked in the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. "
-            "Animate only ambient environmental details already present in the first frame. "
+            "Animate several environmental layers already present or naturally implied by the first frame with calm but clearly visible motion, such as leaves swaying, grass or curtains moving in a breeze, water/rain reflections, warm light shimmer, drifting dust motes, smoke, steam, or fireflies. "
+            "Keep continuous visible motion throughout the full clip while preserving the calm long-listening mood. "
             "The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ. "
             "No repeated segment, no hard cuts, no subtitles, no logos, no UI. "
-            f"{watermark_prompt}"
+            f"{channel_label_prompt}"
         )
         if tracks:
             track = tracks[0]
@@ -869,12 +871,12 @@ class BackgroundJobWorker:
                 "Cinematic music visualizer shot for Tokyo Daydream Radio/J-pop with exactly three people seen from behind walking away from the camera into the scene, "
                 "animated/anime/illustrated style, not photorealistic or live-action, "
                 "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, final moment close to the opening composition, no repeated segment. "
-                f"{watermark_prompt}"
+                f"{channel_label_prompt}"
             )
         return (
             "Cinematic background-music visualizer shot for Soft Hour Radio: calm, restrained illustrated scene matched to the release concept. "
-            "Animated/anime/illustrated style, not photorealistic or live-action. Locked camera with the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. Subtle ambient motion derived from the first frame, stable composition, no fixed recurring character/scene template, no repeated segment. "
-            f"{watermark_prompt}"
+            "Animated/anime/illustrated style, not photorealistic or live-action. Locked camera with the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. Calm but clearly visible ambient motion across several environmental layers derived from the first frame, stable composition, no fixed recurring character/scene template, no repeated segment, continuous visible motion throughout the full clip. "
+            f"{channel_label_prompt}"
         )
 
     @staticmethod
