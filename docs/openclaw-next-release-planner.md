@@ -67,7 +67,9 @@ Use it for:
 Music defaults:
 
 - Instrumental/no-vocal BGM unless the human explicitly asks for vocals.
-- Use detailed non-sung arrangement notes instead of empty lyrics.
+- For Suno generation, use `docs/suno-v55-instrumental-format.md`: enable Instrumental when available, write only bracketed instrumental metatag lines in the lyrics/custom-lyrics field, and upload that exact file with `--lyrics-file`.
+- Use Suno Advanced Options excluded styles for no-vocal work: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
+- Keep each playlist song 4 minutes or shorter. Aim for 2:30-3:45 per track.
 - Prioritize usefulness, calmness, flow, and low listener fatigue.
 
 Visual defaults:

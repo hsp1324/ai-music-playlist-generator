@@ -23,6 +23,7 @@ from app.utils.track_titles import clean_track_display_title, display_track_titl
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
+DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 240
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 CHANNEL_PROFILE_DOCS = {
@@ -355,6 +356,45 @@ def require_pop_family_lyrics(*, lyrics_items: list[str], context: str, concept_
     )
 
 
+def max_playlist_track_seconds(args: argparse.Namespace) -> int:
+    return max(int(getattr(args, "max_track_seconds", DEFAULT_MAX_PLAYLIST_TRACK_SECONDS) or 0), 0)
+
+
+def require_playlist_track_duration(
+    track: dict[str, Any],
+    *,
+    args: argparse.Namespace,
+    context: str,
+) -> None:
+    if bool(getattr(args, "allow_long_track", False)):
+        return
+    max_seconds = max_playlist_track_seconds(args)
+    if max_seconds <= 0:
+        return
+    duration_seconds = int(track.get("duration_seconds") or 0)
+    if duration_seconds <= max_seconds:
+        return
+    title = track.get("title") or track.get("id") or "unknown track"
+    raise RuntimeError(
+        f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
+        f"Playlist tracks must be {format_timestamp(max_seconds)} or shorter. "
+        "Regenerate a shorter Suno track, split the concept into separate songs, or pass --allow-long-track "
+        "only when the human explicitly accepts a longer track."
+    )
+
+
+def require_release_playlist_track_durations(
+    release: dict[str, Any],
+    *,
+    args: argparse.Namespace,
+    context: str,
+) -> None:
+    if bool(getattr(args, "allow_long_track", False)):
+        return
+    for track in release.get("tracks") or []:
+        require_playlist_track_duration(track, args=args, context=context)
+
+
 def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
     offset = 0
     timeline = []
@@ -548,6 +588,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             dispatch_review=not auto_approve_playlist,
         )
         if auto_approve_playlist:
+            require_playlist_track_duration(track, args=args, context="upload-audio playlist auto-approval")
             track = approve_track_to_playlist(
                 client,
                 track_id=track["id"],
@@ -1019,6 +1060,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 cover_path=None,
                 dispatch_review=False,
             )
+            require_playlist_track_duration(track, args=args, context="auto-publish-playlist")
             approved = approve_track_to_playlist(
                 client,
                 track_id=track["id"],
@@ -1059,6 +1101,13 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             f"uploaded {len(uploaded_tracks)} remaining track(s); render/publish stopped. "
             f"Slack notified: {bool(slack_result.get('ok'))}."
         )
+
+    release = get_release(client, release["id"])
+    require_release_playlist_track_durations(
+        release,
+        args=args,
+        context="auto-publish-playlist existing playlist track check",
+    )
 
     release = request_json(
         client,
@@ -1778,6 +1827,8 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
     audio_parser.add_argument("--pending-review", action="store_true", help="For Playlist Releases only, skip the default auto-approve behavior.")
+    audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 240.")
+    audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds. Use only with explicit human approval.")
     audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded when playlist uploads are auto-approved.")
     audio_parser.set_defaults(func=upload_audio)
 
@@ -1818,6 +1869,8 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
+    auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 240.")
+    auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")

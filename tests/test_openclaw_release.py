@@ -38,6 +38,8 @@ def _auto_publish_args(audio_path: str, **overrides):
         "lyrics": [],
         "lyrics_file": [],
         "target_seconds": 3600,
+        "max_track_seconds": 240,
+        "allow_long_track": False,
         "youtube_channel_title": "",
         "youtube_channel_id": "",
         "force_under_target": False,
@@ -584,6 +586,64 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
     assert slack_notices
     assert "Broken Track" in slack_notices[-1]
     assert not render_requested
+
+
+def test_auto_publish_playlist_rejects_tracks_longer_than_four_minutes(tmp_path) -> None:
+    audio_path = tmp_path / "long.mp3"
+    audio_path.write_bytes(b"long audio")
+    render_requested = False
+    slack_notices = []
+
+    release = {
+        "id": "release-1",
+        "title": "Cafe BGM Playlist",
+        "workspace_mode": "playlist",
+        "workflow_state": "collecting",
+        "cover_image_path": "/tmp/final-cover.png",
+        "cover_source": "manual-upload",
+        "youtube_thumbnail_path": "/tmp/thumb.png",
+        "youtube_thumbnail_source": "manual-upload",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal render_requested
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(200, json=[release])
+        if request.method == "POST" and request.url.path.endswith("/tracks/manual-upload"):
+            return httpx.Response(
+                201,
+                json={
+                    "id": "track-long",
+                    "title": "Long Track",
+                    "status": "pending_review",
+                    "duration_seconds": 241,
+                    "metadata_json": {},
+                },
+            )
+        if request.method == "POST" and request.url.path.endswith("/slack/notify"):
+            slack_notices.append(json.loads(request.read())["text"])
+            return httpx.Response(200, json={"ok": True})
+        if request.method == "POST" and request.url.path.endswith("/playlists/release-1/render-audio"):
+            render_requested = True
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="1 audio upload"):
+        auto_publish_playlist(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_title="Cafe BGM Playlist",
+                description="instrumental cafe BGM",
+                tags="BGM,instrumental",
+            ),
+        )
+
+    assert not render_requested
+    assert slack_notices
+    assert "Long Track" in slack_notices[-1]
+    assert "04:00 or shorter" in slack_notices[-1]
 
 
 def test_auto_publish_single_requires_final_cover_before_side_effects(tmp_path) -> None:

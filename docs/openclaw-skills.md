@@ -53,22 +53,25 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - Single Release means one final song, but it may contain up to two review candidates from Suno.
 - If two Suno candidates from one prompt are both good, publish them as two separate Single Releases. Do not combine them into one song.
 - Playlist Release normally means automatic private publishing. If the human asks for a playlist production run, upload generated tracks as already approved, render everything, generate/approve metadata, and upload privately to YouTube.
-- When uploading audio, include lyrics or song-content notes with `--lyrics` or `--lyrics-file` whenever available. For instrumental work, prefer non-sung arrangement notes over an empty lyrics field so later metadata/visual work can understand the track.
-- BGM/background/lofi/study/sleep/cafe music defaults to instrumental/no vocals unless the human explicitly asks for vocals. For Soft Hour Radio or other instrumental BGM, do not leave the Suno lyrics/custom-lyrics field completely blank. Write detailed non-sung instrumental arrangement notes, then save and upload the same notes with `--lyrics` or `--lyrics-file`.
-- Instrumental arrangement notes must be concrete enough to steer Suno away from accidental vocals. Include: a no-vocal guardrail, tempo/feel, instrument palette, section-by-section musical flow, dynamics/transitions, and negative vocal constraints. Do not write singable lyric lines. Example shape:
-  `[Instrumental only - no vocals, no humming, no spoken words]`
-  `[Tempo/feel] 76 BPM, relaxed swing, warm late-night cafe mood`
-  `[Palette] felt piano lead, nylon guitar answers, soft Rhodes pads, brushed drums, upright bass, subtle rain ambience`
-  `[Intro] piano motif alone, wide space, no percussion`
-  `[Main A] brushed drums enter, guitar answers piano every 4 bars, bass stays simple`
-  `[Main B] Rhodes pad opens, piano melody becomes slightly brighter, no choir or vocal pad`
-  `[Bridge] drums drop to rim clicks, guitar harmonics, gentle tension then release`
-  `[Outro] return to solo piano and rain ambience, slow fade`
-  `[Avoid] vocals, humming, spoken words, choirs, vocal chops, lyric-like phrases`
+- When uploading audio, include lyrics or song-content notes with `--lyrics` or `--lyrics-file` whenever available. For instrumental work, save and upload the exact bracket-only Suno instrumental metatag file so later metadata/visual work can understand the track.
+- BGM/background/lofi/study/sleep/cafe music defaults to instrumental/no vocals unless the human explicitly asks for vocals. For Soft Hour Radio or other instrumental BGM, follow [suno-v55-instrumental-format.md](suno-v55-instrumental-format.md) before pressing Create in Suno.
+- For Soft Hour Radio instrumental work, do not put plain prose in Suno's lyrics/custom-lyrics field. Every non-empty line in that field must start with `[` and end with `]`. Bare arrangement sentences can be interpreted as sung lyrics.
+- For Soft Hour Radio instrumental work, open Suno Advanced Options and fill the excluded styles/negative style field with vocal-related exclusions: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
+- Instrumental metatags must be concrete enough to steer Suno toward the intended arrangement. Include an instrumental guardrail, tempo/feel, instrument palette, section-by-section musical flow, dynamics, and transitions inside bracketed lines. Do not write singable lyric lines. Example shape:
+  `[Instrumental only: no sung words, no humming, no spoken words]`
+  `[Intro: 8 bars, felt piano motif alone, wide room, soft rain ambience]`
+  `[Main Theme: brushed drums enter, upright bass plays long roots, nylon guitar answers the piano]`
+  `[Development: warm Rhodes pad opens, piano melody becomes slightly brighter, percussion stays soft]`
+  `[Instrumental Break: harp harmonics and soft cymbal swells, melody carried by piano and guitar]`
+  `[Bridge: drums drop to rim clicks, bass holds long notes, strings widen gradually]`
+  `[Final Theme: piano motif returns, guitar answers every 4 bars, gentle lift without a vocal hook]`
+  `[Outro: solo piano and rain ambience, slow fade]`
+  `[End]`
 - J-pop/K-pop/pop/Japanese pop/anime-pop releases default to vocal songs with lyrics. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not make these instrumental, no-vocal, lyricless, or hum-only unless the human explicitly asks for instrumental/BGM/lofi/no vocals. For every pop-family track, create or capture the final lyrics and upload them with `--lyrics` or `--lyrics-file`. The helper rejects pop-family uploads with empty lyrics before publish unless the concept explicitly says BGM/instrumental/no-vocal.
 - When uploading audio, include the Suno style/settings with `--style` whenever available. This is stored with the track for future cover, thumbnail, loop-video, metadata, and remake work.
 - Within one release, intentionally vary every generated track. Do not reuse the exact same Suno prompt, lyrics theme, chorus hook, title pattern, or style string across multiple tracks unless the human explicitly asks for a uniform album. Keep the release coherent by genre/mood, but vary tempo, energy, instruments, rhythm feel, vocal tone, season/time/place imagery, lyrical story, and hook.
 - For playlist releases, prefer one `--style` per `--audio` and one `--lyrics-file` per vocal track. Shared style is allowed only for a narrow BGM/instrumental set where the human wants consistency; even then, vary titles and prompts.
+- Playlist tracks should be 4 minutes or shorter by default. Target roughly 2:30 to 3:45 per Suno output; regenerate or replace outputs over 4:00 before publishing. `auto-publish-playlist` rejects tracks over 240 seconds unless `--allow-long-track` is used with explicit human approval.
 - For J-pop/K-pop/pop playlists, each song needs its own original lyrics and chorus concept. Do not create multiple songs with near-identical verse/pre-chorus/chorus wording, repeated phrases, or only swapped nouns.
 - Always return the final JSON result and mention `release.id` plus uploaded `track.id` values.
 - If a command fails, stop and report the exact error. Do not retry blindly more than once.
@@ -146,7 +149,7 @@ Goal:
 - If only one usable candidate exists, upload one candidate to the precreated Single Release.
 - If two candidates come from one Suno prompt, they can share the original prompt/style, but give them independent editorial titles and preserve any candidate-specific lyrics, style notes, or differences.
 - If candidate cover images exist, upload them with the audio candidates.
-- If candidate lyrics or instrumental arrangement notes exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. For instrumental/BGM candidates, use non-sung arrangement notes rather than an empty field when possible. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, lyrics are expected by default unless the human explicitly asked for instrumental/no-vocal.
+- If candidate lyrics or instrumental metatag files exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. For instrumental/BGM candidates, use the exact bracket-only Suno metatag file from `docs/suno-v55-instrumental-format.md` rather than an empty field when possible. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, lyrics are expected by default unless the human explicitly asked for instrumental/no-vocal.
 - If the Suno style/settings are known, upload them with `--style`. Use one shared `--style` or one per candidate.
 - Clean awkward trailing A/B or 1/2 labels from uploaded candidate titles. If titles become duplicated, make them naturally unique without using pair labels.
 - When the human approves one candidate, its uploaded cover is automatically registered as the release cover. If the human approves both candidates, the second approved candidate becomes a separate Single Release.
@@ -188,7 +191,7 @@ scripts/openclaw-release upload-single-candidates \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
-If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics/content are truly unavailable, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field. For instrumental/BGM candidates, prefer a non-sung arrangement note file instead of omitting lyrics. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, do not treat missing lyrics as normal; generate or capture original lyrics unless the human explicitly requested instrumental/no-vocal. If style/settings are not available, omit `--style`; otherwise always provide it.
+If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics/content are truly unavailable, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field. For instrumental/BGM candidates, prefer the exact bracket-only Suno metatag file instead of omitting lyrics. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, do not treat missing lyrics as normal; generate or capture original lyrics unless the human explicitly requested instrumental/no-vocal. If style/settings are not available, omit `--style`; otherwise always provide it.
 
 Report the command output JSON. The human will approve one candidate, approve both candidates as separate singles, or reject both in Slack or the web UI.
 ```
@@ -243,7 +246,7 @@ Goal:
 - If Suno returns two usable candidates and the human asked for full automation, publish each good candidate as a separate Single Release by running this skill once per song.
 - If publishing two good candidates from the same Suno request, treat them as separate releases after selection: give each one a distinct title, description angle, thumbnail wording, and preserved lyric/style context.
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
-- Preserve lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available. For BGM/background/instrumental tracks, write and upload non-sung instrumental arrangement notes when possible; J-pop/K-pop/pop/Japanese pop/anime-pop songs should not have empty lyrics unless the human explicitly requested an instrumental/no-vocal track.
+- Preserve lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available. For BGM/background/instrumental tracks, write and upload the exact bracket-only Suno instrumental metatag file when possible; J-pop/K-pop/pop/Japanese pop/anime-pop songs should not have empty lyrics unless the human explicitly requested an instrumental/no-vocal track.
 - If this is a J-pop/K-pop/pop/anime-pop single and there is no final lyric text, stop and generate/capture original lyrics before calling `auto-publish-single`.
 - Preserve Suno style/settings during upload. Pass `--style "SUNO_STYLE_OR_SETTINGS"` for each song.
 - A final 16:9 cover image is required. For moving-video releases, this cover also acts as the Dreamina/Seedance first-frame reference. It must include only the selected channel name as a medium-sized lower-left watermark readable on mobile.
@@ -359,12 +362,14 @@ Use scripts/openclaw-release only.
 Goal:
 - Create or select one Playlist Release workspace before opening Suno or generating audio.
 - Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
-- For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. Do not leave the Suno lyrics/custom-lyrics field blank for Soft Hour Radio instrumental work; write detailed non-sung arrangement notes with the no-vocal guardrail, tempo/feel, instrument palette, sections, dynamics, transitions, and avoid-list described in the shared rules.
+- For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
+- For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
+- Keep every playlist track at or under 4:00. Aim for 2:30-3:45. If Suno produces a track longer than 4:00, regenerate or replace it instead of uploading it for final publish.
 - For J-pop/K-pop/pop/Japanese pop/anime-pop playlist requests, generate vocal songs by default with original lyrics for each track. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not make the batch instrumental/no-vocal unless the human explicitly asks for instrumental/BGM/lofi/no vocals.
 - For every new Suno request in a playlist run, write a distinct prompt/style/lyrics plan before generating. Keep the channel/release mood consistent, but vary one or more of: tempo, drum pattern, bass movement, synth/guitar/piano texture, vocal energy, emotional angle, scene imagery, lyrical storyline, chorus hook, and song structure.
 - If Suno returns two outputs from one request, use both outputs as separate playlist tracks when both are usable.
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
-- Preserve each track's lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available, because good playlist tracks may later be republished as standalone singles and OpenClaw needs this context for thumbnail/loop-video generation. For J-pop/K-pop/pop/Japanese pop/anime-pop playlist tracks, lyrics are expected and should be uploaded for every track. For BGM/background/instrumental tracks, upload non-sung instrumental arrangement notes instead of leaving the content blank whenever possible.
+- Preserve each track's lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available, because good playlist tracks may later be republished as standalone singles and OpenClaw needs this context for thumbnail/loop-video generation. For J-pop/K-pop/pop/Japanese pop/anime-pop playlist tracks, lyrics are expected and should be uploaded for every track. For BGM/background/instrumental tracks, upload the exact bracket-only Suno instrumental metatag file used for generation instead of leaving the content blank whenever possible.
 - If this is a J-pop/K-pop/pop/anime-pop playlist and any track lacks final lyric text, stop and generate/capture original lyrics before calling `auto-publish-playlist`. Do not publish a lyricless pop-family playlist unless the human explicitly says it is BGM/instrumental/no-vocal.
 - Preserve the Suno style/settings for each track. Pass one shared `--style` if the whole batch used the same style, or one `--style` per `--audio` when styles differ.
 - Prefer track-specific `--style` values for playlist tracks. If a shared style is used, add track-specific prompt/title/lyrics variation so the playlist does not sound like one song repeated with minor edits.
