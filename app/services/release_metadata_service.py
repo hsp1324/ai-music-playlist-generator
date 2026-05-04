@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
+from app.utils.youtube_localizations import ensure_playlist_title_prefix
 from app.utils.track_titles import clean_track_display_title, display_track_titles
 
 
@@ -26,6 +27,7 @@ class ReleaseMetadataService:
     def build_youtube_metadata(self, playlist: Playlist, tracks: list[Track]) -> YouTubeMetadata:
         meta = playlist.metadata_json or {}
         mode = str(meta.get("workspace_mode") or "playlist")
+        is_playlist_release = mode != "single_track_video"
         title = playlist.title.strip()
         description_summary = meta.get("description") or "AI-generated music release."
 
@@ -82,13 +84,16 @@ class ReleaseMetadataService:
             ]
         )
         return YouTubeMetadata(
-            title=playlist.title[:100],
+            title=ensure_playlist_title_prefix(playlist.title, is_playlist=is_playlist_release),
             description=description.strip(),
             tags=(tags or ["ai music", "playlist", "background music"])[:15],
         )
 
     def _build_cafe_piano_metadata(self, playlist: Playlist, tracks: list[Track]) -> YouTubeMetadata:
-        title = "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트"
+        title = ensure_playlist_title_prefix(
+            "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트",
+            is_playlist=True,
+        )
         timestamps = self._timestamp_lines(tracks)
         description = "\n".join(
             [

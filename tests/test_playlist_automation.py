@@ -2244,7 +2244,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             },
         )
         assert localized_metadata_response.status_code == 200
-        assert localized_metadata_response.json()["youtube_localizations"]["ja"]["title"] == "日本語タイトル"
+        assert localized_metadata_response.json()["youtube_title"] == "[playlist] 한국어 제목"
+        assert localized_metadata_response.json()["youtube_localizations"]["ja"]["title"] == "[playlist] 日本語タイトル"
         assert "#jpop #playlist" in localized_metadata_response.json()["youtube_description"]
         assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["ja"]["description"]
         assert "#jpop #playlist" in localized_metadata_response.json()["youtube_localizations"]["en"]["description"]
@@ -2280,7 +2281,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert not os.path.exists(first_video_path)
         assert upload_channel_ids[-1] == "UC123"
         assert upload_localizations[-1]["default_language"] == "ko"
-        assert upload_localizations[-1]["localizations"]["en"]["title"] == "English Title"
+        assert upload_localizations[-1]["localizations"]["en"]["title"] == "[playlist] English Title"
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json

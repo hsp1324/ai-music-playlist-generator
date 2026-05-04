@@ -5,6 +5,7 @@ from typing import Any
 
 DEFAULT_YOUTUBE_LANGUAGE = "ko"
 SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es")
+PLAYLIST_TITLE_PREFIX = "[playlist]"
 
 
 def sanitize_youtube_copy(value: Any) -> str:
@@ -30,6 +31,31 @@ def sanitize_youtube_copy(value: Any) -> str:
     for source, target in replacements:
         text = text.replace(source, target)
     return text
+
+
+def ensure_playlist_title_prefix(value: Any, *, is_playlist: bool) -> str:
+    title = sanitize_youtube_copy(value).strip()
+    if not title or not is_playlist:
+        return title[:100]
+    if title.lower().startswith(PLAYLIST_TITLE_PREFIX):
+        return title[:100]
+    return f"{PLAYLIST_TITLE_PREFIX} {title}"[:100]
+
+
+def ensure_playlist_localization_title_prefix(
+    localizations: dict[str, dict[str, str]],
+    *,
+    is_playlist: bool,
+) -> dict[str, dict[str, str]]:
+    if not is_playlist:
+        return localizations
+    return {
+        language: {
+            **payload,
+            "title": ensure_playlist_title_prefix(payload.get("title"), is_playlist=True),
+        }
+        for language, payload in localizations.items()
+    }
 
 
 def normalize_youtube_language(value: Any, *, fallback: str = DEFAULT_YOUTUBE_LANGUAGE) -> str:

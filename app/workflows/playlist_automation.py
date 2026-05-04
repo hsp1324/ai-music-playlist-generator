@@ -12,6 +12,8 @@ from app.schemas.playlist import PlaylistJobRead, PlaylistTrackRead, PlaylistWor
 from app.services.registry import ServiceRegistry
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
+    ensure_playlist_localization_title_prefix,
+    ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
@@ -1200,6 +1202,7 @@ def generate_playlist_metadata(
     tracks = _playlist_tracks(playlist)
     youtube_metadata = services.release_metadata.build_youtube_metadata(playlist, tracks)
     meta = _playlist_meta(playlist)
+    is_playlist_release = _workspace_mode(playlist) != "single_track_video"
     history = list(meta.get("metadata_history") or [])
     history.append(
         {
@@ -1211,17 +1214,23 @@ def generate_playlist_metadata(
         }
     )
     meta["metadata_history"] = history
-    meta["youtube_title"] = sanitize_youtube_copy(youtube_metadata.title)[:100]
+    meta["youtube_title"] = ensure_playlist_title_prefix(
+        youtube_metadata.title,
+        is_playlist=is_playlist_release,
+    )
     meta["youtube_description"] = sanitize_youtube_copy(youtube_metadata.description)
     meta["youtube_tags"] = youtube_metadata.tags
     meta["youtube_default_language"] = normalize_youtube_language(
         getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
     )
-    meta["youtube_localizations"] = normalize_youtube_localizations(
-        getattr(youtube_metadata, "localizations", {}),
-        default_title=youtube_metadata.title,
-        default_description=youtube_metadata.description,
-        default_language=meta["youtube_default_language"],
+    meta["youtube_localizations"] = ensure_playlist_localization_title_prefix(
+        normalize_youtube_localizations(
+            getattr(youtube_metadata, "localizations", {}),
+            default_title=youtube_metadata.title,
+            default_description=youtube_metadata.description,
+            default_language=meta["youtube_default_language"],
+        ),
+        is_playlist=is_playlist_release,
     )
     meta["youtube_description"] = _ensure_description_hashtags(meta["youtube_description"], meta["youtube_tags"])
     for localized_copy in meta["youtube_localizations"].values():
@@ -1270,8 +1279,9 @@ def approve_playlist_metadata(
         raise ValueError("Rendered video is required before approving metadata.")
 
     meta = _playlist_meta(playlist)
+    is_playlist_release = _workspace_mode(playlist) != "single_track_video"
     if title is not None:
-        meta["youtube_title"] = sanitize_youtube_copy(title)[:100]
+        meta["youtube_title"] = ensure_playlist_title_prefix(title, is_playlist=is_playlist_release)
     if description is not None:
         meta["youtube_description"] = sanitize_youtube_copy(description)
     if tags is not None:
@@ -1283,6 +1293,10 @@ def approve_playlist_metadata(
         default_description=meta.get("youtube_description"),
         default_language=default_language,
     )
+    normalized_localizations = ensure_playlist_localization_title_prefix(
+        normalized_localizations,
+        is_playlist=is_playlist_release,
+    )
     if normalized_localizations:
         meta["youtube_default_language"] = default_language
         meta["youtube_localizations"] = normalized_localizations
@@ -1290,6 +1304,11 @@ def approve_playlist_metadata(
         if default_copy:
             meta["youtube_title"] = default_copy["title"]
             meta["youtube_description"] = default_copy["description"]
+    if meta.get("youtube_title"):
+        meta["youtube_title"] = ensure_playlist_title_prefix(
+            meta.get("youtube_title"),
+            is_playlist=is_playlist_release,
+        )
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing. Generate metadata first.")
     meta["youtube_description"] = _ensure_description_hashtags(
@@ -1297,11 +1316,14 @@ def approve_playlist_metadata(
         meta.get("youtube_tags"),
     )
     if meta.get("youtube_localizations"):
-        localized_metadata = normalize_youtube_localizations(
-            meta.get("youtube_localizations"),
-            default_title=meta.get("youtube_title"),
-            default_description=meta.get("youtube_description"),
-            default_language=default_language,
+        localized_metadata = ensure_playlist_localization_title_prefix(
+            normalize_youtube_localizations(
+                meta.get("youtube_localizations"),
+                default_title=meta.get("youtube_title"),
+                default_description=meta.get("youtube_description"),
+                default_language=default_language,
+            ),
+            is_playlist=is_playlist_release,
         )
         for localized_copy in localized_metadata.values():
             localized_copy["description"] = _ensure_description_hashtags(
@@ -2054,6 +2076,22 @@ def approve_playlist_publish(
         raise ValueError("YouTube metadata must be approved before final publish approval.")
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing before final publish approval.")
+
+    is_playlist_release = _workspace_mode(playlist) != "single_track_video"
+    default_language = normalize_youtube_language(meta.get("youtube_default_language"))
+    meta["youtube_title"] = ensure_playlist_title_prefix(
+        meta.get("youtube_title"),
+        is_playlist=is_playlist_release,
+    )
+    meta["youtube_localizations"] = ensure_playlist_localization_title_prefix(
+        normalize_youtube_localizations(
+            meta.get("youtube_localizations"),
+            default_title=meta.get("youtube_title"),
+            default_description=meta.get("youtube_description"),
+            default_language=default_language,
+        ),
+        is_playlist=is_playlist_release,
+    )
 
     _store_youtube_channel_metadata(meta, services, channel_id=youtube_channel_id)
     playlist.metadata_json = meta

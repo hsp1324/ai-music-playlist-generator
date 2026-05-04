@@ -7,7 +7,11 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.codex_metadata_service import CodexMetadataService
 from app.services.release_metadata_service import ReleaseMetadataService
-from app.utils.youtube_localizations import normalize_youtube_localizations, sanitize_youtube_copy
+from app.utils.youtube_localizations import (
+    ensure_playlist_title_prefix,
+    normalize_youtube_localizations,
+    sanitize_youtube_copy,
+)
 from app.workflows.playlist_automation import _normalize_youtube_tags
 from scripts.openclaw_release import release_timeline
 from app.utils.track_titles import upload_track_title
@@ -30,7 +34,7 @@ def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
 
     metadata = service.build_youtube_metadata(playlist, tracks)
 
-    assert metadata.title == "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트"
+    assert metadata.title == "[playlist] 조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트"
     assert "공부 / 작업 / 독서 / 휴식 / 카페 분위기 / 조용한 배경음악" in metadata.description
     assert "00:00 Cinnamon Pulse" in metadata.description
     assert "03:22 Cinnamon Bloom" in metadata.description
@@ -62,6 +66,12 @@ def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:
 
     assert localizations["ko"]["title"] == "해변 산책 BGM 1시간"
     assert localizations["ko"]["description"] == "가사가 없는 BGM입니다."
+
+
+def test_playlist_title_prefix_is_enforced_only_for_playlist_releases() -> None:
+    assert ensure_playlist_title_prefix("카페 피아노 1시간", is_playlist=True) == "[playlist] 카페 피아노 1시간"
+    assert ensure_playlist_title_prefix("[playlist] 카페 피아노 1시간", is_playlist=True) == "[playlist] 카페 피아노 1시간"
+    assert ensure_playlist_title_prefix("싱글 트랙", is_playlist=False) == "싱글 트랙"
 
 
 def test_openclaw_metadata_context_timeline_uses_final_order() -> None:
@@ -157,6 +167,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "Japanese title plus Korean translation in parentheses" in input
         assert "never use the transliterated words" in input
         assert "listening use cases directly in the title" in input
+        assert "every YouTube title in every language must start exactly with '[playlist]'" in input
         output_path.write_text(
             json.dumps(
                 {
@@ -176,7 +187,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
 
     assert metadata.provider == "codex"
     assert metadata.error is None
-    assert metadata.title == "조용한 카페 피아노"
+    assert metadata.title == "[playlist] 조용한 카페 피아노"
     assert "00:00 Cinnamon Pulse" in metadata.description
     assert "Cinnamon Keys A" not in metadata.description
     assert metadata.tags == ["Piano", "CafePiano"]
@@ -243,6 +254,11 @@ def test_codex_metadata_service_normalizes_one_hour_timestamps_and_localizations
     assert "01:00:05 " in metadata.description
     assert "Beach Song A" not in metadata.description
     assert "Beach Song B" not in metadata.description
+    assert metadata.title == "[playlist] 해변 산책 J-POP"
+    assert metadata.localizations["ko"]["title"] == "[playlist] 해변 산책 J-POP"
+    assert metadata.localizations["ja"]["title"] == "[playlist] 海辺散歩J-POP"
+    assert metadata.localizations["en"]["title"] == "[playlist] Seaside Walk J-Pop"
+    assert metadata.localizations["es"]["title"] == "[playlist] J-Pop para caminar junto al mar"
     assert "00:00:00 海辺の歌 (해변의 노래)" in metadata.localizations["ko"]["description"]
     assert "01:00:05 夏の光" in metadata.localizations["ja"]["description"]
     assert "01:00:05 Summer Light" in metadata.localizations["en"]["description"]
@@ -273,5 +289,6 @@ def test_codex_metadata_service_falls_back_when_cli_fails(monkeypatch) -> None:
 
     assert metadata.provider == "template"
     assert "Codex metadata generation failed" in (metadata.error or "")
+    assert metadata.title.startswith("[playlist]")
     assert "00:00 Cinnamon Pulse" in metadata.description
     assert "Cinnamon Keys A" not in metadata.description

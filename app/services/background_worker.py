@@ -18,6 +18,8 @@ from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
+    ensure_playlist_localization_title_prefix,
+    ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
 )
@@ -423,17 +425,24 @@ class BackgroundJobWorker:
         ):
             if key in render_meta:
                 meta[key] = render_meta[key]
-        meta["youtube_title"] = youtube_metadata.title
+        is_playlist_release = str(meta.get("workspace_mode") or "playlist") != "single_track_video"
+        meta["youtube_title"] = ensure_playlist_title_prefix(
+            youtube_metadata.title,
+            is_playlist=is_playlist_release,
+        )
         meta["youtube_description"] = youtube_metadata.description
         meta["youtube_tags"] = youtube_metadata.tags
         meta["youtube_default_language"] = normalize_youtube_language(
             getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
         )
-        meta["youtube_localizations"] = normalize_youtube_localizations(
-            getattr(youtube_metadata, "localizations", {}),
-            default_title=youtube_metadata.title,
-            default_description=youtube_metadata.description,
-            default_language=meta["youtube_default_language"],
+        meta["youtube_localizations"] = ensure_playlist_localization_title_prefix(
+            normalize_youtube_localizations(
+                getattr(youtube_metadata, "localizations", {}),
+                default_title=meta["youtube_title"],
+                default_description=youtube_metadata.description,
+                default_language=meta["youtube_default_language"],
+            ),
+            is_playlist=is_playlist_release,
         )
         meta["metadata_approved"] = False
         meta["publish_approved"] = False
@@ -460,7 +469,7 @@ class BackgroundJobWorker:
             "playlist_id": playlist.id,
             "cover_image_path": cover_image_path,
             "output_video_path": playlist.output_video_path,
-            "youtube_title": youtube_metadata.title,
+            "youtube_title": meta["youtube_title"],
             "progress": meta["video_render_progress"],
         }
         db.add(playlist)
@@ -594,18 +603,27 @@ class BackgroundJobWorker:
             raise ValueError("Cover image must be approved before final YouTube upload.")
         if not meta.get("metadata_approved"):
             raise ValueError("YouTube metadata must be approved before final YouTube upload.")
-        title = str(meta.get("youtube_title") or "").strip()
+        is_playlist_release = str(meta.get("workspace_mode") or "playlist") != "single_track_video"
+        title = ensure_playlist_title_prefix(
+            meta.get("youtube_title"),
+            is_playlist=is_playlist_release,
+        )
         description = str(meta.get("youtube_description") or "").strip()
         tags = list(meta.get("youtube_tags") or [])
         default_language = normalize_youtube_language(meta.get("youtube_default_language"))
-        localizations = normalize_youtube_localizations(
-            meta.get("youtube_localizations"),
-            default_title=title,
-            default_description=description,
-            default_language=default_language,
+        localizations = ensure_playlist_localization_title_prefix(
+            normalize_youtube_localizations(
+                meta.get("youtube_localizations"),
+                default_title=title,
+                default_description=description,
+                default_language=default_language,
+            ),
+            is_playlist=is_playlist_release,
         )
         if not title or not description:
             raise ValueError("YouTube metadata draft is missing before final YouTube upload.")
+        meta["youtube_title"] = title
+        meta["youtube_localizations"] = localizations
 
         meta["publish_approved"] = True
         meta["publish_approved_by"] = actor

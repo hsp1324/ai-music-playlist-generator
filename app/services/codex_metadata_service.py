@@ -14,7 +14,12 @@ from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.services.release_metadata_service import ReleaseMetadataService, YouTubeMetadata
-from app.utils.youtube_localizations import normalize_youtube_localizations, sanitize_youtube_copy
+from app.utils.youtube_localizations import (
+    ensure_playlist_localization_title_prefix,
+    ensure_playlist_title_prefix,
+    normalize_youtube_localizations,
+    sanitize_youtube_copy,
+)
 
 
 class CodexMetadataService(ReleaseMetadataService):
@@ -97,7 +102,9 @@ class CodexMetadataService(ReleaseMetadataService):
                 raise RuntimeError("codex did not write a metadata output file")
 
             payload = self._parse_json_output(output_path.read_text(encoding="utf-8"))
-            title = sanitize_youtube_copy(payload.get("title")).strip()
+            workspace_mode = str((playlist.metadata_json or {}).get("workspace_mode") or "playlist")
+            is_playlist_release = workspace_mode != "single_track_video"
+            title = ensure_playlist_title_prefix(payload.get("title"), is_playlist=is_playlist_release)
             description = self._clean_description_timestamps(
                 sanitize_youtube_copy(payload.get("description")).strip(),
                 tracks,
@@ -105,11 +112,14 @@ class CodexMetadataService(ReleaseMetadataService):
             tags = self._normalize_tags(payload.get("tags") or [])
             if not title or not description:
                 raise RuntimeError("codex returned empty title or description")
-            localizations = normalize_youtube_localizations(
-                payload.get("localizations"),
-                default_title=title,
-                default_description=description,
-                default_language="ko",
+            localizations = ensure_playlist_localization_title_prefix(
+                normalize_youtube_localizations(
+                    payload.get("localizations"),
+                    default_title=title,
+                    default_description=description,
+                    default_language="ko",
+                ),
+                is_playlist=is_playlist_release,
             )
             localizations = self._normalize_localization_timestamps(localizations, tracks)
             return YouTubeMetadata(
@@ -156,6 +166,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- Also write localized YouTube metadata for Korean, Japanese, English, and Spanish in localizations. Use language keys exactly: ko, ja, en, es.",
                 "- The ko localization should match the main title and description. The ja, en, and es localizations should be natural translations/adaptations, not machine-looking literal copies.",
                 "- Keep title under 100 characters.",
+                "- For playlist releases, every YouTube title in every language must start exactly with '[playlist]'.",
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
                 "- For playlist releases, put listening use cases directly in the title, not only the description. Prefer titles like: <study/walk/drive/rest use case> + <mood/genre/duration> | <secondary use cases>.",
                 "- For BGM playlists, the title should answer why someone would click now: studying, working, walking, driving, reading, sleeping, or resting.",

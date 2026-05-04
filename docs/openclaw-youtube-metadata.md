@@ -24,6 +24,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - YouTube API tags and public description hashtags are separate. `--tags` sends hidden YouTube tags; the description text itself must also end with one public hashtag line.
 - Every main description and every localized description must end with 5-8 public hashtags, for example `#Jpop #TokyoDaydreamRadio #CityPop #DriveMusic #WorkMusic`. Do not assume `--tags` will appear publicly.
 - Keep the title under 100 characters.
+- For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Good Korean patterns: `공부·산책할 때 듣기 좋은 숲길 BGM 1시간`, `산책·드라이브할 때 듣기 좋은 해변 BGM 1시간`, `작업할 때 틀어놓기 좋은 카페 피아노 1시간`.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - In Korean titles/descriptions, never use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use natural Korean such as `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
@@ -62,11 +63,12 @@ If the release is one hour or longer, keep all timestamps in HH:MM:SS form, incl
 For Japan/J-pop/Tokyo Daydream Radio releases, write Korean, Japanese, English, and Spanish descriptions. In the Korean/default tracklist, use Japanese title plus Korean translation in parentheses. In the Japanese tracklist, use Japanese title only. In the English tracklist, use English title only. In the Spanish tracklist, use Spanish title only.
 For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead.
 In Korean title/description/localizations, never write `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Say `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
+For Playlist Releases, start the main title and every localized title exactly with `[playlist]`. Do not add `[playlist]` to Single Releases.
 End the description with one public hashtag line containing 5-8 relevant hashtags. Also include equivalent hashtag lines in Japanese, English, and Spanish localized descriptions.
 Write metadata in this shape:
 
 Title:
-<Korean YouTube title, under 100 characters, with clear listening use cases such as 공부, 작업, 산책, 드라이브, 휴식>
+<Korean YouTube title, under 100 characters, starting with [playlist] for playlist releases and with clear listening use cases such as 공부, 작업, 산책, 드라이브, 휴식>
 
 Description:
 <2-4 Korean paragraphs describing the mood and use cases>
@@ -137,7 +139,7 @@ Approve the metadata:
 ```bash
 scripts/openclaw-release approve-metadata \
   --release-id RELEASE_ID \
-  --title "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트" \
+  --title "[playlist] 조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트" \
   --description-file /tmp/youtube-description.txt \
   --tags "Piano,CafePiano,StudyMusic,WorkMusic,RelaxingMusic,SoloPiano"
 ```

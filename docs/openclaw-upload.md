@@ -257,6 +257,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
 - Pass Spanish through `--es-title` and `--es-description-file`. This should be natural Spanish YouTube copy for Spanish-speaking listeners.
 - End every localized description with a public hashtag line. `--tags` is still required, but it only sends YouTube API tags and does not replace visible description hashtags.
+- For Playlist Releases on every channel, start `--title`, `--ko-title`, `--ja-title`, `--en-title`, and `--es-title` exactly with `[playlist]`. Do not add this prefix to Single Releases.
 - For playlist/BGM titles, include listening use cases in the title itself, for example study, work, walk, drive, sleep, reading, or rest. The title should not be only mood plus genre.
 - For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead; the thumbnail/channel branding can carry `J-POP`.
 - In Korean title/description/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
@@ -269,16 +270,16 @@ Example localized metadata approval:
 ```bash
 scripts/openclaw-release approve-metadata \
   --release-id RELEASE_ID \
-  --title "기분 좋아지는 J-POP 1시간 | 산책, 드라이브, 작업할 때 듣는 플레이리스트" \
+  --title "[playlist] 기분 좋아지는 J-POP 1시간 | 산책, 드라이브, 작업할 때 듣는 플레이리스트" \
   --description-file /tmp/metadata-ko.txt \
   --tags "Jpop,JapanesePop,TokyoDaydreamRadio,Playlist,DriveMusic,WorkMusic" \
-  --ko-title "기분 좋아지는 J-POP 1시간 | 산책, 드라이브, 작업할 때 듣는 플레이리스트" \
+  --ko-title "[playlist] 기분 좋아지는 J-POP 1시간 | 산책, 드라이브, 작업할 때 듣는 플레이리스트" \
   --ko-description-file /tmp/metadata-ko.txt \
-  --ja-title "気分が上がるJ-POP 1時間 | 散歩・ドライブ・作業用プレイリスト" \
+  --ja-title "[playlist] 気分が上がるJ-POP 1時間 | 散歩・ドライブ・作業用プレイリスト" \
   --ja-description-file /tmp/metadata-ja.txt \
-  --en-title "Feel-Good J-Pop 1 Hour | Walk, Drive, Work Playlist" \
+  --en-title "[playlist] Feel-Good J-Pop 1 Hour | Walk, Drive, Work Playlist" \
   --en-description-file /tmp/metadata-en.txt \
-  --es-title "J-Pop alegre 1 hora | Playlist para caminar, conducir y trabajar" \
+  --es-title "[playlist] J-Pop alegre 1 hora | Playlist para caminar, conducir y trabajar" \
   --es-description-file /tmp/metadata-es.txt
 ```
 
