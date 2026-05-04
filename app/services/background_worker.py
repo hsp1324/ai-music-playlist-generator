@@ -834,7 +834,7 @@ class BackgroundJobWorker:
             "Signature composition for Tokyo Daydream Radio/J-pop only: exactly three people seen from behind, "
             "walking away from the camera into the scene. The viewer sees their backs and backs of heads, "
             "not front-facing faces. One continuous forward-moving shot with subtle camera-follow movement from behind, "
-            "final moment close to the opening composition without becoming frozen, "
+            "final moment close to the opening composition while maintaining natural motion, "
             "stable composition, no repeated segment, no hard cuts, no subtitles, no extra people or characters. "
             f"{channel_label_prompt}"
         )

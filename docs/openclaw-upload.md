@@ -174,7 +174,7 @@ Optional moving visual:
 - `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 8 second Dreamina/Seedance visual clip for the rendered video.
 - OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
-- Do not make the final frame identical or frozen; keep natural motion while returning close enough to the opening composition.
+- Keep natural motion while returning close enough to the opening composition.
 - If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or any text-heavy image as the moving video visual.
 
 Dreamina website workflow for OpenClaw:
@@ -215,7 +215,7 @@ Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, 
 The viewer should see backs and backs of heads, not front-facing faces.
 The motion must progress forward naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
 Preserve the large, readable lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
 Adapt the background and atmosphere to the release concept.
@@ -234,7 +234,7 @@ Animate calm but clearly visible natural motion across several environmental lay
 Keep continuous visible motion throughout the full clip while preserving the calm long-listening mood.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
 ```
 

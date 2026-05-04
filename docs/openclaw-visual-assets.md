@@ -62,7 +62,7 @@ Use this for `Soft Hour Radio`, default background music, cafe, piano, sleep, st
 
 Default visual direction:
 
-- Prefer calm, restrained visuals matched to the music use case, but keep the motion clearly visible enough that the clip does not feel like a static image.
+- Prefer calm, restrained visuals matched to the music use case, with clearly visible natural motion throughout the clip.
 - Let the specific release concept decide the subject. Do not force a fixed recurring mascot, character count, scene list, or camera composition.
 - Human presence is optional and should serve the release concept.
 - Keep the composition uncluttered, warm, readable, and suitable for long background listening.
