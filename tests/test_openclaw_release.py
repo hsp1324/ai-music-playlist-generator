@@ -41,6 +41,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "youtube_channel_title": "",
         "youtube_channel_id": "",
         "force_under_target": False,
+        "allow_reupload": False,
         "actor": "openclaw:auto-playlist",
         "wait_timeout_seconds": 1,
         "poll_seconds": 0.01,
@@ -419,6 +420,39 @@ def test_auto_publish_playlist_requires_thumbnail_before_side_effects(tmp_path) 
     assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
 
 
+def test_auto_publish_playlist_rejects_existing_youtube_video_without_allow_reupload(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "release-1",
+                        "title": "Playlist",
+                        "workspace_mode": "playlist",
+                        "youtube_video_id": "yt-existing",
+                        "cover_image_path": "/tmp/final-cover.png",
+                        "cover_source": "manual-upload",
+                        "youtube_thumbnail_path": "/tmp/final-thumbnail.png",
+                        "youtube_thumbnail_source": "manual-upload",
+                    }
+                ],
+            )
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="already has YouTube video id yt-existing"):
+        auto_publish_playlist(client, _auto_publish_args(str(audio_path)))
+
+    assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
+
+
 def test_auto_publish_playlist_requires_cover_before_creating_new_release(tmp_path) -> None:
     audio_path = tmp_path / "track.mp3"
     audio_path.write_bytes(b"fake mp3")
@@ -621,6 +655,40 @@ def test_auto_publish_single_requires_thumbnail_before_side_effects(tmp_path) ->
         )
 
     assert requested_paths == []
+
+
+def test_auto_publish_single_rejects_existing_youtube_video_without_allow_reupload(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "release-1",
+                        "title": "Single",
+                        "workspace_mode": "single_track_video",
+                        "youtube_video_id": "yt-existing",
+                        "tracks": [],
+                        "cover_image_path": "/tmp/final-cover.png",
+                        "cover_source": "manual-upload",
+                        "youtube_thumbnail_path": "/tmp/final-thumbnail.png",
+                        "youtube_thumbnail_source": "manual-upload",
+                    }
+                ],
+            )
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="already has YouTube video id yt-existing"):
+        auto_publish_single(client, _auto_publish_args(str(audio_path), actor="openclaw:auto-single"))
+
+    assert not any(path.endswith("/tracks/manual-upload") for path in requested_paths)
 
 
 def test_auto_publish_single_requires_lyrics_for_jpop_before_side_effects(tmp_path) -> None:

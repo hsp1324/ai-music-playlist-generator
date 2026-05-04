@@ -878,6 +878,17 @@ def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any],
     )
 
 
+def require_reupload_confirmation(args: argparse.Namespace, release: dict[str, Any], *, action: str) -> None:
+    youtube_video_id = str(release.get("youtube_video_id") or "").strip()
+    if not youtube_video_id or bool(getattr(args, "allow_reupload", False)):
+        return
+    raise RuntimeError(
+        f"{action} refuses to re-upload release {release.get('id')} because it already has "
+        f"YouTube video id {youtube_video_id}. Create a fresh release for a new upload, or pass "
+        "--allow-reupload only when the human explicitly asks to upload this same release again."
+    )
+
+
 def release_has_uploaded_cover(release: dict[str, Any]) -> bool:
     return bool(
         release.get("cover_image_path")
@@ -950,6 +961,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     )
     if release["workspace_mode"] != "playlist":
         raise RuntimeError("auto-publish-playlist requires a Playlist Release, not a Single Release.")
+    require_reupload_confirmation(args, release, action="auto-publish-playlist")
     if not cover_path and not release_has_uploaded_cover(release) and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-playlist requires a final 16:9 cover image before YouTube upload. "
@@ -1241,6 +1253,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     )
     if release["workspace_mode"] != "single_track_video":
         raise RuntimeError("auto-publish-single requires a Single Release, not a Playlist Release.")
+    require_reupload_confirmation(args, release, action="auto-publish-single")
     if release.get("tracks"):
         raise RuntimeError(
             "auto-publish-single requires an empty Single Release because it publishes one final song. "
@@ -1808,6 +1821,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
+    auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
     auto_playlist_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")
     auto_playlist_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for background jobs.")
@@ -1835,6 +1849,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
+    auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
     auto_single_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")
     auto_single_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for background jobs.")
