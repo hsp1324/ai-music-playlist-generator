@@ -34,7 +34,7 @@ def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
 
     metadata = service.build_youtube_metadata(playlist, tracks)
 
-    assert metadata.title == "[playlist] 조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트"
+    assert metadata.title == "[playlist] 조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악"
     assert "공부 / 작업 / 독서 / 휴식 / 카페 분위기 / 조용한 배경음악" in metadata.description
     assert "00:00 Cinnamon Pulse" in metadata.description
     assert "03:22 Cinnamon Bloom" in metadata.description
@@ -71,6 +71,14 @@ def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:
 def test_playlist_title_prefix_is_enforced_only_for_playlist_releases() -> None:
     assert ensure_playlist_title_prefix("카페 피아노 1시간", is_playlist=True) == "[playlist] 카페 피아노 1시간"
     assert ensure_playlist_title_prefix("[playlist] 카페 피아노 1시간", is_playlist=True) == "[playlist] 카페 피아노 1시간"
+    assert (
+        ensure_playlist_title_prefix("기분 좋아지는 J-POP 1시간 | 산책할 때 듣는 플레이리스트", is_playlist=True)
+        == "[playlist] 기분 좋아지는 J-POP 1시간 | 산책할 때 듣기 좋은 음악"
+    )
+    assert ensure_playlist_title_prefix("Feel-Good J-Pop | Work Playlist", is_playlist=True) == (
+        "[playlist] Feel-Good J-Pop | Work Music"
+    )
+    assert ensure_playlist_title_prefix("作業用プレイリスト", is_playlist=True) == "[playlist] 作業用音楽"
     assert ensure_playlist_title_prefix("싱글 트랙", is_playlist=False) == "싱글 트랙"
 
 

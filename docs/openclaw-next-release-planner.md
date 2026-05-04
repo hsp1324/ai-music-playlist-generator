@@ -133,7 +133,7 @@ The selected plan should include:
 - `metadata_language_plan`
 - brief reason why this was chosen and how it differs from recent releases
 
-For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases.
+For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
 Then execute the one-hour playlist automation from [openclaw-skills.md](openclaw-skills.md), using the selected channel and concept.
 

@@ -91,7 +91,7 @@ class ReleaseMetadataService:
 
     def _build_cafe_piano_metadata(self, playlist: Playlist, tracks: list[Track]) -> YouTubeMetadata:
         title = ensure_playlist_title_prefix(
-            "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣는 잔잔한 플레이리스트",
+            "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악",
             is_playlist=True,
         )
         timestamps = self._timestamp_lines(tracks)

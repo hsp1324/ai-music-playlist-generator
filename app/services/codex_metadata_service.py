@@ -167,6 +167,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- The ko localization should match the main title and description. The ja, en, and es localizations should be natural translations/adaptations, not machine-looking literal copies.",
                 "- Keep title under 100 characters.",
                 "- For playlist releases, every YouTube title in every language must start exactly with '[playlist]'.",
+                "- After '[playlist]', do not repeat playlist nouns such as '플레이리스트', 'Playlist', 'プレイリスト', or 'lista de reproducción'. Use music/mix/radio wording instead.",
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
                 "- For playlist releases, put listening use cases directly in the title, not only the description. Prefer titles like: <study/walk/drive/rest use case> + <mood/genre/duration> | <secondary use cases>.",
                 "- For BGM playlists, the title should answer why someone would click now: studying, working, walking, driving, reading, sleeping, or resting.",
