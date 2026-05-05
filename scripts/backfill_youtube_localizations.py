@@ -8,7 +8,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,7 +31,7 @@ from app.utils.youtube_localizations import (
 )
 
 
-TARGET_LANGUAGES = ("vi", "th", "hi", "zh-CN")
+TARGET_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
 LANGUAGE_NAMES = {
     "ko": "Korean",
     "ja": "Japanese",
@@ -42,12 +41,13 @@ LANGUAGE_NAMES = {
     "th": "Thai",
     "hi": "Hindi",
     "zh-CN": "Simplified Chinese",
+    "zh-TW": "Traditional Chinese",
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate missing vi/th/hi/zh-CN YouTube localizations and push them to YouTube."
+        description="Generate missing ko/ja/en/es/vi/th/hi/zh-CN/zh-TW YouTube localizations and push them to YouTube."
     )
     parser.add_argument("--release-id", action="append", default=[], help="Limit to a release id. Repeatable.")
     parser.add_argument("--dry-run", action="store_true", help="Generate and print a summary without DB/API writes.")
@@ -70,7 +70,7 @@ def backup_database() -> Path | None:
     if not db_path or not db_path.exists():
         return None
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    backup_path = db_path.with_name(f"{db_path.name}.backup-before-8lang-localizations-{timestamp}")
+    backup_path = db_path.with_name(f"{db_path.name}.backup-before-youtube-localizations-{timestamp}")
     shutil.copy2(db_path, backup_path)
     return backup_path
 
@@ -79,12 +79,12 @@ def codex_command() -> str:
     return os.environ.get("AIMP_CODEX_METADATA_COMMAND", "codex").strip() or "codex"
 
 
-def output_schema() -> dict[str, Any]:
+def output_schema(languages: list[str]) -> dict[str, Any]:
     return {
         "type": "object",
         "additionalProperties": False,
-        "required": list(TARGET_LANGUAGES),
-        "properties": {language: {"$ref": "#/$defs/localizedCopy"} for language in TARGET_LANGUAGES},
+        "required": list(languages),
+        "properties": {language: {"$ref": "#/$defs/localizedCopy"} for language in languages},
         "$defs": {
             "localizedCopy": {
                 "type": "object",
@@ -164,13 +164,14 @@ def source_payload(
 
 
 def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
-    requested = ", ".join(f"{language} ({LANGUAGE_NAMES[language]})" for language in TARGET_LANGUAGES)
+    requested = ", ".join(f"{language} ({LANGUAGE_NAMES[language]})" for language in missing_languages)
+    keys = ", ".join(missing_languages)
     source_json = json.dumps(payload, ensure_ascii=False, indent=2)
     return "\n".join(
         [
             "You are translating YouTube metadata for an AI music channel.",
             f"Write localized metadata for these languages only: {requested}.",
-            "Return JSON with exactly these keys: vi, th, hi, zh-CN.",
+            f"Return JSON with exactly these keys: {keys}.",
             "",
             "Rules:",
             "- Preserve the release intent, music genre, mood, and target use case.",
@@ -180,7 +181,7 @@ def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
             "- Preserve the tracklist order exactly. Translate only the displayed track title text after each timestamp.",
             "- Keep hashtag lines at the end of every description; translate or localize hashtags where natural, but do not omit them.",
             "- Do not invent upload status, URLs, channel claims, or extra metadata fields.",
-            "- Use natural Vietnamese, Thai, Hindi, and Simplified Chinese copy for listeners in those languages.",
+            "- Use natural localized copy for listeners in each requested language. For zh-CN, use Simplified Chinese. For zh-TW, use Traditional Chinese suitable for Taiwan.",
             "",
             "Source metadata JSON:",
             source_json,
@@ -193,7 +194,7 @@ def run_codex(payload: dict[str, Any], missing_languages: list[str], *, timeout:
         temp_path = Path(temp_dir)
         schema_path = temp_path / "schema.json"
         output_path = temp_path / "localizations.json"
-        schema_path.write_text(json.dumps(output_schema(), ensure_ascii=False), encoding="utf-8")
+        schema_path.write_text(json.dumps(output_schema(missing_languages), ensure_ascii=False), encoding="utf-8")
         cmd = [
             codex_command(),
             "exec",
@@ -232,7 +233,7 @@ def run_codex(payload: dict[str, Any], missing_languages: list[str], *, timeout:
     missing = [language for language in missing_languages if language not in normalized]
     if missing:
         raise RuntimeError(f"codex output did not include required languages: {', '.join(missing)}")
-    return {language: normalized[language] for language in TARGET_LANGUAGES}
+    return {language: normalized[language] for language in missing_languages}
 
 
 def youtube_client(service: YouTubeService, channel_id: str | None) -> Any:

@@ -1778,10 +1778,10 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
             "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
-            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, and Simplified Chinese descriptions use translated title text only. "
+            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols. "
-            "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, and Simplified Chinese title/description versions and pass them to approve-metadata. "
+            "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
             "Use --default-language en for sundaze and --default-language es for Solwave Radio."
         ),
     }
@@ -1874,6 +1874,14 @@ def metadata_localizations_from_args(args: argparse.Namespace, *, title: str, de
                 getattr(args, "zh_description", ""),
                 getattr(args, "zh_description_file", ""),
                 label="Chinese description",
+            ),
+        },
+        "zh-TW": {
+            "title": read_optional_text(getattr(args, "zh_tw_title", ""), "", label="Traditional Chinese title"),
+            "description": read_optional_text(
+                getattr(args, "zh_tw_description", ""),
+                getattr(args, "zh_tw_description_file", ""),
+                label="Traditional Chinese description",
             ),
         },
     }
@@ -2142,7 +2150,10 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--zh-title", default="", help="Simplified Chinese localized YouTube title.")
     metadata_parser.add_argument("--zh-description", default="", help="Simplified Chinese localized YouTube description. Prefer --zh-description-file for multiline copy.")
     metadata_parser.add_argument("--zh-description-file", default="", help="UTF-8 Simplified Chinese description file.")
-    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, or zh-CN.")
+    metadata_parser.add_argument("--zh-tw-title", default="", help="Traditional Chinese localized YouTube title.")
+    metadata_parser.add_argument("--zh-tw-description", default="", help="Traditional Chinese localized YouTube description. Prefer --zh-tw-description-file for multiline copy.")
+    metadata_parser.add_argument("--zh-tw-description-file", default="", help="UTF-8 Traditional Chinese description file.")
+    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, zh-CN, or zh-TW.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)

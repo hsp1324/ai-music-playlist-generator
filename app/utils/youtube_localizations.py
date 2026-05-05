@@ -5,7 +5,7 @@ from typing import Any
 
 
 DEFAULT_YOUTUBE_LANGUAGE = "ko"
-SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN")
+SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
 YOUTUBE_LANGUAGE_ALIASES = {
     "ko": "ko",
     "kr": "ko",
@@ -31,6 +31,12 @@ YOUTUBE_LANGUAGE_ALIASES = {
     "chinese": "zh-CN",
     "chinese-simplified": "zh-CN",
     "simplified-chinese": "zh-CN",
+    "zh-tw": "zh-TW",
+    "tw": "zh-TW",
+    "taiwan": "zh-TW",
+    "taiwanese": "zh-TW",
+    "traditional-chinese": "zh-TW",
+    "chinese-traditional": "zh-TW",
 }
 PLAYLIST_TITLE_PREFIX = "[playlist]"
 

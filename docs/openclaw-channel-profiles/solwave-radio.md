@@ -59,7 +59,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Main upload metadata should be Spanish. Use `--default-language es` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, and Simplified Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--es-title` / `--es-description-file` should match.
 - Playlist titles must start with `[playlist]` and should include the Latin/Spanish pop mood/use case, such as fiesta, verano, playa, noche, drive, baile, caminar, workout, or romance.
 - Every track should have original Spanish lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.

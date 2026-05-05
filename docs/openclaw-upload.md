@@ -274,8 +274,8 @@ Thumbnail text rules for OpenClaw:
 
 Localized YouTube metadata rules for OpenClaw:
 
-- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, and `zh-CN`.
-- For `Tokyo Daydream Radio`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, English pop, Latin/Spanish pop, or similar pop-family releases, always write all eight language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, and Simplified Chinese.
+- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `zh-CN`, and `zh-TW`.
+- For `Tokyo Daydream Radio`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, English pop, Latin/Spanish pop, or similar pop-family releases, always write all nine language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese.
 - Use Korean as the default upload metadata for Tokyo/Soft Hour unless the channel profile says otherwise. Use `--default-language en` for `sundaze` and `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
@@ -285,14 +285,15 @@ Localized YouTube metadata rules for OpenClaw:
 - Pass Thai through `--th-title` and `--th-description-file`.
 - Pass Hindi through `--hi-title` and `--hi-description-file`.
 - Pass Simplified Chinese through `--zh-title` and `--zh-description-file`; the app stores this as `zh-CN`.
+- Pass Traditional Chinese for Taiwan through `--zh-tw-title` and `--zh-tw-description-file`; the app stores this as `zh-TW`.
 - End every localized description with a public hashtag line. `--tags` is still required, but it only sends YouTube API tags and does not replace visible description hashtags.
-- For Playlist Releases on every channel, start `--title`, `--ko-title`, `--ja-title`, `--en-title`, `--es-title`, `--vi-title`, `--th-title`, `--hi-title`, and `--zh-title` exactly with `[playlist]`. Do not add this prefix to Single Releases.
+- For Playlist Releases on every channel, start `--title`, `--ko-title`, `--ja-title`, `--en-title`, `--es-title`, `--vi-title`, `--th-title`, `--hi-title`, `--zh-title`, and `--zh-tw-title` exactly with `[playlist]`. Do not add this prefix to Single Releases.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
 - For playlist/BGM titles, include listening use cases in the title itself, for example study, work, walk, drive, sleep, reading, or rest. The title should not be only mood plus genre.
 - For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead; the thumbnail/channel branding can carry `J-POP`.
 - In Korean title/description/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; translate only the displayed title text and surrounding description.
-- For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, English uses English translated title only, and Spanish uses Spanish translated title only.
+- For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese use translated title text only.
 - If the release is one hour or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
 - Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 
@@ -311,7 +312,17 @@ scripts/openclaw-release approve-metadata \
   --en-title "[playlist] Feel-Good J-Pop 1 Hour | Walk, Drive, Work Music" \
   --en-description-file /tmp/metadata-en.txt \
   --es-title "[playlist] J-Pop alegre 1 hora | Música para caminar, conducir y trabajar" \
-  --es-description-file /tmp/metadata-es.txt
+  --es-description-file /tmp/metadata-es.txt \
+  --vi-title "[playlist] J-Pop vui tươi 1 giờ | Nhạc đi dạo, lái xe, làm việc" \
+  --vi-description-file /tmp/metadata-vi.txt \
+  --th-title "[playlist] J-Pop สดใส 1 ชั่วโมง | เพลงสำหรับเดินเล่น ขับรถ ทำงาน" \
+  --th-description-file /tmp/metadata-th.txt \
+  --hi-title "[playlist] फील-गुड J-Pop 1 घंटा | वॉक, ड्राइव और काम के लिए संगीत" \
+  --hi-description-file /tmp/metadata-hi.txt \
+  --zh-title "[playlist] 好心情 J-Pop 1小时 | 散步、开车、工作音乐" \
+  --zh-description-file /tmp/metadata-zh.txt \
+  --zh-tw-title "[playlist] 好心情 J-Pop 1小時 | 散步、開車、工作音樂" \
+  --zh-tw-description-file /tmp/metadata-zh-tw.txt
 ```
 
 ## YouTube Channel Routing

@@ -81,6 +81,7 @@ const METADATA_LANGUAGES = [
   { code: "th", label: "Thai", shortLabel: "TH" },
   { code: "hi", label: "Hindi", shortLabel: "HI" },
   { code: "zh-CN", label: "Chinese Simplified", shortLabel: "ZH" },
+  { code: "zh-TW", label: "Chinese Traditional", shortLabel: "TW" },
 ];
 
 let quickUploadFiles = [];
