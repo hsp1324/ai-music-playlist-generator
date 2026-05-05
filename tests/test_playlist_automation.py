@@ -1125,6 +1125,8 @@ def test_track_added_during_audio_render_requeues_fresh_render(tmp_path) -> None
             meta = playlist.metadata_json
             assert meta["rendered_track_ids"] != [first_track_id]
             assert meta["rendered_track_count"] == 2
+            assert [item["title"] for item in meta["rendered_timeline"]] == ["Race Track 1", "Race Track 2"]
+            assert [item["start_seconds"] for item in meta["rendered_timeline"]] == [0, 60]
             assert "stale_audio_render" not in meta
     finally:
         clear_isolated_client_env()

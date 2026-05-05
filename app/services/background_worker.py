@@ -24,6 +24,7 @@ from app.utils.youtube_localizations import (
     normalize_youtube_localizations,
 )
 from app.utils.openclaw_slack_loop import post_next_playlist_request
+from app.utils.timeline import build_rendered_timeline_snapshot
 
 
 def _utcnow():
@@ -38,6 +39,19 @@ def _playlist_track_ids(playlist: Playlist) -> list[str]:
         for item in sorted(playlist.items, key=lambda item: item.order_index)
         if item.track_id
     ]
+
+
+def _track_timeline_dict(track: Track) -> dict:
+    meta = track.metadata_json or {}
+    return {
+        "id": track.id,
+        "title": track.title,
+        "duration_seconds": track.duration_seconds,
+        "lyrics": str(meta.get("lyrics") or ""),
+        "style": str(meta.get("style") or ""),
+        "prompt": track.prompt or "",
+        "tags": meta.get("tags") or "",
+    }
 
 
 def _rendered_snapshot_matches_current_tracks(playlist: Playlist, key: str) -> bool:
@@ -185,6 +199,22 @@ class BackgroundJobWorker:
             raise ValueError(f"Playlist contains non-renderable tracks: {', '.join(missing)}")
 
         rendered_track_ids = [track.id for track in tracks]
+        rendered_track_dicts = [_track_timeline_dict(track) for track in tracks]
+        rendered_track_durations = []
+        rendered_track_duration_sources = []
+        for track in tracks:
+            probed_duration = self.services.playlist_builder._probe_media_duration(Path(track.audio_path))
+            if probed_duration > 0:
+                rendered_track_durations.append(probed_duration)
+                rendered_track_duration_sources.append("ffprobe")
+            else:
+                rendered_track_durations.append(float(track.duration_seconds or 0))
+                rendered_track_duration_sources.append("track_duration")
+        rendered_timeline = build_rendered_timeline_snapshot(
+            rendered_track_dicts,
+            rendered_track_durations,
+            rendered_track_duration_sources,
+        )
         output_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp3"
         rendered_path = self.services.playlist_builder.build_audio(tracks, output_path)
         db.expire_all()
@@ -209,6 +239,7 @@ class BackgroundJobWorker:
             meta.pop("rendered_track_ids", None)
             meta.pop("rendered_track_count", None)
             meta.pop("rendered_duration_seconds", None)
+            meta.pop("rendered_timeline", None)
             meta.pop("rendered_video_track_ids", None)
             meta.pop("rendered_video_track_count", None)
             playlist.output_audio_path = None
@@ -247,6 +278,7 @@ class BackgroundJobWorker:
         meta["rendered_track_ids"] = rendered_track_ids
         meta["rendered_track_count"] = len(rendered_track_ids)
         meta["rendered_duration_seconds"] = playlist.actual_duration_seconds
+        meta["rendered_timeline"] = rendered_timeline
         meta.pop("stale_audio_render", None)
         meta["workflow_state"] = "audio_ready" if meta.get("publish_ready") else "rendered"
         meta.pop("render_error", None)

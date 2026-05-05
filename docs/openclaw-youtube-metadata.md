@@ -31,6 +31,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - In Korean titles/descriptions, never use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use natural Korean such as `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 - If the release is a playlist, include a timestamped tracklist from the final order.
 - Always run `scripts/openclaw-release metadata-context` first and use its timeline in the description.
+- If the release has already rendered audio, `metadata-context` uses the release's saved `rendered_timeline` snapshot from actual ffprobe source-file durations. Do not recalculate timestamps from visible track durations.
 - `metadata-context` includes track `prompt`, `style`, `tags`, and `lyrics` when available. Use them as private creative context, but do not paste raw Suno settings into the public description.
 - Prefer `display_timestamp_lines` when available. It keeps the same timestamps but removes awkward `A` / `B`, `1` / `2`, and old pair-style suffixes.
 - Do not guess timestamps. The helper calculates them from the app's final order and track durations.

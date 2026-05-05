@@ -20,6 +20,7 @@ from app.utils.youtube_localizations import (
     normalize_youtube_localizations,
     sanitize_youtube_copy,
 )
+from app.utils.timeline import timeline_from_track_dicts
 
 
 class CodexMetadataService(ReleaseMetadataService):
@@ -107,6 +108,7 @@ class CodexMetadataService(ReleaseMetadataService):
             title = ensure_playlist_title_prefix(payload.get("title"), is_playlist=is_playlist_release)
             description = self._clean_description_timestamps(
                 sanitize_youtube_copy(payload.get("description")).strip(),
+                playlist,
                 tracks,
             )
             tags = self._normalize_tags(payload.get("tags") or [])
@@ -121,7 +123,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 ),
                 is_playlist=is_playlist_release,
             )
-            localizations = self._normalize_localization_timestamps(localizations, tracks)
+            localizations = self._normalize_localization_timestamps(localizations, playlist, tracks)
             return YouTubeMetadata(
                 title=title[:100],
                 description=description,
@@ -202,29 +204,15 @@ class CodexMetadataService(ReleaseMetadataService):
 
     def _metadata_context(self, playlist: Playlist, tracks: list[Track]) -> dict[str, Any]:
         meta = playlist.metadata_json or {}
-        timeline = []
-        offset = 0
-        total_seconds = sum(max(int(track.duration_seconds or 0), 0) for track in tracks)
+        timeline = timeline_from_track_dicts(
+            self._track_timeline_dicts(tracks),
+            meta.get("rendered_timeline") or [],
+        )
+        total_seconds = 0
+        if timeline:
+            last = timeline[-1]
+            total_seconds = int(last["start_seconds"]) + int(last["duration_seconds"])
         force_hours = total_seconds >= 3600
-        display_titles = self._display_track_titles(tracks)
-        for index, (track, display_title) in enumerate(zip(tracks, display_titles), start=1):
-            track_meta = track.metadata_json or {}
-            duration = max(int(track.duration_seconds or 0), 0)
-            timeline.append(
-                {
-                    "index": index,
-                    "start": self._format_timestamp(offset, force_hours=force_hours),
-                    "title": track.title,
-                    "display_title_hint": display_title,
-                    "duration_seconds": duration,
-                    "duration": self._format_duration(duration),
-                    "prompt": track.prompt,
-                    "tags": track_meta.get("tags"),
-                    "lyrics": str(track_meta.get("lyrics") or ""),
-                    "style": str(track_meta.get("style") or ""),
-                }
-            )
-            offset += duration
 
         return {
             "release": {
@@ -242,25 +230,24 @@ class CodexMetadataService(ReleaseMetadataService):
             "raw_timestamp_lines": [f"{item['start']} {item['title']}" for item in timeline],
         }
 
-    def _clean_description_timestamps(self, description: str, tracks: list[Track]) -> str:
-        display_titles = self._display_track_titles(tracks)
-        offset = 0
+    def _clean_description_timestamps(self, description: str, playlist: Playlist, tracks: list[Track]) -> str:
+        timeline = self._metadata_context(playlist, tracks)["timeline"]
         replacements: dict[str, tuple[str, str, str]] = {}
-        force_hours = sum(max(int(track.duration_seconds or 0), 0) for track in tracks) >= 3600
-        for track, display_title in zip(tracks, display_titles):
-            canonical_start = self._format_timestamp(offset, force_hours=force_hours)
-            replacements[canonical_start] = (track.title, display_title, canonical_start)
-            replacements[self._format_timestamp(offset, force_hours=not force_hours)] = (
-                track.title,
-                display_title,
+        force_hours = sum(max(int(item["duration_seconds"] or 0), 0) for item in timeline) >= 3600
+        for item in timeline:
+            start_seconds = int(item["start_seconds"])
+            canonical_start = str(item["start"])
+            replacements[canonical_start] = (str(item["title"]), str(item["display_title_hint"]), canonical_start)
+            replacements[self._format_timestamp(start_seconds, force_hours=not force_hours)] = (
+                str(item["title"]),
+                str(item["display_title_hint"]),
                 canonical_start,
             )
-            replacements[self._format_unpadded_hour_timestamp(offset)] = (
-                track.title,
-                display_title,
+            replacements[self._format_unpadded_hour_timestamp(start_seconds)] = (
+                str(item["title"]),
+                str(item["display_title_hint"]),
                 canonical_start,
             )
-            offset += max(int(track.duration_seconds or 0), 0)
 
         cleaned_lines = []
         for line in description.splitlines():
@@ -282,11 +269,12 @@ class CodexMetadataService(ReleaseMetadataService):
     def _normalize_localization_timestamps(
         self,
         localizations: dict[str, dict[str, str]],
+        playlist: Playlist,
         tracks: list[Track],
     ) -> dict[str, dict[str, str]]:
         if not localizations:
             return localizations
-        timestamp_map = self._timestamp_aliases(tracks)
+        timestamp_map = self._timestamp_aliases(playlist, tracks)
         normalized: dict[str, dict[str, str]] = {}
         for language, payload in localizations.items():
             description_lines = []
@@ -302,17 +290,34 @@ class CodexMetadataService(ReleaseMetadataService):
             }
         return normalized
 
-    def _timestamp_aliases(self, tracks: list[Track]) -> dict[str, str]:
+    def _timestamp_aliases(self, playlist: Playlist, tracks: list[Track]) -> dict[str, str]:
         aliases: dict[str, str] = {}
-        offset = 0
-        force_hours = sum(max(int(track.duration_seconds or 0), 0) for track in tracks) >= 3600
-        for track in tracks:
-            canonical_start = self._format_timestamp(offset, force_hours=force_hours)
+        timeline = self._metadata_context(playlist, tracks)["timeline"]
+        force_hours = sum(max(int(item["duration_seconds"] or 0), 0) for item in timeline) >= 3600
+        for item in timeline:
+            start_seconds = int(item["start_seconds"])
+            canonical_start = str(item["start"])
             aliases[canonical_start] = canonical_start
-            aliases[self._format_timestamp(offset, force_hours=not force_hours)] = canonical_start
-            aliases[self._format_unpadded_hour_timestamp(offset)] = canonical_start
-            offset += max(int(track.duration_seconds or 0), 0)
+            aliases[self._format_timestamp(start_seconds, force_hours=not force_hours)] = canonical_start
+            aliases[self._format_unpadded_hour_timestamp(start_seconds)] = canonical_start
         return aliases
+
+    def _track_timeline_dicts(self, tracks: list[Track]) -> list[dict[str, Any]]:
+        values = []
+        for track in tracks:
+            meta = track.metadata_json or {}
+            values.append(
+                {
+                    "id": track.id,
+                    "title": track.title,
+                    "duration_seconds": track.duration_seconds,
+                    "prompt": track.prompt,
+                    "tags": meta.get("tags"),
+                    "lyrics": str(meta.get("lyrics") or ""),
+                    "style": str(meta.get("style") or ""),
+                }
+            )
+        return values
 
     def _has_trailing_ab_label(self, title: str) -> bool:
         return bool(re.search(r"\s*(?:[-_]\s*)?\(?[AB]\)?$", title.strip(), flags=re.IGNORECASE))

@@ -19,6 +19,7 @@ from typing import Any
 import httpx
 
 from app.utils.track_titles import clean_track_display_title, display_track_titles, upload_track_title
+from app.utils.timeline import timeline_from_track_dicts
 
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
@@ -421,31 +422,8 @@ def require_release_playlist_track_durations(
 
 
 def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
-    offset = 0
-    timeline = []
     tracks = release.get("tracks") or []
-    total_seconds = sum(max(int(track.get("duration_seconds") or 0), 0) for track in tracks)
-    force_hours = total_seconds >= 3600
-    display_titles = display_track_titles(tracks)
-    for index, (track, display_title) in enumerate(zip(tracks, display_titles), start=1):
-        duration = max(int(track.get("duration_seconds") or 0), 0)
-        timeline.append(
-            {
-                "index": index,
-                "start_seconds": offset,
-                "start": format_timestamp(offset, force_hours=force_hours),
-                "title": track.get("title") or f"Track {index}",
-                "display_title_hint": display_title,
-                "duration_seconds": duration,
-                "duration": format_timestamp(duration),
-                "lyrics": str(track.get("lyrics") or ""),
-                "style": str(track.get("style") or ""),
-                "prompt": track.get("prompt") or "",
-                "tags": track.get("tags") or "",
-            }
-        )
-        offset += duration
-    return timeline
+    return timeline_from_track_dicts(tracks, release.get("rendered_timeline") or [])
 
 
 def create_single_release(client: httpx.Client, title: str, description: str = "") -> dict[str, Any]:

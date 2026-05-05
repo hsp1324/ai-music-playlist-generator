@@ -102,6 +102,26 @@ def test_openclaw_metadata_context_timeline_uses_final_order() -> None:
     ]
 
 
+def test_openclaw_metadata_context_prefers_rendered_timeline_snapshot() -> None:
+    timeline = release_timeline(
+        {
+            "tracks": [
+                {"id": "track-1", "title": "Cinnamon Keys A", "duration_seconds": 202},
+                {"id": "track-2", "title": "Cinnamon Keys B", "duration_seconds": 208},
+                {"id": "track-3", "title": "Feltward Sonata A", "duration_seconds": 225},
+            ],
+            "rendered_timeline": [
+                {"track_id": "track-1", "start_seconds": 0, "duration_seconds": 203},
+                {"track_id": "track-2", "start_seconds": 203, "duration_seconds": 209},
+                {"track_id": "track-3", "start_seconds": 412, "duration_seconds": 225},
+            ],
+        }
+    )
+
+    assert [item["start"] for item in timeline] == ["00:00", "03:23", "06:52"]
+    assert [item["duration_seconds"] for item in timeline] == [203, 209, 225]
+
+
 def test_openclaw_metadata_context_uses_hhmmss_for_one_hour_plus_release() -> None:
     timeline = release_timeline(
         {
@@ -136,6 +156,31 @@ def test_template_metadata_uses_hhmmss_for_one_hour_plus_tracklist() -> None:
     assert "00:00:00 " in metadata.description
     assert "00:59:55 " in metadata.description
     assert "01:02:05 " in metadata.description
+
+
+def test_template_metadata_prefers_rendered_timeline_snapshot() -> None:
+    service = ReleaseMetadataService(Settings())
+    playlist = Playlist(
+        title="카페 피아노 솔로 1시간 플레이리스트",
+        metadata_json={
+            "description": "카페에서 잔잔하게 흐르는 감미로운 솔로 피아노 후보 모음.",
+            "workspace_mode": "playlist",
+            "rendered_timeline": [
+                {"track_id": "track-1", "start_seconds": 0, "duration_seconds": 203},
+                {"track_id": "track-2", "start_seconds": 203, "duration_seconds": 209},
+            ],
+        },
+    )
+    tracks = [
+        Track(id="track-1", title="Cinnamon Keys A", duration_seconds=202, metadata_json={"tags": "cafe, solo piano"}),
+        Track(id="track-2", title="Cinnamon Keys B", duration_seconds=208, metadata_json={"tags": "cafe, solo piano"}),
+    ]
+
+    metadata = service.build_youtube_metadata(playlist, tracks)
+
+    assert "00:00 Cinnamon Pulse" in metadata.description
+    assert "03:23 Cinnamon Bloom" in metadata.description
+    assert "03:22 Cinnamon Bloom" not in metadata.description
 
 
 def test_title_cleanup_rewrites_pair_labels_without_trimming_normal_words() -> None:

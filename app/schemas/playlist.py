@@ -159,6 +159,9 @@ class PlaylistWorkspaceRead(BaseModel):
     youtube_default_language: str = "ko"
     metadata_provider: str | None = None
     metadata_generation_error: str | None = None
+    rendered_timeline: list[dict[str, Any]] = Field(default_factory=list)
+    rendered_track_ids: list[str] = Field(default_factory=list)
+    rendered_duration_seconds: int | None = None
     youtube_video_id: str | None
     youtube_channel_id: str | None = None
     youtube_channel_title: str | None = None

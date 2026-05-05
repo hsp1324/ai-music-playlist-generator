@@ -80,6 +80,7 @@ Audio duration and integrity:
 - The helper retries each audio upload up to 3 times. If a playlist automation track still fails, it records a Slack warning, continues uploading the remaining tracks, then stops before render/publish so a partial release cannot reach YouTube.
 - Treat the command JSON as the upload receipt. A successful upload includes `ok: true`, the uploaded `track.id`, `track.status`, and the probed `duration_seconds`. If `duration_seconds` is `0`, missing, or far from the local file duration, fix and re-upload before continuing.
 - Playlist track generation should target roughly 3:00-3:30 per Suno output, with 3:45 still in the preferred range. Anything up to 4:20 is acceptable as returned output, but OpenClaw should not intentionally ask Suno for 4-minute tracks. `auto-publish-playlist` rejects tracks over `260` seconds unless `--allow-long-track` is passed. Use `--allow-long-track` only when the human explicitly accepts a longer track.
+- After audio render, the app stores `rendered_timeline` from actual ffprobe source-file durations. Metadata and OpenClaw `metadata-context` should use that rendered snapshot instead of recalculating timestamps from rounded track durations.
 
 ## Upload One New Single Candidate
 
@@ -282,6 +283,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; translate only the displayed title text and surrounding description.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, English uses English translated title only, and Spanish uses Spanish translated title only.
 - If the release is one hour or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
+- Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 
 Example localized metadata approval:
 

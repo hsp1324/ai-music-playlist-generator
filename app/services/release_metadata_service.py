@@ -7,6 +7,7 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.utils.youtube_localizations import ensure_playlist_title_prefix
 from app.utils.track_titles import clean_track_display_title, display_track_titles
+from app.utils.timeline import timeline_from_track_dicts
 
 
 @dataclass
@@ -94,7 +95,7 @@ class ReleaseMetadataService:
             "조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악",
             is_playlist=True,
         )
-        timestamps = self._timestamp_lines(tracks)
+        timestamps = self._timestamp_lines(playlist, tracks)
         description = "\n".join(
             [
                 "카페 한쪽에서 조용히 흐르는 듯한 잔잔한 솔로 피아노 플레이리스트입니다.",
@@ -127,15 +128,29 @@ class ReleaseMetadataService:
         ).lower()
         return ("cafe" in haystack or "카페" in haystack) and ("piano" in haystack or "피아노" in haystack)
 
-    def _timestamp_lines(self, tracks: list[Track]) -> list[str]:
-        offset = 0
-        lines = []
-        force_hours = sum(max(int(track.duration_seconds or 0), 0) for track in tracks) >= 3600
-        display_titles = self._display_track_titles(tracks)
-        for track, display_title in zip(tracks, display_titles):
-            lines.append(f"{self._format_timestamp(offset, force_hours=force_hours)} {display_title}")
-            offset += max(int(track.duration_seconds or 0), 0)
-        return lines
+    def _timestamp_lines(self, playlist: Playlist, tracks: list[Track]) -> list[str]:
+        timeline = timeline_from_track_dicts(
+            self._track_timeline_dicts(tracks),
+            (playlist.metadata_json or {}).get("rendered_timeline") or [],
+        )
+        return [f"{item['start']} {item['display_title_hint']}" for item in timeline]
+
+    def _track_timeline_dicts(self, tracks: list[Track]) -> list[dict]:
+        values = []
+        for track in tracks:
+            meta = track.metadata_json or {}
+            values.append(
+                {
+                    "id": track.id,
+                    "title": track.title,
+                    "duration_seconds": track.duration_seconds,
+                    "prompt": track.prompt,
+                    "tags": meta.get("tags"),
+                    "lyrics": str(meta.get("lyrics") or ""),
+                    "style": str(meta.get("style") or ""),
+                }
+            )
+        return values
 
     def _display_track_titles(self, tracks: list[Track]) -> list[str]:
         return display_track_titles([{"title": track.title} for track in tracks])

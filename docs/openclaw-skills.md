@@ -96,6 +96,7 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - In Korean YouTube titles/descriptions/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Prefer `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, English translated titles only in the English description, and Spanish translated titles only in the Spanish description. Keep the same timestamps and order in all languages.
 - For releases one hour or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
+- After audio render, metadata timestamps come from the release's saved `rendered_timeline` snapshot, which uses actual ffprobe source-file durations. Always call `scripts/openclaw-release metadata-context` after render and use its returned timeline; do not manually add rounded track durations.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
 - Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
 - Full playlist publishing needs two 16:9 images:
@@ -345,6 +346,7 @@ The human does not review every playlist track before rendering. The human revie
 ### Important Duration Rule
 
 Playlist uploads are auto-approved, so `workspace.actual_duration_seconds` becomes the source of truth after upload.
+After audio render, `rendered_timeline` becomes the source of truth for YouTube description timestamps.
 
 Generate enough material before publishing:
 
