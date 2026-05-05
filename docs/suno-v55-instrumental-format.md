@@ -38,9 +38,10 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-For playlist releases, each generated Suno song should usually stay near 2:30 to 3:45, but 4:20 is acceptable.
+For playlist releases, OpenClaw should ask Suno for songs around 3:00 to 3:30. The preferred range can extend to about 3:45, while 4:20 is only the acceptable returned-output ceiling.
 
-- Target roughly 2:30 to 3:45 per track.
+- Target roughly 3:00 to 3:30 per track when prompting Suno.
+- Treat 3:45 as still acceptable, but do not intentionally ask for 4-minute tracks.
 - If Suno returns a track longer than 4:20, regenerate or replace it before publishing.
 - `scripts/openclaw-release auto-publish-playlist` rejects playlist tracks over 260 seconds by default.
 - Only use `--allow-long-track` when the human explicitly approves a longer track.
