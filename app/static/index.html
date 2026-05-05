@@ -217,11 +217,19 @@
               <p class="section-kicker">Releases</p>
               <h2>작업할 릴리즈 선택</h2>
             </div>
-            <div class="workspace-tabs" role="tablist" aria-label="Release views">
-              <button class="workspace-tab active" type="button" data-workspace-tab="active">Active</button>
-              <button class="workspace-tab" type="button" data-workspace-tab="archive">
-                Archive <span id="archive-count-badge">0</span>
-              </button>
+            <div class="workspace-view-controls">
+              <label class="channel-filter" for="channel-filter-select">
+                <span>Channel</span>
+                <select id="channel-filter-select">
+                  <option value="__all_channels__">All Channels</option>
+                </select>
+              </label>
+              <div class="workspace-tabs" role="tablist" aria-label="Release views">
+                <button class="workspace-tab active" type="button" data-workspace-tab="active">Active</button>
+                <button class="workspace-tab" type="button" data-workspace-tab="archive">
+                  Archive <span id="archive-count-badge">0</span>
+                </button>
+              </div>
             </div>
           </div>
           <div id="workspace-grid" class="workspace-grid"></div>
@@ -345,6 +353,6 @@
       </article>
     </template>
 
-    <script src="/assets/app.js?v=20260505a" defer></script>
+    <script src="/assets/app.js?v=20260505b" defer></script>
   </body>
 </html>

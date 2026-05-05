@@ -10,4 +10,5 @@ def test_root_serves_ui_console() -> None:
 
     assert response.status_code == 200
     assert "Release Console" in response.text
+    assert "channel-filter-select" in response.text
     assert "/assets/app.js" in response.text

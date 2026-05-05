@@ -516,6 +516,47 @@ button:disabled {
   justify-content: flex-end;
 }
 
+.workspace-view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.channel-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.channel-filter.disabled {
+  opacity: 0.62;
+}
+
+.channel-filter select {
+  max-width: 220px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: none;
+}
+
+.channel-filter select:focus {
+  outline: 0;
+}
+
 .workspace-tab {
   display: inline-flex;
   align-items: center;
@@ -2391,6 +2432,11 @@ select:focus {
 
   .toolbar,
   .upload-picker-actions {
+    justify-content: flex-start;
+  }
+
+  .workspace-view-controls {
+    width: 100%;
     justify-content: flex-start;
   }
 

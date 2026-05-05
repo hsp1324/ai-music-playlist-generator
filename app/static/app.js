@@ -13,6 +13,7 @@ const state = {
   metadataExpandedByRelease: {},
   metadataLanguageByRelease: {},
   workspaceTab: "active",
+  channelFilter: "__all_channels__",
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -24,6 +25,7 @@ const archivedWorkspaceSection = document.querySelector("#archived-workspace-sec
 const archivedWorkspaceGrid = document.querySelector("#archived-workspace-grid");
 const workspaceTabButtons = [...document.querySelectorAll("[data-workspace-tab]")];
 const archiveCountBadge = document.querySelector("#archive-count-badge");
+const channelFilterSelect = document.querySelector("#channel-filter-select");
 const detailPanel = document.querySelector("#workspace-detail-panel");
 const detailTitle = document.querySelector("#detail-title");
 const detailMeta = document.querySelector("#detail-meta");
@@ -67,6 +69,7 @@ const youtubeChannelSelect = document.querySelector("#youtube-channel-select");
 const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
+const CHANNEL_FILTER_ALL = "__all_channels__";
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
 const METADATA_LANGUAGES = [
@@ -225,6 +228,18 @@ function releaseOptionLabel(workspace) {
 function releasePublishedChannelLabel(workspace) {
   if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
   return workspace.youtube_channel_title || workspace.youtube_channel_id || "YouTube";
+}
+
+function releaseChannelKey(workspace) {
+  const channelId = String(workspace?.youtube_channel_id || "").trim();
+  if (channelId) return `id:${channelId}`;
+  const channelTitle = String(workspace?.youtube_channel_title || "").trim();
+  if (channelTitle) return `title:${channelTitle}`;
+  return "unknown";
+}
+
+function releaseChannelDisplayLabel(workspace) {
+  return workspace?.youtube_channel_title || workspace?.youtube_channel_id || "Unknown Channel";
 }
 
 function releaseArtworkUrl(workspace) {
@@ -1476,8 +1491,42 @@ function activeWorkspace() {
   return state.workspaces.find((workspace) => workspace.id === state.selectedWorkspaceId) || null;
 }
 
-function visibleWorkspaces() {
+function activeWorkspaces() {
   return state.workspaces.filter((workspace) => !workspace.hidden);
+}
+
+function channelFilterOptions() {
+  const channels = new Map();
+  activeWorkspaces().forEach((workspace) => {
+    if (!releasePublishedChannelLabel(workspace)) return;
+    const key = releaseChannelKey(workspace);
+    const existing = channels.get(key) || {
+      key,
+      label: releaseChannelDisplayLabel(workspace),
+      count: 0,
+    };
+    existing.count += 1;
+    channels.set(key, existing);
+  });
+
+  return [...channels.values()].sort((left, right) => left.label.localeCompare(right.label));
+}
+
+function ensureChannelFilter() {
+  const options = channelFilterOptions();
+  if (state.channelFilter !== CHANNEL_FILTER_ALL && !options.some((option) => option.key === state.channelFilter)) {
+    state.channelFilter = CHANNEL_FILTER_ALL;
+  }
+  return options;
+}
+
+function workspaceMatchesChannelFilter(workspace) {
+  if (state.channelFilter === CHANNEL_FILTER_ALL) return true;
+  return releaseChannelKey(workspace) === state.channelFilter && Boolean(releasePublishedChannelLabel(workspace));
+}
+
+function visibleWorkspaces() {
+  return activeWorkspaces().filter((workspace) => workspaceMatchesChannelFilter(workspace));
 }
 
 function archivedWorkspaces() {
@@ -1496,7 +1545,7 @@ function ensureSelectedWorkspace() {
 
 function workspaceOptions(selectedId = "") {
   const defaultOption = `<option value="">Choose workspace</option>`;
-  const options = visibleWorkspaces()
+  const options = activeWorkspaces()
     .map((workspace) => {
       const selected = workspace.id === selectedId ? "selected" : "";
       return `<option value="${workspace.id}" ${selected}>${releaseOptionLabel(workspace)}</option>`;
@@ -1508,7 +1557,7 @@ function workspaceOptions(selectedId = "") {
 function quickUploadWorkspaceOptions(selectedId = "") {
   const createSingleSelected = selectedId === QUICK_UPLOAD_NEW_SINGLE_VALUE ? "selected" : "";
   const createSingleOption = `<option value="${QUICK_UPLOAD_NEW_SINGLE_VALUE}" ${createSingleSelected}>+ New Single Release from selected candidate(s)</option>`;
-  const options = visibleWorkspaces()
+  const options = activeWorkspaces()
     .map((workspace) => {
       const selected = workspace.id === selectedId ? "selected" : "";
       return `<option value="${workspace.id}" ${selected}>${releaseOptionLabel(workspace)}</option>`;
@@ -1520,6 +1569,7 @@ function quickUploadWorkspaceOptions(selectedId = "") {
 function renderWorkspaceTabs() {
   const archivedCount = archivedWorkspaces().length;
   if (archiveCountBadge) archiveCountBadge.textContent = String(archivedCount);
+  renderChannelFilter();
   workspaceTabButtons.forEach((button) => {
     const selected = button.dataset.workspaceTab === state.workspaceTab;
     button.classList.toggle("active", selected);
@@ -1529,6 +1579,28 @@ function renderWorkspaceTabs() {
   if (archivedWorkspaceSection) {
     archivedWorkspaceSection.hidden = state.workspaceTab !== "archive";
   }
+}
+
+function renderChannelFilter() {
+  if (!channelFilterSelect) return;
+  const options = ensureChannelFilter();
+
+  channelFilterSelect.innerHTML = "";
+  const allOption = document.createElement("option");
+  allOption.value = CHANNEL_FILTER_ALL;
+  allOption.textContent = `All Channels (${activeWorkspaces().length})`;
+  channelFilterSelect.appendChild(allOption);
+
+  options.forEach((channel) => {
+    const option = document.createElement("option");
+    option.value = channel.key;
+    option.textContent = `${channel.label} (${channel.count})`;
+    channelFilterSelect.appendChild(option);
+  });
+
+  channelFilterSelect.value = state.channelFilter;
+  channelFilterSelect.disabled = !options.length;
+  channelFilterSelect.closest(".channel-filter")?.classList.toggle("disabled", !options.length);
 }
 
 function setWorkspaceTab(tab) {
@@ -1562,7 +1634,7 @@ function updateToolbarSummary() {
 
 function renderTrackWorkspaceOptions() {
   if (!trackWorkspaceSelect) return;
-  const visible = visibleWorkspaces();
+  const visible = activeWorkspaces();
   const options = visible
     .map((workspace) => `<option value="${workspace.id}">${releaseOptionLabel(workspace)}</option>`)
     .join("");
@@ -1838,7 +1910,9 @@ function renderWorkspaceTiles() {
   if (!visible.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = "먼저 workspace를 하나 만들어 주세요.";
+    empty.textContent = state.channelFilter === CHANNEL_FILTER_ALL
+      ? "먼저 workspace를 하나 만들어 주세요."
+      : "선택한 채널에 올라간 release가 없습니다.";
     workspaceGrid.appendChild(empty);
     return;
   }
@@ -2670,6 +2744,7 @@ function renderYouTubeStatus(youtubeStatus) {
 function applyBoardData(tracks, workspaces) {
   state.tracks = tracks;
   state.workspaces = workspaces;
+  ensureChannelFilter();
   ensureSelectedWorkspace();
   renderLayoutMode();
   updateToolbarSummary();
@@ -2760,6 +2835,14 @@ workspaceForm.addEventListener("submit", async (event) => {
 menuToggleButton.addEventListener("click", () => toggleDrawer());
 workspaceTabButtons.forEach((button) => {
   button.addEventListener("click", () => setWorkspaceTab(button.dataset.workspaceTab));
+});
+channelFilterSelect?.addEventListener("change", () => {
+  state.channelFilter = channelFilterSelect.value || CHANNEL_FILTER_ALL;
+  state.workspaceTab = "active";
+  state.selectedWorkspaceId = "";
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+  updateToolbarSummary();
 });
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
 window.addEventListener("popstate", () => {
