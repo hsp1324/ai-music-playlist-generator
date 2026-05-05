@@ -364,6 +364,8 @@ scripts/openclaw-release auto-publish-playlist ... --loop-video /absolute/path/t
 
 The app repeats short clips internally, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. The cover/first-frame must contain only the large, readable lower-left channel label such as `Tokyo Daydream Radio`; instruct Dreamina/Seedance to preserve that exact text for the full clip and reject/regenerate if the text flickers, morphs, disappears, changes spelling/style, shrinks, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage.
 
+If Dreamina/Seedance blocks generation for inappropriate content, copyright, moderation, or policy reasons, OpenClaw should retry up to 10 total attempts with a safer rewritten prompt. Do not retry the exact same prompt. Before every retry, post Slack progress with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`. Remove named artists, studios, franchises, copyrighted characters, brands, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. If all 10 attempts fail, post `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback.
+
 ## Slack App Setup
 
 You need a Slack app before local review messages can be delivered.

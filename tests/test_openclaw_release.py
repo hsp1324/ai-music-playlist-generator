@@ -19,6 +19,7 @@ from scripts.openclaw_release import (
     release_has_uploaded_thumbnail,
     resolve_lyrics_items,
     resolve_style_items,
+    slack_notify_command,
     upload_audio_file_to_release,
     upload_single_candidates,
 )
@@ -143,6 +144,33 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert soft_hour["profile"] == "soft-hour-radio"
     assert soft_hour["profile_doc"] == "docs/openclaw-channel-profiles/soft-hour-radio.md"
     assert soft_hour["explicit_channel_requested"] is True
+
+
+def test_slack_notify_command_posts_plain_message() -> None:
+    captured_payloads = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured_payloads.append(json.loads(request.read()))
+        return httpx.Response(200, json={"ok": True, "channel": "C123", "ts": "1.2"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = slack_notify_command(
+        client,
+        SimpleNamespace(
+            text="영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (1/10)",
+            channel_id="C123",
+            team_id="T123",
+        ),
+    )
+
+    assert result["ok"] is True
+    assert captured_payloads == [
+        {
+            "text": "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (1/10)",
+            "channel_id": "C123",
+            "team_id": "T123",
+        }
+    ]
 
 
 def test_create_release_creates_empty_workspace_before_suno_generation() -> None:

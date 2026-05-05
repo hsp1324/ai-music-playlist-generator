@@ -141,11 +141,36 @@ def request_json(client: httpx.Client, method: str, path: str, **kwargs) -> Any:
     return payload
 
 
-def notify_slack(client: httpx.Client, text: str) -> dict[str, Any]:
+def notify_slack(
+    client: httpx.Client,
+    text: str,
+    *,
+    channel_id: str | None = None,
+    team_id: str | None = None,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {"text": text}
+    if channel_id:
+        payload["channel_id"] = channel_id
+    if team_id:
+        payload["team_id"] = team_id
     try:
-        return request_json(client, "POST", "/slack/notify", json={"text": text})
+        return request_json(client, "POST", "/slack/notify", json=payload)
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
+
+
+def slack_notify_command(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    result = notify_slack(
+        client,
+        args.text,
+        channel_id=args.channel_id or None,
+        team_id=args.team_id or None,
+    )
+    return {
+        "action": "slack-notify",
+        "ok": bool(result.get("ok")),
+        "result": result,
+    }
 
 
 def upload_failure_notice(
@@ -1929,6 +1954,15 @@ def build_parser() -> argparse.ArgumentParser:
     loop_video_parser.add_argument("--hard-loop", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     loop_video_parser.set_defaults(func=upload_loop_video)
+
+    slack_notify_parser = subparsers.add_parser(
+        "slack-notify",
+        help="Post a plain Slack progress/failure message through the app's configured Slack bot.",
+    )
+    slack_notify_parser.add_argument("--text", required=True, help="Slack message text to post.")
+    slack_notify_parser.add_argument("--channel-id", default="", help="Optional Slack channel id override.")
+    slack_notify_parser.add_argument("--team-id", default="", help="Optional Slack team id for installed workspace lookup.")
+    slack_notify_parser.set_defaults(func=slack_notify_command)
 
     metadata_parser = subparsers.add_parser(
         "approve-metadata",

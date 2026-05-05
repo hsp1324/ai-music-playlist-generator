@@ -43,6 +43,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Animate several environmental layers already present or naturally implied by the first frame, such as leaf clusters swaying, grass moving in a breeze, curtain movement, water or rain reflections, warm light shimmer, drifting dust motes, smoke, steam, fireflies, or soft air movement.
 - Write prompts with positive motion language: `calm but clearly visible natural motion across several environmental layers`.
 - The final moment should keep the same crop, framing, camera distance, lighting, palette, and subject placement. The app handles smooth repetition with crossfade, so do not force the model to zoom out or return the camera to the opening frame.
+- If Dreamina rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared 10-attempt retry rule in `README.md` and `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and stop before render/publish after 10 failures.
 
 Prompt shape:
 

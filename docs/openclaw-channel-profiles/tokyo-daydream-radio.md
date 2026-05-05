@@ -44,7 +44,8 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
 - Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
 - The loop video should keep the three people walking forward away from the camera with subtle forward camera-follow motion and environmental motion.
-- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
+- If Dreamina rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared 10-attempt retry rule in `README.md` and `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and stop before render/publish after 10 failures.
 
 Prompt shape:
 

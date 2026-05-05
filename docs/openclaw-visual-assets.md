@@ -20,6 +20,9 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 - The thumbnail should use larger click text plus a channel-brand line whose size/style matches the cover channel label.
 - Human visual requests override the channel default. If the human asks for a specific scene, subject, action, camera angle, animal, object, or character type, apply that concept consistently to the cover, thumbnail, and loop video.
 - All generated visuals should look animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage unless the human explicitly asks and the YouTube synthetic-media policy is handled.
+- If Dreamina/Seedance blocks a loop-video generation for inappropriate content, copyright, moderation, or policy reasons, OpenClaw should rewrite the prompt and retry up to 10 total attempts. Each failure must be reported to Slack before retrying with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
+- Dreamina retry prompts must become more original and generic: remove named artists, studios, franchises, copyrighted characters, brands, celebrity names, exact song/video titles, `in the style of` wording, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Preserve only the broad mood, channel label, first-frame continuity, and motion intent.
+- If all 10 Dreamina attempts fail, send `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback.
 
 ## Tokyo Daydream Radio Visual Skill
 
