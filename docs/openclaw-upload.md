@@ -274,15 +274,19 @@ Thumbnail text rules for OpenClaw:
 
 Localized YouTube metadata rules for OpenClaw:
 
-- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, and `es`.
-- For `Tokyo Daydream Radio`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, English pop, Latin/Spanish pop, or similar pop-family releases, always write all four language versions.
+- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, and `zh-CN`.
+- For `Tokyo Daydream Radio`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, English pop, Latin/Spanish pop, or similar pop-family releases, always write all eight language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, and Simplified Chinese.
 - Use Korean as the default upload metadata for Tokyo/Soft Hour unless the channel profile says otherwise. Use `--default-language en` for `sundaze` and `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
 - Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
 - Pass Spanish through `--es-title` and `--es-description-file`. This should be natural Spanish YouTube copy for Spanish-speaking listeners.
+- Pass Vietnamese through `--vi-title` and `--vi-description-file`.
+- Pass Thai through `--th-title` and `--th-description-file`.
+- Pass Hindi through `--hi-title` and `--hi-description-file`.
+- Pass Simplified Chinese through `--zh-title` and `--zh-description-file`; the app stores this as `zh-CN`.
 - End every localized description with a public hashtag line. `--tags` is still required, but it only sends YouTube API tags and does not replace visible description hashtags.
-- For Playlist Releases on every channel, start `--title`, `--ko-title`, `--ja-title`, `--en-title`, and `--es-title` exactly with `[playlist]`. Do not add this prefix to Single Releases.
+- For Playlist Releases on every channel, start `--title`, `--ko-title`, `--ja-title`, `--en-title`, `--es-title`, `--vi-title`, `--th-title`, `--hi-title`, and `--zh-title` exactly with `[playlist]`. Do not add this prefix to Single Releases.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
 - For playlist/BGM titles, include listening use cases in the title itself, for example study, work, walk, drive, sleep, reading, or rest. The title should not be only mood plus genre.
 - For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead; the thumbnail/channel branding can carry `J-POP`.

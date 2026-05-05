@@ -109,7 +109,7 @@ For `single_track_video`, the intended publish path is:
 - Cafe/solo-piano playlist metadata now generates a Korean YouTube title, use-case description, timestamped tracklist, and music hashtags
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
-- YouTube metadata can now store `ko`, `ja`, `en`, and `es` localized title/description drafts. Tokyo/J-pop releases should provide all four; the publish flow sends Korean as the default metadata and Japanese/English/Spanish as YouTube localizations.
+- YouTube metadata can now store `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, and `zh-CN` localized title/description drafts. Releases should provide all eight where possible; the publish flow sends the selected default metadata language and sends the other localized title/description drafts as YouTube localizations.
 - Playlist Release YouTube titles now start with `[playlist]` for the default title and every localized title across all channels. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles remain unprefixed.
 - Playlist/BGM YouTube titles should include listening use cases directly in the title, such as study, work, walk, drive, sleep, reading, or rest, instead of only mood/genre wording.
 - Korean YouTube metadata must not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`; use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.

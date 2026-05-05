@@ -59,7 +59,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Main upload metadata should be English. Use `--default-language en` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, and Spanish metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, and Simplified Chinese metadata.
 - The top-level `--title` / `--description-file` and `--en-title` / `--en-description-file` should match.
 - Playlist titles must start with `[playlist]` and should include the pop mood/use case, such as drive, walk, party, workout, study, night, summer, or heartbreak.
 - Every track should have original English lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.

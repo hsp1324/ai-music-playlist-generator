@@ -5,7 +5,33 @@ from typing import Any
 
 
 DEFAULT_YOUTUBE_LANGUAGE = "ko"
-SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es")
+SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN")
+YOUTUBE_LANGUAGE_ALIASES = {
+    "ko": "ko",
+    "kr": "ko",
+    "korean": "ko",
+    "ja": "ja",
+    "jp": "ja",
+    "japanese": "ja",
+    "en": "en",
+    "english": "en",
+    "es": "es",
+    "spanish": "es",
+    "vi": "vi",
+    "vn": "vi",
+    "vietnamese": "vi",
+    "th": "th",
+    "thai": "th",
+    "hi": "hi",
+    "hindi": "hi",
+    "india": "hi",
+    "indian": "hi",
+    "zh": "zh-CN",
+    "zh-cn": "zh-CN",
+    "chinese": "zh-CN",
+    "chinese-simplified": "zh-CN",
+    "simplified-chinese": "zh-CN",
+}
 PLAYLIST_TITLE_PREFIX = "[playlist]"
 
 
@@ -83,9 +109,12 @@ def ensure_playlist_localization_title_prefix(
 
 def normalize_youtube_language(value: Any, *, fallback: str = DEFAULT_YOUTUBE_LANGUAGE) -> str:
     language = str(value or "").strip().lower().replace("_", "-")
-    if language in SUPPORTED_YOUTUBE_LANGUAGES:
-        return language
-    return fallback
+    if language in YOUTUBE_LANGUAGE_ALIASES:
+        return YOUTUBE_LANGUAGE_ALIASES[language]
+    fallback_language = str(fallback or "").strip().lower().replace("_", "-")
+    if fallback_language in YOUTUBE_LANGUAGE_ALIASES:
+        return YOUTUBE_LANGUAGE_ALIASES[fallback_language]
+    return DEFAULT_YOUTUBE_LANGUAGE
 
 
 def normalize_youtube_localizations(
