@@ -1145,6 +1145,7 @@ def queue_workspace_video_render(
     *,
     playlist_id: str,
     actor: str,
+    allow_still_image_fallback: bool = False,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -1160,6 +1161,9 @@ def queue_workspace_video_render(
         raise ValueError("Approved cover image is required before rendering video.")
     if not meta.get("cover_approved"):
         raise ValueError("Cover image must be approved before rendering video.")
+    loop_video_path = str(meta.get("loop_video_path") or "").strip()
+    if not allow_still_image_fallback and (not loop_video_path or not Path(loop_video_path).exists()):
+        raise ValueError("Uploaded 8 second loop video is required before rendering video.")
 
     active_job = _find_active_video_job(db, playlist)
     meta["workflow_state"] = "video_queued"
@@ -1184,6 +1188,7 @@ def queue_workspace_video_render(
                     "playlist_id": playlist.id,
                     "actor": actor,
                     "trigger": "manual-video-render",
+                    "allow_still_image_fallback": allow_still_image_fallback,
                 },
                 result_json={},
                 playlist=playlist,

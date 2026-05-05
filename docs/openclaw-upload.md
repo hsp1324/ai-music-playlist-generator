@@ -144,7 +144,7 @@ For full automatic playlist publishing, two final 16:9 images are required.
 - `--cover /absolute/path/to/video-cover.png`: playback visual used inside the rendered video. It must include only the selected channel name as a large, readable lower-left brand label because it is also the Dreamina/Seedance first-frame reference.
 - `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. Include short readable click text plus the selected channel name as a smaller brand line.
 
-Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles. The thumbnail is for clicks and should have large text; the cover is the still-image fallback and Dreamina/Seedance first-frame reference, so it should contain only the lower-left channel brand label.
+Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles. The thumbnail is for clicks and should have large text; the cover is the Dreamina/Seedance first-frame reference, so it should contain only the lower-left channel brand label.
 
 Static image creation rules:
 
@@ -171,13 +171,14 @@ Static image creation rules:
 - Use the cover or a separate first-frame image with only the lower-left channel brand label for Dreamina/Seedance video generation. Do not use the final text thumbnail as the first-frame reference; generated video often makes large thumbnail text flicker, disappear, or reappear.
 - The large lower-left channel label is the only allowed baked-in moving-visual text unless the human explicitly asks for more. Do not add titles, lyrics, subtitles, UI, logos, duration badges, genre text, or unrelated words inside the moving visual.
 
-Optional moving visual:
+Required moving visual:
 
 - `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 8 second Dreamina/Seedance visual clip for the rendered video.
 - OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
-- If the human expects a moving final video, `--loop-video` must be a separate MP4 asset. Do not use the thumbnail image or any text-heavy image as the moving video visual.
+- Normal auto-publish must include `--loop-video`. Do not use the thumbnail image or any text-heavy image as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`.
+- The app validates uploaded loop videos. The file must be a readable video, close to 8 seconds long, and visibly moving. If upload fails with `too little visible motion`, regenerate the Dreamina/Seedance clip with stronger natural motion before continuing; do not render/publish.
 
 Dreamina website workflow for OpenClaw:
 
@@ -192,7 +193,7 @@ Dreamina website workflow for OpenClaw:
 - Generate exactly one `8 second` MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
-- If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video.
+- If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video and OpenClaw passes `--allow-still-image-video`.
 
 Dreamina content/copyright rejection recovery:
 
@@ -205,7 +206,7 @@ Dreamina content/copyright rejection recovery:
 - If the first-frame image itself appears to trigger rejection, regenerate a safer cover/first-frame image first, keeping only the large lower-left channel brand label and the same broad mood.
 - If all 10 attempts fail, send a final Slack message:
   `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"`
-- After 10 failures, stop the automation before render/publish. Do not continue with a still-image video unless the human explicitly approves that fallback.
+- After 10 failures, stop the automation before render/publish. Do not continue with a still-image video unless the human explicitly approves that fallback and OpenClaw passes `--allow-still-image-video`.
 
 Dreamina/Seedance motion prompt guidance:
 
@@ -439,7 +440,7 @@ Generate or obtain:
 - one final Suno audio file per YouTube single
 - a final clean 16:9 cover image
 - a separate YouTube thumbnail image with readable text
-- optionally one exactly 8 second Dreamina/Seedance loop video
+- one exactly 8 second Dreamina/Seedance loop video
 
 Then run:
 
@@ -486,7 +487,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Generate the thumbnail from the final cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, background continuity, and the channel-brand line style; only add click text/branding and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
-- If OpenClaw creates a Dreamina/Seedance clip, pass the 8 second MP4 as `--loop-video`. The generated clip should end close to its opening composition so it can be reused across the long video.
+- OpenClaw must create a Dreamina/Seedance clip and pass the 8 second MP4 as `--loop-video` before normal video render/private publish. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.

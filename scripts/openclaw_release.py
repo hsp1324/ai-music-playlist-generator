@@ -947,6 +947,13 @@ def release_has_uploaded_thumbnail(release: dict[str, Any]) -> bool:
     )
 
 
+def release_has_uploaded_loop_video(release: dict[str, Any]) -> bool:
+    return bool(
+        release.get("loop_video_path")
+        and release.get("loop_video_source") == "manual-upload"
+    )
+
+
 def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
     if not audio_paths:
@@ -992,6 +999,12 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 args.youtube_channel_title,
             ],
         )
+    if not loop_video_path and not args.release_id and not args.allow_still_image_video:
+        raise RuntimeError(
+            "auto-publish-playlist requires --loop-video when creating a new Playlist Release. "
+            "Generate and download the 8 second Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4. "
+            "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
+        )
 
     release = (
         get_release(client, args.release_id)
@@ -1017,6 +1030,12 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "auto-publish-playlist requires a YouTube thumbnail image before YouTube upload. "
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first. "
             "Only pass --allow-cover-as-thumbnail if the human explicitly wants to reuse the video cover as the YouTube thumbnail."
+        )
+    if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
+        raise RuntimeError(
+            "auto-publish-playlist requires an uploaded 8 second loop video before video render. "
+            "Pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4, or upload a loop video to the release first. "
+            "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -1180,7 +1199,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         client,
         "POST",
         f"/playlists/{release['id']}/video/render",
-        json={"actor": args.actor},
+        json={"actor": args.actor, "allow_still_image_fallback": bool(args.allow_still_image_video)},
     )
     release = wait_for_release(
         client,
@@ -1293,6 +1312,11 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 args.youtube_channel_title,
             ],
         )
+    if not loop_video_path and not args.release_id and not args.allow_still_image_video:
+        raise RuntimeError(
+            "auto-publish-single requires --loop-video when creating a new Single Release. "
+            "Generate and download the 8 second Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4."
+        )
 
     release = (
         get_release(client, args.release_id)
@@ -1320,6 +1344,12 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires a YouTube thumbnail image before YouTube upload. "
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first."
+        )
+    if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
+        raise RuntimeError(
+            "auto-publish-single requires an uploaded 8 second loop video before video render. "
+            "Pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4, or upload a loop video to the release first. "
+            "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -1463,7 +1493,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         client,
         "POST",
         f"/playlists/{release['id']}/video/render",
-        json={"actor": args.actor},
+        json={"actor": args.actor, "allow_still_image_fallback": bool(args.allow_still_image_video)},
     )
     release = wait_for_release(
         client,
@@ -1859,8 +1889,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
     auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release.")
-    auto_playlist_parser.add_argument("--loop-video", default="", help="Optional 8 second visual clip generated by Dreamina/Seedance for the rendered video.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Required 8 second visual clip generated by Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
+    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without an 8 second loop video. Do not use unless the human accepts this fallback.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
     auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
@@ -1892,8 +1923,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover image with only the large, readable lower-left channel-name brand label unless an uploaded final cover already exists on the release.")
     auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release.")
-    auto_single_parser.add_argument("--loop-video", default="", help="Optional 8 second visual clip generated by Dreamina/Seedance for the rendered video.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Required 8 second visual clip generated by Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
+    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without an 8 second loop video. Do not use unless the human accepts this fallback.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
     auto_single_parser.add_argument("--release-id", default="", help="Existing Single Release id. If omitted, a new release is created.")

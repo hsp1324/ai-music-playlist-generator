@@ -354,6 +354,7 @@ class BackgroundJobWorker:
         progress_callback = self._build_video_progress_callback(db, job, playlist)
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
         loop_video_path = str(meta.get("loop_video_path") or "").strip()
+        allow_still_image_fallback = bool((job.payload_json or {}).get("allow_still_image_fallback"))
         if loop_video_path and Path(loop_video_path).exists():
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
@@ -367,29 +368,7 @@ class BackgroundJobWorker:
                 )
             )
             meta["loop_video_render_mode"] = "smooth-forward-crossfade" if meta.get("loop_video_smooth", True) else "hard-loop"
-        elif workspace_mode == "single_track_video" and self.services.dreamina.get_status()["ready"]:
-            loop_prompt = self._build_dreamina_prompt(playlist, tracks)
-            clip_path = Path(self.settings.playlists_dir) / f"{playlist.id}-dreamina.mp4"
-            clip = self.services.dreamina.generate_loop_clip(prompt=loop_prompt)
-            downloaded_clip = self.services.dreamina.download_video(clip.video_url, clip_path)
-            playlist.output_video_path = str(
-                self._call_builder_with_progress(
-                    self.services.playlist_builder.build_looped_video,
-                    downloaded_clip,
-                    audio_path,
-                    video_path,
-                    smooth_loop=True,
-                    progress_callback=progress_callback,
-                    total_duration_seconds=total_duration_seconds,
-                )
-            )
-            meta["dreamina_job_id"] = clip.job_id
-            meta["dreamina_video_url"] = clip.video_url
-            meta["loop_video_path"] = str(downloaded_clip)
-            meta["loop_video_source"] = "dreamina-useapi"
-            meta["loop_video_smooth"] = True
-            meta["loop_video_render_mode"] = "smooth-forward-crossfade"
-        else:
+        elif allow_still_image_fallback:
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
                     self.services.playlist_builder.build_video,
@@ -400,6 +379,9 @@ class BackgroundJobWorker:
                     total_duration_seconds=total_duration_seconds,
                 )
             )
+            meta["loop_video_render_mode"] = "still-image-fallback"
+        else:
+            raise ValueError("Uploaded 8 second loop video is required before video render.")
 
         rendered_video_path = playlist.output_video_path
         db.expire_all()

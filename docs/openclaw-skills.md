@@ -119,7 +119,8 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - The background should come from the selected channel profile and the release concept, not from a hard-coded scene list.
 - All static images and Dreamina/Seedance loop clips must look animated, anime, illustrated, or stylized. Do not make photorealistic, live-action, documentary, camera-photo, or realistic human footage.
 - Generate static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the OpenAI/Image tool environment. Do not use Dreamina for static image generation. Do not assume the OpenAI API is free; use the available Codex/ChatGPT image tool if that is the operator-approved path, or use API billing/credentials when explicitly configured.
-- Use Dreamina/Seedance only for the moving visual clip. If Dreamina/Seedance can create a visual motion clip, OpenClaw should generate exactly one 8 second MP4 and pass it with `--loop-video`. The clip should end close to its opening composition so it can be reused across the full release. OpenClaw should not render a one-hour MP4 itself.
+- Use Dreamina/Seedance only for the moving visual clip. For normal private publish automation, OpenClaw must generate exactly one 8 second MP4 and pass it with `--loop-video`. The app rejects video render without an uploaded loop video unless the human explicitly approves the `--allow-still-image-video` fallback. The clip should end close to its opening composition so it can be reused across the full release. OpenClaw should not render a one-hour MP4 itself.
+- The app rejects loop-video uploads that are technically MP4 files but almost static. If upload fails with `too little visible motion`, regenerate the Dreamina/Seedance clip with clearer rain, light, walking, wind, reflection, or other scene-appropriate motion; do not continue to render/publish.
 - Keep these assets separate: `--thumbnail` is the click image with large text and channel branding, `--cover` is the playback visual with only the large lower-left channel brand label, and `--loop-video` is the 8 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
 - The 8 second loop video must visually match the thumbnail's scene and brand, but it should start from the cover or a separate first-frame image that contains only the large lower-left channel brand label. Do not use the final text thumbnail as the Dreamina/Seedance first-frame reference, because generated video often makes large thumbnail text flicker, disappear, or reappear during the loop.
 - The lower-left channel label is mandatory inside the rendered video. Let the GPT Image model design the font/lettering to match the scene, channel, and genre, but keep the exact requested spelling large and readable on mobile playback. Then ask Dreamina/Seedance to preserve that baked-in text exactly for the full 8 second clip and never shrink it.
@@ -129,7 +130,7 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set duration, ratio, and quality only through Dreamina controls. Use the selected channel profile for camera behavior. For `Soft Hour Radio`, keep the camera locked and animate calm but clearly visible environmental motion across several layers throughout the full clip; do not ask for zoom, dolly, camera breathing, or camera drift.
 - If Dreamina/Seedance blocks generation for inappropriate content, copyright, moderation, or policy reasons, retry up to 10 total attempts. Do not retry the same prompt. Before every retry, post Slack progress with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
 - For every Dreamina retry, sanitize the prompt: remove named artists, studios, franchises, copyrighted characters, brands, logos, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Replace them with original generic descriptors while preserving mood, channel label, first-frame continuity, and motion intent.
-- If the uploaded first frame appears to be the moderation trigger, regenerate a safer cover/first-frame image first. If all 10 Dreamina attempts fail, post `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback.
+- If the uploaded first frame appears to be the moderation trigger, regenerate a safer cover/first-frame image first. If all 10 Dreamina attempts fail, post `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback. If approved, pass `--allow-still-image-video`.
 
 ## Skill 1: Single Release Candidate Set
 
@@ -282,7 +283,7 @@ scripts/openclaw-release create-release \
 
 ### Run The Full Automation
 
-After one generated audio file, final cover, text thumbnail, and optional 8 second loop video are ready, run one command:
+After one generated audio file, final cover, text thumbnail, and 8 second loop video are ready, run one command:
 
 ```bash
 scripts/openclaw-release auto-publish-single \
@@ -304,7 +305,7 @@ Pass exactly one `--audio`, one `--title`, one optional `--lyrics-file`, and one
 
 Do not omit `--cover` or `--thumbnail` for a full private single publish run. If either asset is not ready, stop after audio creation and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is optional but preferred when the human wants moving visuals. If provided, it should be exactly 8 seconds. The app uses the actual uploaded clip length and repeats it smoothly during final video rendering.
+`--loop-video` is required for normal private publish automation. If it is missing, stop and create/download the Dreamina/Seedance clip first. Use `--allow-still-image-video` only when the human explicitly accepts a static-cover fallback.
 
 ### Required Output
 
@@ -392,7 +393,7 @@ Goal:
 - Apply the selected channel profile to both images. Use only the large lower-left channel brand label for `--cover`; use the same centered channel/requested composition plus readable click text and the selected channel brand line for `--thumbnail`. In thumbnails, keep the main subject centered and place text around it in negative space; never move the main subject to one side just to make room for text.
 - The cover and thumbnail should look like the same release art package. Preserve the same characters, poses, clothing colors, background, lighting, palette, and camera angle. If the thumbnail changes those details, regenerate it before uploading.
 - Keep every generated visual animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
-- Optionally generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
+- Generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
 - The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text plus channel branding; the cover and loop video must contain only the large lower-left channel label as baked-in text. Verify that Dreamina/Seedance preserves it in the 8 second clip.
 - Use the cover or a separate first-frame image as the visual starting reference for Dreamina/Seedance image-to-video generation. This reference must include only the large lower-left channel label. Use the selected channel profile for the first shot and motion direction. If the human requested a different video concept, use that requested subject/action/composition for the cover, thumbnail, and loop video. Do not use the text thumbnail as the video first frame.
 - For Dreamina motion clips, set duration/ratio/quality in Dreamina controls, not in the prompt. Use the prompt shape from the selected channel profile. For `Soft Hour Radio`, the final moment should keep the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ. The motion should be calm but clearly visible throughout the full clip.
@@ -401,7 +402,7 @@ Goal:
 - If Dreamina rejects the prompt/image for inappropriate content, copyright, moderation, or policy reasons, retry up to 10 total attempts before giving up. Send Slack on every failed attempt before retrying:
   `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`
 - On each retry, make the prompt safer and more original: remove named artists, studios, franchises, copyrighted characters, brands, logos, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Keep the same broad mood, channel label, first-frame continuity, and motion direction.
-- If the first-frame image itself appears to be blocked, regenerate a safer first-frame/cover image and then retry Dreamina. If all 10 attempts fail, send `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly accepts a still-image fallback.
+- If the first-frame image itself appears to be blocked, regenerate a safer first-frame/cover image and then retry Dreamina. If all 10 attempts fail, send `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly accepts a still-image fallback. If accepted, pass `--allow-still-image-video`.
 - If Dreamina login, CAPTCHA, payment, or human approval blocks browser automation, stop and report the exact blocked step instead of skipping the loop video.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
@@ -469,7 +470,7 @@ scripts/openclaw-release auto-publish-playlist \
 
 Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the generated clip should end close to its opening composition so it can be reused across the full audio duration.
+`--loop-video` is required for normal private publish automation. If it is omitted, the app refuses to render/publish unless OpenClaw passes `--allow-still-image-video` after explicit human approval. The generated clip should end close to its opening composition so it can be reused across the full audio duration.
 Use `--randomize-order` when the uploaded playlist contains similar Suno two-output pairs next to each other. Omit it when the human already arranged a deliberate final order.
 
 If the release is mainstream J-pop/Japanese pop/Tokyo pop, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
@@ -529,7 +530,7 @@ Use `Automatic Private Single Publisher` when:
 
 - The user asks for one song, one single, or one standalone track and explicitly says to publish/upload it.
 - The goal is a private YouTube upload without stopping for candidate review.
-- The release needs a final cover with a large lower-left channel brand label, separate text thumbnail, optional 8 second Dreamina/Seedance loop video, metadata approval, and private upload.
+- The release needs a final cover with a large lower-left channel brand label, separate text thumbnail, an 8 second Dreamina/Seedance loop video, metadata approval, and private upload.
 
 Use `Automatic Private Playlist Publisher` when:
 

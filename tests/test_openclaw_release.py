@@ -16,6 +16,7 @@ from scripts.openclaw_release import (
     infer_youtube_channel_title,
     is_pop_family_vocal_request,
     release_has_uploaded_cover,
+    release_has_uploaded_loop_video,
     release_has_uploaded_thumbnail,
     resolve_lyrics_items,
     resolve_style_items,
@@ -53,6 +54,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "allow_cover_as_thumbnail": False,
         "loop_video": "",
         "hard_loop_video": False,
+        "allow_still_image_video": False,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -82,6 +84,16 @@ def test_release_has_uploaded_thumbnail_requires_manual_upload_source() -> None:
         }
     )
     assert not release_has_uploaded_thumbnail({"youtube_thumbnail_path": "/tmp/thumb.png"})
+
+
+def test_release_has_uploaded_loop_video_requires_manual_upload_source() -> None:
+    assert release_has_uploaded_loop_video(
+        {
+            "loop_video_path": "/tmp/loop.mp4",
+            "loop_video_source": "manual-upload",
+        }
+    )
+    assert not release_has_uploaded_loop_video({"loop_video_path": "/tmp/loop.mp4"})
 
 
 def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
@@ -554,6 +566,8 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
         "cover_source": "manual-upload",
         "youtube_thumbnail_path": "/tmp/thumb.png",
         "youtube_thumbnail_source": "manual-upload",
+        "loop_video_path": "/tmp/loop.mp4",
+        "loop_video_source": "manual-upload",
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -631,6 +645,8 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_four_twenty(tmp_path) 
         "cover_source": "manual-upload",
         "youtube_thumbnail_path": "/tmp/thumb.png",
         "youtube_thumbnail_source": "manual-upload",
+        "loop_video_path": "/tmp/loop.mp4",
+        "loop_video_source": "manual-upload",
     }
 
     def handler(request: httpx.Request) -> httpx.Response:

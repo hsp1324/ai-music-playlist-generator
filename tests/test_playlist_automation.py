@@ -17,6 +17,7 @@ from app.main import create_app
 from app.models.enums import PlaylistStatus
 from app.models.playlist import Playlist
 from app.models.track import Track
+from app.routes import playlists as playlist_routes
 from app.routes.tracks import _extract_embedded_cover
 from app.services.background_worker import BackgroundJobWorker
 from app.services import youtube_service as youtube_service_module
@@ -181,7 +182,24 @@ def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:
     return processed
 
 
-def prepare_release_for_final_publish(client: TestClient, workspace_id: str) -> dict:
+def upload_test_loop_video(client: TestClient, workspace_id: str) -> dict:
+    original_validator = playlist_routes._validate_loop_video_file
+    playlist_routes._validate_loop_video_file = lambda *_args, **_kwargs: None
+    try:
+        loop_response = client.post(
+            f"/api/playlists/{workspace_id}/loop-video/upload",
+            data={"actor": "test-suite", "smooth_loop": "true"},
+            files={"loop_video_file": ("test-loop.mp4", b"fake-loop-mp4", "video/mp4")},
+        )
+    finally:
+        playlist_routes._validate_loop_video_file = original_validator
+    assert loop_response.status_code == 200
+    payload = loop_response.json()
+    assert payload["loop_video_path"].endswith(".mp4")
+    return payload
+
+
+def prepare_release_for_final_publish(client: TestClient, workspace_id: str, *, use_still_fallback: bool = True) -> dict:
     cover_response = client.post(
         f"/api/playlists/{workspace_id}/cover/generate",
         json={"actor": "test-suite"},
@@ -190,6 +208,9 @@ def prepare_release_for_final_publish(client: TestClient, workspace_id: str) -> 
     cover = cover_response.json()
     assert cover["workflow_state"] == "cover_review"
     assert cover["cover_image_path"].endswith(".png")
+
+    if not use_still_fallback:
+        upload_test_loop_video(client, workspace_id)
 
     approve_cover_response = client.post(
         f"/api/playlists/{workspace_id}/cover/approve",
@@ -200,7 +221,7 @@ def prepare_release_for_final_publish(client: TestClient, workspace_id: str) -> 
 
     render_video_response = client.post(
         f"/api/playlists/{workspace_id}/video/render",
-        json={"actor": "test-suite"},
+        json={"actor": "test-suite", "allow_still_image_fallback": use_still_fallback},
     )
     assert render_video_response.status_code == 200
     assert render_video_response.json()["workflow_state"] == "video_queued"
@@ -1630,6 +1651,13 @@ def test_cover_image_can_be_uploaded_for_review(tmp_path) -> None:
             f"/api/playlists/{workspace_id}/video/render",
             json={"actor": "test-suite"},
         )
+        assert render_video_response.status_code == 400
+        assert "8 second loop video is required" in render_video_response.json()["detail"]
+
+        render_video_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite", "allow_still_image_fallback": True},
+        )
         assert render_video_response.status_code == 200
         assert drain_background_jobs(client) == 1
 
@@ -1706,13 +1734,7 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
             files={"cover_file": ("cover.png", b"fake-png", "image/png")},
         )
         assert cover_response.status_code == 200
-        loop_response = client.post(
-            f"/api/playlists/{workspace_id}/loop-video/upload",
-            data={"actor": "test-suite", "smooth_loop": "true"},
-            files={"loop_video_file": ("dreamina-loop.mp4", b"fake-mp4", "video/mp4")},
-        )
-        assert loop_response.status_code == 200
-        loop_payload = loop_response.json()
+        loop_payload = upload_test_loop_video(client, workspace_id)
         assert loop_payload["loop_video_path"].endswith(".mp4")
         assert loop_payload["loop_video_source"] == "manual-upload"
         assert loop_payload["loop_video_smooth"] is True
@@ -1811,7 +1833,7 @@ def test_single_release_uses_source_audio_and_uploaded_cover_can_render_video(tm
 
         render_response = client.post(
             f"/api/playlists/{workspace_id}/video/render",
-            json={"actor": "test-suite"},
+            json={"actor": "test-suite", "allow_still_image_fallback": True},
         )
         assert render_response.status_code == 200
         assert render_response.json()["workflow_state"] == "video_queued"
@@ -2024,7 +2046,7 @@ def test_publish_approval_reports_video_build_failure(tmp_path) -> None:
         assert approve_cover_response.status_code == 200
         render_response = client.post(
             f"/api/playlists/{workspace_id}/video/render",
-            json={"actor": "test-suite"},
+            json={"actor": "test-suite", "allow_still_image_fallback": True},
         )
         assert render_response.status_code == 200
         assert drain_background_jobs(client) == 1
@@ -2099,7 +2121,7 @@ def test_failed_workspace_archive_is_purged_after_retention(tmp_path) -> None:
         assert approve_cover_response.status_code == 200
         render_response = client.post(
             f"/api/playlists/{workspace_id}/video/render",
-            json={"actor": "test-suite"},
+            json={"actor": "test-suite", "allow_still_image_fallback": True},
         )
         assert render_response.status_code == 200
         assert drain_background_jobs(client) == 1
@@ -2373,13 +2395,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
             assert playlist.metadata_json["local_video_deleted_after_youtube_upload"] == first_video_path
 
-        loop_replace_response = client.post(
-            f"/api/playlists/{workspace_id}/loop-video/upload",
-            data={"actor": "test-suite", "smooth_loop": "true"},
-            files={"loop_video_file": ("replacement-loop.mp4", b"fake-replacement-loop", "video/mp4")},
-        )
-        assert loop_replace_response.status_code == 200
-        loop_replaced = loop_replace_response.json()
+        loop_replaced = upload_test_loop_video(client, workspace_id)
         assert loop_replaced["workflow_state"] == "video_required"
         assert loop_replaced["loop_video_path"].endswith(".mp4")
         assert loop_replaced["metadata_approved"] is False
@@ -2426,7 +2442,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> None:
+def test_single_track_video_mode_uses_uploaded_loop_in_video_stage(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -2440,24 +2456,12 @@ def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> 
             output_path.write_bytes(b"fake-looped-mp4")
             return output_path
 
-        class DreaminaResult:
-            job_id = "dreamina-job-1"
-            provider_response = {"status": "completed"}
-            video_url = "https://example.com/dreamina-loop.mp4"
-
         class UploadResult:
             video_id = "yt-single-123"
             response = {"id": "yt-single-123"}
 
-        def fake_download_video(video_url, output_path):
-            output_path.write_bytes(b"clip")
-            return output_path
-
         services.playlist_builder.build_audio = fake_build_audio
         services.playlist_builder.build_looped_video = fake_build_looped_video
-        services.dreamina.get_status = lambda: {"configured": True, "ready": True}
-        services.dreamina.generate_loop_clip = lambda prompt: DreaminaResult()
-        services.dreamina.download_video = fake_download_video
         services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
         services.youtube.upload_playlist_video = lambda *args, **kwargs: UploadResult()
 
@@ -2508,7 +2512,7 @@ def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> 
         assert audio_ready["workflow_state"] == "audio_ready"
         assert audio_ready["output_audio_path"] == str(local_audio)
 
-        prepare_release_for_final_publish(client, workspace["id"])
+        prepare_release_for_final_publish(client, workspace["id"], use_still_fallback=False)
 
         publish_response = client.post(
             f"/api/playlists/{workspace['id']}/approve-publish",
@@ -2525,7 +2529,8 @@ def test_single_track_video_mode_uses_dreamina_loop_in_video_stage(tmp_path) -> 
         assert playlist["youtube_video_id"] == "yt-single-123"
         assert playlist["output_video_path"] is None
         assert playlist["metadata_json"]["youtube_title"].startswith("Neon Solo")
-        assert playlist["metadata_json"]["dreamina_job_id"] == "dreamina-job-1"
+        assert playlist["metadata_json"]["loop_video_source"] == "manual-upload"
+        assert "dreamina_job_id" not in playlist["metadata_json"]
     finally:
         clear_isolated_client_env()
 

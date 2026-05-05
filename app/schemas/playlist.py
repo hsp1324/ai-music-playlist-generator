@@ -43,6 +43,7 @@ class PlaylistCoverApproveRequest(BaseModel):
 
 class PlaylistVideoRenderRequest(BaseModel):
     actor: str = "web-ui"
+    allow_still_image_fallback: bool = False
 
 
 class PlaylistMetadataGenerateRequest(BaseModel):

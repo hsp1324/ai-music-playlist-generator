@@ -1,4 +1,6 @@
+import json
 import shutil
+import subprocess
 from pathlib import Path
 from uuid import uuid4
 
@@ -56,6 +58,12 @@ router = APIRouter(prefix="/playlists", tags=["playlists"])
 
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_LOOP_VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
+LOOP_VIDEO_MIN_SECONDS = 6.0
+LOOP_VIDEO_MAX_SECONDS = 12.0
+LOOP_VIDEO_SAMPLE_WIDTH = 64
+LOOP_VIDEO_SAMPLE_HEIGHT = 36
+LOOP_VIDEO_MIN_AVERAGE_MOTION = 1.25
+LOOP_VIDEO_MIN_PEAK_MOTION = 2.0
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -110,6 +118,96 @@ def _store_loop_video_upload(upload: UploadFile, destination_dir: Path, playlist
     if not destination.exists() or destination.stat().st_size == 0:
         raise HTTPException(status_code=400, detail="Uploaded loop video is empty.")
     return str(destination)
+
+
+def _ffprobe_binary(ffmpeg_binary: str) -> str:
+    candidate = Path(ffmpeg_binary).with_name("ffprobe")
+    return str(candidate) if candidate.exists() else "ffprobe"
+
+
+def _validate_loop_video_file(video_path: str, *, ffmpeg_binary: str) -> None:
+    path = Path(video_path)
+    try:
+        probe = subprocess.run(
+            [
+                _ffprobe_binary(ffmpeg_binary),
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration:stream=index,codec_type,codec_name,width,height",
+                "-of",
+                "json",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        payload = json.loads(probe.stdout or "{}")
+    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=400, detail="Uploaded loop video is not a readable video file.") from exc
+
+    streams = payload.get("streams") or []
+    if not any(stream.get("codec_type") == "video" for stream in streams):
+        raise HTTPException(status_code=400, detail="Uploaded loop video must contain a video stream.")
+    try:
+        duration_seconds = float((payload.get("format") or {}).get("duration") or 0)
+    except (TypeError, ValueError):
+        duration_seconds = 0
+    if not LOOP_VIDEO_MIN_SECONDS <= duration_seconds <= LOOP_VIDEO_MAX_SECONDS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Loop video must be close to 8 seconds long "
+                f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted)."
+            ),
+        )
+
+    frame_size = LOOP_VIDEO_SAMPLE_WIDTH * LOOP_VIDEO_SAMPLE_HEIGHT
+    try:
+        frames = subprocess.run(
+            [
+                ffmpeg_binary,
+                "-v",
+                "error",
+                "-i",
+                str(path),
+                "-vf",
+                f"fps=1,scale={LOOP_VIDEO_SAMPLE_WIDTH}:{LOOP_VIDEO_SAMPLE_HEIGHT},format=gray",
+                "-frames:v",
+                "12",
+                "-f",
+                "rawvideo",
+                "-",
+            ],
+            check=True,
+            capture_output=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise HTTPException(status_code=400, detail="Uploaded loop video frames could not be decoded.") from exc
+
+    samples = [
+        frames[index : index + frame_size]
+        for index in range(0, len(frames), frame_size)
+        if len(frames[index : index + frame_size]) == frame_size
+    ]
+    if len(samples) < 3:
+        raise HTTPException(status_code=400, detail="Uploaded loop video does not contain enough decodable frames.")
+
+    differences = [
+        sum(abs(left - right) for left, right in zip(previous, current)) / frame_size
+        for previous, current in zip(samples, samples[1:])
+    ]
+    average_motion = sum(differences) / len(differences)
+    peak_motion = max(differences)
+    if average_motion < LOOP_VIDEO_MIN_AVERAGE_MOTION and peak_motion < LOOP_VIDEO_MIN_PEAK_MOTION:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Uploaded loop video has too little visible motion. "
+                "Regenerate a moving 8 second Dreamina/Seedance clip before rendering."
+            ),
+        )
 
 
 def _delete_uploaded_video_file(video_path: str | None) -> dict:
@@ -330,6 +428,7 @@ def upload_workspace_loop_video(
 
     loop_video_path = _store_loop_video_upload(loop_video_file, services.settings.playlists_dir, playlist_id)
     try:
+        _validate_loop_video_file(loop_video_path, ffmpeg_binary=services.settings.ffmpeg_binary)
         playlist = attach_uploaded_loop_video(
             db,
             playlist_id=playlist_id,
@@ -337,6 +436,9 @@ def upload_workspace_loop_video(
             loop_video_path=loop_video_path,
             smooth_loop=smooth_loop,
         )
+    except HTTPException:
+        Path(loop_video_path).unlink(missing_ok=True)
+        raise
     except ValueError as exc:
         Path(loop_video_path).unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -373,6 +475,7 @@ def render_workspace_video(
             db,
             playlist_id=playlist_id,
             actor=payload.actor,
+            allow_still_image_fallback=payload.allow_still_image_fallback,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
