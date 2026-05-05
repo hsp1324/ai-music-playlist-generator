@@ -79,7 +79,7 @@ Audio duration and integrity:
 - If an upload returns an empty/unreadable audio error, the source file did not transfer correctly. Re-download or re-export that Suno track and upload it again; do not continue to render or publish with that release.
 - The helper retries each audio upload up to 3 times. If a playlist automation track still fails, it records a Slack warning, continues uploading the remaining tracks, then stops before render/publish so a partial release cannot reach YouTube.
 - Treat the command JSON as the upload receipt. A successful upload includes `ok: true`, the uploaded `track.id`, `track.status`, and the probed `duration_seconds`. If `duration_seconds` is `0`, missing, or far from the local file duration, fix and re-upload before continuing.
-- Playlist tracks should be 4 minutes or shorter by default. `auto-publish-playlist` rejects tracks over `240` seconds unless `--allow-long-track` is passed. Use `--allow-long-track` only when the human explicitly accepts a longer track.
+- Playlist tracks should usually be around 2:30-3:45, but anything up to 4:20 is acceptable. `auto-publish-playlist` rejects tracks over `260` seconds unless `--allow-long-track` is passed. Use `--allow-long-track` only when the human explicitly accepts a longer track.
 
 ## Upload One New Single Candidate
 
@@ -135,7 +135,7 @@ If OpenClaw uploads many playlist files in one automation run, prefer `auto-publ
 Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics or instrumental metatag files are available. For BGM/background/instrumental tracks, prefer the exact bracket-only Suno instrumental metatag file from `docs/suno-v55-instrumental-format.md` over empty lyrics. For J-pop/K-pop/pop/Japanese pop/anime-pop releases, lyrics are expected by default and should be uploaded for every track unless the human explicitly requested instrumental/BGM/lofi/no vocals. Pass one shared `--style` or one `--style` per `--audio` whenever Suno style/settings are known.
 For pop-family releases, do not proceed without lyrics. If Suno returns a vocal song but no lyric text is visible, write/capture the final intended lyrics before uploading. If the human explicitly wants a J-pop-feeling instrumental, include BGM/instrumental/no-vocal wording in the prompt/title/tags so the helper treats empty lyrics as intentional.
 For vocal playlist releases, write a different lyric concept for every track before generation. Do not reuse the same chorus hook, verse structure, or only swap a few words between songs. Each track should have a distinct emotional angle and memorable phrase.
-For every playlist, target 2:30-3:45 per Suno track and replace any track over 4:00 before final publish.
+For every playlist, target 2:30-3:45 per Suno track. A returned track around 4:04 is fine; replace any track over 4:20 before final publish unless the human explicitly approves it.
 
 For full automatic playlist publishing, two final 16:9 images are required.
 
@@ -471,7 +471,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - For BGM/background/lofi/study/sleep/cafe singles and playlists, instrumental/no-vocal is the default, but an empty lyrics/custom-lyrics field is not preferred. Use `docs/suno-v55-instrumental-format.md`: enable Instrumental when available, write only bracketed metatag lines in Suno's lyrics/custom-lyrics field, and upload that exact file. For J-pop/K-pop/pop/Japanese pop/anime-pop singles and playlists, do not leave lyrics empty by default. Generate/capture original lyrics and upload them; only use empty lyrics when the human explicitly asked for instrumental/no-vocal music or when Suno did not provide lyrics and OpenClaw reports that limitation.
 - For no-vocal Suno work, also fill Advanced Options excluded styles with vocal-related exclusions: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
 - After every audio upload, confirm that the returned `duration_seconds` is close to the actual song length. If it is `0`, much shorter than expected, or the upload fails as unreadable, fix the source file and re-upload before moving on.
-- For playlist work, confirm every uploaded `duration_seconds` is at or below 240 unless the human explicitly approved a longer track.
+- For playlist work, confirm every uploaded `duration_seconds` is at or below 260 unless the human explicitly approved a longer track.
 - For one-hour playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
 - If Suno style/settings are available, upload them in the same command with `--style`.
 - Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.

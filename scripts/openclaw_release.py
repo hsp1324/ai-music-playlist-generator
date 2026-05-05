@@ -23,7 +23,7 @@ from app.utils.track_titles import clean_track_display_title, display_track_titl
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
-DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 240
+DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 CHANNEL_PROFILE_DOCS = {
@@ -1852,7 +1852,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
     audio_parser.add_argument("--pending-review", action="store_true", help="For Playlist Releases only, skip the default auto-approve behavior.")
-    audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 240.")
+    audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 260.")
     audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds. Use only with explicit human approval.")
     audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded when playlist uploads are auto-approved.")
     audio_parser.set_defaults(func=upload_audio)
@@ -1894,7 +1894,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
-    auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 240.")
+    auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")

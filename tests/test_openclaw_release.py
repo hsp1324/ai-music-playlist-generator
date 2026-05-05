@@ -39,7 +39,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "lyrics": [],
         "lyrics_file": [],
         "target_seconds": 3600,
-        "max_track_seconds": 240,
+        "max_track_seconds": 260,
         "allow_long_track": False,
         "youtube_channel_title": "",
         "youtube_channel_id": "",
@@ -616,7 +616,7 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
     assert not render_requested
 
 
-def test_auto_publish_playlist_rejects_tracks_longer_than_four_minutes(tmp_path) -> None:
+def test_auto_publish_playlist_rejects_tracks_longer_than_four_twenty(tmp_path) -> None:
     audio_path = tmp_path / "long.mp3"
     audio_path.write_bytes(b"long audio")
     render_requested = False
@@ -644,7 +644,7 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_four_minutes(tmp_path)
                     "id": "track-long",
                     "title": "Long Track",
                     "status": "pending_review",
-                    "duration_seconds": 241,
+                    "duration_seconds": 261,
                     "metadata_json": {},
                 },
             )
@@ -671,7 +671,7 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_four_minutes(tmp_path)
     assert not render_requested
     assert slack_notices
     assert "Long Track" in slack_notices[-1]
-    assert "04:00 or shorter" in slack_notices[-1]
+    assert "04:20 or shorter" in slack_notices[-1]
 
 
 def test_auto_publish_single_requires_final_cover_before_side_effects(tmp_path) -> None:
