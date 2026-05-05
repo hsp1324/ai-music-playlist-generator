@@ -2131,10 +2131,14 @@ function renderWorkspaceDetail() {
             : "Render Mix",
           "action-button secondary-button",
           async () => {
+            const randomizeOrder = !isSingleRelease(workspace) && window.confirm(
+              "이번 audio render에서 곡 순서를 랜덤으로 섞을까요?\n\n확인: 랜덤 순서로 렌더\n취소: 현재 Final Order 그대로 렌더"
+            );
             await api(`/api/playlists/${workspace.id}/render-audio`, {
               method: "POST",
               body: JSON.stringify({
                 actor: "web-ui",
+                random: randomizeOrder,
               }),
             });
           }

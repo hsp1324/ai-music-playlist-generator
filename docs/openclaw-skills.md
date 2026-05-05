@@ -97,6 +97,7 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, English translated titles only in the English description, and Spanish translated titles only in the Spanish description. Keep the same timestamps and order in all languages.
 - For releases one hour or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
 - After audio render, metadata timestamps come from the release's saved `rendered_timeline` snapshot, which uses actual ffprobe source-file durations. Always call `scripts/openclaw-release metadata-context` after render and use its returned timeline; do not manually add rounded track durations.
+- If a one-hour playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release auto-publish-playlist` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
 - Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
 - Full playlist publishing needs two 16:9 images:
@@ -347,6 +348,7 @@ The human does not review every playlist track before rendering. The human revie
 
 Playlist uploads are auto-approved, so `workspace.actual_duration_seconds` becomes the source of truth after upload.
 After audio render, `rendered_timeline` becomes the source of truth for YouTube description timestamps.
+Use randomized audio render when Suno two-output pairs are adjacent and the human did not manually arrange a deliberate final order.
 
 Generate enough material before publishing:
 
@@ -461,12 +463,14 @@ scripts/openclaw-release auto-publish-playlist \
   --loop-video ABSOLUTE_DREAMINA_SEEDANCE_LOOP_MP4 \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags" \
-  --youtube-channel-title "SELECTED_CHANNEL_TITLE"
+  --youtube-channel-title "SELECTED_CHANNEL_TITLE" \
+  --randomize-order
 ```
 
 Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
 `--loop-video` is optional but preferred when the human wants moving visuals. If it is omitted, the app renders a still-image visual from `--cover`. If it is provided, the generated clip should end close to its opening composition so it can be reused across the full audio duration.
+Use `--randomize-order` when the uploaded playlist contains similar Suno two-output pairs next to each other. Omit it when the human already arranged a deliberate final order.
 
 If the release is mainstream J-pop/Japanese pop/Tokyo pop, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
 

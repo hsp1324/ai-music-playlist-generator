@@ -81,6 +81,7 @@ Audio duration and integrity:
 - Treat the command JSON as the upload receipt. A successful upload includes `ok: true`, the uploaded `track.id`, `track.status`, and the probed `duration_seconds`. If `duration_seconds` is `0`, missing, or far from the local file duration, fix and re-upload before continuing.
 - Playlist track generation should target roughly 3:00-3:30 per Suno output, with 3:45 still in the preferred range. Anything up to 4:20 is acceptable as returned output, but OpenClaw should not intentionally ask Suno for 4-minute tracks. `auto-publish-playlist` rejects tracks over `260` seconds unless `--allow-long-track` is passed. Use `--allow-long-track` only when the human explicitly accepts a longer track.
 - After audio render, the app stores `rendered_timeline` from actual ffprobe source-file durations. Metadata and OpenClaw `metadata-context` should use that rendered snapshot instead of recalculating timestamps from rounded track durations.
+- If a playlist was built from Suno two-output batches and paired variants sit next to each other, pass `--randomize-order` to `auto-publish-playlist` or call `/render-audio` with `random: true`. The app persists the shuffled order before rendering, so final order and metadata timestamps still match the rendered audio.
 
 ## Upload One New Single Candidate
 
@@ -349,6 +350,7 @@ Operational rules for OpenClaw:
 - Do not leave release candidates pointing directly at `cdn1.suno.ai` unless the local cache step fails and the failure is reported to the human.
 - Existing remote-only tracks should be backfilled to local storage before serious mobile review.
 - Upload all intended playlist tracks before starting audio render, video render, metadata approval, or YouTube publish. Reaching the target duration does not auto-start audio render anymore; OpenClaw must explicitly call the render step only after the upload set is complete. If late tracks are added after rendering starts, the app treats the existing render as stale and requires or queues a fresh render so the YouTube timeline cannot become longer than the actual video.
+- For playlist releases, audio render can randomize order with `random: true`. Use this when Suno generated similar A/B pairs and both were uploaded, so paired tracks do not remain adjacent. Do not manually shuffle timestamps; metadata must use `metadata-context` after render.
 
 ## Upload To Existing Release
 

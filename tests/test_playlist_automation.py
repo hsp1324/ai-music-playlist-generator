@@ -1048,6 +1048,80 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         clear_isolated_client_env()
 
 
+def test_workspace_audio_render_can_randomize_track_order(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_text("|".join(track.title for track in tracks), encoding="utf-8")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Random Render Workspace",
+                "target_duration_seconds": 999,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        original_track_ids = []
+        for index in range(4):
+            local_audio = tmp_path / f"random-render-{index}.mp3"
+            local_audio.write_bytes(b"fake-audio")
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"Random Track {index}",
+                    "prompt": "random render test",
+                    "duration_seconds": 60,
+                    "audio_path": str(local_audio),
+                    "metadata": {"source": "test"},
+                },
+            )
+            assert track_response.status_code == 201
+            track_id = track_response.json()["id"]
+            original_track_ids.append(track_id)
+            approve_response = client.post(
+                f"/api/tracks/{track_id}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={
+                "actor": "test-suite",
+                "random": True,
+            },
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        randomized_track_ids = [track["id"] for track in queued["tracks"]]
+        assert set(randomized_track_ids) == set(original_track_ids)
+        assert randomized_track_ids != original_track_ids
+        assert queued["note"] == "Playlist audio render queued with randomized track order."
+
+        assert drain_background_jobs(client) == 1
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        rendered_titles = Path(workspace["output_audio_path"]).read_text(encoding="utf-8").split("|")
+        assert rendered_titles == [track["title"] for track in workspace["tracks"]]
+        assert [item["track_id"] for item in workspace["rendered_timeline"]] == [track["id"] for track in workspace["tracks"]]
+        assert [item["start_seconds"] for item in workspace["rendered_timeline"]] == [0, 60, 120, 180]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_track_added_during_audio_render_requeues_fresh_render(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

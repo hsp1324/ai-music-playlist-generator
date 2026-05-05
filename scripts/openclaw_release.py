@@ -1116,7 +1116,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         client,
         "POST",
         f"/playlists/{release['id']}/render-audio",
-        json={"actor": args.actor},
+        json={"actor": args.actor, "random": bool(getattr(args, "randomize_order", False))},
     )
     release = wait_for_release(
         client,
@@ -1874,6 +1874,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
+    auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")

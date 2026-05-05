@@ -232,6 +232,7 @@ def render_workspace_playlist_audio(
             db,
             playlist_id=playlist_id,
             actor=payload.actor,
+            randomize_order=payload.effective_randomize_order(),
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

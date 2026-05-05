@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -1717,11 +1718,23 @@ def reorder_workspace_tracks(
     return _load_playlist_with_tracks(db, playlist.id)
 
 
+def _randomized_playlist_track_ids(playlist: Playlist) -> list[str]:
+    track_ids = _playlist_track_ids(playlist)
+    if len(track_ids) <= 1:
+        return track_ids
+    randomized = list(track_ids)
+    random.SystemRandom().shuffle(randomized)
+    if randomized == track_ids:
+        randomized = randomized[1:] + randomized[:1]
+    return randomized
+
+
 def queue_workspace_audio_render(
     db: Session,
     *,
     playlist_id: str,
     actor: str,
+    randomize_order: bool = False,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -1750,11 +1763,42 @@ def queue_workspace_audio_render(
             raise ValueError("Single release can only render one selected track. Publish additional candidates as separate Single Releases.")
 
     active_job = _find_active_playlist_job(db, playlist)
+    if active_job is not None and randomize_order:
+        raise ValueError("Cannot randomize order while an audio render is already queued or running.")
+
     meta = _playlist_meta(playlist)
+    should_randomize = bool(randomize_order and _workspace_mode(playlist) != "single_track_video")
+    if should_randomize:
+        track_ids = _randomized_playlist_track_ids(playlist)
+        item_by_track_id = {item.track_id: item for item in playlist.items}
+        for index, track_id in enumerate(track_ids, start=1):
+            item = item_by_track_id[track_id]
+            item.order_index = index
+            db.add(item)
+        history = list(meta.get("reorder_history") or [])
+        history.append(
+            {
+                "actor": actor,
+                "track_ids": track_ids,
+                "reordered_at": _utcnow().isoformat(),
+                "reason": "randomize_order_render",
+            }
+        )
+        meta["reorder_history"] = history
+        meta["last_render_randomized_order"] = True
+        meta["last_render_randomized_track_ids"] = track_ids
+        db.flush()
+    else:
+        meta["last_render_randomized_order"] = False
+
     meta["render_ready"] = False
     meta["publish_approved"] = False
     meta["workflow_state"] = "render_queued"
-    meta["note"] = "Playlist audio render queued from the web dashboard."
+    meta["note"] = (
+        "Playlist audio render queued with randomized track order."
+        if should_randomize
+        else "Playlist audio render queued from the web dashboard."
+    )
     meta.pop("render_error", None)
     meta.pop("cover_image_path", None)
     meta.pop("cover_approved", None)
@@ -1782,6 +1826,7 @@ def queue_workspace_audio_render(
                     "playlist_id": playlist.id,
                     "actor": actor,
                     "trigger": "manual-render",
+                    "randomize_order": should_randomize,
                 },
                 result_json={},
                 playlist=playlist,

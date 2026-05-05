@@ -61,6 +61,13 @@ class PlaylistMetadataApproveRequest(BaseModel):
 
 class PlaylistRenderRequest(BaseModel):
     actor: str = "web-ui"
+    randomize_order: bool = False
+    random: bool | None = None
+
+    def effective_randomize_order(self) -> bool:
+        if self.random is not None:
+            return self.random
+        return self.randomize_order
 
 
 class PlaylistArchiveRequest(BaseModel):
