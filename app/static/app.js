@@ -2037,7 +2037,6 @@ function renderWorkspaceDetail() {
   const releaseLockedForPublish = Boolean(
     workspace.metadata_approved || workspace.publish_approved || workspace.youtube_video_id
   );
-  const assetChangeLocked = Boolean(workspace.publish_approved || workspace.youtube_video_id);
   const videoBusy = ["video_queued", "video_rendering"].includes(workspace.workflow_state);
   if (workspace.tracks.length) {
     if (workspace.status === "building" && !videoBusy) {
@@ -2070,9 +2069,9 @@ function renderWorkspaceDetail() {
     }
   }
 
-  const coverChangeBlocked = ["video_queued", "video_rendering", "youtube_uploading"].includes(workspace.workflow_state);
-  const canManageCover = workspace.output_audio_path && !assetChangeLocked && !coverChangeBlocked;
-  if (canManageCover) {
+  const visualAssetChangeBlocked = ["video_queued", "video_rendering", "publish_queued", "youtube_uploading"].includes(workspace.workflow_state);
+  const canManageVisualAssets = Boolean(workspace.output_audio_path && !visualAssetChangeBlocked);
+  if (canManageVisualAssets) {
     if (workspace.cover_image_path && !workspace.cover_approved) {
       appendDetailAction(
         detailActionGroups.visuals,
@@ -2092,7 +2091,7 @@ function renderWorkspaceDetail() {
     appendDetailAction(
       detailActionGroups.visuals,
       actionButton(
-        "Upload Cover",
+        workspace.cover_image_path ? "Replace Cover" : "Upload Cover",
         workspace.cover_image_path ? "action-button secondary-button" : "action-button primary-button",
         async () => {
           await pickCoverFile(workspace);
@@ -2114,7 +2113,7 @@ function renderWorkspaceDetail() {
     appendDetailAction(
       detailActionGroups.visuals,
       actionButton(
-        workspace.loop_video_path ? "Replace Loop Video" : "Upload Loop Video",
+        workspace.loop_video_path ? "Replace 8s Loop Video" : "Upload 8s Loop Video",
         "action-button secondary-button",
         async () => {
           await pickLoopVideoFile(workspace);
@@ -2151,7 +2150,7 @@ function renderWorkspaceDetail() {
     } else {
       appendDetailAction(
         detailActionGroups.visuals,
-        actionButton("Render Video", "action-button primary-button", async () => {
+        actionButton(workspace.youtube_video_id ? "Render Video Before Re-upload" : "Render Video", "action-button primary-button", async () => {
           if (!workspace.loop_video_path) {
             const proceed = window.confirm(
               "8초 loop video가 아직 없습니다.\n\n계속하면 승인된 cover 이미지로 정적인 영상을 렌더합니다.\nDreamina/Seedance moving visual을 쓰려면 먼저 Upload 8s Loop Video를 눌러 업로드하세요.\n\n그래도 정적인 영상으로 렌더할까요?"

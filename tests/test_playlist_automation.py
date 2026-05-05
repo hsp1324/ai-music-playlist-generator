@@ -2167,8 +2167,14 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             output_path.write_bytes(b"fake-mp4")
             return output_path
 
+        def fake_build_looped_video(clip_path, audio_path, output_path, **_kwargs):
+            assert clip_path.name.endswith(".mp4")
+            output_path.write_bytes(b"fake-looped-mp4")
+            return output_path
+
         services.playlist_builder.build_audio = fake_build_audio
         services.playlist_builder.build_video = fake_build_video
+        services.playlist_builder.build_looped_video = fake_build_looped_video
         services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
         upload_video_ids = ["yt-auto-123"]
         upload_channel_ids = []
@@ -2290,6 +2296,19 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             assert "youtube_upload_error" not in playlist.metadata_json
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
             assert playlist.metadata_json["local_video_deleted_after_youtube_upload"] == first_video_path
+
+        loop_replace_response = client.post(
+            f"/api/playlists/{workspace_id}/loop-video/upload",
+            data={"actor": "test-suite", "smooth_loop": "true"},
+            files={"loop_video_file": ("replacement-loop.mp4", b"fake-replacement-loop", "video/mp4")},
+        )
+        assert loop_replace_response.status_code == 200
+        loop_replaced = loop_replace_response.json()
+        assert loop_replaced["workflow_state"] == "video_required"
+        assert loop_replaced["loop_video_path"].endswith(".mp4")
+        assert loop_replaced["metadata_approved"] is False
+        assert loop_replaced["publish_approved"] is False
+        assert loop_replaced["youtube_video_id"] == "yt-auto-123"
 
         upload_video_ids.append("yt-auto-456")
         render_again_response = client.post(

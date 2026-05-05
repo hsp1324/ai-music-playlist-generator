@@ -1080,6 +1080,9 @@ def attach_uploaded_loop_video(
         if playlist.output_audio_path and meta.get("cover_approved"):
             meta["workflow_state"] = "video_required"
         meta["note"] = "Loop video uploaded. Re-render video before publishing."
+    elif playlist.output_audio_path and meta.get("cover_approved"):
+        meta["workflow_state"] = "video_required"
+        meta["note"] = "Loop video uploaded. Re-render video before publishing."
     else:
         meta["note"] = "Loop video uploaded. It will be used during video render."
     playlist.metadata_json = meta
