@@ -12,6 +12,8 @@ The current active channel roster is:
 
 - `Tokyo Daydream Radio`
 - `Soft Hour Radio`
+- `sundaze`
+- `Solwave Radio`
 
 Future channels should be added as separate channel profiles before they enter the rotation.
 
@@ -88,12 +90,70 @@ Good concept examples:
 - `Ocean Window Study BGM`
 - `Fireplace Acoustic Rest`
 
+### sundaze
+
+sundaze is an English-language pop channel and the US/English-pop counterpart to Tokyo Daydream Radio.
+
+Use it for:
+
+- English vocal pop, American pop, US/UK pop, western pop, dance-pop, synth-pop, pop-rock, bright summer pop, night-drive pop, emotional pop ballads, and mainstream hook-driven pop.
+- Everyday listener scenes such as night drive, summer walk, rooftop evening, weekend road trip, gym/workout, beach afternoon, city lights, heartbreak, first love, or party warmup.
+
+Music defaults:
+
+- Vocal songs with original English lyrics.
+- Catchy hooks, chorus-focused structure, clear pop melodies, and track-to-track variation.
+- Each playlist track needs its own lyric concept, hook, title, and Suno style/settings.
+- Avoid lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly asks.
+
+Visual defaults:
+
+- No fixed recurring visual signature yet.
+- Cover, thumbnail, and loop-video scene should follow the selected playlist concept.
+- Thumbnail text should describe the pop mood, such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
+
+Good concept examples:
+
+- `Summer Night Drive Pop`
+- `Feel-Good Weekend Pop`
+- `Rooftop Dance Pop`
+- `Heartbreak Pop Radio`
+- `Road Trip Pop`
+
+### Solwave Radio
+
+Solwave Radio is a Latin/Spanish-language music channel and the Spanish/Latin counterpart to Tokyo Daydream Radio.
+
+Use it for:
+
+- Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, verano latino, and similar Spanish vocal releases.
+- Listener scenes such as beach sunset, summer party, night drive, city dancing, tropical rain, rooftop fiesta, late-night romance, or morning energy.
+
+Music defaults:
+
+- Vocal songs with original Spanish lyrics.
+- Rhythm-forward arrangements, clear hooks, chorus-focused structure, and track-to-track variation.
+- Each playlist track needs its own lyric concept, hook, title, and Suno style/settings.
+- Avoid lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly asks.
+
+Visual defaults:
+
+- No fixed recurring visual signature yet.
+- Cover, thumbnail, and loop-video scene should follow the selected playlist concept.
+- Thumbnail text should describe the Latin/Spanish pop mood, such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
+
+Good concept examples:
+
+- `Verano Latino Pop`
+- `Noche de Reggaeton Pop`
+- `Beach Sunset Latin Pop`
+- `Bachata Pop Romance`
+- `City Lights Urbano Latino`
+
 ## Rotation Rules
 
 1. Run `scripts/openclaw-release list-releases` and inspect recent playlist releases.
-2. Prefer alternating active channels. With the current two-channel roster:
-   - If the previous published playlist was `Tokyo Daydream Radio`, choose `Soft Hour Radio` next.
-   - If the previous published playlist was `Soft Hour Radio`, choose `Tokyo Daydream Radio` next.
+2. Prefer rotating active channels instead of using the same channel repeatedly. With the current four-channel roster, choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
 3. If the previous channel is missing or ambiguous, choose the active channel with the oldest recent published playlist. If still tied, choose the channel that best improves variety.
 4. Do not pick the same channel twice in a row unless the other channel is blocked, unavailable, or the human explicitly requested it.
 5. When future channels are added, rotate across all active channels while respecting each channel's profile and upload readiness.
@@ -119,6 +179,18 @@ For `Soft Hour Radio`, vary:
 - use case: study, work, reading, sleep, rest, cafe, focus
 - setting: rain, forest, ocean, fireplace, window, morning, late night
 - instrument palette: piano, guitar, Rhodes, strings, lofi drums, ambient pads, acoustic textures
+
+For `sundaze`, vary:
+
+- pop scene: night drive, summer road trip, city lights, rooftop, beach, gym, party, heartbreak, weekend freedom
+- pop substyle: dance-pop, synth-pop, guitar pop, pop-rock, bright summer pop, emotional ballad, chill pop
+- lyric angle: new start, last text, first love, escape, confidence, weekend, moving on
+
+For `Solwave Radio`, vary:
+
+- Latin scene: beach sunset, rooftop fiesta, tropical rain, night drive, city dancing, summer morning, late-night romance
+- Latin substyle: Latin pop, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, urbano latino
+- lyric angle: verano, baile, amor, libertad, noche, playa, regreso, fiesta
 
 ## Output Plan
 
@@ -155,9 +227,11 @@ scripts/openclaw-release list-releases
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Current active channels are Tokyo Daydream Radio and Soft Hour Radio.
+- Current active channels are Tokyo Daydream Radio, Soft Hour Radio, sundaze, and Solwave Radio.
 - Tokyo Daydream Radio is mainstream J-pop/pop with Japanese vocals; anime/OST-like music is allowed but not the whole channel identity.
 - Soft Hour Radio is instrumental/no-vocal long-listening BGM for study, work, reading, sleep, rest, cafe, and focus.
+- sundaze is English/American pop with English vocals.
+- Solwave Radio is Latin/Spanish pop with Spanish vocals.
 - Pick a fresh concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the Automatic Private Playlist Publisher skill from docs/openclaw-skills.md.

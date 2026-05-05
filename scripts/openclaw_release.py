@@ -27,13 +27,19 @@ MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
+SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
+SOLWAVE_YOUTUBE_CHANNEL_TITLE = "Solwave Radio"
 CHANNEL_PROFILE_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/soft-hour-radio.md",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/tokyo-daydream-radio.md",
+    SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/sundaze.md",
+    SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/solwave-radio.md",
 }
 CHANNEL_PROFILE_NAMES = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "soft-hour-radio",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "tokyo-daydream-radio",
+    SUNDAZE_YOUTUBE_CHANNEL_TITLE: "sundaze",
+    SOLWAVE_YOUTUBE_CHANNEL_TITLE: "solwave-radio",
 }
 JAPAN_CHANNEL_KEYWORDS = (
     "anime",
@@ -70,25 +76,98 @@ JAPAN_CHANNEL_KEYWORDS = (
     "애니메이션",
     "제이팝",
 )
+LATIN_CHANNEL_KEYWORDS = (
+    "bachata",
+    "cumbia",
+    "latin",
+    "latin dance",
+    "latin pop",
+    "latin urban",
+    "latino",
+    "musica latina",
+    "música latina",
+    "pop latino",
+    "reggaeton",
+    "reggaetón",
+    "salsa",
+    "spanish pop",
+    "spanish vocal",
+    "urbano latino",
+    "verano latino",
+    "라틴",
+    "라틴팝",
+    "레게톤",
+    "바차타",
+    "살사",
+    "스페니쉬",
+    "스페인어",
+    "스페인 팝",
+    "스페인어 팝",
+    "スペイン語",
+    "ラテン",
+    "ラテンポップ",
+    "レゲトン",
+)
+ENGLISH_POP_CHANNEL_KEYWORDS = (
+    "american pop",
+    "english pop",
+    "english vocal",
+    "mainstream pop",
+    "pop song",
+    "pop vocal",
+    "sundaze",
+    "uk pop",
+    "us pop",
+    "western pop",
+    "미국 팝",
+    "미국팝",
+    "영어 팝",
+    "영어팝",
+    "팝송",
+    "英語ポップ",
+    "洋楽ポップ",
+)
 POP_FAMILY_KEYWORDS = (
     "anime pop",
     "anime-pop",
     "anime opening",
+    "american pop",
+    "bachata",
+    "english pop",
+    "english vocal",
     "j-pop",
     "jpop",
     "japanese pop",
     "k-pop",
     "kpop",
     "korean pop",
+    "latin pop",
+    "latino pop",
+    "mainstream pop",
+    "pop latino",
     "pop song",
     "pop vocal",
+    "reggaeton",
+    "reggaetón",
+    "spanish pop",
+    "spanish vocal",
+    "uk pop",
+    "urbano latino",
+    "us pop",
+    "western pop",
     "제이팝",
     "일본 팝",
     "케이팝",
+    "라틴팝",
+    "레게톤",
+    "스페인어 팝",
     "팝송",
     "팝 보컬",
     "ポップ",
+    "英語ポップ",
+    "洋楽ポップ",
     "jポップ",
+    "ラテンポップ",
 )
 INSTRUMENTAL_INTENT_KEYWORDS = (
     "background music",
@@ -834,8 +913,13 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
             getattr(args, "tags", ""),
         )
     ).lower()
+    has_instrumental_intent = any(keyword in haystack for keyword in INSTRUMENTAL_INTENT_KEYWORDS)
+    if any(keyword.lower() in haystack for keyword in LATIN_CHANNEL_KEYWORDS) and not has_instrumental_intent:
+        return SOLWAVE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
         return JAPAN_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in ENGLISH_POP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
+        return SUNDAZE_YOUTUBE_CHANNEL_TITLE
     return DEFAULT_YOUTUBE_CHANNEL_TITLE
 
 
@@ -1697,7 +1781,8 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, English description uses English translated title only, and Spanish description uses Spanish translated title only. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols. "
-            "For Tokyo/J-pop/Japan releases, write Korean, Japanese, English, and Spanish title/description versions and pass them to approve-metadata."
+            "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, and Spanish title/description versions and pass them to approve-metadata. "
+            "Use --default-language en for sundaze and --default-language es for Solwave Radio."
         ),
     }
 
@@ -1778,7 +1863,7 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "title": title,
             "description": description,
             "tags": tags,
-            "default_language": "ko",
+            "default_language": getattr(args, "default_language", "") or "ko",
             "localizations": localizations,
             "note": args.note or "Metadata approved from OpenClaw.",
         },
@@ -1906,7 +1991,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
@@ -1936,7 +2021,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo/city-pop releases use Tokyo Daydream Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
@@ -1997,6 +2082,7 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--es-title", default="", help="Spanish localized YouTube title.")
     metadata_parser.add_argument("--es-description", default="", help="Spanish localized YouTube description. Prefer --es-description-file for multiline copy.")
     metadata_parser.add_argument("--es-description-file", default="", help="UTF-8 Spanish description file.")
+    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, or es.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)

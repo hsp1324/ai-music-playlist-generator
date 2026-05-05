@@ -86,7 +86,53 @@ YouTube thumbnail:
 - Keep the centered people important; text must fit around them and must not push them sideways.
 - Do not add duration badges like `1 HOUR`, `60 MIN`, `1時間`, clocks, or timers.
 
+### sundaze
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized image for English-language pop, American pop, US/UK pop, western pop, dance-pop, synth-pop, pop-rock, or similar releases.
+- This is the English/US-pop counterpart to Tokyo Daydream Radio.
+- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
+- Only text allowed is the large lower-left `sundaze` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame according to the specific playlist concept.
+- Preserve the large lower-left `sundaze` brand label exactly for the whole clip.
+- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same subject, placement, lighting, palette, props, and camera angle.
+- Add large readable English pop text such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
+- Add `SUNDAZE` brand line, visually consistent with the large cover channel label.
+
+### Solwave Radio
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized image for Latin/Spanish-language music: Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, or similar releases.
+- This is the Spanish/Latin counterpart to Tokyo Daydream Radio.
+- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
+- Only text allowed is the large lower-left `Solwave Radio` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame according to the specific playlist concept and Latin pop mood.
+- Preserve the large lower-left `Solwave Radio` brand label exactly for the whole clip.
+- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same subject, placement, lighting, palette, props, and camera angle.
+- Add large readable Latin/Spanish text such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
+- Add `SOLWAVE RADIO` brand line, visually consistent with the large cover channel label.
+
 Profiles:
 
 - [Soft Hour Radio](soft-hour-radio.md)
 - [Tokyo Daydream Radio](tokyo-daydream-radio.md)
+- [sundaze](sundaze.md)
+- [Solwave Radio](solwave-radio.md)

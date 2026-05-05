@@ -17,10 +17,51 @@ from app.services.release_metadata_service import ReleaseMetadataService, YouTub
 from app.utils.youtube_localizations import (
     ensure_playlist_localization_title_prefix,
     ensure_playlist_title_prefix,
+    normalize_youtube_language,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
 )
 from app.utils.timeline import timeline_from_track_dicts
+
+
+SPANISH_METADATA_KEYWORDS = (
+    "solwave radio",
+    "latin pop",
+    "spanish pop",
+    "spanish vocal",
+    "reggaeton",
+    "reggaetón",
+    "bachata",
+    "salsa",
+    "cumbia",
+    "urbano latino",
+    "pop latino",
+    "musica latina",
+    "música latina",
+    "verano latino",
+    "라틴",
+    "라틴팝",
+    "레게톤",
+    "스페니쉬",
+    "스페인어",
+    "스페인어 팝",
+)
+ENGLISH_POP_METADATA_KEYWORDS = (
+    "sundaze",
+    "english pop",
+    "american pop",
+    "us pop",
+    "uk pop",
+    "western pop",
+    "mainstream pop",
+    "pop song",
+    "pop vocal",
+    "미국 팝",
+    "미국팝",
+    "영어 팝",
+    "영어팝",
+    "팝송",
+)
 
 
 class CodexMetadataService(ReleaseMetadataService):
@@ -57,7 +98,8 @@ class CodexMetadataService(ReleaseMetadataService):
 
     def _build_with_codex(self, playlist: Playlist, tracks: list[Track]) -> YouTubeMetadata:
         command = self._resolve_codex_command()
-        prompt = self._build_prompt(playlist, tracks)
+        default_language = self._infer_metadata_default_language(playlist, tracks)
+        prompt = self._build_prompt(playlist, tracks, default_language=default_language)
         schema = self._json_schema()
         timeout = max(int(self.settings.codex_metadata_timeout_seconds), 30)
 
@@ -119,7 +161,7 @@ class CodexMetadataService(ReleaseMetadataService):
                     payload.get("localizations"),
                     default_title=title,
                     default_description=description,
-                    default_language="ko",
+                    default_language=default_language,
                 ),
                 is_playlist=is_playlist_release,
             )
@@ -130,7 +172,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 tags=tags or ["ai music", "playlist", "background music"],
                 provider="codex",
                 localizations=localizations,
-                default_language="ko",
+                default_language=default_language,
             )
 
     def _fallback_with_error(self, playlist: Playlist, tracks: list[Track], error: str) -> YouTubeMetadata:
@@ -154,8 +196,9 @@ class CodexMetadataService(ReleaseMetadataService):
             raise RuntimeError(f"codex command not found: {command}")
         return resolved
 
-    def _build_prompt(self, playlist: Playlist, tracks: list[Track]) -> str:
-        context = self._metadata_context(playlist, tracks)
+    def _build_prompt(self, playlist: Playlist, tracks: list[Track], *, default_language: str) -> str:
+        default_language = normalize_youtube_language(default_language)
+        context = self._metadata_context(playlist, tracks, default_language=default_language)
         return "\n".join(
             [
                 "You are writing YouTube metadata for an AI music release dashboard.",
@@ -163,10 +206,15 @@ class CodexMetadataService(ReleaseMetadataService):
                 "",
                 "Rules:",
                 "- Do not run shell commands or inspect files; use only the release context JSON below.",
-                "- Write primarily in Korean unless the release title strongly suggests another language.",
+                f"- The main upload metadata language is {default_language}. Write the top-level title and description in that language.",
+                "- If the main language is ko, the ko localization must match the top-level title/description.",
+                "- If the main language is en, the en localization must match the top-level title/description.",
+                "- If the main language is es, the es localization must match the top-level title/description.",
                 "- In Korean title/description/localizations, never use the transliterated words '인스트루멘털', '인스투르멘털', or '인스트루멘탈'. Use natural Korean such as 'BGM', '가사 없는 BGM', '보컬 없는 BGM', or '연주곡' instead.",
                 "- Also write localized YouTube metadata for Korean, Japanese, English, and Spanish in localizations. Use language keys exactly: ko, ja, en, es.",
-                "- The ko localization should match the main title and description. The ja, en, and es localizations should be natural translations/adaptations, not machine-looking literal copies.",
+                "- Localizations that are not the main language should be natural translations/adaptations, not machine-looking literal copies.",
+                "- For Solwave Radio, Latin pop, Spanish pop, reggaeton, bachata, salsa, cumbia, urbano latino, or Spanish-language pop releases, write the main metadata in Spanish and keep lyrics/title language Spanish-forward.",
+                "- For sundaze, English pop, American pop, US/UK pop, western pop, or mainstream English pop releases, write the main metadata in English and keep lyrics/title language English-forward.",
                 "- Keep title under 100 characters.",
                 "- For playlist releases, every YouTube title in every language must start exactly with '[playlist]'.",
                 "- After '[playlist]', do not repeat playlist nouns such as '플레이리스트', 'Playlist', 'プレイリスト', or 'lista de reproducción'. Use music/mix/radio wording instead.",
@@ -176,10 +224,10 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer 'J-POP', 'Tokyo', city-pop, mood, and listening use cases. Avoid Korean title phrases like '일본어 J-pop', '일본어 보컬', or '일본어 카페 재즈' unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead.",
                 "- For playlist releases, do not append 'Official AI Visualizer' or similar branding to the title.",
                 "- For playlist releases, the description must follow this structure:",
-                "  1. One short Korean mood paragraph.",
-                "  2. One short Korean paragraph about sound, atmosphere, and use cases.",
+                "  1. One short mood paragraph in the main upload metadata language.",
+                "  2. One short paragraph in the main upload metadata language about sound, atmosphere, and use cases.",
                 "  3. A heading exactly like: 🎧 Recommended for",
-                "  4. One slash-separated Korean use-case line.",
+                "  4. One slash-separated use-case line in the main upload metadata language.",
                 "  5. A timestamped tracklist using the fixed start times and playback order from timeline.",
                 "  6. One final hashtag line with 5-8 relevant hashtags.",
                 "- For single-track releases, write as one standalone song/release.",
@@ -202,7 +250,13 @@ class CodexMetadataService(ReleaseMetadataService):
             ]
         )
 
-    def _metadata_context(self, playlist: Playlist, tracks: list[Track]) -> dict[str, Any]:
+    def _metadata_context(
+        self,
+        playlist: Playlist,
+        tracks: list[Track],
+        *,
+        default_language: str | None = None,
+    ) -> dict[str, Any]:
         meta = playlist.metadata_json or {}
         timeline = timeline_from_track_dicts(
             self._track_timeline_dicts(tracks),
@@ -223,12 +277,34 @@ class CodexMetadataService(ReleaseMetadataService):
                 "actual_duration_seconds": playlist.actual_duration_seconds,
                 "target_duration_seconds": playlist.target_duration_seconds,
                 "default_hashtags": self.settings.youtube_default_hashtags,
+                "youtube_channel_title": meta.get("youtube_channel_title"),
             },
+            "metadata_default_language": normalize_youtube_language(default_language),
             "timeline_timestamp_format": "HH:MM:SS" if force_hours else "MM:SS",
             "timeline": timeline,
             "display_timestamp_lines": [f"{item['start']} {item['display_title_hint']}" for item in timeline],
             "raw_timestamp_lines": [f"{item['start']} {item['title']}" for item in timeline],
         }
+
+    def _infer_metadata_default_language(self, playlist: Playlist, tracks: list[Track]) -> str:
+        meta = playlist.metadata_json or {}
+        haystack = " ".join(
+            [
+                playlist.title,
+                str(meta.get("description") or ""),
+                str(meta.get("youtube_channel_title") or ""),
+                str(meta.get("youtube_channel_id") or ""),
+                " ".join(track.title for track in tracks),
+                " ".join(str(track.prompt or "") for track in tracks),
+                " ".join(str((track.metadata_json or {}).get("tags") or "") for track in tracks),
+                " ".join(str((track.metadata_json or {}).get("style") or "") for track in tracks),
+            ]
+        ).lower()
+        if any(keyword in haystack for keyword in SPANISH_METADATA_KEYWORDS):
+            return "es"
+        if any(keyword in haystack for keyword in ENGLISH_POP_METADATA_KEYWORDS):
+            return "en"
+        return "ko"
 
     def _clean_description_timestamps(self, description: str, playlist: Playlist, tracks: list[Track]) -> str:
         timeline = self._metadata_context(playlist, tracks)["timeline"]

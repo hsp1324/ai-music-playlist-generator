@@ -67,12 +67,12 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
   `[Final Theme: piano motif returns, guitar answers every 4 bars, gentle lift without a vocal hook]`
   `[Outro: solo piano and rain ambience, slow fade]`
   `[End]`
-- J-pop/K-pop/pop/Japanese pop/anime-pop releases default to vocal songs with lyrics. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not make these instrumental, no-vocal, lyricless, or hum-only unless the human explicitly asks for instrumental/BGM/lofi/no vocals. For every pop-family track, create or capture the final lyrics and upload them with `--lyrics` or `--lyrics-file`. The helper rejects pop-family uploads with empty lyrics before publish unless the concept explicitly says BGM/instrumental/no-vocal.
+- J-pop/K-pop/pop/Japanese pop/anime-pop/Latin pop/Spanish pop/English pop releases default to vocal songs with lyrics. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, Spanish lyrics for Solwave Radio/Latin/Spanish pop, and English lyrics for sundaze/English/American pop. Do not make these instrumental, no-vocal, lyricless, or hum-only unless the human explicitly asks for instrumental/BGM/lofi/no vocals. For every pop-family track, create or capture the final lyrics and upload them with `--lyrics` or `--lyrics-file`. The helper rejects pop-family uploads with empty lyrics before publish unless the concept explicitly says BGM/instrumental/no-vocal.
 - When uploading audio, include the Suno style/settings with `--style` whenever available. This is stored with the track for future cover, thumbnail, loop-video, metadata, and remake work.
 - Within one release, intentionally vary every generated track. Do not reuse the exact same Suno prompt, lyrics theme, chorus hook, title pattern, or style string across multiple tracks unless the human explicitly asks for a uniform album. Keep the release coherent by genre/mood, but vary tempo, energy, instruments, rhythm feel, vocal tone, season/time/place imagery, lyrical story, and hook.
 - For playlist releases, prefer one `--style` per `--audio` and one `--lyrics-file` per vocal track. Shared style is allowed only for a narrow BGM/instrumental set where the human wants consistency; even then, vary titles and prompts.
 - Playlist track generation should target roughly 3:00 to 3:30 per Suno output, with 3:45 still in the preferred range. Outputs up to 4:20 are acceptable if Suno returns them, but do not intentionally ask for 4-minute tracks. Regenerate or replace outputs over 4:20 before publishing. `auto-publish-playlist` rejects tracks over 260 seconds unless `--allow-long-track` is used with explicit human approval.
-- For J-pop/K-pop/pop playlists, each song needs its own original lyrics and chorus concept. Do not create multiple songs with near-identical verse/pre-chorus/chorus wording, repeated phrases, or only swapped nouns.
+- For J-pop/K-pop/English pop/Latin pop/Spanish pop playlists, each song needs its own original lyrics and chorus concept. Do not create multiple songs with near-identical verse/pre-chorus/chorus wording, repeated phrases, or only swapped nouns.
 - Always return the final JSON result and mention `release.id` plus uploaded `track.id` values.
 - If a command fails, stop and report the exact error. Do not retry blindly more than once.
 - For YouTube title/description/tag writing, use [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
@@ -80,15 +80,17 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - For playlist publishing, choose the YouTube channel by release concept:
 - Default background/cafe/sleep/study/chill playlists go to `Soft Hour Radio`.
 - Mainstream J-pop/Japanese pop releases go to `Tokyo Daydream Radio`. Treat these as Tokyo Daydream candidates when the title, prompt, tags, or concept includes Tokyo, Shibuya, Shinjuku, J-pop, Japanese pop, city pop, Japanese dance-pop, Japanese synth-pop, Japanese pop-rock, anime-pop, vaporwave, 도쿄, 시티팝, 제이팝, 東京, 渋谷, 新宿, Jポップ, or シティポップ. Anime/OST-like music is allowed inside the channel, but the channel is broader mainstream J-pop/pop, not anime OST-only.
+- English-language pop, American pop, US/UK pop, western pop, mainstream English vocal pop, dance-pop, synth-pop, pop-rock, or similar English pop releases go to `sundaze`. Treat this as the English/US-pop counterpart to Tokyo Daydream Radio.
+- Latin/Spanish-language pop, Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, verano latino, or similar Spanish vocal releases go to `Solwave Radio`. Treat this as the Spanish/Latin counterpart to Tokyo Daydream Radio.
 - If the human explicitly names a target channel, that explicit channel overrides automatic channel inference and also controls the visual skill. Example: `Soft Hour Radio에 올려줘` means use the Soft Hour channel profile even if the music has light Japan/city-pop influence.
 - Do not use `MusicSun` unless the human explicitly requests it.
-- `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass `--youtube-channel-title "Tokyo Daydream Radio"` when the Japan routing intent is clear.
+- `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass the explicit `--youtube-channel-title` when the human names a channel.
 - YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
 - Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release auto-publish-single`, `scripts/openclaw-release auto-publish-playlist`, or the app's local `/approve-publish` API only. The app uploads through the YouTube Data API and stores the resulting `youtube_video_id`/channel metadata.
 - Do not run `auto-publish-playlist` or `auto-publish-single` against a release that already has `youtube_video_id` unless the human explicitly asks for a re-upload. Create a fresh release for a new video. The helper rejects accidental re-uploads unless `--allow-reupload` is passed.
 - YouTube Studio is only for human final checks after the private API upload, such as watching the private video, changing visibility to Public, reviewing automatic captions, or manual cleanup.
 - Do not try to enable automatic captions through browser automation. The app does not upload caption files or toggle caption settings. For vocal releases, the API upload infers and sends `snippet.defaultAudioLanguage` when possible so YouTube knows the likely spoken/sung language; YouTube may generate automatic captions later. For BGM/instrumental/no-vocal releases, do not set captions or audio language unless the human explicitly requests manual captions.
-- YouTube metadata supports localized title/description for `ko`, `ja`, `en`, and `es`. For `Tokyo Daydream Radio` or any Japan/J-pop release, OpenClaw must write all four versions: Korean, Japanese, English, and Spanish. Use Korean as the default metadata (`--title`, `--description-file`) and also pass `--ko-title`, `--ko-description-file`, `--ja-title`, `--ja-description-file`, `--en-title`, `--en-description-file`, `--es-title`, and `--es-description-file` to `scripts/openclaw-release approve-metadata`.
+- YouTube metadata supports localized title/description for `ko`, `ja`, `en`, and `es`. For `Tokyo Daydream Radio`, `sundaze`, `Solwave Radio`, or any pop-family release, OpenClaw must write all four versions. Use Korean as the default for Tokyo/Soft Hour unless the channel profile says otherwise. Use `--default-language en` for `sundaze` and `--default-language es` for `Solwave Radio`. Always pass `--ko-title`, `--ko-description-file`, `--ja-title`, `--ja-description-file`, `--en-title`, `--en-description-file`, `--es-title`, and `--es-description-file` to `scripts/openclaw-release approve-metadata`.
 - For Playlist Releases on every channel, start the main YouTube title and every localized title exactly with `[playlist]`. Do not add this prefix to Single Releases.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
 - Playlist/BGM YouTube titles must include listening use cases in the title itself, such as study, work, walk, drive, sleep, reading, or rest. Do not write only a mood/genre title.
@@ -112,6 +114,7 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - Channel visual signatures are separate:
 - Tokyo Daydream Radio/Japan/J-pop uses exactly three people walking forward away from the viewer by default. The camera/viewer sees their backs and backs of heads; no front-facing faces as the main composition.
 - Soft Hour Radio/default BGM uses its own channel profile: calm, restrained, long-listening visuals without a fixed recurring mascot, character count, scene list, or camera composition.
+- sundaze and Solwave Radio do not have fixed visual signatures yet. Use the selected channel profile and let the playlist concept drive the cover, thumbnail, and 8 second loop video.
 - Explicit channel requests override genre-based visual routing. If the requested channel is `Soft Hour Radio`, use the Soft Hour profile returned by `scripts/openclaw-release channel-profile`.
 - Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - When a channel/default signature is used, the main subject must stay centered in thumbnails. Text must not push it to the side, crop it, cover it, or make it feel secondary. Place text in safe negative space, usually lower-left or lower area.
@@ -155,7 +158,7 @@ Goal:
 - If only one usable candidate exists, upload one candidate to the precreated Single Release.
 - If two candidates come from one Suno prompt, they can share the original prompt/style, but give them independent editorial titles and preserve any candidate-specific lyrics, style notes, or differences.
 - If candidate cover images exist, upload them with the audio candidates.
-- If candidate lyrics or instrumental metatag files exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. For instrumental/BGM candidates, use the exact bracket-only Suno metatag file from `docs/suno-v55-instrumental-format.md` rather than an empty field when possible. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, lyrics are expected by default unless the human explicitly asked for instrumental/no-vocal.
+- If candidate lyrics or instrumental metatag files exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. For instrumental/BGM candidates, use the exact bracket-only Suno metatag file from `docs/suno-v55-instrumental-format.md` rather than an empty field when possible. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop candidates, lyrics are expected by default unless the human explicitly asked for instrumental/no-vocal.
 - If the Suno style/settings are known, upload them with `--style`. Use one shared `--style` or one per candidate.
 - Clean awkward trailing A/B or 1/2 labels from uploaded candidate titles. If titles become duplicated, make them naturally unique without using pair labels.
 - When the human approves one candidate, its uploaded cover is automatically registered as the release cover. If the human approves both candidates, the second approved candidate becomes a separate Single Release.
@@ -197,7 +200,7 @@ scripts/openclaw-release upload-single-candidates \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
-If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics/content are truly unavailable, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field. For instrumental/BGM candidates, prefer the exact bracket-only Suno metatag file instead of omitting lyrics. For J-pop/K-pop/pop/Japanese pop/anime-pop candidates, do not treat missing lyrics as normal; generate or capture original lyrics unless the human explicitly requested instrumental/no-vocal. If style/settings are not available, omit `--style`; otherwise always provide it.
+If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics/content are truly unavailable, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field. For instrumental/BGM candidates, prefer the exact bracket-only Suno metatag file instead of omitting lyrics. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop candidates, do not treat missing lyrics as normal; generate or capture original lyrics unless the human explicitly requested instrumental/no-vocal. If style/settings are not available, omit `--style`; otherwise always provide it.
 
 Report the command output JSON. The human will approve one candidate, approve both candidates as separate singles, or reject both in Slack or the web UI.
 ```
@@ -234,7 +237,7 @@ Create one Single Release for one final song, generate the needed audio, auto-ap
 
 This is different from `Single Release Candidate Set`: that skill stops for human candidate review. Use this automatic publisher only when the human says to publish/upload the single.
 
-For mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop singles, publish to `Tokyo Daydream Radio`.
+For mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop singles, publish to `Tokyo Daydream Radio`. For English/American pop singles, publish to `sundaze`. For Latin/Spanish pop singles, publish to `Solwave Radio`.
 
 ### OpenClaw Skill Prompt
 
@@ -248,16 +251,16 @@ Goal:
 - Create or select one Single Release workspace before opening Suno or generating audio.
 - Generate an original standalone song/single.
 - If the human references an existing artist such as YOASOBI, treat it only as mood/style guidance. Do not copy melodies, lyrics, titles, or a specific song.
-- For J-pop/K-pop/pop/Japanese pop/anime-pop singles, generate a vocal song by default with original lyrics and a clear verse/pre-chorus/chorus structure. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not set instrumental/no-vocal unless the human explicitly asks for it.
+- For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop singles, generate a vocal song by default with original lyrics and a clear verse/pre-chorus/chorus structure. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, English lyrics for sundaze/English/American pop, and Spanish lyrics for Solwave/Latin/Spanish pop. Do not set instrumental/no-vocal unless the human explicitly asks for it.
 - If Suno returns two usable candidates and the human asked for full automation, publish each good candidate as a separate Single Release by running this skill once per song.
 - If publishing two good candidates from the same Suno request, treat them as separate releases after selection: give each one a distinct title, description angle, thumbnail wording, and preserved lyric/style context.
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
-- Preserve lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available. For BGM/background/instrumental tracks, write and upload the exact bracket-only Suno instrumental metatag file when possible; J-pop/K-pop/pop/Japanese pop/anime-pop songs should not have empty lyrics unless the human explicitly requested an instrumental/no-vocal track.
-- If this is a J-pop/K-pop/pop/anime-pop single and there is no final lyric text, stop and generate/capture original lyrics before calling `auto-publish-single`.
+- Preserve lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available. For BGM/background/instrumental tracks, write and upload the exact bracket-only Suno instrumental metatag file when possible; J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop songs should not have empty lyrics unless the human explicitly requested an instrumental/no-vocal track.
+- If this is a J-pop/K-pop/English pop/Latin pop/Spanish pop/anime-pop single and there is no final lyric text, stop and generate/capture original lyrics before calling `auto-publish-single`.
 - Preserve Suno style/settings during upload. Pass `--style "SUNO_STYLE_OR_SETTINGS"` for each song.
 - A final 16:9 cover image is required. For moving-video releases, this cover also acts as the Dreamina/Seedance first-frame reference. It must include only the selected channel name as a large lower-left brand label readable on mobile.
-- A separate YouTube thumbnail image with readable text is required. For J-pop/Japan singles, use the approved Tokyo Daydream Radio pattern: large `J-POP` with smaller `TOKYO DAYDREAM RADIO` beneath it. Use the same brand system for Tokyo/city, forest/nature, and beach variants. Do not add duration text or badges such as `1 HOUR`, `60 MIN`, or `1時間`.
-- Apply the selected channel profile to both static images. For J-pop/Japan/Tokyo Daydream Radio singles, use the Tokyo profile. For Soft Hour/default BGM singles, use the Soft Hour profile. The cover should contain only the large lower-left channel brand label; the thumbnail must be generated from that final cover as a reference/edit derivative, using the same composition plus readable click text and channel branding. In the thumbnail, keep the main channel/requested subject centered; text must fit around the composition rather than moving the subject sideways.
+- A separate YouTube thumbnail image with readable text is required. For J-pop/Japan singles, use the approved Tokyo Daydream Radio pattern: large `J-POP` with smaller `TOKYO DAYDREAM RADIO` beneath it. For sundaze and Solwave Radio, use the selected channel profile and playlist concept for thumbnail wording; there is no fixed recurring visual signature yet. Do not add duration text or badges such as `1 HOUR`, `60 MIN`, or `1時間`.
+- Apply the selected channel profile to both static images. For J-pop/Japan/Tokyo Daydream Radio singles, use the Tokyo profile. For Soft Hour/default BGM singles, use the Soft Hour profile. For sundaze or Solwave Radio, use that channel's profile and let the song concept drive the scene. The cover should contain only the large lower-left channel brand label; the thumbnail must be generated from that final cover as a reference/edit derivative, using the same composition plus readable click text and channel branding. In the thumbnail, keep the main channel/requested subject centered; text must fit around the composition rather than moving the subject sideways.
 - Before uploading the thumbnail, compare it against the cover. Character count, subject positions, silhouette, outfit colors, lighting, palette, and core background must remain visually continuous. Regenerate the thumbnail if it looks like a different scene or changes details such as cloak/shirt colors.
 - Keep the visual style animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
 - Generate both static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model. Dreamina is only for the moving 8 second MP4. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
@@ -270,7 +273,7 @@ Goal:
 - If the human provided a specific visual/video request, replace the selected channel default prompt details with the requested subject/action/composition while keeping the safety/quality constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, preserve the large lower-left channel label, stable composition, no other text/subtitles/logos/UI, no extra unwanted subjects.
 - Always include this Dreamina prompt constraint: `The uploaded first frame contains the exact large, readable lower-left channel brand label "{CHANNEL_NAME}" (for example, "Tokyo Daydream Radio"). The label should match the visual scale of the YouTube thumbnail's channel-brand line, roughly 18-24% of image width or 5-6% of image height for text cap height. Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, shrink, or change the text. Keep the text area stable; animate the surrounding scene naturally.` Keep all other constraints.
 - Render audio/video, generate and approve YouTube metadata, and upload privately.
-- Publish Japanese/J-pop/Tokyo content to `Tokyo Daydream Radio`.
+- Publish Japanese/J-pop/Tokyo content to `Tokyo Daydream Radio`, English/American pop to `sundaze`, and Latin/Spanish pop to `Solwave Radio`.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 
 First, before opening Suno, create the destination release:
@@ -331,7 +334,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - If two Suno candidates are both good, create and publish two separate Single Releases with separate assets.
 - Do not use pair labels like A/B or 1/2 in final titles.
 - Do not publish without a final cover with the large lower-left channel brand label, a separate text thumbnail, and the correct YouTube channel selection.
-- For Japanese/J-pop/Tokyo singles, pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly.
+- For Japanese/J-pop/Tokyo singles, pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly. For English/American pop, pass `--youtube-channel-title "sundaze"`. For Latin/Spanish pop, pass `--youtube-channel-title "Solwave Radio"`.
 
 ## Skill 3: Automatic Private Playlist Publisher
 
@@ -341,7 +344,7 @@ Use this skill when the user asks for a playlist, mix, compilation, or approxima
 
 Create one Playlist Release, generate enough tracks, upload them as approved tracks, render audio/video, generate and approve metadata, and upload the result privately to YouTube on the correct channel.
 
-Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases.
+Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases. Use `sundaze` for English/American pop. Use `Solwave Radio` for Latin/Spanish pop.
 
 The human does not review every playlist track before rendering. The human reviews the final private YouTube upload later and only intervenes if something sounds wrong.
 
@@ -373,12 +376,12 @@ Goal:
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
 - Ask Suno for roughly 3:00-3:30 per playlist track. 3:45 is still fine. Tracks up to 4:20 are acceptable if Suno returns them, so a 4:04 Suno result can be used. If Suno produces a track longer than 4:20, regenerate or replace it instead of uploading it for final publish unless the human explicitly approves the longer track.
-- For J-pop/K-pop/pop/Japanese pop/anime-pop playlist requests, generate vocal songs by default with original lyrics for each track. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, and the requested language or natural English/Korean lyrics for generic pop. Do not make the batch instrumental/no-vocal unless the human explicitly asks for instrumental/BGM/lofi/no vocals.
+- For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop playlist requests, generate vocal songs by default with original lyrics for each track. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, English lyrics for sundaze/English/American pop, and Spanish lyrics for Solwave/Latin/Spanish pop. Do not make the batch instrumental/no-vocal unless the human explicitly asks for instrumental/BGM/lofi/no vocals.
 - For every new Suno request in a playlist run, write a distinct prompt/style/lyrics plan before generating. Keep the channel/release mood consistent, but vary one or more of: tempo, drum pattern, bass movement, synth/guitar/piano texture, vocal energy, emotional angle, scene imagery, lyrical storyline, chorus hook, and song structure.
 - If Suno returns two outputs from one request, use both outputs as separate playlist tracks when both are usable.
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
-- Preserve each track's lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available, because good playlist tracks may later be republished as standalone singles and OpenClaw needs this context for thumbnail/loop-video generation. For J-pop/K-pop/pop/Japanese pop/anime-pop playlist tracks, lyrics are expected and should be uploaded for every track. For BGM/background/instrumental tracks, upload the exact bracket-only Suno instrumental metatag file used for generation instead of leaving the content blank whenever possible.
-- If this is a J-pop/K-pop/pop/anime-pop playlist and any track lacks final lyric text, stop and generate/capture original lyrics before calling `auto-publish-playlist`. Do not publish a lyricless pop-family playlist unless the human explicitly says it is BGM/instrumental/no-vocal.
+- Preserve each track's lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available, because good playlist tracks may later be republished as standalone singles and OpenClaw needs this context for thumbnail/loop-video generation. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop playlist tracks, lyrics are expected and should be uploaded for every track. For BGM/background/instrumental tracks, upload the exact bracket-only Suno instrumental metatag file used for generation instead of leaving the content blank whenever possible.
+- If this is a J-pop/K-pop/English pop/Latin pop/Spanish pop/anime-pop playlist and any track lacks final lyric text, stop and generate/capture original lyrics before calling `auto-publish-playlist`. Do not publish a lyricless pop-family playlist unless the human explicitly says it is BGM/instrumental/no-vocal.
 - Preserve the Suno style/settings for each track. Pass one shared `--style` if the whole batch used the same style, or one `--style` per `--audio` when styles differ.
 - Prefer track-specific `--style` values for playlist tracks. If a shared style is used, add track-specific prompt/title/lyrics variation so the playlist does not sound like one song repeated with minor edits.
 - If Suno gives two outputs from the same prompt, do not name them like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`.
@@ -389,7 +392,7 @@ Goal:
 - A final 16:9 cover image is required before YouTube upload.
 - A separate YouTube thumbnail image with readable text is required before YouTube upload.
 - Generate or obtain the final cover image before running the full publish command, then pass it with `--cover`. Use OpenAI GPT Image models for static image creation, not Dreamina. For moving-video releases, the cover must contain only the large lower-left selected-channel-name brand label because it is the Dreamina/Seedance first-frame reference.
-- Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`. Use OpenAI GPT Image models for static image creation, not Dreamina. The thumbnail must be created from the final cover as an image reference/edit, not as a new independent scene. For J-pop/Japan releases, use the approved Tokyo Daydream Radio layout: large `J-POP` plus smaller `TOKYO DAYDREAM RADIO`, including forest/nature and beach variants. Do not add duration text or badges such as `1 HOUR`, `60 MIN`, or `1時間`.
+- Generate or obtain a separate text thumbnail before running the full publish command, then pass it with `--thumbnail`. Use OpenAI GPT Image models for static image creation, not Dreamina. The thumbnail must be created from the final cover as an image reference/edit, not as a new independent scene. For J-pop/Japan releases, use the approved Tokyo Daydream Radio layout: large `J-POP` plus smaller `TOKYO DAYDREAM RADIO`, including forest/nature and beach variants. For sundaze and Solwave Radio, use the channel profile and playlist concept for the thumbnail text instead of a fixed signature. Do not add duration text or badges such as `1 HOUR`, `60 MIN`, or `1時間`.
 - Apply the selected channel profile to both images. Use only the large lower-left channel brand label for `--cover`; use the same centered channel/requested composition plus readable click text and the selected channel brand line for `--thumbnail`. In thumbnails, keep the main subject centered and place text around it in negative space; never move the main subject to one side just to make room for text.
 - The cover and thumbnail should look like the same release art package. Preserve the same characters, poses, clothing colors, background, lighting, palette, and camera angle. If the thumbnail changes those details, regenerate it before uploading.
 - Keep every generated visual animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
@@ -409,7 +412,7 @@ Goal:
 - Approve the cover.
 - Render video.
 - Generate and approve YouTube metadata.
-- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases; otherwise use `Soft Hour Radio`.
+- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases, `sundaze` for English/American pop, `Solwave Radio` for Latin/Spanish pop, and `Soft Hour Radio` for default BGM/background releases.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 
 First, before opening Suno or submitting the first playlist prompt, create the destination release:
@@ -437,6 +440,22 @@ Japan routing example:
 도쿄 시티팝 1시간 플레이리스트 만들어서 Tokyo Daydream Radio에 private으로 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
 썸네일에는 큰 J-POP과 작은 TOKYO DAYDREAM RADIO를 같은 위치/스타일로 넣어줘.
+```
+
+English pop routing example:
+
+```text
+Summer night drive English pop 1시간 플레이리스트 만들어서 sundaze에 private으로 업로드까지 해줘.
+Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 영어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
+커버, 썸네일, 8초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
+```
+
+Latin/Spanish routing example:
+
+```text
+Verano latino reggaeton pop 1시간 플레이리스트 만들어서 Solwave Radio에 private으로 업로드까지 해줘.
+Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 스페인어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
+커버, 썸네일, 8초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```
 
 ### Run The Full Automation
@@ -473,7 +492,7 @@ Do not omit `--cover` or `--thumbnail` for a full private publish run. If either
 `--loop-video` is required for normal private publish automation. If it is omitted, the app refuses to render/publish unless OpenClaw passes `--allow-still-image-video` after explicit human approval. The generated clip should end close to its opening composition so it can be reused across the full audio duration.
 Use `--randomize-order` when the uploaded playlist contains similar Suno two-output pairs next to each other. Omit it when the human already arranged a deliberate final order.
 
-If the release is mainstream J-pop/Japanese pop/Tokyo pop, set `--youtube-channel-title "Tokyo Daydream Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
+If the release is mainstream J-pop/Japanese pop/Tokyo pop, set `--youtube-channel-title "Tokyo Daydream Radio"`. If it is English/American pop, set `--youtube-channel-title "sundaze"`. If it is Latin/Spanish pop, set `--youtube-channel-title "Solwave Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
 
 If the run is continuing an existing release, use `--release-id RELEASE_ID` instead of creating a new title.
 
@@ -502,7 +521,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not create a Single Release for playlist candidates.
 - Do not use the `MusicSun` channel for playlist publishing unless the human explicitly overrides the channel.
 - Do not upload public. The final upload must be private.
-- Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general BGM releases and `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop releases.
+- Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general BGM releases, `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop releases, `sundaze` for English/American pop, and `Solwave Radio` for Latin/Spanish pop.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
 - Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
 - Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the cover or first-frame image into an 8 second loop video. This image must include only the large lower-left selected-channel-name brand label.

@@ -8,6 +8,8 @@ import scripts.openclaw_release as openclaw_release
 from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
+    SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+    SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     approve_metadata,
     auto_publish_playlist,
     auto_publish_single,
@@ -130,6 +132,20 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
             description="instrumental study background music",
         )
     ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Summer Night English Pop",
+            description="mainstream American pop playlist",
+        )
+    ) == SUNDAZE_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Verano Latino Reggaeton Pop",
+            description="Spanish vocal pop playlist",
+        )
+    ) == SOLWAVE_YOUTUBE_CHANNEL_TITLE
 
 
 def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> None:
@@ -156,6 +172,28 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert soft_hour["profile"] == "soft-hour-radio"
     assert soft_hour["profile_doc"] == "docs/openclaw-channel-profiles/soft-hour-radio.md"
     assert soft_hour["explicit_channel_requested"] is True
+
+    sundaze = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Summer Night English Pop",
+            description="American pop playlist",
+        )
+    )
+    assert sundaze["youtube_channel_title"] == SUNDAZE_YOUTUBE_CHANNEL_TITLE
+    assert sundaze["profile"] == "sundaze"
+    assert sundaze["profile_doc"] == "docs/openclaw-channel-profiles/sundaze.md"
+
+    solwave = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Verano Latino Reggaeton Pop",
+            description="Spanish vocal pop playlist",
+        )
+    )
+    assert solwave["youtube_channel_title"] == SOLWAVE_YOUTUBE_CHANNEL_TITLE
+    assert solwave["profile"] == "solwave-radio"
+    assert solwave["profile_doc"] == "docs/openclaw-channel-profiles/solwave-radio.md"
 
 
 def test_slack_notify_command_posts_plain_message() -> None:
@@ -330,6 +368,8 @@ def test_upload_audio_file_retries_and_returns_probed_duration(tmp_path, monkeyp
 
 def test_pop_family_vocal_detection_allows_explicit_bgm_exception() -> None:
     assert is_pop_family_vocal_request("Tokyo J-pop single", "bright anime opening")
+    assert is_pop_family_vocal_request("Summer English pop single", "mainstream American pop")
+    assert is_pop_family_vocal_request("Verano Latino", "Spanish reggaeton pop")
     assert not is_pop_family_vocal_request("J-pop style BGM", "가사 없는 배경음악")
 
 

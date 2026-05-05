@@ -92,9 +92,29 @@ The final moment should preserve the same crop, framing, camera distance, lighti
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
 ```
 
+## sundaze Visual Skill
+
+Use this for `sundaze`, English-language pop, American pop, US/UK pop, western pop, mainstream vocal pop, dance-pop, synth-pop, pop-rock, and similar English pop releases.
+
+- No fixed recurring visual signature yet.
+- Let the playlist concept decide the cover, thumbnail, and loop-video scene.
+- The cover must contain only the large lower-left `sundaze` brand label.
+- The thumbnail should use short English pop click text such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`, plus `SUNDAZE`.
+- The loop video should animate the selected cover concept, not borrow Tokyo Daydream or Soft Hour signatures.
+
+## Solwave Radio Visual Skill
+
+Use this for `Solwave Radio`, Latin/Spanish-language pop, Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, and similar Spanish vocal releases.
+
+- No fixed recurring visual signature yet.
+- Let the playlist concept decide the cover, thumbnail, and loop-video scene.
+- The cover must contain only the large lower-left `Solwave Radio` brand label.
+- The thumbnail should use short Latin/Spanish click text such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`, plus `SOLWAVE RADIO`.
+- The loop video should animate the selected cover concept, not borrow Tokyo Daydream or Soft Hour signatures.
+
 ## Other Channels Or Explicit Requests
 
-- If the channel is neither `Tokyo Daydream Radio` nor `Soft Hour Radio`, derive a visual system from the channel name, release concept, and human request.
+- If the channel is not one of the documented profiles, derive a visual system from the channel name, release concept, and human request.
 - If the human explicitly names the target channel, that channel's visual skill wins over automatic genre routing.
 - Keep the shared asset contract.
 - Do not borrow another channel's visual signature unless the human explicitly asks for it.
