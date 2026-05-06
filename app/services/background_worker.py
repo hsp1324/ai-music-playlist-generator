@@ -23,7 +23,7 @@ from app.utils.youtube_localizations import (
     normalize_youtube_language,
     normalize_youtube_localizations,
 )
-from app.utils.openclaw_slack_loop import post_next_playlist_request
+from app.utils.openclaw_slack_loop import post_next_playlist_request, record_auto_loop_upload
 from app.utils.timeline import build_rendered_timeline_snapshot
 
 
@@ -690,7 +690,34 @@ class BackgroundJobWorker:
                     if self.settings.openclaw_auto_request_next_on_publish:
                         playlist.metadata_json = meta
                         sent_for_video_id = str(meta.get("openclaw_next_request_youtube_video_id") or "").strip()
-                        if playlist.youtube_video_id and sent_for_video_id != playlist.youtube_video_id:
+                        try:
+                            loop_state = record_auto_loop_upload(
+                                storage_root=self.settings.storage_root,
+                                max_uploads=self.settings.openclaw_auto_request_next_max_uploads,
+                                channel_id=self.settings.openclaw_slack_channel_id,
+                                trigger_prefix=self.settings.openclaw_slack_trigger_prefix,
+                                playlist_id=playlist.id,
+                                youtube_video_id=playlist.youtube_video_id or "",
+                            )
+                        except Exception as loop_exc:  # noqa: BLE001
+                            loop_state = {
+                                "enabled": True,
+                                "should_request_next": False,
+                                "reason": "loop_state_error",
+                                "error": str(loop_exc),
+                            }
+                        meta["openclaw_auto_loop"] = loop_state
+                        if not loop_state.get("should_request_next"):
+                            meta["openclaw_next_request"] = {
+                                "ok": False,
+                                "skipped": True,
+                                "reason": loop_state.get("reason"),
+                                "completed_uploads": loop_state.get("completed_uploads"),
+                                "max_uploads": loop_state.get("max_uploads"),
+                                "remaining_uploads": loop_state.get("remaining_uploads"),
+                            }
+                            meta["openclaw_next_request_at"] = _utcnow().isoformat()
+                        elif playlist.youtube_video_id and sent_for_video_id != playlist.youtube_video_id:
                             try:
                                 next_request_result = asyncio.run(
                                     post_next_playlist_request(

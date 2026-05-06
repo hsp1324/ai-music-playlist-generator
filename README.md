@@ -297,6 +297,7 @@ AIMP_CODEX_METADATA_COMMAND=codex
 AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
 AIMP_OPENCLAW_SLACK_CHANNEL_ID=C0AVBUYP150
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=false
+AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=0
 AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX=OPENCLAW_RUN:
 AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT=
 ```
@@ -315,7 +316,7 @@ Runtime behavior:
 - Playlist Release YouTube titles are normalized with a `[playlist]` prefix across the default title and localized `ko`/`ja`/`en`/`es` titles. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles are not prefixed.
 - OpenClaw can run `scripts/openclaw-release auto-publish-playlist` to upload playlist tracks as approved, render audio/video, approve generated metadata, and publish privately to the selected connected YouTube channel. It can also run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a standalone single to be privately uploaded end-to-end. The helpers default general background releases to `Soft Hour Radio` and route mainstream J-pop/Japanese pop/Tokyo pop concepts to `Tokyo Daydream Radio`.
 - OpenClaw auto-publish helpers refuse to re-upload a release that already has a `youtube_video_id` unless `--allow-reupload` is passed, preventing accidental duplicate private uploads.
-- Published releases show `Request Next Playlist`, which posts a Slack command into the configured OpenClaw channel with the `AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX` prefix. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` only when you intentionally want publish completion to trigger the next playlist automatically. Slack event routing and mention-only behavior should be configured in the Slack App/OpenClaw listener, not in the release-production skill docs.
+- Published releases show `Request Next Playlist`, which posts a Slack command into the configured OpenClaw channel with the `AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX` prefix. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` only when you intentionally want publish completion to trigger the next playlist automatically. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=N` to stop after N successful YouTube uploads in the auto loop; `0` means no upload cap. Slack event routing and mention-only behavior should be configured in the Slack App/OpenClaw listener, not in the release-production skill docs.
 - The next-release loop is planned by `docs/openclaw-next-release-planner.md`: it rotates active channels, reads the selected channel's concept planner in `docs/openclaw-channel-concepts/`, avoids recent concept repetition, and then hands off to the automatic private playlist publisher.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.

@@ -84,6 +84,7 @@ class Settings(BaseSettings):
 
     openclaw_slack_channel_id: str = ""
     openclaw_auto_request_next_on_publish: bool = False
+    openclaw_auto_request_next_max_uploads: int = 0
     openclaw_slack_trigger_prefix: str = "OPENCLAW_RUN:"
     openclaw_next_playlist_prompt: str = ""
 

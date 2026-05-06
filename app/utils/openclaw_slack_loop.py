@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import json
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.models.playlist import Playlist
+
+OPENCLAW_AUTO_LOOP_STATE_FILE = "openclaw-auto-loop-state.json"
 
 
 def _with_trigger_prefix(text: str, trigger_prefix: str | None) -> str:
@@ -13,6 +18,109 @@ def _with_trigger_prefix(text: str, trigger_prefix: str | None) -> str:
     if not prefix or stripped_text.startswith(prefix):
         return stripped_text
     return f"{prefix}\n{stripped_text}"
+
+
+def _utcnow_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _auto_loop_session_key(
+    *,
+    channel_id: str,
+    trigger_prefix: str,
+    max_uploads: int,
+) -> str:
+    return f"channel={channel_id.strip()}|trigger={trigger_prefix.strip()}|max_uploads={max_uploads}"
+
+
+def _read_auto_loop_state(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _write_auto_loop_state(path: Path, state: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_suffix(f"{path.suffix}.tmp")
+    tmp_path.write_text(json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    tmp_path.replace(path)
+
+
+def record_auto_loop_upload(
+    *,
+    storage_root: Path,
+    max_uploads: int,
+    channel_id: str,
+    trigger_prefix: str,
+    playlist_id: str,
+    youtube_video_id: str,
+) -> dict[str, Any]:
+    """Record a successful upload and decide whether the loop may request another release."""
+
+    normalized_max_uploads = max(0, int(max_uploads or 0))
+    if normalized_max_uploads <= 0:
+        return {
+            "enabled": True,
+            "limited": False,
+            "max_uploads": 0,
+            "completed_uploads": None,
+            "remaining_uploads": None,
+            "should_request_next": True,
+            "reason": "unlimited",
+        }
+
+    state_path = Path(storage_root) / OPENCLAW_AUTO_LOOP_STATE_FILE
+    session_key = _auto_loop_session_key(
+        channel_id=channel_id,
+        trigger_prefix=trigger_prefix,
+        max_uploads=normalized_max_uploads,
+    )
+    state = _read_auto_loop_state(state_path)
+    if state.get("session_key") != session_key:
+        state = {
+            "session_key": session_key,
+            "max_uploads": normalized_max_uploads,
+            "channel_id": channel_id,
+            "trigger_prefix": trigger_prefix,
+            "started_at": _utcnow_iso(),
+            "counted_uploads": [],
+        }
+
+    counted_uploads = state.get("counted_uploads")
+    if not isinstance(counted_uploads, list):
+        counted_uploads = []
+    upload_key = youtube_video_id.strip() or playlist_id
+    if upload_key and not any(item.get("upload_key") == upload_key for item in counted_uploads if isinstance(item, dict)):
+        counted_uploads.append(
+            {
+                "upload_key": upload_key,
+                "playlist_id": playlist_id,
+                "youtube_video_id": youtube_video_id,
+                "counted_at": _utcnow_iso(),
+            }
+        )
+
+    state["counted_uploads"] = counted_uploads
+    state["completed_uploads"] = len(counted_uploads)
+    state["remaining_uploads"] = max(normalized_max_uploads - len(counted_uploads), 0)
+    state["updated_at"] = _utcnow_iso()
+    _write_auto_loop_state(state_path, state)
+
+    should_request_next = len(counted_uploads) < normalized_max_uploads
+    return {
+        "enabled": True,
+        "limited": True,
+        "max_uploads": normalized_max_uploads,
+        "completed_uploads": len(counted_uploads),
+        "remaining_uploads": max(normalized_max_uploads - len(counted_uploads), 0),
+        "should_request_next": should_request_next,
+        "reason": "under_limit" if should_request_next else "max_uploads_reached",
+        "state_path": str(state_path),
+    }
 
 
 def build_next_playlist_request_message(

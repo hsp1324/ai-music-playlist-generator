@@ -16,6 +16,8 @@ When the OpenClaw Slack listener receives a channel message that starts with `OP
 
 For safety, ignore ordinary channel messages that do not start with `OPENCLAW_RUN:` unless the human explicitly addresses OpenClaw through the listener's normal manual command path. The prefix is what separates web-app automation from casual Slack conversation.
 
+The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS`. If the cap is reached after a successful YouTube upload, the app intentionally stops sending the next `OPENCLAW_RUN:` message. Do not treat silence after a completed publish as an error unless the human asks.
+
 ## Goal
 
 Choose the next channel and a fresh one-hour playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.

@@ -22,6 +22,7 @@ from app.routes.tracks import _extract_embedded_cover
 from app.services.background_worker import BackgroundJobWorker
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
+from app.utils.openclaw_slack_loop import record_auto_loop_upload
 
 
 def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> TestClient:
@@ -42,6 +43,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH", None)
+    os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX", None)
     os.environ.pop("AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT", None)
     get_settings.cache_clear()
@@ -171,6 +173,49 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
             assert updated.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-next-123"
     finally:
         clear_isolated_client_env()
+
+
+def test_openclaw_auto_loop_upload_limit_stops_after_n_uploads(tmp_path) -> None:
+    common = {
+        "storage_root": tmp_path,
+        "max_uploads": 3,
+        "channel_id": "C0AVBUYP150",
+        "trigger_prefix": "OPENCLAW_RUN:",
+    }
+
+    first = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-1",
+        youtube_video_id="yt-1",
+    )
+    second = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-2",
+        youtube_video_id="yt-2",
+    )
+    third = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-3",
+        youtube_video_id="yt-3",
+    )
+    duplicate = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-3",
+        youtube_video_id="yt-3",
+    )
+
+    assert first["should_request_next"] is True
+    assert first["completed_uploads"] == 1
+    assert first["remaining_uploads"] == 2
+    assert second["should_request_next"] is True
+    assert second["completed_uploads"] == 2
+    assert second["remaining_uploads"] == 1
+    assert third["should_request_next"] is False
+    assert third["reason"] == "max_uploads_reached"
+    assert third["completed_uploads"] == 3
+    assert third["remaining_uploads"] == 0
+    assert duplicate["should_request_next"] is False
+    assert duplicate["completed_uploads"] == 3
 
 
 def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:
