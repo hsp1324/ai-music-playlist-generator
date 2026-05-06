@@ -264,8 +264,8 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name brand label and a separate 16:9 YouTube thumbnail with readable text. The cover label must be large and readable on mobile; match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height. Runs can also include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
-- The web release detail view exposes separate upload/replace buttons for video cover, text YouTube thumbnail, and 8 second loop video.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name brand label and a separate 16:9 YouTube thumbnail with readable text. The cover label must be large and readable on mobile; match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height. Runs can also include a 10 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- The web release detail view exposes separate upload/replace buttons for video cover, text YouTube thumbnail, and 10 second loop video.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
 - For best YouTube output, use a 16:9 image such as `1280x720` or `1920x1080`.
@@ -305,7 +305,7 @@ Runtime behavior:
 
 - If the playlist has a rendered local audio file and YouTube is connected, publish approval will queue a background job that:
   - uses the approved cover image as the still visual fallback
-  - uses the uploaded 8 second loop video as the moving visual when `--loop-video` is provided
+  - uses the uploaded 10 second loop video as the moving visual when `--loop-video` is provided
   - renders the final MP4 from audio plus either the loop video or the cover fallback
   - uploads the video to YouTube
   - uploads the separate text-based YouTube thumbnail as the custom thumbnail
@@ -337,7 +337,7 @@ AIMP_DREAMINA_PROVIDER_MODE=useapi
 AIMP_DREAMINA_API_TOKEN=...
 AIMP_DREAMINA_ACCOUNT=US:your-dreamina-account@example.com
 AIMP_DREAMINA_VIDEO_MODEL=seedance-1.5-pro
-AIMP_DREAMINA_VIDEO_DURATION_SECONDS=8
+AIMP_DREAMINA_VIDEO_DURATION_SECONDS=10
 ```
 
 When a `single_track_video` workspace is ready and auto-publish is enabled, the worker can:
@@ -350,7 +350,7 @@ When a `single_track_video` workspace is ready and auto-publish is enabled, the 
 
 OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Create the final cover first with only the large, readable lower-left channel-name brand label, then generate the YouTube thumbnail from that exact cover as a reference/edit derivative so characters, positions, outfit colors, lighting, palette, background, and channel-brand scale remain consistent while click text/branding is added. The default visual signature is three people walking away from the viewer for Tokyo Daydream Radio, but an explicit human request for a different scene, subject, action, or camera angle overrides that default and should be applied consistently to cover, thumbnail, and loop video. Dreamina is only for animating the cover or first-frame image into a moving visual, and it must preserve the lower-left channel label for the full clip.
 
-OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the cover or a separate first-frame image that contains only the large, readable lower-left channel-name brand label, set `16:9`, `720p`, and exactly `8 seconds` when selectable, download the MP4 locally, then upload it with the command below:
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the cover or a separate first-frame image that contains only the large, readable lower-left channel-name brand label, set `16:9`, `720p`, and exactly `10 seconds` when selectable, download the MP4 locally, then upload it with the command below:
 
 ```bash
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
@@ -362,7 +362,7 @@ For full playlist automation, pass it directly:
 scripts/openclaw-release auto-publish-playlist ... --loop-video /absolute/path/to/clip.mp4
 ```
 
-The app repeats short clips internally, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. The cover/first-frame must contain only the large, readable lower-left channel label such as `Tokyo Daydream Radio`; instruct Dreamina/Seedance to preserve that exact text for the full clip and reject/regenerate if the text flickers, morphs, disappears, changes spelling/style, shrinks, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage.
+The app repeats short clips internally, so OpenClaw should upload only the 10 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 10 seconds. Existing releases with already-uploaded 8 second clips remain valid; do not regenerate them only because the new default is 10 seconds. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. The cover/first-frame must contain only the large, readable lower-left channel label such as `Tokyo Daydream Radio`; instruct Dreamina/Seedance to preserve that exact text for the full clip and reject/regenerate if the text flickers, morphs, disappears, changes spelling/style, shrinks, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage.
 
 If Dreamina/Seedance blocks generation for inappropriate content, copyright, moderation, or policy reasons, OpenClaw should retry up to 10 total attempts with a safer rewritten prompt. Do not retry the exact same prompt. Before every retry, post Slack progress with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`. Remove named artists, studios, franchises, copyrighted characters, brands, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. If all 10 attempts fail, post `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback.
 

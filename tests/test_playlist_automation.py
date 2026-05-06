@@ -1652,7 +1652,7 @@ def test_cover_image_can_be_uploaded_for_review(tmp_path) -> None:
             json={"actor": "test-suite"},
         )
         assert render_video_response.status_code == 400
-        assert "8 second loop video is required" in render_video_response.json()["detail"]
+        assert "10 second loop video is required" in render_video_response.json()["detail"]
 
         render_video_response = client.post(
             f"/api/playlists/{workspace_id}/video/render",

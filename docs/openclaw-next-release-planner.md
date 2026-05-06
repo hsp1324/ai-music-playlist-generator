@@ -235,7 +235,7 @@ Choose the next one-hour Playlist Release using docs/openclaw-next-release-plann
 - Pick a fresh concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the Automatic Private Playlist Publisher skill from docs/openclaw-skills.md.
-Create enough audio for at least 3600 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, metadata, and publish privately to the selected YouTube channel. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create enough audio for at least 3600 seconds, generate final cover, separate YouTube thumbnail, a 10 second loop video, metadata, and publish privately to the selected YouTube channel. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

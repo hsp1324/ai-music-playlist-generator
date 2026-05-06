@@ -36,8 +36,8 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 ## Loop Video
 
 - Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
-- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`.
+- Do not put `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
 - The loop video should use calm but clearly visible motion derived from the cover itself. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
 - Keep the camera locked. Do not ask for zoom, push-in, pull-back, dolly, camera breathing, camera drift, camera follow, or parallax camera movement unless the human explicitly requests camera movement.
 - Animate several environmental layers already present or naturally implied by the first frame, such as leaf clusters swaying, grass moving in a breeze, curtain movement, water or rain reflections, warm light shimmer, drifting dust motes, smoke, steam, fireflies, or soft air movement.

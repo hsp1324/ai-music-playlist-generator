@@ -35,8 +35,8 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 ## Loop Video
 
 - Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
-- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`.
+- Do not put `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
 - Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
 - Keep the `sundaze` brand label readable and unchanged for the full clip.
 - The final moment should stay close to the opening composition, crop, lighting, palette, and subject placement. The app handles smooth repetition with crossfade.

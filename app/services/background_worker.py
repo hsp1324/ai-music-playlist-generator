@@ -381,7 +381,7 @@ class BackgroundJobWorker:
             )
             meta["loop_video_render_mode"] = "still-image-fallback"
         else:
-            raise ValueError("Uploaded 8 second loop video is required before video render.")
+            raise ValueError("Uploaded 10 second loop video is required before video render.")
 
         rendered_video_path = playlist.output_video_path
         db.expire_all()

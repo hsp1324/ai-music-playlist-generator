@@ -92,7 +92,7 @@ class Settings(BaseSettings):
     dreamina_api_token: str = ""
     dreamina_account: str = ""
     dreamina_video_model: str = "seedance-1.5-pro"
-    dreamina_video_duration_seconds: int = 8
+    dreamina_video_duration_seconds: int = 10
     dreamina_video_ratio: str = "16:9"
     dreamina_poll_interval_seconds: float = 10.0
     dreamina_timeout_seconds: float = 240.0

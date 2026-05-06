@@ -58,7 +58,7 @@ router = APIRouter(prefix="/playlists", tags=["playlists"])
 
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_LOOP_VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
-LOOP_VIDEO_MIN_SECONDS = 6.0
+LOOP_VIDEO_MIN_SECONDS = 8.0
 LOOP_VIDEO_MAX_SECONDS = 12.0
 LOOP_VIDEO_SAMPLE_WIDTH = 64
 LOOP_VIDEO_SAMPLE_HEIGHT = 36
@@ -158,7 +158,7 @@ def _validate_loop_video_file(video_path: str, *, ffmpeg_binary: str) -> None:
         raise HTTPException(
             status_code=400,
             detail=(
-                "Loop video must be close to 8 seconds long "
+                "Loop video must be close to 10 seconds long "
                 f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted)."
             ),
         )
@@ -205,7 +205,7 @@ def _validate_loop_video_file(video_path: str, *, ffmpeg_binary: str) -> None:
             status_code=400,
             detail=(
                 "Uploaded loop video has too little visible motion. "
-                "Regenerate a moving 8 second Dreamina/Seedance clip before rendering."
+                "Regenerate a moving 10 second Dreamina/Seedance clip before rendering."
             ),
         )
 

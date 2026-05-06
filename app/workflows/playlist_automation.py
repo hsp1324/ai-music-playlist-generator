@@ -1163,7 +1163,7 @@ def queue_workspace_video_render(
         raise ValueError("Cover image must be approved before rendering video.")
     loop_video_path = str(meta.get("loop_video_path") or "").strip()
     if not allow_still_image_fallback and (not loop_video_path or not Path(loop_video_path).exists()):
-        raise ValueError("Uploaded 8 second loop video is required before rendering video.")
+        raise ValueError("Uploaded 10 second loop video is required before rendering video.")
 
     active_job = _find_active_video_job(db, playlist)
     meta["workflow_state"] = "video_queued"
