@@ -483,7 +483,7 @@ class FFMpegPlaylistBuilder:
         list_path = output_path.with_name(f"{output_path.stem}-loop-concat.txt")
 
         def escape_concat_path(path: Path) -> str:
-            return str(path).replace("'", "'\\''")
+            return str(path.resolve()).replace("'", "'\\''")
 
         lines = [f"file '{escape_concat_path(intro_path)}'"]
         lines.extend(f"file '{escape_concat_path(loop_unit_path)}'" for _ in range(repeat_count))
