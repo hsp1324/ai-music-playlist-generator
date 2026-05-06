@@ -159,6 +159,7 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert tokyo["youtube_channel_title"] == JAPAN_YOUTUBE_CHANNEL_TITLE
     assert tokyo["profile"] == "tokyo-daydream-radio"
     assert tokyo["profile_doc"] == "docs/openclaw-channel-profiles/tokyo-daydream-radio.md"
+    assert tokyo["concept_doc"] == "docs/openclaw-channel-concepts/tokyo-daydream-radio.md"
     assert tokyo["explicit_channel_requested"] is False
 
     soft_hour = build_channel_profile(
@@ -171,6 +172,7 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert soft_hour["youtube_channel_title"] == DEFAULT_YOUTUBE_CHANNEL_TITLE
     assert soft_hour["profile"] == "soft-hour-radio"
     assert soft_hour["profile_doc"] == "docs/openclaw-channel-profiles/soft-hour-radio.md"
+    assert soft_hour["concept_doc"] == "docs/openclaw-channel-concepts/soft-hour-radio.md"
     assert soft_hour["explicit_channel_requested"] is True
 
     sundaze = build_channel_profile(
@@ -183,6 +185,7 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert sundaze["youtube_channel_title"] == SUNDAZE_YOUTUBE_CHANNEL_TITLE
     assert sundaze["profile"] == "sundaze"
     assert sundaze["profile_doc"] == "docs/openclaw-channel-profiles/sundaze.md"
+    assert sundaze["concept_doc"] == "docs/openclaw-channel-concepts/sundaze.md"
 
     solwave = build_channel_profile(
         _auto_publish_args(
@@ -194,6 +197,7 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert solwave["youtube_channel_title"] == SOLWAVE_YOUTUBE_CHANNEL_TITLE
     assert solwave["profile"] == "solwave-radio"
     assert solwave["profile_doc"] == "docs/openclaw-channel-profiles/solwave-radio.md"
+    assert solwave["concept_doc"] == "docs/openclaw-channel-concepts/solwave-radio.md"
 
 
 def test_slack_notify_command_posts_plain_message() -> None:

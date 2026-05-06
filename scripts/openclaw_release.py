@@ -35,6 +35,12 @@ CHANNEL_PROFILE_DOCS = {
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/sundaze.md",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/solwave-radio.md",
 }
+CHANNEL_CONCEPT_DOCS = {
+    DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/soft-hour-radio.md",
+    JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/tokyo-daydream-radio.md",
+    SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/sundaze.md",
+    SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/solwave-radio.md",
+}
 CHANNEL_PROFILE_NAMES = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "soft-hour-radio",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "tokyo-daydream-radio",
@@ -926,14 +932,16 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
 def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
     title = infer_youtube_channel_title(args)
     profile_doc = CHANNEL_PROFILE_DOCS.get(title, "docs/openclaw-channel-profiles/custom-channel.md")
+    concept_doc = CHANNEL_CONCEPT_DOCS.get(title, "docs/openclaw-channel-concepts/custom-channel.md")
     return {
         "youtube_channel_title": title,
         "profile": CHANNEL_PROFILE_NAMES.get(title, "custom-channel"),
         "profile_doc": profile_doc,
+        "concept_doc": concept_doc,
         "explicit_channel_requested": bool(str(getattr(args, "youtube_channel_title", "") or "").strip()),
         "metadata_doc": "docs/openclaw-youtube-metadata.md",
         "shared_upload_doc": "docs/openclaw-upload.md",
-        "rule": "Pick the channel first, then read only that channel profile for cover, thumbnail, and loop-video visuals. Do not mix visual signatures across channels.",
+        "rule": "Pick the channel first, then read that channel's concept_doc for next-release planning and profile_doc for cover, thumbnail, and loop-video visuals. Do not mix signatures across channels.",
     }
 
 

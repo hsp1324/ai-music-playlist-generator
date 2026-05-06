@@ -2,6 +2,8 @@
 
 OpenClaw should decide the channel first, then read exactly one channel profile before making cover, thumbnail, or loop-video assets.
 
+For next-release concept planning, use [openclaw-channel-concepts](../openclaw-channel-concepts/README.md). Channel profiles are for visual and metadata execution, not for deciding the next fresh playlist idea.
+
 Recommended command:
 
 ```bash
@@ -21,7 +23,7 @@ scripts/openclaw-release channel-profile \
   --youtube-channel-title "Soft Hour Radio"
 ```
 
-The command returns `youtube_channel_title` and `profile_doc`. Read that `profile_doc` and do not mix visual signatures from another channel.
+The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. Read `concept_doc` for the next playlist concept and `profile_doc` for visual execution. Do not mix visual signatures from another channel.
 
 Global branding rule for every channel:
 

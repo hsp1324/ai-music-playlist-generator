@@ -16,7 +16,7 @@ export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 
 ## Continuous Next Release Planning
 
-When the app asks OpenClaw to create the next release after a publish completes, first use [openclaw-next-release-planner.md](openclaw-next-release-planner.md). That planner chooses the next channel and fresh concept, then hands off to this document's automatic private playlist publisher.
+When the app asks OpenClaw to create the next release after a publish completes, first use [openclaw-next-release-planner.md](openclaw-next-release-planner.md). That planner chooses the next channel, reads the selected channel's concept planner from [openclaw-channel-concepts](openclaw-channel-concepts/README.md), then hands off to this document's automatic private playlist publisher.
 
 ## Channel-First Workflow
 
@@ -39,7 +39,7 @@ scripts/openclaw-release channel-profile \
   --youtube-channel-title "Soft Hour Radio"
 ```
 
-Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-channel-profiles/README.md). Do not mix visual signatures across profiles.
+Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-channel-concepts/README.md) for concept planning and the returned `profile_doc` from [openclaw-channel-profiles](openclaw-channel-profiles/README.md) for cover, thumbnail, and loop-video rules. Do not mix concept or visual signatures across channels.
 
 ## Shared Rules
 
@@ -111,7 +111,7 @@ Then read the returned `profile_doc` from [openclaw-channel-profiles](openclaw-c
 - `cover`: video visual shown during playback. It should look good for the full video duration and must include only the selected channel name as a large, readable lower-left brand label used as the Dreamina/Seedance first-frame text reference. Match the visual scale of the channel-brand line used on the YouTube thumbnail; target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - `thumbnail`: YouTube click thumbnail. It should include short readable text such as `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `TOKYO NIGHT`, `CITY POP`, or `J-POP`, plus the selected channel name as a smaller brand line. Do not add duration text such as `1 HOUR`, `60 MIN`, `1時間`, or time badges.
 - For cover, thumbnail, and loop-video visual creation, follow [openclaw-visual-assets.md](openclaw-visual-assets.md).
-- Channel-specific cover, thumbnail, and loop-video rules are split into [openclaw-channel-profiles](openclaw-channel-profiles/README.md). Use `scripts/openclaw-release channel-profile` first, then read the returned `profile_doc`.
+- Channel-specific concept selection rules are split into [openclaw-channel-concepts](openclaw-channel-concepts/README.md), and channel-specific cover, thumbnail, and loop-video rules are split into [openclaw-channel-profiles](openclaw-channel-profiles/README.md). Use `scripts/openclaw-release channel-profile` first, then read the returned `concept_doc` for planning and `profile_doc` for visual execution.
 - Asset generation order is mandatory: create the final cover first with only the large lower-left channel brand label, then create the YouTube thumbnail as an image-to-image edit/reference derivative of that exact final cover. Do not create the thumbnail as a fresh unrelated image.
 - When generating the thumbnail from the cover reference, preserve the exact channel/requested subject, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add click text, channel branding, crop/contrast/readability adjustments, and small layout refinements. Example: if the right subject has a red cloak in the cover, the thumbnail must keep that cloak red.
 - If the generated thumbnail changes character identity, clothing color, subject count, subject placement, or core background compared with the cover, reject it and regenerate before uploading.

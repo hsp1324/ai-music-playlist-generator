@@ -2,7 +2,7 @@
 
 Use this skill when the AI Music web app asks OpenClaw to make the next one-hour playlist after a private YouTube publish completes.
 
-This skill is the first step of the continuous automation loop. It decides which channel and concept should be made next, then hands off to the automatic private playlist publisher in [openclaw-skills.md](openclaw-skills.md).
+This is the first step of the continuous automation loop. It chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the automatic private playlist publisher in [openclaw-skills.md](openclaw-skills.md).
 
 ## Goal
 
@@ -15,201 +15,93 @@ The current active channel roster is:
 - `sundaze`
 - `Solwave Radio`
 
-Future channels should be added as separate channel profiles before they enter the rotation.
+Future channels must get both files before entering rotation:
 
-## Channel Concepts
+- `docs/openclaw-channel-profiles/CHANNEL.md`
+- `docs/openclaw-channel-concepts/CHANNEL.md`
 
-### Tokyo Daydream Radio
+## Source Of Truth
 
-Tokyo Daydream Radio is a mainstream J-pop channel, not an anime OST-only channel.
+Use the app's local API through `scripts/openclaw-release`. Do not infer current state from Python settings imports, stale logs, browser pages, or memory.
 
-Use it for:
+Required first commands:
 
-- General popular J-pop, Japanese pop, city-pop, dance-pop, synth-pop, pop-rock, light band pop, emotional pop ballads, summer pop, night-drive pop, and upbeat youth pop.
-- Tokyo/Japan lifestyle scenes such as commute, night walk, beach walk, shopping street, train station, rainy city, weekend trip, cafe date, school-after-hours mood, festival night, or neon city drive.
-- Anime/OST-like songs only as one possible lane inside broader J-pop. Do not make every Tokyo Daydream release feel like an anime soundtrack.
+```bash
+cd /opt/ai-music-playlist-generator
+export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
+git pull origin main
+scripts/openclaw-release list-releases
+curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
+```
 
-Music defaults:
-
-- Vocal songs with original Japanese lyrics.
-- Catchy hooks, chorus-focused structure, clear pop melodies, and track-to-track variation.
-- Each playlist track needs its own lyric concept, hook, title, and Suno style/settings.
-- Avoid lyricless, BGM-only, hum-only, or instrumental J-pop unless the human explicitly asks.
-
-Visual defaults:
-
-- Animated/anime/illustrated/stylized visuals are still the visual language.
-- The default signature is three people seen from behind walking forward into the scene, but the music concept is mainstream J-pop, not anime-only.
-- The thumbnail uses large `J-POP` plus `TOKYO DAYDREAM RADIO`.
-
-Good concept examples:
-
-- `Tokyo Night Drive J-POP`
-- `Summer Beach Walk J-POP`
-- `Rainy Shibuya Pop`
-- `Weekend Train Ride J-POP`
-- `City Lights Dance Pop`
-- `After School Guitar Pop`
-- `Spring Shopping Street J-POP`
-
-Bad concept direction:
-
-- Repeating `anime opening`, `OST`, or `fantasy anime` every time.
-- Making Japan-themed BGM without vocals and calling it J-pop.
-- Highlighting only the Japanese language instead of the pop concept.
-
-### Soft Hour Radio
-
-Soft Hour Radio is a long-listening BGM channel.
-
-Use it for:
-
-- Study, work, reading, sleep, rest, cafe, focus, rainy night, forest, ocean, fireplace, piano, acoustic, lofi, ambient, and other background-use releases.
-
-Music defaults:
-
-- Instrumental/no-vocal BGM unless the human explicitly asks for vocals.
-- For Suno generation, use `docs/suno-v55-instrumental-format.md`: enable Instrumental when available, write only bracketed instrumental metatag lines in the lyrics/custom-lyrics field, and upload that exact file with `--lyrics-file`.
-- Use Suno Advanced Options excluded styles for no-vocal work: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
-- When prompting Suno, target roughly 3:00-3:30 per playlist track. 3:45 is still acceptable in the preferred range. Tracks up to 4:20 are acceptable as returned output, but do not intentionally ask for 4-minute tracks. Replace or regenerate anything longer unless the human explicitly approves it.
-- Prioritize usefulness, calmness, flow, and low listener fatigue.
-
-Visual defaults:
-
-- Calm illustrated/stylized scenes matched to the release concept.
-- No fixed character count or required walking signature.
-- Locked/stable camera by default unless the human asks for movement.
-- Thumbnail text should describe the use case, such as `CAFE PIANO`, `FOCUS MUSIC`, `DEEP SLEEP`, or `RAINY NIGHT`.
-
-Good concept examples:
-
-- `Cafe Piano for Work`
-- `Rainy Night Reading BGM`
-- `Deep Sleep Soft Piano`
-- `Forest Morning Focus Music`
-- `Ocean Window Study BGM`
-- `Fireplace Acoustic Rest`
-
-### sundaze
-
-sundaze is an English-language pop channel and the US/English-pop counterpart to Tokyo Daydream Radio.
-
-Use it for:
-
-- English vocal pop, American pop, US/UK pop, western pop, dance-pop, synth-pop, pop-rock, bright summer pop, night-drive pop, emotional pop ballads, and mainstream hook-driven pop.
-- Everyday listener scenes such as night drive, summer walk, rooftop evening, weekend road trip, gym/workout, beach afternoon, city lights, heartbreak, first love, or party warmup.
-
-Music defaults:
-
-- Vocal songs with original English lyrics.
-- Catchy hooks, chorus-focused structure, clear pop melodies, and track-to-track variation.
-- Each playlist track needs its own lyric concept, hook, title, and Suno style/settings.
-- Avoid lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly asks.
-
-Visual defaults:
-
-- No fixed recurring visual signature yet.
-- Cover, thumbnail, and loop-video scene should follow the selected playlist concept.
-- Thumbnail text should describe the pop mood, such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
-
-Good concept examples:
-
-- `Summer Night Drive Pop`
-- `Feel-Good Weekend Pop`
-- `Rooftop Dance Pop`
-- `Heartbreak Pop Radio`
-- `Road Trip Pop`
-
-### Solwave Radio
-
-Solwave Radio is a Latin/Spanish-language music channel and the Spanish/Latin counterpart to Tokyo Daydream Radio.
-
-Use it for:
-
-- Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, verano latino, and similar Spanish vocal releases.
-- Listener scenes such as beach sunset, summer party, night drive, city dancing, tropical rain, rooftop fiesta, late-night romance, or morning energy.
-
-Music defaults:
-
-- Vocal songs with original Spanish lyrics.
-- Rhythm-forward arrangements, clear hooks, chorus-focused structure, and track-to-track variation.
-- Each playlist track needs its own lyric concept, hook, title, and Suno style/settings.
-- Avoid lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly asks.
-
-Visual defaults:
-
-- No fixed recurring visual signature yet.
-- Cover, thumbnail, and loop-video scene should follow the selected playlist concept.
-- Thumbnail text should describe the Latin/Spanish pop mood, such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
-
-Good concept examples:
-
-- `Verano Latino Pop`
-- `Noche de Reggaeton Pop`
-- `Beach Sunset Latin Pop`
-- `Bachata Pop Romance`
-- `City Lights Urbano Latino`
+Treat `list-releases` as the app's known YouTube upload catalog. It contains release titles, channel titles, YouTube ids, durations, and recent update times. If the human says there are relevant YouTube uploads outside this app, report that limitation before claiming a concept is non-duplicated.
 
 ## Rotation Rules
 
-1. Run `scripts/openclaw-release list-releases` and inspect recent playlist releases.
-2. Prefer rotating active channels instead of using the same channel repeatedly. With the current four-channel roster, choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
-3. If the previous channel is missing or ambiguous, choose the active channel with the oldest recent published playlist. If still tied, choose the channel that best improves variety.
-4. Do not pick the same channel twice in a row unless the other channel is blocked, unavailable, or the human explicitly requested it.
-5. When future channels are added, rotate across all active channels while respecting each channel's profile and upload readiness.
+1. Inspect recent Playlist Releases from `scripts/openclaw-release list-releases`.
+2. Prefer rotating active channels instead of using the same channel repeatedly.
+3. Choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
+4. Do not pick the same channel twice in a row unless another channel is blocked, not connected, unavailable, or explicitly requested.
+5. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
+6. When future channels are added, rotate across all active channels while respecting each channel's concept planner and profile.
 
-## Fresh Concept Rules
+## Channel Concept Delegation
 
-Before choosing a concept:
+After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. Read both returned docs:
 
-1. Review recent release titles, channel names, descriptions, and YouTube ids from `scripts/openclaw-release list-releases`.
-2. Avoid repeating the same theme, setting, title pattern, thumbnail phrase, lyric premise, and visual scene used recently.
-3. Keep the selected channel identity stable while varying the specific release concept.
-4. Prefer concepts that are easy for YouTube viewers to understand quickly from the title and thumbnail.
-5. Prefer search/click-friendly phrases, but do not stuff keywords or make titles feel machine-generated.
+- `concept_doc`: choose the next playlist concept and avoid recent repetition.
+- `profile_doc`: generate cover, thumbnail, and 10 second loop video without mixing channel visual signatures.
 
-For `Tokyo Daydream Radio`, vary:
+Example:
 
-- city/night/day/beach/rain/train/spring/summer/festival/weekend/drive/walk/cafe/street settings
-- pop substyle: dance-pop, city-pop, synth-pop, guitar pop, pop-rock, ballad, bright summer pop
-- lyric angle: new start, night escape, first love, walking home, city lights, weekend freedom, seaside memory
+```bash
+scripts/openclaw-release channel-profile \
+  --release-title "NEXT_RELEASE_IDEA" \
+  --description "NEXT_RELEASE_CONCEPT" \
+  --youtube-channel-title "Tokyo Daydream Radio"
+```
 
-For `Soft Hour Radio`, vary:
+The active channel concept docs are:
 
-- use case: study, work, reading, sleep, rest, cafe, focus
-- setting: rain, forest, ocean, fireplace, window, morning, late night
-- instrument palette: piano, guitar, Rhodes, strings, lofi drums, ambient pads, acoustic textures
+- `docs/openclaw-channel-concepts/tokyo-daydream-radio.md`
+- `docs/openclaw-channel-concepts/soft-hour-radio.md`
+- `docs/openclaw-channel-concepts/sundaze.md`
+- `docs/openclaw-channel-concepts/solwave-radio.md`
 
-For `sundaze`, vary:
+## Freshness Rules
 
-- pop scene: night drive, summer road trip, city lights, rooftop, beach, gym, party, heartbreak, weekend freedom
-- pop substyle: dance-pop, synth-pop, guitar pop, pop-rock, bright summer pop, emotional ballad, chill pop
-- lyric angle: new start, last text, first love, escape, confidence, weekend, moving on
+Before finalizing a concept:
 
-For `Solwave Radio`, vary:
+1. Filter recent releases by the selected `youtube_channel_title`.
+2. Inspect at least the latest 5 releases on that channel when available.
+3. Inspect the latest 15-20 releases globally for cross-channel repetition.
+4. Extract recent setting, use case, subgenre, lyric premise, thumbnail phrase, visual scene, and title pattern.
+5. Follow the selected channel's `concept_doc`.
+6. Keep the channel identity stable while varying the specific concept.
+7. Prefer concepts that are clear from title and thumbnail within a few seconds.
+8. Prefer search/click-friendly phrases, but do not stuff keywords or make titles feel machine-generated.
 
-- Latin scene: beach sunset, rooftop fiesta, tropical rain, night drive, city dancing, summer morning, late-night romance
-- Latin substyle: Latin pop, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, urbano latino
-- lyric angle: verano, baile, amor, libertad, noche, playa, regreso, fiesta
+Do not choose a concept if it only changes adjectives while repeating the same channel, use case, setting, visual scene, and music direction as a recent upload.
 
 ## Output Plan
 
-After selecting the next channel and concept, immediately continue into the automatic private playlist publisher skill.
-
-The selected plan should include:
+Return this compact plan before generating audio:
 
 - `selected_channel`
+- `concept_doc`
+- `profile_doc`
 - `release_title`
 - `release_description`
 - `music_direction`
 - `visual_direction`
 - `thumbnail_text`
 - `metadata_language_plan`
-- brief reason why this was chosen and how it differs from recent releases
+- `recent_releases_checked`
+- `why_this_is_fresh`
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
-Then execute the one-hour playlist automation from [openclaw-skills.md](openclaw-skills.md), using the selected channel and concept.
+After the plan, immediately continue into [openclaw-skills.md](openclaw-skills.md) Skill 3: `Automatic Private Playlist Publisher`, using the selected channel and concept.
 
 ## Skill Prompt
 
@@ -219,29 +111,32 @@ You are the Next Release Planner for the AI Music app.
 Work in /opt/ai-music-playlist-generator on the Oracle VM.
 Use scripts/openclaw-release only.
 
-First, update the repo:
+First, update the repo and inspect app state:
 git pull origin main
-
-Then inspect recent releases:
+export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
 scripts/openclaw-release list-releases
+curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
 - Current active channels are Tokyo Daydream Radio, Soft Hour Radio, sundaze, and Solwave Radio.
-- Tokyo Daydream Radio is mainstream J-pop/pop with Japanese vocals; anime/OST-like music is allowed but not the whole channel identity.
-- Soft Hour Radio is instrumental/no-vocal long-listening BGM for study, work, reading, sleep, rest, cafe, and focus.
-- sundaze is English/American pop with English vocals.
-- Solwave Radio is Latin/Spanish pop with Spanish vocals.
-- Pick a fresh concept not used recently while keeping the selected channel identity clear.
+- Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
+- Select the channel, then run scripts/openclaw-release channel-profile with that channel.
+- Read the returned concept_doc to choose a fresh concept.
+- Read the returned profile_doc before making cover, thumbnail, and loop video assets.
+- Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the Automatic Private Playlist Publisher skill from docs/openclaw-skills.md.
 Create enough audio for at least 3600 seconds, generate final cover, separate YouTube thumbnail, a 10 second loop video, metadata, and publish privately to the selected YouTube channel. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel
+- concept_doc
+- profile_doc
 - release.id
 - release.title
 - youtube_video_id
 - privacy: private
-- short reason for the chosen concept
+- recent_releases_checked
+- why_this_is_fresh
 ```
