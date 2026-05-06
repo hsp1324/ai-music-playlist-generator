@@ -22,6 +22,15 @@ Every non-empty line must start with `[` and end with `]`.
 
 Do not put normal sentences, paragraphs, bullet points, Korean prose, English prose, or unbracketed arrangement notes in the lyrics/custom-lyrics field.
 
+## Producer Tag / Artist Reference Safety
+
+Suno can block lyrics/custom-lyrics, metatags, style, prompts, tags, or excluded styles when a word looks like a producer tag or a specific artist reference.
+
+- Do not use producer names, artist names, label names, artist-like aliases, `type beat` credit text, or exact imitation phrases.
+- Known blocked example: `lowlight` can trigger `Your lyrics contain producer tag lowlight - we don't reference specific artists on Suno, please change your lyrics and try again.`
+- If Suno flags a term, replace it with generic descriptive wording before retrying. For `lowlight`, use alternatives like `low-lit`, `dim`, `shadowy`, `muted night`, `soft ambient`, or `dark warm room tone`.
+- This rule applies even inside bracketed instrumental metatags. Write `[Intro: dim felt piano in a quiet room]`, not `[Intro: lowlight felt piano]`.
+
 ## Suno UI / API Settings
 
 - In the Suno UI, enable `Instrumental` when that control is available.
