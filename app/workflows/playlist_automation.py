@@ -1790,8 +1790,6 @@ def reorder_workspace_tracks(
         )
         meta["previous_youtube_uploads"] = previous_uploads
     meta.pop("render_error", None)
-    meta.pop("cover_image_path", None)
-    meta.pop("cover_approved", None)
     meta.pop("metadata_approved", None)
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)
@@ -1891,8 +1889,6 @@ def queue_workspace_audio_render(
         else "Playlist audio render queued from the web dashboard."
     )
     meta.pop("render_error", None)
-    meta.pop("cover_image_path", None)
-    meta.pop("cover_approved", None)
     meta.pop("metadata_approved", None)
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)
@@ -1978,8 +1974,6 @@ async def return_track_to_workspace_queue(
     meta.pop("publish_ready_trigger", None)
     meta.pop("render_ready", None)
     meta.pop("render_error", None)
-    meta.pop("cover_image_path", None)
-    meta.pop("cover_approved", None)
     meta.pop("metadata_approved", None)
     meta.pop("youtube_title", None)
     meta.pop("youtube_description", None)

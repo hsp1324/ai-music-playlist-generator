@@ -1045,6 +1045,8 @@ def test_workspace_tracks_can_be_reordered(tmp_path) -> None:
 
         stale_output = tmp_path / "old-render.mp3"
         stale_output.write_bytes(b"old")
+        cover_path = tmp_path / "existing-cover.png"
+        cover_path.write_bytes(b"cover")
         db = SessionLocal()
         try:
             playlist = db.get(Playlist, workspace_id)
@@ -1053,6 +1055,9 @@ def test_workspace_tracks_can_be_reordered(tmp_path) -> None:
                 **(playlist.metadata_json or {}),
                 "render_ready": True,
                 "workflow_state": "pending_publish_approval",
+                "cover_image_path": str(cover_path),
+                "cover_source": "manual-upload",
+                "cover_approved": True,
             }
             db.add(playlist)
             db.commit()
@@ -1073,6 +1078,8 @@ def test_workspace_tracks_can_be_reordered(tmp_path) -> None:
         assert [track["id"] for track in workspace["tracks"]] == new_order
         assert workspace["output_audio_path"] is None
         assert workspace["workflow_state"] == "render_required"
+        assert workspace["cover_image_path"] == str(cover_path)
+        assert workspace["cover_approved"] is True
         assert workspace["note"] == "Track order changed. Re-render audio to update the playlist file."
     finally:
         clear_isolated_client_env()
@@ -1123,6 +1130,22 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
             )
             assert approve_response.status_code == 200
 
+        cover_path = tmp_path / "existing-cover.png"
+        cover_path.write_bytes(b"cover")
+        db = SessionLocal()
+        try:
+            playlist = db.get(Playlist, workspace_id)
+            playlist.metadata_json = {
+                **(playlist.metadata_json or {}),
+                "cover_image_path": str(cover_path),
+                "cover_source": "manual-upload",
+                "cover_approved": True,
+            }
+            db.add(playlist)
+            db.commit()
+        finally:
+            db.close()
+
         render_response = client.post(
             f"/api/playlists/{workspace_id}/render-audio",
             json={
@@ -1134,6 +1157,8 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         assert queued["status"] == "building"
         assert queued["workflow_state"] == "render_queued"
         assert queued["output_audio_path"] is None
+        assert queued["cover_image_path"] == str(cover_path)
+        assert queued["cover_approved"] is True
         assert queued["render_job"]["status"] == "queued"
         assert queued["render_job"]["source"] == "web:render-audio"
 
@@ -1143,6 +1168,8 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert workspace["output_audio_path"].endswith(".mp3")
         assert workspace["workflow_state"] == "rendered"
+        assert workspace["cover_image_path"] == str(cover_path)
+        assert workspace["cover_approved"] is True
         assert workspace["render_job"]["status"] == "succeeded"
         assert workspace["render_job"]["output_audio_path"] == workspace["output_audio_path"]
         assert workspace["actual_duration_seconds"] == 120
