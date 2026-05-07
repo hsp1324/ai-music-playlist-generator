@@ -6,13 +6,9 @@ For higher-level OpenClaw skill instructions, including "make one single", "buil
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned `profile_doc` in [openclaw-channel-profiles](openclaw-channel-profiles/README.md). For next-release concept planning, read the returned `concept_doc` in [openclaw-channel-concepts](openclaw-channel-concepts/README.md).
 
-Run these commands on the Oracle VM from the repo root:
+Run these commands from the OpenClaw repo checkout, normally `~/repos/ai-music-playlist-generator` in the OpenClaw runtime. If that path is missing, try `~/repos/ai리포` or the current checkout.
 
-```bash
-cd /opt/ai-music-playlist-generator
-```
-
-Do not use the public `https://ai-music...sslip.io` URL from OpenClaw. Public traffic is protected by Google login. Use the local API through the helper script instead.
+Use `scripts/openclaw-release` against the deployed AI Music app API. `AIMP_LOCAL_API_BASE` must point to the deployed VM app API or a tunnel to that API. Do not use OpenClaw's own local dev API; if `/youtube/status` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, stop before generation/publish because the API target is wrong.
 
 ## Upload A New Single Candidate Set
 
@@ -426,7 +422,7 @@ The web UI also has `Generate Draft Cover`, but that only creates a simple local
 Give OpenClaw this instruction before it starts Suno:
 
 ```text
-Before opening Suno or generating audio, create or select the destination release in the local AI Music app from /opt/ai-music-playlist-generator.
+Before opening Suno or generating audio, create or select the destination release in the local AI Music app from the OpenClaw repo checkout.
 For a new single candidate set, first create one Single Release:
 
 scripts/openclaw-release create-release --workspace-mode single --release-title "TITLE" --description "CONCEPT"

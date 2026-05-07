@@ -150,7 +150,10 @@ def build_next_playlist_request_message(
         [
             "",
             "작업 기준:",
-            "- /opt/ai-music-playlist-generator 리포에서 최신 main을 pull 해줘.",
+            "- OpenClaw 런타임의 repo는 보통 ~/repos/ai-music-playlist-generator 입니다. 없으면 ~/repos/ai리포 또는 현재 checkout을 사용해줘.",
+            "- 최신 main을 pull 해줘.",
+            "- AIMP_LOCAL_API_BASE는 배포된 Oracle VM 앱 API 또는 그 API로 연결되는 터널이어야 합니다. OpenClaw 로컬 dev API를 사용하지 마세요.",
+            "- /youtube/status가 configured=false, authenticated=false, ready=false, channels=[]이면 잘못된 API를 보고 있는 것이므로 audio/Suno/Dreamina/publish를 시작하지 말고 중단 사유를 알려줘.",
             "- 먼저 docs/openclaw-next-release-planner.md를 읽고 그대로 따라줘.",
             "- 그 다음 docs/openclaw-skills.md, docs/openclaw-channel-concepts/README.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
             "- 현재 활성 채널을 순서대로 번갈아 운영하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",

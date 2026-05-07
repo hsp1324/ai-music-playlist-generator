@@ -16,8 +16,8 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 
 ## Rules
 
-- Work in `/opt/ai-music-playlist-generator`.
-- Use the local helper script, not the public website URL.
+- Work in the OpenClaw repo checkout, normally `~/repos/ai-music-playlist-generator`; if missing, try `~/repos/ai리포` or the current checkout.
+- Use `scripts/openclaw-release` against the deployed AI Music app API. `AIMP_LOCAL_API_BASE` must point to the deployed VM app API or a tunnel to that API, not OpenClaw's local dev API.
 - Do not publish or re-upload to YouTube unless the human explicitly asks.
 - The release must already have a rendered video before metadata can be approved.
 - For tags, provide comma-separated plain tags without `#`, for example `Piano,CafePiano,StudyMusic,WorkMusic`.

@@ -36,14 +36,28 @@ Future channels must get both files before entering rotation:
 
 ## Source Of Truth
 
-Use the app's local API through `scripts/openclaw-release`. Do not infer current state from Python settings imports, stale logs, browser pages, or memory.
+Use the deployed AI Music app API through `scripts/openclaw-release`. Do not infer current state from Python settings imports, stale logs, browser pages, local dev servers, or memory.
+
+OpenClaw usually runs outside the Oracle VM. In that runtime, the repo checkout is normally:
+
+```bash
+~/repos/ai-music-playlist-generator
+```
+
+If that path is missing, try `~/repos/ai리포` or the current checkout before failing. Do not require `/opt/ai-music-playlist-generator`; that path is the deployed VM service path, not the OpenClaw runtime path.
+
+`AIMP_LOCAL_API_BASE` must point to the deployed VM app API or to a tunnel that forwards to the deployed VM app. Do not use OpenClaw's own local dev API. If `curl "$AIMP_LOCAL_API_BASE/youtube/status"` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, assume you are pointed at the wrong API and stop before generation/publish.
 
 Required first commands:
 
 ```bash
-cd /opt/ai-music-playlist-generator
-export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
+REPO_DIR="${AIMP_REPO_DIR:-$HOME/repos/ai-music-playlist-generator}"
+if [ ! -d "$REPO_DIR" ] && [ -d "$HOME/repos/ai리포" ]; then
+  REPO_DIR="$HOME/repos/ai리포"
+fi
+cd "$REPO_DIR"
 git pull origin main
+: "${AIMP_LOCAL_API_BASE:?Set AIMP_LOCAL_API_BASE to the deployed VM API or VM API tunnel before running OpenClaw automation.}"
 scripts/openclaw-release list-releases
 curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
 ```
@@ -122,14 +136,21 @@ After the plan, immediately continue into [openclaw-skills.md](openclaw-skills.m
 ```text
 You are the Next Release Planner for the AI Music app.
 
-Work in /opt/ai-music-playlist-generator on the Oracle VM.
+Work in the OpenClaw repo checkout, normally ~/repos/ai-music-playlist-generator.
 Use scripts/openclaw-release only.
 
 First, update the repo and inspect app state:
+REPO_DIR="${AIMP_REPO_DIR:-$HOME/repos/ai-music-playlist-generator}"
+if [ ! -d "$REPO_DIR" ] && [ -d "$HOME/repos/ai리포" ]; then
+  REPO_DIR="$HOME/repos/ai리포"
+fi
+cd "$REPO_DIR"
 git pull origin main
-export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
+: "${AIMP_LOCAL_API_BASE:?Set AIMP_LOCAL_API_BASE to the deployed VM API or VM API tunnel. Do not use the OpenClaw local dev API.}"
 scripts/openclaw-release list-releases
 curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
+
+If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.

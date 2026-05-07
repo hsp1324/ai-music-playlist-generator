@@ -2,17 +2,15 @@
 
 Use this document as the instruction source when asking OpenClaw to create or run release-production skills for this repo.
 
-OpenClaw must run commands on the Oracle VM from:
+OpenClaw must run commands from its repo checkout. In the current OpenClaw runtime this is normally:
 
 ```bash
-cd /opt/ai-music-playlist-generator
+cd ~/repos/ai-music-playlist-generator
 ```
 
-Use the local API or the helper script. Do not use the public `https://ai-music...sslip.io` URL because it is protected by Google login.
+If that path is missing, try `~/repos/ai리포` or the current checkout. Do not require `/opt/ai-music-playlist-generator`; that path is the deployed Oracle VM service path.
 
-```bash
-export AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api
-```
+Use `scripts/openclaw-release` against the deployed AI Music app API. `AIMP_LOCAL_API_BASE` must point to the deployed VM app API or a tunnel to that API. Do not use OpenClaw's own local dev API; if `/youtube/status` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, stop before generation/publish because the API target is wrong.
 
 ## Continuous Next Release Planning
 
@@ -154,7 +152,7 @@ Generate one Single Release candidate set. Suno normally returns two candidate s
 ```text
 You are creating one Single Release for the AI Music app.
 
-Work in /opt/ai-music-playlist-generator on the Oracle VM.
+Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use the local app API only through scripts/openclaw-release.
 
 Goal:
@@ -250,7 +248,7 @@ For mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-p
 ```text
 You are creating and privately publishing one Single Release for the AI Music app.
 
-Work in /opt/ai-music-playlist-generator on the Oracle VM.
+Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
 
 Goal:
@@ -373,7 +371,7 @@ Generate enough material before publishing:
 ```text
 You are creating and privately publishing a one-hour Playlist Release for the AI Music app.
 
-Work in /opt/ai-music-playlist-generator on the Oracle VM.
+Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
 
 Goal:
