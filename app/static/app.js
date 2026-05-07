@@ -19,6 +19,8 @@ const state = {
 const appHeader = document.querySelector(".app-header");
 const quickUploadPanel = document.querySelector(".quick-upload-panel");
 const boardShell = document.querySelector(".board-shell");
+const channelOverviewSection = document.querySelector(".channel-overview-section");
+const channelSummaryGrid = document.querySelector("#channel-summary-grid");
 const workspaceGrid = document.querySelector("#workspace-grid");
 const workspaceSection = document.querySelector(".workspace-section");
 const archivedWorkspaceSection = document.querySelector("#archived-workspace-section");
@@ -282,6 +284,7 @@ function renderLayoutMode() {
   document.body.classList.toggle("release-focus-mode", state.releaseFocus);
   if (appHeader) appHeader.hidden = state.releaseFocus;
   if (quickUploadPanel) quickUploadPanel.hidden = state.releaseFocus;
+  if (channelOverviewSection) channelOverviewSection.hidden = state.releaseFocus;
   if (workspaceSection) workspaceSection.hidden = state.releaseFocus;
   if (utilityDrawer) utilityDrawer.hidden = state.releaseFocus || !state.drawerOpen;
   if (boardShell) boardShell.classList.toggle("focus-board", state.releaseFocus);
@@ -1501,20 +1504,50 @@ function activeWorkspaces() {
 }
 
 function channelFilterOptions() {
+  return channelUploadSummaries().map((channel) => ({
+    key: channel.key,
+    label: channel.label,
+    count: channel.count,
+  }));
+}
+
+function channelUploadSummaries() {
   const channels = new Map();
   activeWorkspaces().forEach((workspace) => {
     if (!releasePublishedChannelLabel(workspace)) return;
     const key = releaseChannelKey(workspace);
+    const updatedAt = new Date(workspace.updated_at || workspace.created_at || 0);
+    const updatedTime = Number.isNaN(updatedAt.getTime()) ? 0 : updatedAt.getTime();
     const existing = channels.get(key) || {
       key,
       label: releaseChannelDisplayLabel(workspace),
       count: 0,
+      playlistCount: 0,
+      singleCount: 0,
+      totalDuration: 0,
+      latestTitle: "",
+      latestAt: 0,
+      latestAtLabel: "",
     };
     existing.count += 1;
+    existing.totalDuration += Number(workspace.rendered_duration_seconds || workspace.actual_duration_seconds || 0);
+    if (isSingleRelease(workspace)) {
+      existing.singleCount += 1;
+    } else {
+      existing.playlistCount += 1;
+    }
+    if (updatedTime >= existing.latestAt) {
+      existing.latestAt = updatedTime;
+      existing.latestAtLabel = formatArchiveDate(workspace.updated_at || workspace.created_at);
+      existing.latestTitle = displayTitle(workspace.youtube_title || workspace.title, "Untitled Release");
+    }
     channels.set(key, existing);
   });
 
-  return [...channels.values()].sort((left, right) => left.label.localeCompare(right.label));
+  return [...channels.values()].sort((left, right) => {
+    if (right.count !== left.count) return right.count - left.count;
+    return left.label.localeCompare(right.label);
+  });
 }
 
 function ensureChannelFilter() {
@@ -1606,6 +1639,91 @@ function renderChannelFilter() {
   channelFilterSelect.value = state.channelFilter;
   channelFilterSelect.disabled = !options.length;
   channelFilterSelect.closest(".channel-filter")?.classList.toggle("disabled", !options.length);
+}
+
+function setChannelFilter(channelKey, scrollToList = false) {
+  state.channelFilter = channelKey || CHANNEL_FILTER_ALL;
+  state.workspaceTab = "active";
+  state.selectedWorkspaceId = "";
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+  updateToolbarSummary();
+  if (scrollToList) {
+    workspaceSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function renderChannelSummary() {
+  if (!channelSummaryGrid) return;
+  const channels = channelUploadSummaries();
+  channelSummaryGrid.innerHTML = "";
+
+  if (!channels.length) {
+    const empty = document.createElement("div");
+    empty.className = "channel-summary-empty";
+    empty.textContent = "아직 앱에 기록된 YouTube 업로드가 없습니다.";
+    channelSummaryGrid.appendChild(empty);
+    return;
+  }
+
+  const total = channels.reduce(
+    (summary, channel) => ({
+      count: summary.count + channel.count,
+      playlistCount: summary.playlistCount + channel.playlistCount,
+      singleCount: summary.singleCount + channel.singleCount,
+      totalDuration: summary.totalDuration + channel.totalDuration,
+    }),
+    { count: 0, playlistCount: 0, singleCount: 0, totalDuration: 0 }
+  );
+  channelSummaryGrid.appendChild(
+    channelSummaryCard({
+      key: CHANNEL_FILTER_ALL,
+      label: "All Channels",
+      count: total.count,
+      playlistCount: total.playlistCount,
+      singleCount: total.singleCount,
+      totalDuration: total.totalDuration,
+      latestTitle: "전체 release 보기",
+      latestAtLabel: "",
+    })
+  );
+
+  channels.forEach((channel) => {
+    channelSummaryGrid.appendChild(channelSummaryCard(channel));
+  });
+}
+
+function channelSummaryCard(channel) {
+  const card = document.createElement("button");
+  card.className = "channel-summary-card";
+  card.type = "button";
+  card.classList.toggle("active", state.channelFilter === channel.key);
+  card.addEventListener("click", () => setChannelFilter(channel.key, true));
+
+  const label = document.createElement("span");
+  label.className = "channel-summary-label";
+  label.textContent = channel.label;
+
+  const count = document.createElement("strong");
+  count.className = "channel-summary-count";
+  count.textContent = String(channel.count);
+
+  const caption = document.createElement("span");
+  caption.className = "channel-summary-caption";
+  caption.textContent = "uploaded releases";
+
+  const meta = document.createElement("span");
+  meta.className = "channel-summary-meta";
+  const totalDuration = channel.totalDuration >= 3600 ? formatLongDuration(channel.totalDuration) : formatDuration(channel.totalDuration);
+  meta.textContent = `Playlist ${channel.playlistCount} · Single ${channel.singleCount} · ${totalDuration}`;
+
+  const latest = document.createElement("span");
+  latest.className = "channel-summary-latest";
+  const latestDate = channel.latestAtLabel ? ` · ${channel.latestAtLabel}` : "";
+  latest.textContent = `${channel.latestTitle || "최근 업로드 없음"}${latestDate}`;
+
+  card.append(label, count, caption, meta, latest);
+  return card;
 }
 
 function setWorkspaceTab(tab) {
@@ -1905,6 +2023,7 @@ function selectWorkspace(workspaceId, scrollIntoView = true) {
 
 function renderWorkspaceTiles() {
   renderWorkspaceTabs();
+  renderChannelSummary();
   workspaceGrid.innerHTML = "";
   renderArchivedWorkspaceTiles();
 
@@ -2846,12 +2965,7 @@ workspaceTabButtons.forEach((button) => {
   button.addEventListener("click", () => setWorkspaceTab(button.dataset.workspaceTab));
 });
 channelFilterSelect?.addEventListener("change", () => {
-  state.channelFilter = channelFilterSelect.value || CHANNEL_FILTER_ALL;
-  state.workspaceTab = "active";
-  state.selectedWorkspaceId = "";
-  renderWorkspaceTiles();
-  renderWorkspaceDetail();
-  updateToolbarSummary();
+  setChannelFilter(channelFilterSelect.value || CHANNEL_FILTER_ALL);
 });
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
 window.addEventListener("popstate", () => {

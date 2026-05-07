@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260502p" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260507a" />
   </head>
   <body>
     <div class="shell">
@@ -32,39 +32,39 @@
         </section>
       </header>
 
-      <section class="quick-upload-panel">
-        <div class="quick-upload-copy">
-          <p class="section-kicker">Intake</p>
-          <h2>Upload Music</h2>
-          <p class="detail-copy">Audio와 cover를 넣고 release만 선택하세요.</p>
-        </div>
-        <div id="upload-dropzone" class="upload-dropzone" tabindex="0">
-          <input id="quick-upload-input" type="file" accept="audio/*" multiple hidden />
-          <input id="quick-upload-cover-input" type="file" accept="image/*" multiple hidden />
-          <div>
-            <p class="upload-dropzone-title">Drop files</p>
-            <p class="upload-dropzone-copy">MP3 + optional cover</p>
-          </div>
-          <div class="upload-picker-actions">
-            <button id="quick-upload-pick-button" class="toolbar-button" type="button">Audio</button>
-            <button id="quick-upload-cover-pick-button" class="toolbar-button" type="button">Cover</button>
-          </div>
-        </div>
-        <div class="quick-upload-controls">
-          <label>
-            <span>Release</span>
-            <select id="quick-upload-workspace-select">
-              <option value="">Choose release</option>
-            </select>
-          </label>
-          <button id="quick-upload-submit-button" class="action-button primary-button" type="button">Upload</button>
-          <div id="quick-upload-file-list" class="quick-upload-file-list">No files selected.</div>
-          <pre id="quick-upload-status" class="status-box compact-status">대기 중</pre>
-        </div>
-      </section>
-
       <section id="utility-drawer" class="utility-drawer" hidden>
         <div class="drawer-grid">
+          <section class="drawer-panel quick-upload-panel drawer-quick-upload">
+            <div class="quick-upload-copy">
+              <p class="section-kicker">Intake</p>
+              <h2>Upload Music</h2>
+              <p class="detail-copy">Audio와 cover를 넣고 release만 선택하세요.</p>
+            </div>
+            <div id="upload-dropzone" class="upload-dropzone" tabindex="0">
+              <input id="quick-upload-input" type="file" accept="audio/*" multiple hidden />
+              <input id="quick-upload-cover-input" type="file" accept="image/*" multiple hidden />
+              <div>
+                <p class="upload-dropzone-title">Drop files</p>
+                <p class="upload-dropzone-copy">MP3 + optional cover</p>
+              </div>
+              <div class="upload-picker-actions">
+                <button id="quick-upload-pick-button" class="toolbar-button" type="button">Audio</button>
+                <button id="quick-upload-cover-pick-button" class="toolbar-button" type="button">Cover</button>
+              </div>
+            </div>
+            <div class="quick-upload-controls">
+              <label>
+                <span>Release</span>
+                <select id="quick-upload-workspace-select">
+                  <option value="">Choose release</option>
+                </select>
+              </label>
+              <button id="quick-upload-submit-button" class="action-button primary-button" type="button">Upload</button>
+              <div id="quick-upload-file-list" class="quick-upload-file-list">No files selected.</div>
+              <pre id="quick-upload-status" class="status-box compact-status">대기 중</pre>
+            </div>
+          </section>
+
           <section class="drawer-panel">
             <div class="panel-head">
               <p class="section-kicker">Manual Intake</p>
@@ -211,6 +211,17 @@
       </section>
 
       <main class="board-shell">
+        <section class="channel-overview-section">
+          <div class="section-headline">
+            <div>
+              <p class="section-kicker">Channels</p>
+              <h2>채널별 업로드 현황</h2>
+              <p class="detail-copy">앱에 기록된 YouTube 업로드 기준입니다. 채널을 누르면 해당 release만 봅니다.</p>
+            </div>
+          </div>
+          <div id="channel-summary-grid" class="channel-summary-grid"></div>
+        </section>
+
         <section class="workspace-section">
           <div class="section-headline">
             <div>
@@ -353,6 +364,6 @@
       </article>
     </template>
 
-    <script src="/assets/app.js?v=20260505e" defer></script>
+    <script src="/assets/app.js?v=20260507a" defer></script>
   </body>
 </html>
