@@ -2480,19 +2480,34 @@ function renderWorkspaceDetail() {
             : "Render Mix",
           "action-button secondary-button",
           async () => {
-            const randomizeOrder = !isSingleRelease(workspace) && window.confirm(
-              "이번 audio render에서 곡 순서를 랜덤으로 섞을까요?\n\n확인: 랜덤 순서로 렌더\n취소: 현재 Final Order 그대로 렌더"
-            );
             await api(`/api/playlists/${workspace.id}/render-audio`, {
               method: "POST",
               body: JSON.stringify({
                 actor: "web-ui",
-                random: randomizeOrder,
+                random: false,
               }),
             });
           }
         )
       );
+      if (!isSingleRelease(workspace) && workspace.tracks.length > 1) {
+        appendDetailAction(
+          detailActionGroups.audio,
+          actionButton("Shuffle Render", "action-button secondary-button", async () => {
+            const proceed = window.confirm(
+              "현재 Final Order를 랜덤으로 섞은 뒤 audio render를 시작합니다.\n\n수동으로 맞춘 순서를 유지하려면 취소하세요."
+            );
+            if (!proceed) return;
+            await api(`/api/playlists/${workspace.id}/render-audio`, {
+              method: "POST",
+              body: JSON.stringify({
+                actor: "web-ui",
+                random: true,
+              }),
+            });
+          })
+        );
+      }
     }
   }
 
