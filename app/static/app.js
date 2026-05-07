@@ -72,6 +72,10 @@ const youtubeChannelSelect = document.querySelector("#youtube-channel-select");
 const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
+const textModal = document.querySelector("#text-modal");
+const textModalTitle = document.querySelector("#text-modal-title");
+const textModalBody = document.querySelector("#text-modal-body");
+const textModalCloseButton = document.querySelector("#text-modal-close-button");
 const CHANNEL_FILTER_ALL = "__all_channels__";
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
@@ -874,6 +878,24 @@ function localActionButton(label, className, handler) {
   button.textContent = label;
   button.addEventListener("click", handler);
   return button;
+}
+
+function openTextModal(title, text) {
+  if (!textModal || !textModalTitle || !textModalBody) {
+    alert(text || "");
+    return;
+  }
+  textModalTitle.textContent = title;
+  textModalBody.textContent = text || "";
+  textModal.hidden = false;
+  document.body.classList.add("modal-open");
+  textModalCloseButton?.focus();
+}
+
+function closeTextModal() {
+  if (!textModal) return;
+  textModal.hidden = true;
+  document.body.classList.remove("modal-open");
 }
 
 function createDetailActionGroups() {
@@ -2903,7 +2925,7 @@ function renderWorkspaceDetail() {
     }
     {
       const lyricsButton = localActionButton("Lyrics", "pill-action reorder", () => {
-        alert(lyricsText);
+        openTextModal(`${displayTitle(track.title, "Track")} Lyrics`, lyricsText);
       });
       lyricsButton.disabled = !lyricsText;
       lyricsButton.title = lyricsText ? "Show saved lyrics" : "No lyrics saved";
@@ -2911,7 +2933,7 @@ function renderWorkspaceDetail() {
     }
     {
       const styleButton = localActionButton("Style", "pill-action reorder", () => {
-        alert(styleText);
+        openTextModal(`${displayTitle(track.title, "Track")} Style`, styleText);
       });
       styleButton.disabled = !styleText;
       styleButton.title = styleText ? "Show saved style" : "No style saved";
@@ -3105,6 +3127,17 @@ channelFilterSelect?.addEventListener("change", () => {
   setChannelFilter(channelFilterSelect.value || CHANNEL_FILTER_ALL);
 });
 refreshButton.addEventListener("click", () => refresh().catch((error) => alert(error.message)));
+textModalCloseButton?.addEventListener("click", closeTextModal);
+textModal?.addEventListener("click", (event) => {
+  if (event.target?.hasAttribute?.("data-text-modal-close")) {
+    closeTextModal();
+  }
+});
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && textModal && !textModal.hidden) {
+    closeTextModal();
+  }
+});
 window.addEventListener("popstate", () => {
   const releaseId = new URLSearchParams(window.location.search).get("release") || "";
   state.selectedWorkspaceId = releaseId || state.selectedWorkspaceId;

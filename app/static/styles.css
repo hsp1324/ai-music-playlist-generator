@@ -57,6 +57,10 @@ body::before {
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 70%);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 textarea,
@@ -2311,6 +2315,72 @@ audio {
   grid-column: 2 / -1;
   width: 100%;
   min-width: 0;
+}
+
+.text-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+.text-modal[hidden] {
+  display: none;
+}
+
+.text-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(23, 19, 15, 0.56);
+  backdrop-filter: blur(7px);
+}
+
+.text-modal-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(880px, 100%);
+  max-height: min(82vh, 820px);
+  padding: 18px;
+  border: 2px solid var(--line);
+  border-radius: 26px;
+  background: #fffaf0;
+  box-shadow: 7px 7px 0 rgba(23, 19, 15, 0.94), var(--shadow-soft);
+}
+
+.text-modal-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid var(--line-soft);
+}
+
+.text-modal-head h2 {
+  margin: 0;
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: clamp(1.1rem, 3vw, 1.8rem);
+  line-height: 1.05;
+}
+
+.text-modal-body {
+  min-height: 220px;
+  margin: 14px 0 0;
+  padding: 16px;
+  overflow: auto;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 18px;
+  background: #fffdf8;
+  color: var(--ink-soft);
+  font-family: "Noto Sans KR", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .form-stack {
