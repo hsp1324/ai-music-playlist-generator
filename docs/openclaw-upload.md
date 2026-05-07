@@ -179,7 +179,7 @@ Required moving visual:
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
 - Normal auto-publish must include `--loop-video`. Do not use the thumbnail image or any text-heavy image as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`.
-- The app validates uploaded loop videos. The file must be a readable video, close to 10 seconds long, and visibly moving. If upload fails with `too little visible motion`, regenerate the Dreamina/Seedance clip with stronger natural motion before continuing; do not render/publish.
+- The app validates uploaded loop videos only for technical readability and expected duration. It does not reject low-motion clips. If the loop looks too static, regenerate it as a quality decision, not because the app blocks upload.
 
 Dreamina website workflow for OpenClaw:
 

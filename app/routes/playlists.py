@@ -60,10 +60,6 @@ ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_LOOP_VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
 LOOP_VIDEO_MIN_SECONDS = 8.0
 LOOP_VIDEO_MAX_SECONDS = 12.0
-LOOP_VIDEO_SAMPLE_WIDTH = 64
-LOOP_VIDEO_SAMPLE_HEIGHT = 36
-LOOP_VIDEO_MIN_AVERAGE_MOTION = 1.25
-LOOP_VIDEO_MIN_PEAK_MOTION = 2.0
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -160,52 +156,6 @@ def _validate_loop_video_file(video_path: str, *, ffmpeg_binary: str) -> None:
             detail=(
                 "Loop video must be close to 10 seconds long "
                 f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted)."
-            ),
-        )
-
-    frame_size = LOOP_VIDEO_SAMPLE_WIDTH * LOOP_VIDEO_SAMPLE_HEIGHT
-    try:
-        frames = subprocess.run(
-            [
-                ffmpeg_binary,
-                "-v",
-                "error",
-                "-i",
-                str(path),
-                "-vf",
-                f"fps=1,scale={LOOP_VIDEO_SAMPLE_WIDTH}:{LOOP_VIDEO_SAMPLE_HEIGHT},format=gray",
-                "-frames:v",
-                "12",
-                "-f",
-                "rawvideo",
-                "-",
-            ],
-            check=True,
-            capture_output=True,
-        ).stdout
-    except (OSError, subprocess.CalledProcessError) as exc:
-        raise HTTPException(status_code=400, detail="Uploaded loop video frames could not be decoded.") from exc
-
-    samples = [
-        frames[index : index + frame_size]
-        for index in range(0, len(frames), frame_size)
-        if len(frames[index : index + frame_size]) == frame_size
-    ]
-    if len(samples) < 3:
-        raise HTTPException(status_code=400, detail="Uploaded loop video does not contain enough decodable frames.")
-
-    differences = [
-        sum(abs(left - right) for left, right in zip(previous, current)) / frame_size
-        for previous, current in zip(samples, samples[1:])
-    ]
-    average_motion = sum(differences) / len(differences)
-    peak_motion = max(differences)
-    if average_motion < LOOP_VIDEO_MIN_AVERAGE_MOTION and peak_motion < LOOP_VIDEO_MIN_PEAK_MOTION:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Uploaded loop video has too little visible motion. "
-                "Regenerate a moving 10 second Dreamina/Seedance clip before rendering."
             ),
         )
 
