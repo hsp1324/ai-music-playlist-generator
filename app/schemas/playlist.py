@@ -177,6 +177,7 @@ class PlaylistWorkspaceRead(BaseModel):
     render_job: PlaylistJobRead | None = None
     created_at: datetime
     updated_at: datetime
+    track_count: int = 0
     tracks: list[PlaylistTrackRead]
 
 

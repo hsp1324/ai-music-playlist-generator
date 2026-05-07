@@ -228,6 +228,10 @@ function releaseModeLabel(workspace) {
   return isSingleRelease(workspace) ? "Single Release" : "Playlist Release";
 }
 
+function releaseTrackCount(workspace) {
+  return Number(workspace?.track_count ?? workspace?.tracks?.length ?? 0);
+}
+
 function releaseOptionLabel(workspace) {
   return `${displayTitle(workspace.title)} · ${isSingleRelease(workspace) ? "Single" : "Playlist"}`;
 }
@@ -297,6 +301,17 @@ function openWorkspaceFocus(workspaceId, replace = false) {
   renderLayoutMode();
   renderWorkspaceTiles();
   renderWorkspaceDetail();
+  ensureWorkspaceDetailLoaded(workspaceId)
+    .then((workspace) => {
+      if (!workspace || state.selectedWorkspaceId !== workspaceId) return;
+      renderWorkspaceTiles();
+      renderWorkspaceDetail();
+    })
+    .catch((error) => {
+      if (detailMeta && state.selectedWorkspaceId === workspaceId) {
+        detailMeta.textContent = `Release detail load failed: ${error.message}`;
+      }
+    });
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -331,7 +346,7 @@ function isReleaseReviewStage(workspace) {
 
 function releasePipeline(workspace) {
   const workflowState = workspace.workflow_state || "collecting";
-  const hasApprovedAudio = workspace.tracks.length > 0;
+  const hasApprovedAudio = releaseTrackCount(workspace) > 0;
   const hasRenderedAudio = Boolean(workspace.output_audio_path);
   const hasCover = Boolean(workspace.cover_image_path);
   const coverApproved = Boolean(workspace.cover_approved);
@@ -1063,8 +1078,8 @@ function appendRenderedAudioPlayer(workspace) {
   title.textContent = isSingleRelease(workspace) ? "Source Audio" : "Rendered Mix";
 
   const meta = document.createElement("span");
-  const trackCount = `${workspace.tracks.length} track${workspace.tracks.length === 1 ? "" : "s"}`;
-  meta.textContent = `${formatDuration(workspace.actual_duration_seconds)} · ${trackCount}`;
+  const trackCount = releaseTrackCount(workspace);
+  meta.textContent = `${formatDuration(workspace.actual_duration_seconds)} · ${trackCount} track${trackCount === 1 ? "" : "s"}`;
 
   const actions = document.createElement("div");
   actions.className = "render-player-actions";
@@ -1314,7 +1329,8 @@ function appendMetadataDraft(workspace) {
 
   const source = document.createElement("div");
   source.className = "metadata-source";
-  const sourceCount = `${workspace.tracks.length} track${workspace.tracks.length === 1 ? "" : "s"}`;
+  const trackCount = releaseTrackCount(workspace);
+  const sourceCount = `${trackCount} track${trackCount === 1 ? "" : "s"}`;
   source.innerHTML = `<span>${releaseModeLabel(workspace)}</span><strong>${formatDuration(workspace.actual_duration_seconds)}</strong><span>${sourceCount}</span>`;
 
   header.appendChild(titleBlock);
@@ -1497,6 +1513,40 @@ function updateDragAutoScroll(event) {
 
 function activeWorkspace() {
   return state.workspaces.find((workspace) => workspace.id === state.selectedWorkspaceId) || null;
+}
+
+function markCompactWorkspaces(workspaces) {
+  return workspaces.map((workspace) => ({ ...workspace, __compact: true }));
+}
+
+function replaceWorkspace(workspace, { compact = false } = {}) {
+  const nextWorkspace = { ...workspace, __compact: compact };
+  const index = state.workspaces.findIndex((item) => item.id === workspace.id);
+  if (index >= 0) {
+    state.workspaces.splice(index, 1, nextWorkspace);
+  } else {
+    state.workspaces.unshift(nextWorkspace);
+  }
+  return nextWorkspace;
+}
+
+async function fetchReviewTracks() {
+  const [pending, held] = await Promise.all([
+    api("/api/tracks?status_filter=pending_review"),
+    api("/api/tracks?status_filter=held"),
+  ]);
+  return [...pending, ...held];
+}
+
+async function fetchWorkspaceList() {
+  return markCompactWorkspaces(await api("/api/playlists/workspaces?compact=true"));
+}
+
+async function ensureWorkspaceDetailLoaded(workspaceId) {
+  const workspace = state.workspaces.find((item) => item.id === workspaceId);
+  if (!workspace || !workspace.__compact) return workspace || null;
+  const fullWorkspace = await api(`/api/playlists/workspaces/${encodeURIComponent(workspaceId)}`);
+  return replaceWorkspace(fullWorkspace, { compact: false });
 }
 
 function activeWorkspaces() {
@@ -2016,6 +2066,17 @@ function selectWorkspace(workspaceId, scrollIntoView = true) {
   state.selectedWorkspaceId = workspaceId;
   renderWorkspaceTiles();
   renderWorkspaceDetail();
+  ensureWorkspaceDetailLoaded(workspaceId)
+    .then((workspace) => {
+      if (!workspace || state.selectedWorkspaceId !== workspaceId) return;
+      renderWorkspaceTiles();
+      renderWorkspaceDetail();
+    })
+    .catch((error) => {
+      if (detailMeta && state.selectedWorkspaceId === workspaceId) {
+        detailMeta.textContent = `Release detail load failed: ${error.message}`;
+      }
+    });
   if (scrollIntoView && state.releaseFocus && detailPanel && !detailPanel.hidden) {
     detailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -2069,9 +2130,10 @@ function renderWorkspaceTiles() {
     stateEl.textContent = currentStage?.label || statusLabel(workspace.workflow_state);
     stateEl.classList.add(currentStage?.status || "current");
     copy.textContent = shortText(workspace.description || "Ready to collect approved tracks.", 120);
+    const trackCount = releaseTrackCount(workspace);
     approvedStat.textContent = isSingleRelease(workspace)
-      ? `${workspace.tracks.length} / 2 selected`
-      : `${workspace.tracks.length} approved`;
+      ? `${trackCount} / 2 selected`
+      : `${trackCount} approved`;
     pendingStat.textContent = `${pendingCount} in review`;
     renderPipeline(pipeline, workspace, { compact: true });
     next.textContent = currentStage?.detail || "Next action is ready.";
@@ -2141,7 +2203,7 @@ function renderArchivedWorkspaceTiles() {
     next.textContent = workspace.purge_after
       ? `Restore 가능 · ${formatArchiveDate(workspace.purge_after)} 이후 자동 삭제`
       : "Restore하면 다시 active release로 돌아옵니다.";
-    approvedStat.textContent = `${workspace.tracks.length} selected`;
+    approvedStat.textContent = `${releaseTrackCount(workspace)} selected`;
     pendingStat.textContent = `${rejectedCount} rejected`;
     hint.textContent = "Archived";
     moreButton.textContent = "Restore";
@@ -2179,6 +2241,16 @@ function renderWorkspaceDetail() {
 
   detailPanel.hidden = false;
   detailTitle.textContent = displayTitle(workspace.title, "Release");
+  if (workspace.__compact) {
+    detailMeta.textContent = "Release detail loading...";
+    detailPipeline.innerHTML = "";
+    detailLinks.innerHTML = "";
+    detailActions.innerHTML = "";
+    queueGrid.innerHTML = "";
+    approvedGrid.innerHTML = "";
+    if (detailColumns) detailColumns.hidden = true;
+    return;
+  }
   const renderState = workspace.output_audio_path
     ? isSingleRelease(workspace) ? "audio ready" : "rendered"
     : workspace.status === "building"
@@ -2186,7 +2258,7 @@ function renderWorkspaceDetail() {
       : isSingleRelease(workspace) ? "source not ready" : "not rendered";
   const currentStage = currentPipelineStage(workspace);
   const pendingCount = tracksForReview.length;
-  detailMeta.textContent = `${releaseModeLabel(workspace)} · ${currentStage?.label || statusLabel(workspace.workflow_state)} · ${workspace.tracks.length} approved · ${pendingCount} in review · ${renderState}`;
+  detailMeta.textContent = `${releaseModeLabel(workspace)} · ${currentStage?.label || statusLabel(workspace.workflow_state)} · ${releaseTrackCount(workspace)} approved · ${pendingCount} in review · ${renderState}`;
   queueTitle.textContent = isSingleRelease(workspace)
     ? `${displayTitle(workspace.title)} candidates`
     : `${displayTitle(workspace.title)} review queue`;
@@ -2883,16 +2955,24 @@ function applyBoardData(tracks, workspaces) {
 
 async function refreshBoard() {
   const [tracks, workspaces] = await Promise.all([
-    api("/api/tracks"),
-    api("/api/playlists/workspaces"),
+    fetchReviewTracks(),
+    fetchWorkspaceList(),
   ]);
   applyBoardData(tracks, workspaces);
+  if (state.releaseFocus && state.selectedWorkspaceId) {
+    ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
+      .then(() => {
+        renderWorkspaceTiles();
+        renderWorkspaceDetail();
+      })
+      .catch((error) => setStatus(trackStatus, error.message));
+  }
 }
 
 async function refresh() {
   const [tracks, workspaces, sessionStatus, youtubeStatus] = await Promise.all([
-    api("/api/tracks"),
-    api("/api/playlists/workspaces"),
+    fetchReviewTracks(),
+    fetchWorkspaceList(),
     api("/api/suno/session-status"),
     api("/api/youtube/status"),
   ]);
@@ -2900,6 +2980,14 @@ async function refresh() {
   applyBoardData(tracks, workspaces);
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
+  if (state.releaseFocus && state.selectedWorkspaceId) {
+    ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
+      .then(() => {
+        renderWorkspaceTiles();
+        renderWorkspaceDetail();
+      })
+      .catch((error) => setStatus(trackStatus, error.message));
+  }
 }
 
 trackForm.addEventListener("submit", async (event) => {

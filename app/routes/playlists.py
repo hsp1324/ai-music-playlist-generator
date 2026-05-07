@@ -4,14 +4,14 @@ import subprocess
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
-from app.models.playlist import Playlist
+from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
 from app.schemas.playlist import (
     PlaylistBuildRequest,
@@ -260,8 +260,32 @@ def list_playlists(db: Session = Depends(get_db)) -> list[PlaylistRead]:
 
 
 @router.get("/workspaces", response_model=list[PlaylistWorkspaceRead])
-def list_workspace_playlists(db: Session = Depends(get_db)) -> list[PlaylistWorkspaceRead]:
-    return [serialize_playlist_workspace(playlist) for playlist in list_playlist_workspaces(db)]
+def list_workspace_playlists(
+    compact: bool = Query(default=False),
+    db: Session = Depends(get_db),
+) -> list[PlaylistWorkspaceRead]:
+    return [
+        serialize_playlist_workspace(playlist, compact=compact)
+        for playlist in list_playlist_workspaces(db, compact=compact)
+    ]
+
+
+@router.get("/workspaces/{playlist_id}", response_model=PlaylistWorkspaceRead)
+def get_workspace_playlist(
+    playlist_id: str,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    playlist = db.scalars(
+        select(Playlist)
+        .where(Playlist.id == playlist_id)
+        .options(
+            selectinload(Playlist.items).selectinload(PlaylistItem.track),
+            selectinload(Playlist.jobs),
+        )
+    ).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    return serialize_playlist_workspace(playlist)
 
 
 @router.post("/workspaces", response_model=PlaylistWorkspaceRead, status_code=status.HTTP_201_CREATED)

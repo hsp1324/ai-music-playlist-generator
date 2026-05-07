@@ -284,16 +284,20 @@ def _loop_video_source(meta: dict) -> str | None:
     return None
 
 
-def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
+def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
-    tracks = [
-        _track_payload(item.track)
-        for item in sorted(playlist.items, key=lambda item: item.order_index)
-        if item.track is not None
-    ]
+    track_count = len(playlist.items)
+    tracks = []
+    if not compact:
+        tracks = [
+            _track_payload(item.track)
+            for item in sorted(playlist.items, key=lambda item: item.order_index)
+            if item.track is not None
+        ]
+        track_count = len(tracks)
     progress_ratio = 0.0
     if _workspace_mode(playlist) == "single_track_video":
-        progress_ratio = 1.0 if tracks else 0.0
+        progress_ratio = 1.0 if track_count else 0.0
     elif playlist.target_duration_seconds > 0:
         progress_ratio = min(playlist.actual_duration_seconds / playlist.target_duration_seconds, 1.0)
     return PlaylistWorkspaceRead(
@@ -326,9 +330,9 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
-        youtube_description=meta.get("youtube_description"),
-        youtube_tags=list(meta.get("youtube_tags") or []),
-        youtube_localizations=normalize_youtube_localizations(
+        youtube_description=None if compact else meta.get("youtube_description"),
+        youtube_tags=[] if compact else list(meta.get("youtube_tags") or []),
+        youtube_localizations={} if compact else normalize_youtube_localizations(
             meta.get("youtube_localizations"),
             default_title=meta.get("youtube_title"),
             default_description=meta.get("youtube_description"),
@@ -337,8 +341,8 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         youtube_default_language=normalize_youtube_language(meta.get("youtube_default_language")),
         metadata_provider=meta.get("metadata_provider"),
         metadata_generation_error=meta.get("metadata_generation_error"),
-        rendered_timeline=list(meta.get("rendered_timeline") or []),
-        rendered_track_ids=list(meta.get("rendered_track_ids") or []),
+        rendered_timeline=[] if compact else list(meta.get("rendered_timeline") or []),
+        rendered_track_ids=[] if compact else list(meta.get("rendered_track_ids") or []),
         rendered_duration_seconds=meta.get("rendered_duration_seconds"),
         youtube_video_id=playlist.youtube_video_id,
         youtube_channel_id=meta.get("youtube_channel_id"),
@@ -347,16 +351,20 @@ def serialize_playlist_workspace(playlist: Playlist) -> PlaylistWorkspaceRead:
         render_job=_latest_render_job(playlist),
         created_at=playlist.created_at,
         updated_at=playlist.updated_at,
+        track_count=track_count,
         tracks=tracks,
     )
 
 
-def list_playlist_workspaces(db: Session) -> list[Playlist]:
+def list_playlist_workspaces(db: Session, *, compact: bool = False) -> list[Playlist]:
     purge_expired_archived_workspaces(db)
+    item_loader = selectinload(Playlist.items)
+    if not compact:
+        item_loader = item_loader.selectinload(PlaylistItem.track)
     return db.scalars(
         select(Playlist)
         .options(
-            selectinload(Playlist.items).selectinload(PlaylistItem.track),
+            item_loader,
             selectinload(Playlist.jobs),
         )
         .order_by(Playlist.updated_at.desc())
