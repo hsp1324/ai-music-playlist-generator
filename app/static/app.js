@@ -12,6 +12,7 @@ const state = {
   editingMetadataReleaseId: "",
   metadataExpandedByRelease: {},
   metadataLanguageByRelease: {},
+  orderEditingByRelease: {},
   workspaceTab: "active",
   channelFilter: "__all_channels__",
 };
@@ -233,6 +234,10 @@ function formatPublishedDate(value) {
 
 function isSingleRelease(workspace) {
   return workspace?.workspace_mode === "single_track_video";
+}
+
+function isOrderEditingUnlocked(workspace) {
+  return Boolean(workspace?.id && state.orderEditingByRelease[workspace.id]);
 }
 
 function releaseModeLabel(workspace) {
@@ -924,6 +929,7 @@ async function saveApprovedTrackOrder(workspace, trackIds) {
       actor: "web-ui",
     }),
   });
+  delete state.orderEditingByRelease[workspace.id];
 }
 
 function dropPlacement(card, event) {
@@ -2324,7 +2330,33 @@ function renderWorkspaceDetail() {
   const releaseLockedForPublish = Boolean(
     workspace.metadata_approved || workspace.publish_approved || workspace.youtube_video_id
   );
+  const releaseReviewStage = isReleaseReviewStage(workspace);
+  const showTrackReviewColumns = !releaseReviewStage;
+  const busyStates = new Set(["render_queued", "rendering", "video_queued", "video_rendering", "publish_queued", "youtube_uploading"]);
   const videoBusy = ["video_queued", "video_rendering"].includes(workspace.workflow_state);
+  const releaseBusy = workspace.status === "building" || busyStates.has(workspace.workflow_state);
+  const orderEditingUnlocked = isOrderEditingUnlocked(workspace);
+  const canUnlockOrder = !isSingleRelease(workspace) && workspace.tracks.length > 1 && !releaseBusy;
+  if (canUnlockOrder && releaseReviewStage && !orderEditingUnlocked) {
+    appendDetailAction(
+      detailActionGroups.audio,
+      localActionButton("Edit Order", "action-button secondary-button", () => {
+        const confirmed = window.confirm(
+          "순서를 다시 바꾸면 기존 rendered audio/video/metadata와 앱의 YouTube publish 상태가 초기화됩니다.\n\n순서 변경 후 Re-render Audio부터 다시 진행해야 합니다. 계속할까요?"
+        );
+        if (!confirmed) return;
+        state.orderEditingByRelease[workspace.id] = true;
+        renderWorkspaceDetail();
+      })
+    );
+  } else if (orderEditingUnlocked) {
+    const indicator = document.createElement("button");
+    indicator.type = "button";
+    indicator.className = "action-button secondary-button";
+    indicator.textContent = "Order Editing On";
+    indicator.disabled = true;
+    appendDetailAction(detailActionGroups.audio, indicator);
+  }
   if (workspace.tracks.length) {
     if (workspace.status === "building" && !videoBusy) {
       const button = document.createElement("button");
@@ -2339,7 +2371,7 @@ function renderWorkspaceDetail() {
         actionButton(
           isSingleRelease(workspace)
             ? "Use Approved Audio"
-            : workspace.output_audio_path
+            : workspace.output_audio_path || workspace.workflow_state === "render_required"
             ? "Re-render Audio"
             : "Render Mix",
           "action-button secondary-button",
@@ -2661,7 +2693,7 @@ function renderWorkspaceDetail() {
     appendDetailAction(detailActionGroups.publish, manualBox);
   }
 
-  const showTrackReviewColumns = !isReleaseReviewStage(workspace);
+  const orderEditable = showTrackReviewColumns || orderEditingUnlocked;
   const showApprovedTrackList = showTrackReviewColumns || Boolean(workspace.tracks.length);
   if (detailColumns) {
     detailColumns.hidden = !showApprovedTrackList && !showTrackReviewColumns;
@@ -2810,7 +2842,7 @@ function renderWorkspaceDetail() {
 
     card.dataset.trackId = track.id;
     if (order) order.textContent = String(index + 1).padStart(2, "0");
-    if (showTrackReviewColumns && workspace.tracks.length > 1) {
+    if (orderEditable && workspace.tracks.length > 1) {
       card.draggable = true;
       card.addEventListener("dragstart", (event) => {
         card.classList.add("dragging");
@@ -2885,7 +2917,7 @@ function renderWorkspaceDetail() {
       styleButton.title = styleText ? "Show saved style" : "No style saved";
       actions.appendChild(styleButton);
     }
-    if (showTrackReviewColumns && workspace.tracks.length > 1) {
+    if (orderEditable && workspace.tracks.length > 1) {
       const upButton = actionButton("Up", "pill-action reorder", async () => {
         await reorderApprovedTrack(workspace, index, -1);
       });
@@ -2914,7 +2946,7 @@ function renderWorkspaceDetail() {
     } else {
       const status = document.createElement("span");
       status.className = "approved-lock-note";
-      status.textContent = workspace.youtube_video_id ? "Published" : "Locked";
+      status.textContent = orderEditable ? "Order unlocked" : workspace.youtube_video_id ? "Published" : "Locked";
       actions.appendChild(status);
     }
 

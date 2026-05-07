@@ -1722,6 +1722,17 @@ def reorder_workspace_tracks(
         raise ValueError("Playlist not found")
     if _workspace_mode(playlist) == "single_track_video" and len(track_ids) > 1:
         raise ValueError("Single release can only contain one selected track. Publish additional candidates as separate Single Releases.")
+    active_job = next(
+        (
+            job
+            for job in playlist.jobs
+            if job.type in {JobType.build_playlist, JobType.build_video, JobType.upload_youtube}
+            and job.status in {JobStatus.queued, JobStatus.running}
+        ),
+        None,
+    )
+    if active_job:
+        raise ValueError("Wait for the active render or publish job to finish before changing track order.")
 
     item_by_track_id = {item.track_id: item for item in playlist.items}
     if len(track_ids) != len(item_by_track_id) or set(track_ids) != set(item_by_track_id):
@@ -1764,6 +1775,19 @@ def reorder_workspace_tracks(
     meta["publish_approved"] = False
     meta["note"] = "Track order changed. Re-render audio to update the playlist file."
     meta["workflow_state"] = "render_required" if playlist.items else "collecting"
+    if playlist.youtube_video_id:
+        previous_uploads = list(meta.get("previous_youtube_uploads") or [])
+        previous_uploads.append(
+            {
+                "youtube_video_id": playlist.youtube_video_id,
+                "youtube_channel_id": meta.get("youtube_channel_id"),
+                "youtube_channel_title": meta.get("youtube_channel_title"),
+                "youtube_published_at": meta.get("youtube_published_at"),
+                "replaced_at": _utcnow().isoformat(),
+                "reason": "track_order_changed",
+            }
+        )
+        meta["previous_youtube_uploads"] = previous_uploads
     meta.pop("render_error", None)
     meta.pop("cover_image_path", None)
     meta.pop("cover_approved", None)
