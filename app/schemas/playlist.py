@@ -115,6 +115,7 @@ class PlaylistTrackRead(BaseModel):
     tags: str | None = None
     lyrics: str = ""
     style: str = ""
+    user_rating: str = ""
 
 
 class PlaylistJobRead(BaseModel):

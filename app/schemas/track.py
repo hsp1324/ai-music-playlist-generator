@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -45,6 +45,11 @@ class TrackReturnToReviewRequest(BaseModel):
     rationale: str | None = None
 
 
+class TrackRatingRequest(BaseModel):
+    rating: Literal["like", "dislike", "none"] = "none"
+    actor: str = "web-ui"
+
+
 class TrackRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,6 +64,7 @@ class TrackRead(BaseModel):
     preview_url: str | None
     status: TrackStatus
     metadata_json: dict[str, Any]
+    user_rating: str = ""
     slack_channel_id: str | None
     slack_message_ts: str | None
     created_at: datetime

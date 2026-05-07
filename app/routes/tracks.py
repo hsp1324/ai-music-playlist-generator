@@ -1,5 +1,6 @@
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from urllib.parse import unquote, urlparse
 from pathlib import Path
 
@@ -14,7 +15,13 @@ from app.models.job import Job
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.schemas.common import MessageResponse
-from app.schemas.track import TrackCreateRequest, TrackDecisionRequest, TrackRead, TrackReturnToReviewRequest
+from app.schemas.track import (
+    TrackCreateRequest,
+    TrackDecisionRequest,
+    TrackRatingRequest,
+    TrackRead,
+    TrackReturnToReviewRequest,
+)
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import (
@@ -399,12 +406,19 @@ async def manual_upload_track(
 @router.get("", response_model=list[TrackRead])
 def list_tracks(
     status_filter: TrackStatus | None = None,
+    user_rating: str | None = None,
     db: Session = Depends(get_db),
 ) -> list[TrackRead]:
     statement = select(Track).order_by(Track.created_at.desc())
     if status_filter:
         statement = statement.where(Track.status == status_filter)
     tracks = db.scalars(statement).all()
+    if user_rating in {"like", "dislike"}:
+        tracks = [
+            track
+            for track in tracks
+            if str((track.metadata_json or {}).get("user_rating") or "") == user_rating
+        ]
     return [TrackRead.model_validate(track) for track in tracks]
 
 
@@ -413,6 +427,32 @@ def get_track(track_id: str, db: Session = Depends(get_db)) -> TrackRead:
     track = db.get(Track, track_id)
     if not track:
         raise HTTPException(status_code=404, detail="Track not found")
+    return TrackRead.model_validate(track)
+
+
+@router.post("/{track_id}/rating", response_model=TrackRead)
+def rate_track(
+    track_id: str,
+    payload: TrackRatingRequest,
+    db: Session = Depends(get_db),
+) -> TrackRead:
+    track = db.get(Track, track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    metadata = dict(track.metadata_json or {})
+    if payload.rating == "none":
+        metadata.pop("user_rating", None)
+        metadata.pop("user_rating_actor", None)
+        metadata.pop("user_rating_at", None)
+    else:
+        metadata["user_rating"] = payload.rating
+        metadata["user_rating_actor"] = payload.actor
+        metadata["user_rating_at"] = datetime.now(timezone.utc).isoformat()
+    track.metadata_json = metadata
+    db.add(track)
+    db.commit()
+    db.refresh(track)
     return TrackRead.model_validate(track)
 
 

@@ -337,6 +337,43 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_track_rating_updates_metadata_and_can_be_filtered(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+
+        response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Rating Candidate",
+                "prompt": "rating test track",
+            },
+            files={"audio_file": ("rating.mp3", b"fake-audio-data", "audio/mpeg")},
+        )
+        assert response.status_code == 201
+        track_id = response.json()["id"]
+
+        liked = client.post(f"/api/tracks/{track_id}/rating", json={"rating": "like", "actor": "web-ui"})
+        assert liked.status_code == 200
+        assert liked.json()["user_rating"] == "like"
+        assert liked.json()["metadata_json"]["user_rating"] == "like"
+        assert liked.json()["metadata_json"]["user_rating_actor"] == "web-ui"
+
+        liked_list = client.get("/api/tracks?user_rating=like")
+        assert liked_list.status_code == 200
+        assert any(track["id"] == track_id for track in liked_list.json())
+
+        disliked_list = client.get("/api/tracks?user_rating=dislike")
+        assert disliked_list.status_code == 200
+        assert all(track["id"] != track_id for track in disliked_list.json())
+
+        cleared = client.post(f"/api/tracks/{track_id}/rating", json={"rating": "none", "actor": "web-ui"})
+        assert cleared.status_code == 200
+        assert cleared.json()["user_rating"] == ""
+        assert "user_rating" not in cleared.json()["metadata_json"]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_manual_upload_uses_actual_audio_duration_over_supplied_value(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

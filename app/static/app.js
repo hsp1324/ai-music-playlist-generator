@@ -140,8 +140,24 @@ function isAudioPlaybackActive() {
   return [...document.querySelectorAll("audio")].some((audio) => !audio.paused && !audio.ended);
 }
 
+function isOrderEditingActive() {
+  return Boolean(state.releaseFocus && state.selectedWorkspaceId && state.orderEditingByRelease[state.selectedWorkspaceId]);
+}
+
+function isTextModalOpen() {
+  return Boolean(textModal && !textModal.hidden);
+}
+
+function shouldDeferAutoRefresh() {
+  return document.hidden
+    || isAudioPlaybackActive()
+    || Boolean(state.editingMetadataReleaseId)
+    || isOrderEditingActive()
+    || isTextModalOpen();
+}
+
 async function autoRefresh() {
-  if (document.hidden || isAudioPlaybackActive() || state.editingMetadataReleaseId) {
+  if (shouldDeferAutoRefresh()) {
     state.autoRefreshDeferred = true;
     return;
   }
@@ -159,7 +175,7 @@ async function autoRefresh() {
 function resumeDeferredAutoRefresh() {
   if (!state.autoRefreshDeferred) return;
   window.setTimeout(() => {
-    if (!document.hidden && !isAudioPlaybackActive()) {
+    if (!shouldDeferAutoRefresh()) {
       autoRefresh().catch(() => {});
     }
   }, 750);
@@ -242,6 +258,10 @@ function isSingleRelease(workspace) {
 
 function isOrderEditingUnlocked(workspace) {
   return Boolean(workspace?.id && state.orderEditingByRelease[workspace.id]);
+}
+
+function trackUserRating(track) {
+  return String(track?.user_rating || track?.metadata_json?.user_rating || "");
 }
 
 function releaseModeLabel(workspace) {
@@ -944,14 +964,14 @@ async function reorderApprovedTrack(workspace, currentIndex, direction) {
 }
 
 async function saveApprovedTrackOrder(workspace, trackIds) {
-  await api(`/api/playlists/${workspace.id}/tracks/reorder`, {
+  const updatedWorkspace = await api(`/api/playlists/${workspace.id}/tracks/reorder`, {
     method: "POST",
     body: JSON.stringify({
       track_ids: trackIds,
       actor: "web-ui",
     }),
   });
-  delete state.orderEditingByRelease[workspace.id];
+  replaceWorkspace(updatedWorkspace, { compact: false });
 }
 
 function dropPlacement(card, event) {
@@ -972,6 +992,67 @@ async function reorderApprovedTrackByDrop(workspace, draggedTrackId, targetTrack
   const insertIndex = placement === "after" ? targetIndexAfterRemoval + 1 : targetIndexAfterRemoval;
   trackIds.splice(insertIndex, 0, dragged);
   await saveApprovedTrackOrder(workspace, trackIds);
+}
+
+function mergeTrackUpdate(updatedTrack) {
+  const nextRating = trackUserRating(updatedTrack);
+  state.tracks = state.tracks.map((track) => (
+    track.id === updatedTrack.id ? { ...track, ...updatedTrack, user_rating: nextRating } : track
+  ));
+  state.workspaces.forEach((workspace) => {
+    if (!workspace.tracks) return;
+    workspace.tracks = workspace.tracks.map((track) => {
+      if (track.id !== updatedTrack.id) return track;
+      return {
+        ...track,
+        user_rating: nextRating,
+        metadata_json: {
+          ...(track.metadata_json || {}),
+          ...(updatedTrack.metadata_json || {}),
+        },
+      };
+    });
+  });
+}
+
+async function setTrackUserRating(track, nextRating) {
+  const currentRating = trackUserRating(track);
+  const rating = currentRating === nextRating ? "none" : nextRating;
+  const updatedTrack = await api(`/api/tracks/${track.id}/rating`, {
+    method: "POST",
+    body: JSON.stringify({
+      rating,
+      actor: "web-ui",
+    }),
+  });
+  mergeTrackUpdate(updatedTrack);
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+}
+
+function appendTrackRatingButtons(actions, track) {
+  const currentRating = trackUserRating(track);
+  [
+    ["like", "👍", "Like this track"],
+    ["dislike", "👎", "Dislike this track"],
+  ].forEach(([rating, label, title]) => {
+    const button = localActionButton(
+      label,
+      `pill-action rating ${rating}${currentRating === rating ? " active" : ""}`,
+      async () => {
+        button.disabled = true;
+        try {
+          await setTrackUserRating(track, rating);
+        } catch (error) {
+          alert(error.message);
+          button.disabled = false;
+        }
+      }
+    );
+    button.title = currentRating === rating ? "Click again to clear" : title;
+    button.setAttribute("aria-label", title);
+    actions.appendChild(button);
+  });
 }
 
 function setDropPlacement(card, placement) {
@@ -2787,6 +2868,8 @@ function renderWorkspaceDetail() {
       select.innerHTML = workspaceOptions(workspace.id);
       select.value = workspace.id;
 
+      appendTrackRatingButtons(actions, track);
+
       actions.appendChild(
         actionButton("Approve", "pill-action approve", async () => {
           if (!select.value) {
@@ -2892,7 +2975,7 @@ function renderWorkspaceDetail() {
         clearDropPlacement(card);
         const draggedTrackId = event.dataTransfer.getData("text/plain");
         reorderApprovedTrackByDrop(workspace, draggedTrackId, track.id, placement)
-          .then(() => refreshBoard())
+          .then(() => renderWorkspaceDetail())
           .catch((error) => alert(error.message));
       });
     }
@@ -2923,6 +3006,7 @@ function renderWorkspaceDetail() {
       if (track.preview_url) links.appendChild(buildLink("Preview", track.preview_url));
       if (track.image_url) links.appendChild(buildLink("Cover", imageUrl));
     }
+    appendTrackRatingButtons(actions, track);
     {
       const lyricsButton = localActionButton("Lyrics", "pill-action reorder", () => {
         openTextModal(`${displayTitle(track.title, "Track")} Lyrics`, lyricsText);
@@ -2940,14 +3024,28 @@ function renderWorkspaceDetail() {
       actions.appendChild(styleButton);
     }
     if (orderEditable && workspace.tracks.length > 1) {
-      const upButton = actionButton("Up", "pill-action reorder", async () => {
-        await reorderApprovedTrack(workspace, index, -1);
+      const upButton = localActionButton("Up", "pill-action reorder", async () => {
+        upButton.disabled = true;
+        try {
+          await reorderApprovedTrack(workspace, index, -1);
+          renderWorkspaceDetail();
+        } catch (error) {
+          alert(error.message);
+          upButton.disabled = false;
+        }
       });
       upButton.disabled = index === 0;
       actions.appendChild(upButton);
 
-      const downButton = actionButton("Down", "pill-action reorder", async () => {
-        await reorderApprovedTrack(workspace, index, 1);
+      const downButton = localActionButton("Down", "pill-action reorder", async () => {
+        downButton.disabled = true;
+        try {
+          await reorderApprovedTrack(workspace, index, 1);
+          renderWorkspaceDetail();
+        } catch (error) {
+          alert(error.message);
+          downButton.disabled = false;
+        }
       });
       downButton.disabled = index === workspace.tracks.length - 1;
       actions.appendChild(downButton);

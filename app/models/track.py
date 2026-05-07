@@ -49,3 +49,7 @@ class Track(Base):
     @property
     def style(self) -> str:
         return str((self.metadata_json or {}).get("style") or "")
+
+    @property
+    def user_rating(self) -> str:
+        return str((self.metadata_json or {}).get("user_rating") or "")
