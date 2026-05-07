@@ -25,6 +25,7 @@ from app.utils.timeline import timeline_from_track_dicts
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
+DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 180
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
@@ -474,27 +475,38 @@ def max_playlist_track_seconds(args: argparse.Namespace) -> int:
     return max(int(getattr(args, "max_track_seconds", DEFAULT_MAX_PLAYLIST_TRACK_SECONDS) or 0), 0)
 
 
+def min_playlist_track_seconds(args: argparse.Namespace) -> int:
+    return max(int(getattr(args, "min_track_seconds", DEFAULT_MIN_PLAYLIST_TRACK_SECONDS) or 0), 0)
+
+
 def require_playlist_track_duration(
     track: dict[str, Any],
     *,
     args: argparse.Namespace,
     context: str,
 ) -> None:
-    if bool(getattr(args, "allow_long_track", False)):
-        return
-    max_seconds = max_playlist_track_seconds(args)
-    if max_seconds <= 0:
-        return
     duration_seconds = int(track.get("duration_seconds") or 0)
-    if duration_seconds <= max_seconds:
+    if duration_seconds <= 0:
         return
     title = track.get("title") or track.get("id") or "unknown track"
-    raise RuntimeError(
-        f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
-        f"Playlist tracks must be {format_timestamp(max_seconds)} or shorter. "
-        "Regenerate a shorter Suno track, split the concept into separate songs, or pass --allow-long-track "
-        "only when the human explicitly accepts a longer track."
-    )
+
+    min_seconds = min_playlist_track_seconds(args)
+    if not bool(getattr(args, "allow_short_track", False)) and min_seconds > 0 and duration_seconds < min_seconds:
+        raise RuntimeError(
+            f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
+            f"Playlist tracks should be at least {format_timestamp(min_seconds)}. "
+            "Regenerate/extend the Suno track into a full song structure, or pass --allow-short-track "
+            "only when the human explicitly accepts a shorter track."
+        )
+
+    max_seconds = max_playlist_track_seconds(args)
+    if not bool(getattr(args, "allow_long_track", False)) and max_seconds > 0 and duration_seconds > max_seconds:
+        raise RuntimeError(
+            f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
+            f"Playlist tracks must be {format_timestamp(max_seconds)} or shorter. "
+            "Regenerate a shorter Suno track, split the concept into separate songs, or pass --allow-long-track "
+            "only when the human explicitly accepts a longer track."
+        )
 
 
 def require_release_playlist_track_durations(
@@ -503,8 +515,6 @@ def require_release_playlist_track_durations(
     args: argparse.Namespace,
     context: str,
 ) -> None:
-    if bool(getattr(args, "allow_long_track", False)):
-        return
     for track in release.get("tracks") or []:
         require_playlist_track_duration(track, args=args, context=context)
 
@@ -2047,7 +2057,9 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
     audio_parser.add_argument("--pending-review", action="store_true", help="For Playlist Releases only, skip the default auto-approve behavior.")
+    audio_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum auto-approved Playlist Release track length. Default: 180.")
     audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 260.")
+    audio_parser.add_argument("--allow-short-track", action="store_true", help="Allow a playlist track shorter than --min-track-seconds. Use only with explicit human approval.")
     audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds. Use only with explicit human approval.")
     audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded when playlist uploads are auto-approved.")
     audio_parser.set_defaults(func=upload_audio)
@@ -2090,7 +2102,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
+    auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 180.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
+    auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")

@@ -37,6 +37,7 @@ Use a vivid Latin scene plus substyle:
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Rhythm should be clear and playlist-friendly.
 - Titles should feel curated and editorial, not raw workspace names.
+- Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full Latin/Spanish pop arrangement with second verse, bridge or instrumental break, final chorus, and outro.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.
 
 ## Visual Direction

@@ -42,7 +42,9 @@ def _auto_publish_args(audio_path: str, **overrides):
         "lyrics": [],
         "lyrics_file": [],
         "target_seconds": 3600,
+        "min_track_seconds": 180,
         "max_track_seconds": 260,
+        "allow_short_track": False,
         "allow_long_track": False,
         "youtube_channel_title": "",
         "youtube_channel_id": "",
@@ -60,6 +62,27 @@ def _auto_publish_args(audio_path: str, **overrides):
     }
     values.update(overrides)
     return SimpleNamespace(**values)
+
+
+def test_playlist_track_duration_rejects_short_tracks_by_default() -> None:
+    args = _auto_publish_args("song.mp3")
+
+    with pytest.raises(RuntimeError, match="at least 03:00"):
+        openclaw_release.require_playlist_track_duration(
+            {"title": "Short Pop", "duration_seconds": 150},
+            args=args,
+            context="duration check",
+        )
+
+
+def test_playlist_track_duration_allows_short_tracks_with_explicit_flag() -> None:
+    args = _auto_publish_args("song.mp3", allow_short_track=True)
+
+    openclaw_release.require_playlist_track_duration(
+        {"title": "Short Pop", "duration_seconds": 150},
+        args=args,
+        context="duration check",
+    )
 
 
 def test_release_has_uploaded_cover_requires_manual_upload_source() -> None:
@@ -627,24 +650,24 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
             return httpx.Response(
                 201,
                 json={
-                    "id": "track-good",
-                    "title": "Good Track",
-                    "status": "pending_review",
-                    "duration_seconds": 150,
-                    "metadata_json": {},
-                },
-            )
+                        "id": "track-good",
+                        "title": "Good Track",
+                        "status": "pending_review",
+                        "duration_seconds": 190,
+                        "metadata_json": {},
+                    },
+                )
         if request.method == "POST" and request.url.path.endswith("/tracks/track-good/decisions"):
             return httpx.Response(
                 200,
                 json={
-                    "id": "track-good",
-                    "title": "Good Track",
-                    "status": "approved",
-                    "duration_seconds": 150,
-                    "metadata_json": {},
-                },
-            )
+                        "id": "track-good",
+                        "title": "Good Track",
+                        "status": "approved",
+                        "duration_seconds": 190,
+                        "metadata_json": {},
+                    },
+                )
         if request.method == "POST" and request.url.path.endswith("/slack/notify"):
             slack_notices.append(json.loads(request.read())["text"])
             return httpx.Response(200, json={"ok": True})
