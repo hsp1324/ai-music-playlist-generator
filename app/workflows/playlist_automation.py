@@ -19,6 +19,11 @@ from app.utils.youtube_localizations import (
     normalize_youtube_localizations,
     sanitize_youtube_copy,
 )
+from app.utils.youtube_tags import (
+    hashtag_from_youtube_tag,
+    normalize_youtube_tags,
+    sanitize_description_hashtags,
+)
 
 
 ARCHIVE_RETENTION_DAYS = 7
@@ -28,7 +33,7 @@ FAILED_WORKFLOW_STATES = {
     "youtube_upload_failed",
     "publish_failed",
 }
-FALLBACK_DESCRIPTION_HASHTAGS = ["AIMusic", "Playlist", "BackgroundMusic", "Visualizer"]
+FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
 
 
 def _utcnow() -> datetime:
@@ -87,29 +92,11 @@ def _archive_purge_after(archived_at: datetime) -> datetime:
 
 
 def _normalize_youtube_tags(tags: list[str] | str) -> list[str]:
-    if isinstance(tags, str):
-        candidates = tags.split(",")
-    else:
-        candidates = tags
-    normalized: list[str] = []
-    seen: set[str] = set()
-    for tag in candidates:
-        value = str(tag).strip().lstrip("#").strip()
-        if not value:
-            continue
-        key = value.lower()
-        if key in seen:
-            continue
-        seen.add(key)
-        normalized.append(value)
-    return normalized[:15]
+    return normalize_youtube_tags(tags)
 
 
 def _hashtag_from_tag(tag: str) -> str | None:
-    value = "".join(character for character in str(tag).strip().lstrip("#") if character.isalnum() or character == "_")
-    if not value:
-        return None
-    return f"#{value}"
+    return hashtag_from_youtube_tag(tag)
 
 
 def _description_hashtag_line(tags: list[str] | str | None) -> str:
@@ -139,7 +126,7 @@ def _description_has_hashtag_line(description: str) -> bool:
 
 
 def _ensure_description_hashtags(description: str, tags: list[str] | str | None) -> str:
-    description = str(description or "").strip()
+    description = sanitize_description_hashtags(str(description or "").strip())
     if not description or _description_has_hashtag_line(description):
         return description
     hashtag_line = _description_hashtag_line(tags)

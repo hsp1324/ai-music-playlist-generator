@@ -8,6 +8,7 @@ from app.models.track import Track
 from app.utils.youtube_localizations import ensure_playlist_title_prefix
 from app.utils.track_titles import clean_track_display_title, display_track_titles
 from app.utils.timeline import timeline_from_track_dicts
+from app.utils.youtube_tags import normalize_youtube_tags, sanitize_description_hashtags
 
 
 @dataclass
@@ -30,16 +31,14 @@ class ReleaseMetadataService:
         mode = str(meta.get("workspace_mode") or "playlist")
         is_playlist_release = mode != "single_track_video"
         title = playlist.title.strip()
-        description_summary = meta.get("description") or "AI-generated music release."
+        description_summary = meta.get("description") or "Music release."
 
-        tags = sorted(
-            {
-                tag.strip().lower()
-                for track in tracks
-                for tag in str((track.metadata_json or {}).get("tags") or "").split(",")
-                if tag.strip()
-            }
-        )
+        tags = sorted(normalize_youtube_tags([
+            tag.strip().lower()
+            for track in tracks
+            for tag in str((track.metadata_json or {}).get("tags") or "").split(",")
+            if tag.strip()
+        ]))
 
         if mode == "single_track_video" and tracks:
             track = tracks[0]
@@ -54,17 +53,17 @@ class ReleaseMetadataService:
                     description_summary,
                     "",
                     f"Prompt: {prompt_summary}",
-                    f"Tags: {', '.join(tags) if tags else 'ai music, visualizer'}",
+                    f"Tags: {', '.join(tags) if tags else 'music, visualizer'}",
                     "Visuals: Cover art + Dreamina-generated motion loop.",
                     "",
-                    "Generated with an automated AI music release workflow.",
+                    "Released as a music visualizer.",
                     self.settings.youtube_default_hashtags,
                 ]
             )
             return YouTubeMetadata(
                 title=title[:100],
-                description=description.strip(),
-                tags=(tags or ["ai music", "visualizer", "electronic"])[:15],
+                description=sanitize_description_hashtags(description),
+                tags=normalize_youtube_tags(tags or ["music", "visualizer", "electronic"]),
             )
 
         if self._is_cafe_piano_release(playlist, tracks, tags):
@@ -78,16 +77,16 @@ class ReleaseMetadataService:
                 description_summary,
                 "",
                 f"Featured tracks: {track_titles}",
-                f"Tags: {', '.join(tags) if tags else 'ai music, playlist'}",
+                f"Tags: {', '.join(tags) if tags else 'music, playlist'}",
                 "",
-                "Generated with an automated AI music release workflow.",
+                "Released as a music visualizer.",
                 self.settings.youtube_default_hashtags,
             ]
         )
         return YouTubeMetadata(
             title=ensure_playlist_title_prefix(playlist.title, is_playlist=is_playlist_release),
-            description=description.strip(),
-            tags=(tags or ["ai music", "playlist", "background music"])[:15],
+            description=sanitize_description_hashtags(description),
+            tags=normalize_youtube_tags(tags or ["music", "playlist", "background music"]),
         )
 
     def _build_cafe_piano_metadata(self, playlist: Playlist, tracks: list[Track]) -> YouTubeMetadata:

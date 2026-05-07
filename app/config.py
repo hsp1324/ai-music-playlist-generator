@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     youtube_contains_synthetic_media: bool = False
     youtube_auto_upload_on_publish: bool = True
     youtube_title_suffix: str = "Official AI Visualizer"
-    youtube_default_hashtags: str = "#aimusic #visualizer #electronicmusic"
+    youtube_default_hashtags: str = "#Music #Visualizer #BackgroundMusic"
 
     codex_metadata_enabled: bool = False
     codex_metadata_command: str = "codex"

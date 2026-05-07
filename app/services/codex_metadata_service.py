@@ -21,6 +21,7 @@ from app.utils.youtube_localizations import (
     normalize_youtube_localizations,
     sanitize_youtube_copy,
 )
+from app.utils.youtube_tags import normalize_youtube_tags
 from app.utils.timeline import timeline_from_track_dicts
 
 
@@ -169,7 +170,7 @@ class CodexMetadataService(ReleaseMetadataService):
             return YouTubeMetadata(
                 title=title[:100],
                 description=description,
-                tags=tags or ["ai music", "playlist", "background music"],
+                tags=tags or ["playlist", "background music", "music"],
                 provider="codex",
                 localizations=localizations,
                 default_language=default_language,
@@ -219,6 +220,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- For playlist releases, every YouTube title in every language must start exactly with '[playlist]'.",
                 "- After '[playlist]', do not repeat playlist nouns such as '플레이리스트', 'Playlist', 'プレイリスト', or 'lista de reproducción'. Use music/mix/radio wording instead.",
                 "- Do not add process/tool details like OpenClaw, Suno, Codex, or AI workflow unless the release title explicitly asks for it.",
+                "- Never use AI/process/tool hashtags or YouTube tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex on any channel.",
                 "- For playlist releases, put listening use cases directly in the title, not only the description. Prefer titles like: <study/walk/drive/rest use case> + <mood/genre/duration> | <secondary use cases>.",
                 "- For BGM playlists, the title should answer why someone would click now: studying, working, walking, driving, reading, sleeping, or resting.",
                 "- For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer 'J-POP', 'Tokyo', city-pop, mood, and listening use cases. Avoid Korean title phrases like '일본어 J-pop', '일본어 보컬', or '일본어 카페 재즈' unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead.",
@@ -464,19 +466,7 @@ class CodexMetadataService(ReleaseMetadataService):
         return payload
 
     def _normalize_tags(self, value: Any) -> list[str]:
-        candidates = value.split(",") if isinstance(value, str) else list(value or [])
-        normalized: list[str] = []
-        seen: set[str] = set()
-        for candidate in candidates:
-            tag = str(candidate).strip().lstrip("#").strip()
-            if not tag:
-                continue
-            key = tag.lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            normalized.append(tag)
-        return normalized[:15]
+        return normalize_youtube_tags(value)
 
     def _format_timestamp(self, seconds: int, *, force_hours: bool = False) -> str:
         seconds = max(seconds, 0)

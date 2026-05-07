@@ -23,6 +23,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - For tags, provide comma-separated plain tags without `#`, for example `Piano,CafePiano,StudyMusic,WorkMusic`.
 - YouTube API tags and public description hashtags are separate. `--tags` sends hidden YouTube tags; the description text itself must also end with one public hashtag line.
 - Every main description and every localized description must end with 5-8 public hashtags, for example `#Jpop #TokyoDaydreamRadio #CityPop #DriveMusic #WorkMusic`. Do not assume `--tags` will appear publicly.
+- Never use AI/process/tool hashtags or YouTube tags on any channel. Do not write `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, or `Codex` as tags or public hashtags.
 - Keep the title under 100 characters.
 - For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
@@ -75,6 +76,7 @@ In Korean title/description/localizations, never write `인스트루멘털`, `�
 For Playlist Releases, start the main title and every localized title exactly with `[playlist]`. Do not add `[playlist]` to Single Releases.
 After `[playlist]`, do not include duplicate words like `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; write `음악`, `music`, `mix`, or a natural use-case phrase instead.
 End the description with one public hashtag line containing 5-8 relevant hashtags. Also include equivalent hashtag lines in Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese localized descriptions.
+Never use AI/process/tool hashtags or YouTube tags on any channel. Do not write `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, or `Codex` as tags or public hashtags.
 Write metadata in this shape:
 
 Title:

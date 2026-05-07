@@ -538,6 +538,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not use Dreamina Omni Reference for loop-video generation. Use first-frame/start-frame input only and leave last-frame input empty.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
+- Do not use AI/process/tool hashtags or YouTube tags on any channel. Avoid `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, and `Codex` in public hashtags and API tags.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.
 - If the automation times out while waiting for render/upload, report the exact stage and current release state. Do not start a duplicate publish blindly.
 

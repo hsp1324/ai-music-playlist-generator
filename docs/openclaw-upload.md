@@ -32,7 +32,7 @@ scripts/openclaw-release upload-single-candidates \
   --lyrics-file /absolute/path/to/song-b-lyrics.txt \
   --style "Suno style/settings used for this prompt" \
   --prompt "Short generation prompt or notes" \
-  --tags "ai music, single"
+  --tags "Pop,Single,Music"
 ```
 
 The command returns JSON with:
@@ -93,7 +93,7 @@ scripts/openclaw-release upload-audio \
   --lyrics-file /absolute/path/to/song-lyrics.txt \
   --style "Suno style/settings used for this song" \
   --prompt "Short generation prompt or notes" \
-  --tags "ai music, single"
+  --tags "Pop,Single,Music"
 ```
 
 The command returns JSON with:
@@ -120,7 +120,7 @@ scripts/openclaw-release upload-audio \
   --lyrics-file /absolute/path/to/playlist-track-lyrics.txt \
   --style "Suno style/settings used for this track" \
   --prompt "Short generation prompt or notes" \
-  --tags "ai music, playlist"
+  --tags "Playlist,BackgroundMusic,Music"
 ```
 
 The JSON result should include:

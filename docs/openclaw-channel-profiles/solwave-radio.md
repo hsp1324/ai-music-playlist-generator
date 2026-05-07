@@ -15,6 +15,9 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 - Let the playlist concept decide the cover, thumbnail, and loop-video scene.
 - Keep the visual language animated, illustrated, anime, or stylized. Avoid photorealistic/live-action looks.
 - The visuals should feel warm, rhythmic, sunlit, night-city, beach, dance, or tropical when the concept supports it, but do not force the same scene every time.
+- If the concept naturally involves beach, summer, dance, nightlife, romance, fiesta, fashion, confidence, or a similar Latin-pop hook, it is acceptable to feature clearly adult women with tasteful, mildly sexy styling or light revealing fashion for stronger thumbnail appeal.
+- Do not force people into every visual. Only use this when it fits the title and music concept.
+- Keep it non-explicit: no nudity, no underwear-focus, no fetish framing, no minors or teen-looking characters, and no sexual acts. The subject should read as confident/pop-stylish rather than pornographic.
 
 ## Cover
 

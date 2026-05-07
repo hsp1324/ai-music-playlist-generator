@@ -44,8 +44,8 @@ def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
     assert metadata.tags == ["Piano", "CafePiano", "StudyMusic", "WorkMusic", "RelaxingMusic", "SoloPiano"]
 
 
-def test_metadata_approval_accepts_comma_separated_tags() -> None:
-    assert _normalize_youtube_tags("Piano, #CafePiano, StudyMusic, piano,  WorkMusic ") == [
+def test_metadata_approval_accepts_comma_separated_tags_and_filters_ai_tags() -> None:
+    assert _normalize_youtube_tags("Piano, #CafePiano, StudyMusic, piano,  WorkMusic, AIMusic, AI generated, Suno ") == [
         "Piano",
         "CafePiano",
         "StudyMusic",
