@@ -150,6 +150,7 @@ function isTextModalOpen() {
 
 function shouldDeferAutoRefresh() {
   return document.hidden
+    || state.releaseFocus
     || isAudioPlaybackActive()
     || Boolean(state.editingMetadataReleaseId)
     || isOrderEditingActive()
