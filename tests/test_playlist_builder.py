@@ -63,6 +63,45 @@ def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
     assert not output_path.exists()
 
 
+def test_build_audio_reports_ffmpeg_progress(tmp_path, monkeypatch) -> None:
+    audio_paths = [tmp_path / "one.mp3", tmp_path / "two.mp3"]
+    for path in audio_paths:
+        path.write_bytes(b"fake-audio")
+    output_path = tmp_path / "release.mp3"
+
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    captured = {}
+    progress_events = []
+
+    monkeypatch.setattr(builder, "_probe_media_duration", lambda path: 20.0 if path == output_path else 10.0)
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        captured["command"] = command
+        captured["total_duration_seconds"] = total_duration_seconds
+        captured["stage"] = stage
+        output_path.write_bytes(b"rendered-audio")
+        if progress_callback:
+            progress_callback({"stage": stage, "percent": 50.0})
+
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    result = builder.build_audio(
+        [
+            Track(title="One", duration_seconds=10, audio_path=str(audio_paths[0])),
+            Track(title="Two", duration_seconds=10, audio_path=str(audio_paths[1])),
+        ],
+        output_path,
+        progress_callback=progress_events.append,
+    )
+
+    assert result == output_path
+    assert output_path.read_bytes() == b"rendered-audio"
+    assert captured["stage"] == "audio_render"
+    assert captured["total_duration_seconds"] == 20.0
+    assert captured["command"][captured["command"].index("-progress") + 1] == "pipe:1"
+    assert progress_events == [{"stage": "audio_render", "percent": 50.0}]
+
+
 def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> None:
     calls_path = tmp_path / "ffmpeg-calls.jsonl"
     concat_path = tmp_path / "concat-list.txt"

@@ -59,6 +59,7 @@ class FFMpegPlaylistBuilder:
         output_path: Path,
         total_duration_seconds: int | float | None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
+        stage: str = "video_render",
     ) -> None:
         process = subprocess.Popen(
             command,
@@ -126,7 +127,7 @@ class FFMpegPlaylistBuilder:
                     eta_seconds = max(elapsed * (1 - ratio) / ratio, 0.0)
             progress_callback(
                 {
-                    "stage": "video_render",
+                    "stage": stage,
                     "progress_ratio": ratio,
                     "percent": round(ratio * 100, 1),
                     "processed_seconds": round(processed_seconds, 1),
@@ -217,7 +218,14 @@ class FFMpegPlaylistBuilder:
             shortage_seconds=shortage,
         )
 
-    def build_audio(self, tracks: list[Track], output_path: Path) -> Path:
+    def build_audio(
+        self,
+        tracks: list[Track],
+        output_path: Path,
+        *,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
+        total_duration_seconds: int | float | None = None,
+    ) -> Path:
         if not tracks:
             raise ValueError("No tracks were supplied for rendering.")
 
@@ -251,6 +259,10 @@ class FFMpegPlaylistBuilder:
         command = [
             self.settings.ffmpeg_binary,
             "-y",
+            "-hide_banner",
+            "-nostats",
+            "-progress",
+            "pipe:1",
             "-f",
             "concat",
             "-safe",
@@ -266,7 +278,14 @@ class FFMpegPlaylistBuilder:
         ]
 
         try:
-            self._run_ffmpeg(command)
+            output_path.unlink(missing_ok=True)
+            self._run_ffmpeg_with_progress(
+                command,
+                output_path=output_path,
+                total_duration_seconds=total_duration_seconds or sum(probed_durations),
+                progress_callback=progress_callback,
+                stage="audio_render",
+            )
         finally:
             manifest_path.unlink(missing_ok=True)
 

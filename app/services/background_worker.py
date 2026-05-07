@@ -182,9 +182,24 @@ class BackgroundJobWorker:
         meta["workflow_state"] = "rendering"
         meta["render_ready"] = False
         meta["note"] = f"Rendering audio for {len(tracks)} approved tracks."
+        meta["audio_render_progress"] = {
+            "stage": "audio_render",
+            "progress_ratio": 0.0,
+            "percent": 0.0,
+            "processed_seconds": 0,
+            "total_seconds": playlist.actual_duration_seconds,
+            "message": meta["note"],
+            "updated_at": _utcnow().isoformat(),
+        }
         playlist.metadata_json = meta
         playlist.status = PlaylistStatus.building
+        job.result_json = {
+            **(job.result_json or {}),
+            "playlist_id": playlist.id,
+            "progress": meta["audio_render_progress"],
+        }
         db.add(playlist)
+        db.add(job)
         db.commit()
         db.refresh(playlist)
 
@@ -216,7 +231,14 @@ class BackgroundJobWorker:
             rendered_track_duration_sources,
         )
         output_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp3"
-        rendered_path = self.services.playlist_builder.build_audio(tracks, output_path)
+        progress_callback = self._build_audio_progress_callback(db, job, playlist)
+        rendered_path = self._call_builder_with_progress(
+            self.services.playlist_builder.build_audio,
+            tracks,
+            output_path,
+            progress_callback=progress_callback,
+            total_duration_seconds=sum(rendered_track_durations),
+        )
         db.expire_all()
         playlist = db.scalars(
             select(Playlist)
@@ -279,6 +301,17 @@ class BackgroundJobWorker:
         meta["rendered_track_count"] = len(rendered_track_ids)
         meta["rendered_duration_seconds"] = playlist.actual_duration_seconds
         meta["rendered_timeline"] = rendered_timeline
+        meta["audio_render_progress"] = {
+            **dict(meta.get("audio_render_progress") or {}),
+            "stage": "audio_render",
+            "progress_ratio": 1.0,
+            "percent": 100.0,
+            "processed_seconds": playlist.actual_duration_seconds,
+            "total_seconds": playlist.actual_duration_seconds,
+            "message": "Audio render complete.",
+            "status": "end",
+            "updated_at": _utcnow().isoformat(),
+        }
         meta.pop("stale_audio_render", None)
         meta["workflow_state"] = "audio_ready" if meta.get("publish_ready") else "rendered"
         meta.pop("render_error", None)
@@ -290,6 +323,7 @@ class BackgroundJobWorker:
             **(job.result_json or {}),
             "playlist_id": playlist.id,
             "output_audio_path": playlist.output_audio_path,
+            "progress": meta["audio_render_progress"],
         }
         db.add(playlist)
         db.add(job)
@@ -510,6 +544,33 @@ class BackgroundJobWorker:
         return dict(current or fallback or {})
 
     @staticmethod
+    def _build_audio_progress_callback(db: Session, job: Job, playlist: Playlist):
+        def callback(progress: dict) -> None:
+            payload = {
+                **progress,
+                "message": BackgroundJobWorker._format_audio_progress_message(progress),
+                "updated_at": _utcnow().isoformat(),
+            }
+            job.result_json = {
+                **(job.result_json or {}),
+                "playlist_id": playlist.id,
+                "progress": payload,
+            }
+            meta = BackgroundJobWorker._current_playlist_meta(
+                db,
+                playlist.id,
+                fallback=dict(playlist.metadata_json or {}),
+            )
+            meta["audio_render_progress"] = payload
+            meta["note"] = payload["message"]
+            playlist.metadata_json = meta
+            db.add(job)
+            db.add(playlist)
+            db.commit()
+
+        return callback
+
+    @staticmethod
     def _build_video_progress_callback(db: Session, job: Job, playlist: Playlist):
         def callback(progress: dict) -> None:
             payload = {
@@ -535,6 +596,21 @@ class BackgroundJobWorker:
             db.commit()
 
         return callback
+
+    @staticmethod
+    def _format_audio_progress_message(progress: dict) -> str:
+        percent = progress.get("percent")
+        processed = progress.get("processed_seconds")
+        total = progress.get("total_seconds")
+        eta = progress.get("eta_seconds")
+        pieces = ["Rendering playlist audio"]
+        if isinstance(percent, (int, float)):
+            pieces.append(f"{percent:.1f}%")
+        if isinstance(processed, (int, float)) and isinstance(total, (int, float)) and total > 0:
+            pieces.append(f"{BackgroundJobWorker._format_seconds(processed)} / {BackgroundJobWorker._format_seconds(total)}")
+        if isinstance(eta, (int, float)):
+            pieces.append(f"about {BackgroundJobWorker._format_seconds(eta)} remaining")
+        return " · ".join(pieces) + "."
 
     @staticmethod
     def _format_video_progress_message(progress: dict) -> str:
@@ -791,6 +867,12 @@ class BackgroundJobWorker:
                 meta["render_ready"] = False
                 meta["render_error"] = error_text
                 meta["note"] = f"Background render failed: {error_text}"
+                meta["audio_render_progress"] = {
+                    **dict(meta.get("audio_render_progress") or {}),
+                    "status": "failed",
+                    "message": meta["note"],
+                    "updated_at": _utcnow().isoformat(),
+                }
             elif job.type == JobType.build_video:
                 playlist.status = PlaylistStatus.ready
                 meta["workflow_state"] = "video_build_failed"
