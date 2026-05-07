@@ -12,7 +12,7 @@ from app.utils.youtube_localizations import (
     normalize_youtube_localizations,
     sanitize_youtube_copy,
 )
-from app.workflows.playlist_automation import _normalize_youtube_tags
+from app.workflows.playlist_automation import _normalize_youtube_tags, _validate_playlist_metadata_ready
 from scripts.openclaw_release import release_timeline
 from app.utils.track_titles import upload_track_title
 
@@ -51,6 +51,35 @@ def test_metadata_approval_accepts_comma_separated_tags_and_filters_ai_tags() ->
         "StudyMusic",
         "WorkMusic",
     ]
+
+
+def test_playlist_metadata_ready_requires_all_languages_and_timeline() -> None:
+    localizations = {
+        language: {
+            "title": "[playlist] Test",
+            "description": "Description\n\n00:00:00 Track One\n03:00 Track Two\n\n#Music #Playlist",
+        }
+        for language in ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+    }
+    _validate_playlist_metadata_ready(
+        {
+            "youtube_description": "Description\n\n00:00:00 Track One\n03:00 Track Two\n\n#Music #Playlist",
+            "youtube_localizations": localizations,
+        }
+    )
+
+    del localizations["th"]
+    try:
+        _validate_playlist_metadata_ready(
+            {
+                "youtube_description": "Description without timeline",
+                "youtube_localizations": localizations,
+            }
+        )
+    except ValueError as exc:
+        assert "Missing: th" in str(exc)
+    else:
+        raise AssertionError("metadata validation should reject missing language")
 
 
 def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:

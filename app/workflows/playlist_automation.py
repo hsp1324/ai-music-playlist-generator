@@ -1,4 +1,5 @@
 import random
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -34,6 +35,8 @@ FAILED_WORKFLOW_STATES = {
     "publish_failed",
 }
 FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
+REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+TIMELINE_ROW_PATTERN = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?\s+\S+", re.MULTILINE)
 
 
 def _utcnow() -> datetime:
@@ -123,6 +126,36 @@ def _description_has_hashtag_line(description: str) -> bool:
         if sum(1 for token in line.split() if token.startswith("#") and len(token) > 1) >= 2:
             return True
     return False
+
+
+def _description_has_timeline(description: str) -> bool:
+    return bool(TIMELINE_ROW_PATTERN.search(str(description or "")))
+
+
+def _validate_playlist_metadata_ready(meta: dict) -> None:
+    localizations = meta.get("youtube_localizations") or {}
+    missing_languages = [
+        language
+        for language in REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES
+        if not (localizations.get(language) or {}).get("title")
+        or not (localizations.get(language) or {}).get("description")
+    ]
+    if missing_languages:
+        raise ValueError(
+            "Playlist metadata requires localized title/description for all configured languages: "
+            + ", ".join(REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES)
+            + f". Missing: {', '.join(missing_languages)}. "
+            "Run metadata-context and approve-metadata with every localization before publishing."
+        )
+
+    descriptions = [str(meta.get("youtube_description") or "")]
+    descriptions.extend(str(copy.get("description") or "") for copy in localizations.values())
+    if not all(_description_has_timeline(description) for description in descriptions):
+        raise ValueError(
+            "Playlist metadata requires a timestamped tracklist in the main description and every localization. "
+            "Use scripts/openclaw-release metadata-context display_timestamp_lines, keep timestamps fixed, "
+            "then approve metadata again."
+        )
 
 
 def _ensure_description_hashtags(description: str, tags: list[str] | str | None) -> str:
@@ -1335,6 +1368,8 @@ def approve_playlist_metadata(
         if default_copy:
             meta["youtube_title"] = default_copy["title"]
             meta["youtube_description"] = default_copy["description"]
+    if is_playlist_release:
+        _validate_playlist_metadata_ready(meta)
 
     history = list(meta.get("metadata_approval_history") or [])
     history.append(

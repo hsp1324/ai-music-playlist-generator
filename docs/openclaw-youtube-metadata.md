@@ -24,6 +24,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - YouTube API tags and public description hashtags are separate. `--tags` sends hidden YouTube tags; the description text itself must also end with one public hashtag line.
 - Every main description and every localized description must end with 5-8 public hashtags, for example `#Jpop #TokyoDaydreamRadio #CityPop #DriveMusic #WorkMusic`. Do not assume `--tags` will appear publicly.
 - Never use AI/process/tool hashtags or YouTube tags on any channel. Do not write `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, or `Codex` as tags or public hashtags.
+- Playlist metadata approval is now blocked unless all 9 configured languages are present and the main description plus every localized description contains a timestamped tracklist.
 - Keep the title under 100 characters.
 - For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.

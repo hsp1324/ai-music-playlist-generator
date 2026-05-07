@@ -11,6 +11,7 @@ import argparse
 import json
 import mimetypes
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -47,6 +48,8 @@ CHANNEL_PROFILE_NAMES = {
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "sundaze",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "solwave-radio",
 }
+REQUIRED_METADATA_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+TIMELINE_ROW_PATTERN = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?\s+\S+", re.MULTILINE)
 JAPAN_CHANNEL_KEYWORDS = (
     "anime",
     "anime pop",
@@ -1000,6 +1003,8 @@ def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any],
     tags = release.get("youtube_tags") or []
     if not title or not description:
         raise RuntimeError("Generated metadata is missing title or description.")
+    if release.get("workspace_mode") == "playlist":
+        ensure_playlist_metadata_complete(release)
     return request_json(
         client,
         "POST",
@@ -1011,6 +1016,39 @@ def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any],
             "tags": tags,
             "note": "Auto-approved metadata for private YouTube upload.",
         },
+    )
+
+
+def description_has_timeline(description: str) -> bool:
+    return bool(TIMELINE_ROW_PATTERN.search(str(description or "")))
+
+
+def ensure_playlist_metadata_complete(release: dict[str, Any]) -> None:
+    localizations = release.get("youtube_localizations") or {}
+    missing_languages = [
+        language
+        for language in REQUIRED_METADATA_LANGUAGES
+        if not (localizations.get(language) or {}).get("title")
+        or not (localizations.get(language) or {}).get("description")
+    ]
+    descriptions = [str(release.get("youtube_description") or "")]
+    descriptions.extend(str(copy.get("description") or "") for copy in localizations.values())
+    missing_timeline = not descriptions or not all(description_has_timeline(description) for description in descriptions)
+    if not missing_languages and not missing_timeline:
+        return
+
+    problems = []
+    if missing_languages:
+        problems.append(f"missing localizations: {', '.join(missing_languages)}")
+    if missing_timeline:
+        problems.append("missing timestamped tracklist in one or more descriptions")
+    raise RuntimeError(
+        "Refusing to auto-approve incomplete playlist metadata: "
+        + "; ".join(problems)
+        + ". Run `scripts/openclaw-release metadata-context --release-id "
+        + str(release.get("id") or "RELEASE_ID")
+        + "`, write full metadata with timeline and all 9 localizations, then run "
+        + "`scripts/openclaw-release approve-metadata` before publishing."
     )
 
 

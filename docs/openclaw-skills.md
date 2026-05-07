@@ -539,6 +539,8 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not use AI/process/tool hashtags or YouTube tags on any channel. Avoid `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, and `Codex` in public hashtags and API tags.
+- Do not auto-approve the app's template metadata for playlist releases. Before private publish, playlist metadata must include a timestamped tracklist in the main description and every localization, plus all 9 configured localizations: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese.
+- If `auto-publish-playlist` stops with `Refusing to auto-approve incomplete playlist metadata`, run `scripts/openclaw-release metadata-context --release-id RELEASE_ID`, write full timeline/localized metadata, run `scripts/openclaw-release approve-metadata` with every localization file, then call publish approval again.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.
 - If the automation times out while waiting for render/upload, report the exact stage and current release state. Do not start a duplicate publish blindly.
 
