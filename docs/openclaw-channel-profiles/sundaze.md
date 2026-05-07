@@ -66,6 +66,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - The top-level `--title` / `--description-file` and `--en-title` / `--en-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
 - Use an `Essential`-style title shape: a vivid situation or emotion + English/American pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Match listening use cases to the actual energy. For energetic rooftop, club, dance-pop, bass-heavy, or workout-feeling releases, prefer getting ready, workout, running, party warmup, driving, nightlife, and confidence. Avoid `focus`, `study`, or `quiet work` unless the rendered audio is genuinely calm enough for those uses.
 - Strong examples:
   `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`
   `[playlist] Feel-Good American Pop Essentials | Summer Drive, Walk and Work Music`

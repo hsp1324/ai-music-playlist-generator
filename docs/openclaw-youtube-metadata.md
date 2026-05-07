@@ -29,6 +29,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
 - For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Good Korean patterns: `공부·산책할 때 듣기 좋은 숲길 BGM 1시간`, `산책·드라이브할 때 듣기 좋은 해변 BGM 1시간`, `작업할 때 틀어놓기 좋은 카페 피아노 1시간`.
+- Title and description use cases must match the actual music energy, arrangement, lyrics, and channel concept. Do not add generic `study`, `focus`, `work`, or `night walk` wording just because it is common SEO text. If the tracklist feels high-energy, club-like, dance-pop, rooftop, bass-heavy, or workout-ready, use cases should be things like getting ready, workout, running, party warmup, driving, confidence, or nightlife instead of concentration/study.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - In Korean titles/descriptions, never use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use natural Korean such as `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 - If the release is a playlist, include a timestamped tracklist from the final order.
@@ -72,6 +73,7 @@ For Solwave Radio Latin/Spanish pop releases, write the main title/description i
 For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead.
 For `sundaze` and `Solwave Radio`, titles should read like curated editorial or `Essential` playlists: vivid situation/emotion + genre identity + listening use case. Do not use raw workspace names or short generic labels such as `Golden Hour Drive Pop`, `Ruta Dorada Pop`, `English Pop`, `Spanish Pop`, or `Latin Pop` by themselves.
 Good `sundaze` example: `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`.
+For upbeat rooftop/club/dance-pop `sundaze` releases, match the use case to the energy: getting ready, workout, running, party warmup, driving, and confidence are usually better than focus, study, or quiet work.
 Good `Solwave Radio` example: `[playlist] Pop Latino para Ruta al Atardecer | Carretera, Verano y Buenas Vibras`.
 In Korean title/description/localizations, never write `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Say `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 For Playlist Releases, start the main title and every localized title exactly with `[playlist]`. Do not add `[playlist]` to Single Releases.

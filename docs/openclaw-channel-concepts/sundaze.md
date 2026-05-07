@@ -27,6 +27,7 @@ Use a vivid situation or emotion plus pop identity:
 - Sunset highway, windows down, road trip, open-road confidence.
 - City lights, night walk, late text, moving on, emotional synth-pop.
 - Rooftop evening, friends, party warmup, dance-pop.
+- Rooftop/club/high-energy dance-pop should target getting ready, workout, running, party warmup, driving, nightlife, and confidence. Do not label it as focus, study, or quiet work unless the actual rendered audio is clearly relaxed enough for that.
 - Summer beach, bright afternoon, first love, feel-good pop.
 - Gym or workout, confidence, upbeat pop-rock or dance-pop.
 - Rainy bedroom, heartbreak, acoustic-pop or emotional ballad.
@@ -56,6 +57,7 @@ Use a vivid situation or emotion plus pop identity:
 ## Bad Directions
 
 - Short generic titles like `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
+- Mismatched use cases, such as calling a club-like rooftop dance-pop playlist `focus`, `study`, or `quiet work` music.
 - Reusing the same golden-hour/road-trip concept repeatedly.
 - Instrumental pop unless explicitly requested.
 - Cover/thumbnail scenes that look unrelated to the playlist title.
