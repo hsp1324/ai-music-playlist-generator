@@ -664,6 +664,12 @@ class BackgroundJobWorker:
                     playlist.status = PlaylistStatus.uploaded
                     meta["workflow_state"] = "uploaded"
                     meta["youtube_response"] = result.response
+                    response_snippet = result.response.get("snippet") if isinstance(result.response, dict) else {}
+                    meta["youtube_published_at"] = (
+                        response_snippet.get("publishedAt")
+                        if isinstance(response_snippet, dict) and response_snippet.get("publishedAt")
+                        else _utcnow().isoformat()
+                    )
                     cleanup = self._delete_uploaded_video_file(uploaded_video_path)
                     if cleanup["deleted"]:
                         playlist.output_video_path = None

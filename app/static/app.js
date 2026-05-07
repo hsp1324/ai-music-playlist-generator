@@ -220,6 +220,18 @@ function formatArchiveDate(value) {
   });
 }
 
+function formatPublishedDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function isSingleRelease(workspace) {
   return workspace?.workspace_mode === "single_track_video";
 }
@@ -239,6 +251,11 @@ function releaseOptionLabel(workspace) {
 function releasePublishedChannelLabel(workspace) {
   if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
   return workspace.youtube_channel_title || workspace.youtube_channel_id || "YouTube";
+}
+
+function releasePublishedAtLabel(workspace) {
+  if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
+  return formatPublishedDate(workspace.youtube_published_at);
 }
 
 function releaseChannelKey(workspace) {
@@ -2140,7 +2157,8 @@ function renderWorkspaceTiles() {
 
     const publishedChannel = releasePublishedChannelLabel(workspace);
     if (publishedChannel) {
-      hint.textContent = `Published · ${publishedChannel}`;
+      const publishedAt = releasePublishedAtLabel(workspace);
+      hint.textContent = `Published · ${publishedChannel}${publishedAt ? ` · ${publishedAt}` : ""}`;
       hint.classList.add("published-hint");
     } else {
       hint.textContent = workspace.workspace_mode === "single_track_video"

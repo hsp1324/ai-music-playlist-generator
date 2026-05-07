@@ -594,6 +594,7 @@ def mark_playlist_uploaded(
         playlist.youtube_video_id = payload.youtube_video_id
     if payload.output_video_path:
         playlist.output_video_path = payload.output_video_path
+    published_at = _utcnow().isoformat()
     meta = {
         **(playlist.metadata_json or {}),
         "uploaded_by": payload.actor,
@@ -601,6 +602,7 @@ def mark_playlist_uploaded(
         "workflow_state": "uploaded",
         "publish_ready": True,
         "publish_approved": True,
+        "youtube_published_at": published_at,
     }
     _store_youtube_channel_metadata(
         meta,

@@ -78,9 +78,13 @@ def _store_youtube_channel_metadata(
         meta["youtube_channel_title"] = channel_title
 
 
-def _parse_metadata_datetime(value: str | None) -> datetime | None:
+def _parse_metadata_datetime(value: str | datetime | None) -> datetime | None:
     if not value:
         return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
     try:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
@@ -284,6 +288,32 @@ def _loop_video_source(meta: dict) -> str | None:
     return None
 
 
+def _youtube_published_at(playlist: Playlist, meta: dict) -> datetime | None:
+    youtube_response = meta.get("youtube_response") if isinstance(meta.get("youtube_response"), dict) else {}
+    snippet = youtube_response.get("snippet") if isinstance(youtube_response.get("snippet"), dict) else {}
+    for value in (
+        meta.get("youtube_published_at"),
+        snippet.get("publishedAt"),
+        meta.get("uploaded_at"),
+    ):
+        parsed = _parse_metadata_datetime(value)
+        if parsed:
+            return parsed
+
+    if not playlist.youtube_video_id:
+        return None
+    upload_jobs = [
+        job
+        for job in playlist.jobs
+        if job.type == JobType.upload_youtube and job.status == JobStatus.succeeded
+    ]
+    if not upload_jobs:
+        return None
+    upload_jobs.sort(key=lambda job: job.finished_at or job.updated_at or job.created_at, reverse=True)
+    latest_job = upload_jobs[0]
+    return _parse_metadata_datetime(latest_job.finished_at or latest_job.updated_at or latest_job.created_at)
+
+
 def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
     track_count = len(playlist.items)
@@ -347,6 +377,7 @@ def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -
         youtube_video_id=playlist.youtube_video_id,
         youtube_channel_id=meta.get("youtube_channel_id"),
         youtube_channel_title=meta.get("youtube_channel_title"),
+        youtube_published_at=_youtube_published_at(playlist, meta),
         note=meta.get("note"),
         render_job=_latest_render_job(playlist),
         created_at=playlist.created_at,
@@ -2115,11 +2146,13 @@ def approve_playlist_publish(
         meta["publish_under_target_confirmed_by"] = actor
         meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
     if youtube_video_id:
+        published_at = _utcnow().isoformat()
         playlist.youtube_video_id = youtube_video_id
         playlist.status = PlaylistStatus.uploaded
         meta["workflow_state"] = "uploaded"
         meta["publish_approved"] = True
         meta["publish_approved_by"] = actor
+        meta["youtube_published_at"] = published_at
         meta["note"] = note
         _store_youtube_channel_metadata(meta, services, channel_id=youtube_channel_id)
         playlist.metadata_json = meta
