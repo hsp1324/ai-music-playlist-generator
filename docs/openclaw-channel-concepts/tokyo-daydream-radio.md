@@ -28,6 +28,7 @@ Use one lane, then vary substyle and lyric premise:
 - Rainy Shibuya or Shinjuku, umbrellas, station road, after-work walk.
 - Summer beach walk, seaside train, coastal evening, festival night.
 - Weekend shopping street, cafe date, spring afternoon, sunny crosswalk.
+- Arcade or game-center night, neon rhythm games, friends meeting up, karaoke, weekend night out.
 - School-after-hours youth pop, band-room guitar pop, graduation season.
 - Bright dance-pop, synth-pop, city-pop, pop-rock, emotional ballad, light band pop.
 
@@ -39,6 +40,7 @@ Use one lane, then vary substyle and lyric premise:
 - Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full J-pop arrangement with second verse, bridge or instrumental break, final chorus, and outro.
 - Do not make lyricless, BGM-only, hum-only, or instrumental tracks unless the human explicitly requested it.
 - Do not over-emphasize `Japanese language` in titles. Use `J-POP`, Tokyo/Japan scene, mood, and listening use case instead.
+- Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade/game-center/friends/night-out concepts, use arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup instead.
 
 ## Visual Direction
 
@@ -49,7 +51,8 @@ Use one lane, then vary substyle and lyric premise:
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Tokyo Rooftop Dance Pop | Night Walk, City Lights and J-POP`
+- `[playlist] Tokyo Rooftop Dance Pop | City Lights, Night Out and J-POP`
+- `[playlist] Tokyo Arcade Night J-POP | Neon Games, Friends and Weekend Energy`
 - `[playlist] Weekend Train Ride J-POP | Spring Streets and Feel-Good Japanese Pop`
 - `[playlist] Summer Coast J-POP | Beach Walk, Seaside Train and Bright Pop`
 - `[playlist] Shibuya Rain Synth-Pop | Night Commute and Japanese Vocal Pop`
@@ -60,3 +63,4 @@ Use one lane, then vary substyle and lyric premise:
 - Making Japan-themed BGM without vocals and calling it J-pop.
 - Using `일본어 J-pop`, `Japanese vocal`, or language-first titles unless the human explicitly asks.
 - Reusing the same rainy Tokyo/night walk/beach/forest concept too soon.
+- Forcing `walk` / `산책` into indoor arcade, game-center, karaoke, party, or friend-hangout concepts.

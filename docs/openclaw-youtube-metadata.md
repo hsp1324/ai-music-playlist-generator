@@ -28,8 +28,8 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Keep the title under 100 characters.
 - For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
-- For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Good Korean patterns: `공부·산책할 때 듣기 좋은 숲길 BGM 1시간`, `산책·드라이브할 때 듣기 좋은 해변 BGM 1시간`, `작업할 때 틀어놓기 좋은 카페 피아노 1시간`.
-- Title and description use cases must match the actual music energy, arrangement, lyrics, and channel concept. Do not add generic `study`, `focus`, `work`, or `night walk` wording just because it is common SEO text. If the tracklist feels high-energy, club-like, dance-pop, rooftop, bass-heavy, or workout-ready, use cases should be things like getting ready, workout, running, party warmup, driving, confidence, or nightlife instead of concentration/study.
+- For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Choose the situation from the actual concept and sound; do not repeat `study`, `work`, `walk`, or `rest` as defaults. Good Korean BGM patterns when they genuinely fit: `공부할 때 듣기 좋은 숲길 BGM 1시간`, `산책·드라이브할 때 듣기 좋은 해변 BGM 1시간`, `작업할 때 틀어놓기 좋은 카페 피아노 1시간`.
+- Title and description use cases must match the actual music energy, arrangement, lyrics, and channel concept. Do not add generic `study`, `focus`, `work`, or `night walk` wording just because it is common SEO text. Use `walk` / `산책` only when walking, commuting on foot, street movement, beach/forest walks, crosswalks, or similar movement is central. If the tracklist feels high-energy, club-like, dance-pop, rooftop, bass-heavy, arcade/game-like, friend-hangout, or workout-ready, use cases should be things like gaming, arcade, friends, night out, getting ready, workout, running, party warmup, driving, confidence, weekend energy, or nightlife instead of concentration/study/walk.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
 - In Korean titles/descriptions, never use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use natural Korean such as `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 - If the release is a playlist, include a timestamped tracklist from the final order.
@@ -83,7 +83,7 @@ Never use AI/process/tool hashtags or YouTube tags on any channel. Do not write 
 Write metadata in this shape:
 
 Title:
-<Korean YouTube title, under 100 characters, starting with [playlist] for playlist releases and with clear listening use cases such as 공부, 작업, 산책, 드라이브, 휴식>
+<Korean YouTube title, under 100 characters, starting with [playlist] for playlist releases and with a clear listening use case that fits the actual concept and sound>
 
 Description:
 <2-4 Korean paragraphs describing the mood and use cases>
