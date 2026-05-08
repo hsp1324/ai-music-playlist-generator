@@ -2224,8 +2224,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
+    headers: dict[str, str] = {}
+    if os.environ.get("AIMP_API_COOKIE"):
+        headers["Cookie"] = os.environ["AIMP_API_COOKIE"]
     try:
-        with httpx.Client(base_url=api_base(args.api_base), timeout=120.0) as client:
+        with httpx.Client(base_url=api_base(args.api_base), timeout=120.0, headers=headers) as client:
             result = args.func(client, args)
         print_json(result)
         return 0
