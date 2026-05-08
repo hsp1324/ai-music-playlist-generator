@@ -190,9 +190,9 @@ function pauseOtherAudioPlayers(activeAudio) {
   });
 }
 
-function playNextAwaitingTrack(currentAudio) {
+function playNextQueuedTrack(currentAudio, root, selector) {
   if (!currentAudio?.dataset.autoplayQueue) return;
-  const queueAudios = [...queueGrid.querySelectorAll("audio.track-audio")]
+  const queueAudios = [...root.querySelectorAll(selector)]
     .filter((audio) => audio.dataset.autoplayQueue === currentAudio.dataset.autoplayQueue && audio.src);
   const currentIndex = queueAudios.indexOf(currentAudio);
   if (currentIndex < 0 || currentIndex >= queueAudios.length - 1) return;
@@ -202,6 +202,14 @@ function playNextAwaitingTrack(currentAudio) {
     pauseOtherAudioPlayers(nextAudio);
     nextAudio.play().catch(() => {});
   }, 250);
+}
+
+function playNextAwaitingTrack(currentAudio) {
+  playNextQueuedTrack(currentAudio, queueGrid, "audio.track-audio");
+}
+
+function playNextApprovedTrack(currentAudio) {
+  playNextQueuedTrack(currentAudio, approvedGrid, "audio.approved-audio");
 }
 
 function displayTitle(value, fallback = "Untitled") {
@@ -3015,6 +3023,9 @@ function renderWorkspaceDetail() {
 
     if (audioUrl) {
       audio.src = audioUrl;
+      audio.dataset.autoplayQueue = workspace.id;
+      audio.dataset.queueIndex = String(index);
+      audio.addEventListener("ended", () => playNextApprovedTrack(audio));
     } else {
       audio.remove();
     }
