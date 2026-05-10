@@ -69,6 +69,7 @@ const youtubeMessage = document.querySelector("#youtube-message");
 const youtubeConnectButton = document.querySelector("#youtube-connect-button");
 const youtubeChannelControls = document.querySelector("#youtube-channel-controls");
 const youtubeChannelSelect = document.querySelector("#youtube-channel-select");
+const youtubeImportButton = document.querySelector("#youtube-import-button");
 const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
@@ -274,6 +275,7 @@ function trackUserRating(track) {
 }
 
 function releaseModeLabel(workspace) {
+  if (workspace?.workspace_mode === "youtube_import") return "YouTube Import";
   return isSingleRelease(workspace) ? "Single Release" : "Playlist Release";
 }
 
@@ -667,7 +669,10 @@ async function saveMetadataChanges(workspace) {
     alert(`${partialLanguage.label} 탭은 title과 description을 둘 다 입력하거나 둘 다 비워야 합니다.`);
     return;
   }
-  await api(`/api/playlists/${workspace.id}/metadata/approve`, {
+  const endpoint = workspace.youtube_video_id
+    ? `/api/playlists/${workspace.id}/youtube/metadata`
+    : `/api/playlists/${workspace.id}/metadata/approve`;
+  await api(endpoint, {
     method: "POST",
     body: JSON.stringify({
       actor: "web-ui",
@@ -677,7 +682,9 @@ async function saveMetadataChanges(workspace) {
       localizations: metadata.localizations,
       default_language: metadata.default_language,
       note: workspace.metadata_approved
-        ? "Edited approved metadata from workspace detail."
+        ? workspace.youtube_video_id
+          ? "Edited metadata and pushed to YouTube from workspace detail."
+          : "Edited approved metadata from workspace detail."
         : "Approved from workspace detail.",
     }),
   });
@@ -2630,7 +2637,7 @@ function renderWorkspaceDetail() {
         });
       })
     );
-  } else if (workspace.output_video_path && workspace.youtube_title && workspace.metadata_approved) {
+  } else if ((workspace.output_video_path || workspace.youtube_video_id) && workspace.youtube_title && workspace.metadata_approved) {
     if (metadataEditing) {
       appendDetailAction(
         detailActionGroups.metadata,
@@ -2661,7 +2668,7 @@ function renderWorkspaceDetail() {
         })
       );
     }
-    if (!metadataEditing) {
+    if (!metadataEditing && workspace.output_video_path) {
       appendDetailAction(
         detailActionGroups.metadata,
         actionButton("Regenerate Draft", "action-button secondary-button", async () => {
@@ -3135,6 +3142,10 @@ function renderYouTubeStatus(youtubeStatus) {
       youtubeChannelSelect.value = youtubeStatus.selected_channel_id;
     }
   }
+  if (youtubeImportButton) {
+    youtubeImportButton.disabled = !youtubeStatus.ready || !channels.length;
+    youtubeImportButton.hidden = !channels.length;
+  }
 }
 
 function applyBoardData(tracks, workspaces) {
@@ -3340,6 +3351,41 @@ if (youtubeChannelSelect) {
       renderWorkspaceDetail();
     } catch (error) {
       alert(error.message);
+    }
+  });
+}
+
+if (youtubeImportButton) {
+  youtubeImportButton.addEventListener("click", async () => {
+    const channels = state.youtubeStatus?.channels || [];
+    const channelId = youtubeChannelSelect?.value || state.youtubeStatus?.selected_channel_id || "";
+    const channel = channels.find((item) => item.id === channelId);
+    if (!channelId) {
+      alert("가져올 YouTube 채널을 먼저 선택하세요.");
+      return;
+    }
+    const channelLabel = channel?.title || channelId;
+    const proceed = window.confirm(`${channelLabel} 최근 업로드 20개를 웹앱으로 가져올까요?`);
+    if (!proceed) return;
+    youtubeImportButton.disabled = true;
+    try {
+      const result = await api("/api/youtube/import-uploads", {
+        method: "POST",
+        body: JSON.stringify({
+          channel_id: channelId,
+          max_results: 20,
+          update_existing: true,
+        }),
+      });
+      setStatus(
+        workspaceStatus,
+        `YouTube import complete. Imported ${result.imported?.length || 0}, updated ${result.updated?.length || 0}.`
+      );
+      await refresh();
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      youtubeImportButton.disabled = false;
     }
   });
 }

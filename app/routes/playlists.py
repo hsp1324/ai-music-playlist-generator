@@ -32,6 +32,8 @@ from app.schemas.playlist import (
 )
 from app.services.registry import ServiceRegistry
 from app.workflows.playlist_automation import (
+    _ensure_description_hashtags,
+    _normalize_youtube_tags,
     _store_youtube_channel_metadata,
     _utcnow,
     approve_playlist_cover,
@@ -53,6 +55,11 @@ from app.workflows.playlist_automation import (
     set_playlist_workspace_archive_state,
 )
 from app.utils.openclaw_slack_loop import post_next_playlist_request
+from app.utils.youtube_localizations import (
+    normalize_youtube_language,
+    normalize_youtube_localizations,
+    sanitize_youtube_copy,
+)
 
 router = APIRouter(prefix="/playlists", tags=["playlists"])
 
@@ -481,6 +488,105 @@ def approve_workspace_metadata(
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.post("/{playlist_id}/youtube/metadata", response_model=PlaylistWorkspaceRead)
+def update_uploaded_youtube_metadata(
+    playlist_id: str,
+    payload: PlaylistMetadataApproveRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    services = get_services(request)
+    playlist = db.scalars(
+        select(Playlist)
+        .where(Playlist.id == playlist_id)
+        .options(
+            selectinload(Playlist.items).selectinload(PlaylistItem.track),
+            selectinload(Playlist.jobs),
+        )
+    ).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Playlist not found")
+    if not playlist.youtube_video_id:
+        raise HTTPException(status_code=400, detail="YouTube video id is required before updating YouTube metadata.")
+
+    meta = dict(playlist.metadata_json or {})
+    title = sanitize_youtube_copy(payload.title if payload.title is not None else meta.get("youtube_title")).strip()
+    description = sanitize_youtube_copy(
+        payload.description if payload.description is not None else meta.get("youtube_description")
+    ).strip()
+    tags = _normalize_youtube_tags(payload.tags if payload.tags is not None else meta.get("youtube_tags") or [])
+    default_language = normalize_youtube_language(payload.default_language or meta.get("youtube_default_language"))
+    localizations = normalize_youtube_localizations(
+        payload.localizations if payload.localizations is not None else meta.get("youtube_localizations"),
+        default_title=title,
+        default_description=description,
+        default_language=default_language,
+    )
+    default_copy = localizations.get(default_language)
+    if default_copy:
+        title = default_copy["title"]
+        description = default_copy["description"]
+    if not title or not description:
+        raise HTTPException(status_code=400, detail="YouTube title and description are required.")
+
+    description = _ensure_description_hashtags(description, tags)
+    for localized_copy in localizations.values():
+        localized_copy["description"] = _ensure_description_hashtags(localized_copy.get("description") or "", tags)
+    default_copy = localizations.get(default_language)
+    if default_copy:
+        title = default_copy["title"]
+        description = default_copy["description"]
+
+    try:
+        result = services.youtube.update_video_metadata(
+            video_id=playlist.youtube_video_id,
+            title=title,
+            description=description,
+            tags=tags,
+            youtube_channel_id=meta.get("youtube_channel_id"),
+            localizations=localizations,
+            default_language=default_language,
+        )
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    updated_at = _utcnow().isoformat()
+    history = list(meta.get("youtube_metadata_update_history") or [])
+    history.append(
+        {
+            "actor": payload.actor,
+            "note": payload.note,
+            "updated_at": updated_at,
+            "youtube_video_id": playlist.youtube_video_id,
+        }
+    )
+    meta.update(
+        {
+            "youtube_title": title,
+            "youtube_description": description,
+            "youtube_tags": tags,
+            "youtube_default_language": default_language,
+            "youtube_localizations": result.get("localizations") or localizations,
+            "metadata_approved": True,
+            "publish_ready": True,
+            "publish_approved": True,
+            "workflow_state": "uploaded",
+            "youtube_metadata_updated_at": updated_at,
+            "youtube_metadata_update_history": history,
+            "note": payload.note or "YouTube metadata updated from web UI.",
+        }
+    )
+    playlist.title = title[:255]
+    playlist.status = PlaylistStatus.uploaded
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    db.refresh(playlist)
     return serialize_playlist_workspace(playlist)
 
 

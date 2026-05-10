@@ -1,10 +1,12 @@
 import json
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow, InstalledAppFlow
@@ -31,6 +33,10 @@ YOUTUBE_SCOPES = [YOUTUBE_UPLOAD_SCOPE, YOUTUBE_READONLY_SCOPE, YOUTUBE_UPDATE_S
 YOUTUBE_API_SERVICE_NAME = "youtube"
 YOUTUBE_API_VERSION = "v3"
 YOUTUBE_THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024
+YOUTUBE_DURATION_PATTERN = re.compile(
+    r"^P(?:\d+Y)?(?:\d+M)?(?:\d+W)?(?:\d+D)?"
+    r"(?:T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?)?$"
+)
 
 
 @dataclass
@@ -198,6 +204,152 @@ class YouTubeService:
         registry["selected_channel_id"] = channel_id
         self._write_channel_registry(registry)
         return self.get_status()
+
+    def list_channel_uploads(self, *, channel_id: str, max_results: int = 20) -> list[dict[str, Any]]:
+        credentials = self._load_credentials(youtube_channel_id=channel_id)
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        channel_response = youtube.channels().list(part="snippet,contentDetails", mine=True).execute()
+        channel_items = channel_response.get("items") or []
+        if not channel_items:
+            raise ValueError("No YouTube channel was returned for this token.")
+        channel_item = channel_items[0]
+        actual_channel_id = channel_item.get("id")
+        if actual_channel_id and actual_channel_id != channel_id:
+            raise ValueError(f"Selected token belongs to {actual_channel_id}, not {channel_id}.")
+
+        related_playlists = ((channel_item.get("contentDetails") or {}).get("relatedPlaylists") or {})
+        uploads_playlist_id = related_playlists.get("uploads")
+        if not uploads_playlist_id:
+            raise ValueError("YouTube uploads playlist was not returned for this channel.")
+
+        wanted = max(1, min(int(max_results or 20), 50))
+        playlist_items: list[dict[str, Any]] = []
+        request = youtube.playlistItems().list(
+            part="snippet,contentDetails",
+            playlistId=uploads_playlist_id,
+            maxResults=min(wanted, 50),
+        )
+        while request is not None and len(playlist_items) < wanted:
+            response = request.execute()
+            playlist_items.extend(response.get("items") or [])
+            if len(playlist_items) >= wanted:
+                break
+            request = youtube.playlistItems().list_next(request, response)
+
+        video_ids = [
+            str((item.get("contentDetails") or {}).get("videoId") or "").strip()
+            for item in playlist_items[:wanted]
+        ]
+        video_ids = [video_id for video_id in video_ids if video_id]
+        if not video_ids:
+            return []
+
+        videos: list[dict[str, Any]] = []
+        for index in range(0, len(video_ids), 50):
+            response = youtube.videos().list(
+                part="snippet,status,contentDetails,localizations",
+                id=",".join(video_ids[index : index + 50]),
+                maxResults=50,
+            ).execute()
+            videos.extend(response.get("items") or [])
+
+        by_id = {item.get("id"): item for item in videos}
+        uploads: list[dict[str, Any]] = []
+        for video_id in video_ids:
+            item = by_id.get(video_id)
+            if not item:
+                continue
+            snippet = item.get("snippet") or {}
+            status = item.get("status") or {}
+            content_details = item.get("contentDetails") or {}
+            thumbnails = snippet.get("thumbnails") or {}
+            thumbnail = (
+                thumbnails.get("maxres")
+                or thumbnails.get("standard")
+                or thumbnails.get("high")
+                or thumbnails.get("medium")
+                or thumbnails.get("default")
+                or {}
+            )
+            uploads.append(
+                {
+                    "video_id": video_id,
+                    "title": snippet.get("title") or video_id,
+                    "description": snippet.get("description") or "",
+                    "tags": list(snippet.get("tags") or []),
+                    "published_at": snippet.get("publishedAt"),
+                    "channel_id": snippet.get("channelId") or channel_id,
+                    "channel_title": snippet.get("channelTitle"),
+                    "default_language": snippet.get("defaultLanguage") or snippet.get("defaultAudioLanguage"),
+                    "default_audio_language": snippet.get("defaultAudioLanguage"),
+                    "privacy_status": status.get("privacyStatus"),
+                    "duration": content_details.get("duration"),
+                    "duration_seconds": self._parse_iso8601_duration_seconds(content_details.get("duration")),
+                    "thumbnail_url": thumbnail.get("url"),
+                    "localizations": item.get("localizations") or {},
+                }
+            )
+        return uploads
+
+    def update_video_metadata(
+        self,
+        *,
+        video_id: str,
+        title: str,
+        description: str,
+        tags: list[str],
+        youtube_channel_id: str | None = None,
+        localizations: dict[str, dict[str, str]] | None = None,
+        default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
+    ) -> dict[str, Any]:
+        credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        response = youtube.videos().list(part="snippet,localizations", id=video_id).execute()
+        items = response.get("items") or []
+        if not items:
+            raise ValueError(f"YouTube video not found: {video_id}")
+
+        item = items[0]
+        snippet = dict(item.get("snippet") or {})
+        default_language = normalize_youtube_language(default_language or snippet.get("defaultLanguage"))
+        normalized_localizations = normalize_youtube_localizations(
+            localizations,
+            default_title=title,
+            default_description=description,
+            default_language=default_language,
+        )
+        default_copy = normalized_localizations.get(default_language)
+        if default_copy:
+            title = default_copy["title"]
+            description = default_copy["description"]
+
+        body_snippet = {
+            "title": sanitize_youtube_copy(title).strip()[:100],
+            "description": sanitize_youtube_copy(description).strip(),
+            "categoryId": str(snippet.get("categoryId") or self.settings.youtube_category_id),
+            "tags": tags,
+            "defaultLanguage": default_language,
+        }
+        if snippet.get("defaultAudioLanguage"):
+            body_snippet["defaultAudioLanguage"] = snippet["defaultAudioLanguage"]
+
+        api_localizations = localizations_for_youtube_api(
+            normalized_localizations,
+            default_language=default_language,
+        )
+        result = youtube.videos().update(
+            part="snippet,localizations",
+            body={
+                "id": video_id,
+                "snippet": body_snippet,
+                "localizations": api_localizations,
+            },
+        ).execute()
+        return {
+            "id": result.get("id") or video_id,
+            "snippet": body_snippet,
+            "localizations": normalized_localizations,
+        }
 
     def upload_playlist_video(
         self,
@@ -398,6 +550,18 @@ class YouTubeService:
                 return language
         return None
 
+    def _parse_iso8601_duration_seconds(self, value: str | None) -> int:
+        if not value:
+            return 0
+        match = YOUTUBE_DURATION_PATTERN.match(value)
+        if not match:
+            return 0
+        return (
+            int(match.group("hours") or 0) * 3600
+            + int(match.group("minutes") or 0) * 60
+            + int(match.group("seconds") or 0)
+        )
+
     def _prepare_thumbnail_upload(self, thumbnail_path: str) -> Path:
         source = Path(thumbnail_path)
         if source.stat().st_size <= YOUTUBE_THUMBNAIL_MAX_BYTES:
@@ -439,7 +603,10 @@ class YouTubeService:
             scopes=YOUTUBE_SCOPES if youtube_channel_id else [YOUTUBE_UPLOAD_SCOPE],
         )
         if credentials.expired and credentials.refresh_token:
-            credentials.refresh(GoogleAuthRequest())
+            try:
+                credentials.refresh(GoogleAuthRequest())
+            except RefreshError as exc:
+                raise ValueError("Stored YouTube channel token expired or was revoked. Connect this channel again.") from exc
             token_path.write_text(credentials.to_json(), encoding="utf-8")
         if not credentials.valid:
             raise ValueError("Stored YouTube credentials are invalid. Reconnect YouTube.")
