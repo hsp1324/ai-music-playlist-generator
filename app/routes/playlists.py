@@ -155,7 +155,9 @@ def _validate_loop_video_file(video_path: str, *, ffmpeg_binary: str) -> None:
             status_code=400,
             detail=(
                 "Loop video must be close to 10 seconds long "
-                f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted)."
+                f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted). "
+                "If Dreamina/Seedance exported the 5s default clip, set duration to 10 seconds "
+                "and regenerate before upload."
             ),
         )
 

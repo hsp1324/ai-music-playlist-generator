@@ -12,6 +12,8 @@ import json
 import mimetypes
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -27,6 +29,8 @@ DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 180
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
+LOOP_VIDEO_MIN_SECONDS = 8.0
+LOOP_VIDEO_MAX_SECONDS = 12.0
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
@@ -612,7 +616,51 @@ def resolve_thumbnail_path(value: str | None) -> Path | None:
 
 
 def resolve_loop_video_path(value: str | None) -> Path | None:
-    return resolve_image_path(value, label="Loop video")
+    loop_video_path = resolve_image_path(value, label="Loop video")
+    if loop_video_path:
+        validate_loop_video_duration(loop_video_path)
+    return loop_video_path
+
+
+def probe_media_duration_seconds(path: Path) -> float | None:
+    ffprobe = shutil.which("ffprobe")
+    if not ffprobe:
+        return None
+    try:
+        result = subprocess.run(
+            [
+                ffprobe,
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return float((result.stdout or "").strip())
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return None
+
+
+def validate_loop_video_duration(path: Path) -> None:
+    duration_seconds = probe_media_duration_seconds(path)
+    if duration_seconds is None:
+        return
+    if LOOP_VIDEO_MIN_SECONDS <= duration_seconds <= LOOP_VIDEO_MAX_SECONDS:
+        return
+    raise RuntimeError(
+        "Loop video must be close to 10 seconds long "
+        f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted, "
+        f"got {duration_seconds:.2f}s). "
+        "Dreamina/Seedance sometimes exports the 5s default; do not upload that file. "
+        "Set the Dreamina duration control to exactly 10 seconds, regenerate, download, "
+        "then pass the new MP4 as --loop-video."
+    )
 
 
 def resolve_image_path(value: str | None, *, label: str) -> Path | None:
