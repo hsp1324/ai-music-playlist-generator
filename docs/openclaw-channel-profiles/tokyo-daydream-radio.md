@@ -67,7 +67,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese metadata.
 - Use Korean as the default API metadata unless the human changes this app convention.
 - Do not over-emphasize the language in titles. Prefer `J-POP`, Tokyo/Japan scene, mainstream pop substyle, mood, and listening use cases.
 - Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade, game-center, karaoke, friend-hangout, rooftop, party, or night-out concepts, prefer arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup.

@@ -35,7 +35,7 @@ FAILED_WORKFLOW_STATES = {
     "publish_failed",
 }
 FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
-REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "fil", "zh-CN", "zh-TW")
 TIMELINE_ROW_PATTERN = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?\s+\S+", re.MULTILINE)
 
 

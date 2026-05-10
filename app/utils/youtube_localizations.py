@@ -5,7 +5,7 @@ from typing import Any
 
 
 DEFAULT_YOUTUBE_LANGUAGE = "ko"
-SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+SUPPORTED_YOUTUBE_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "fil", "zh-CN", "zh-TW")
 YOUTUBE_LANGUAGE_ALIASES = {
     "ko": "ko",
     "kr": "ko",
@@ -26,6 +26,10 @@ YOUTUBE_LANGUAGE_ALIASES = {
     "hindi": "hi",
     "india": "hi",
     "indian": "hi",
+    "fil": "fil",
+    "filipino": "fil",
+    "tagalog": "fil",
+    "tl": "fil",
     "zh": "zh-CN",
     "zh-cn": "zh-CN",
     "chinese": "zh-CN",

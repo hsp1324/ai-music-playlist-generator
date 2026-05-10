@@ -31,7 +31,7 @@ from app.utils.youtube_localizations import (
 )
 
 
-TARGET_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+TARGET_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "fil", "zh-CN", "zh-TW")
 LANGUAGE_NAMES = {
     "ko": "Korean",
     "ja": "Japanese",
@@ -40,6 +40,7 @@ LANGUAGE_NAMES = {
     "vi": "Vietnamese",
     "th": "Thai",
     "hi": "Hindi",
+    "fil": "Filipino",
     "zh-CN": "Simplified Chinese",
     "zh-TW": "Traditional Chinese",
 }
@@ -47,9 +48,11 @@ LANGUAGE_NAMES = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate missing ko/ja/en/es/vi/th/hi/zh-CN/zh-TW YouTube localizations and push them to YouTube."
+        description="Generate missing ko/ja/en/es/vi/th/hi/fil/zh-CN/zh-TW YouTube localizations and push them to YouTube."
     )
     parser.add_argument("--release-id", action="append", default=[], help="Limit to a release id. Repeatable.")
+    parser.add_argument("--target-language", action="append", default=[], help="Limit backfill to one supported language code. Repeatable.")
+    parser.add_argument("--exclude-channel-title", action="append", default=[], help="Skip releases whose YouTube channel title matches this value. Repeatable.")
     parser.add_argument("--dry-run", action="store_true", help="Generate and print a summary without DB/API writes.")
     parser.add_argument("--skip-youtube", action="store_true", help="Update only the local DB.")
     parser.add_argument("--timeout", type=int, default=360, help="Per-release Codex timeout in seconds.")
@@ -182,6 +185,7 @@ def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
             "- Keep hashtag lines at the end of every description; translate or localize hashtags where natural, but do not omit them.",
             "- Do not invent upload status, URLs, channel claims, or extra metadata fields.",
             "- Use natural localized copy for listeners in each requested language. For zh-CN, use Simplified Chinese. For zh-TW, use Traditional Chinese suitable for Taiwan.",
+            "- For fil, write natural Filipino/Tagalog metadata for Filipino listeners. Keep timestamps unchanged.",
             "",
             "Source metadata JSON:",
             source_json,
@@ -295,6 +299,11 @@ def channel_id_for_playlist(playlist: Playlist, service: YouTubeService) -> str 
 
 def main() -> int:
     args = parse_args()
+    target_languages = tuple(args.target_language or TARGET_LANGUAGES)
+    invalid_languages = [language for language in target_languages if language not in TARGET_LANGUAGES]
+    if invalid_languages:
+        raise SystemExit(f"Unsupported target language(s): {', '.join(invalid_languages)}")
+    excluded_channel_titles = {value.strip().lower() for value in args.exclude_channel_title if value.strip()}
     settings = get_settings()
     service = YouTubeService(settings)
     backup_path = None if args.dry_run else backup_database()
@@ -307,6 +316,13 @@ def main() -> int:
         if args.release_id:
             wanted = set(args.release_id)
             playlists = [playlist for playlist in playlists if playlist.id in wanted]
+        if excluded_channel_titles:
+            playlists = [
+                playlist
+                for playlist in playlists
+                if str((playlist.metadata_json or {}).get("youtube_channel_title") or "").strip().lower()
+                not in excluded_channel_titles
+            ]
 
         print(f"published releases: {len(playlists)}", flush=True)
         failures: list[str] = []
@@ -323,7 +339,7 @@ def main() -> int:
                 default_description=meta.get("youtube_description") or meta.get("description") or "",
                 default_language=meta.get("youtube_default_language") or DEFAULT_YOUTUBE_LANGUAGE,
             )
-            missing_languages = [language for language in TARGET_LANGUAGES if args.force or language not in existing]
+            missing_languages = [language for language in target_languages if args.force or language not in existing]
             if not missing_languages:
                 print(f"[{index}/{len(playlists)}] skip {playlist.title}: target languages already present", flush=True)
                 skipped_count += 1

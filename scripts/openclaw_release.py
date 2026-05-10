@@ -49,7 +49,7 @@ CHANNEL_PROFILE_NAMES = {
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "sundaze",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "solwave-radio",
 }
-REQUIRED_METADATA_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+REQUIRED_METADATA_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "fil", "zh-CN", "zh-TW")
 TIMELINE_ROW_PATTERN = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?\s+\S+", re.MULTILINE)
 JAPAN_CHANNEL_KEYWORDS = (
     "anime",
@@ -1057,7 +1057,7 @@ def ensure_playlist_metadata_complete(release: dict[str, Any]) -> None:
         + "; ".join(problems)
         + ". Run `scripts/openclaw-release metadata-context --release-id "
         + str(release.get("id") or "RELEASE_ID")
-        + "`, write full metadata with timeline and all 9 localizations, then run "
+        + "`, write full metadata with timeline and all 10 localizations, then run "
         + "`scripts/openclaw-release approve-metadata` before publishing."
     )
 
@@ -1834,10 +1834,10 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
             "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
-            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
+            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
             "Use --default-language en for sundaze and --default-language es for Solwave Radio."
         ),
     }
@@ -1922,6 +1922,14 @@ def metadata_localizations_from_args(args: argparse.Namespace, *, title: str, de
                 getattr(args, "hi_description", ""),
                 getattr(args, "hi_description_file", ""),
                 label="Hindi description",
+            ),
+        },
+        "fil": {
+            "title": read_optional_text(getattr(args, "fil_title", ""), "", label="Filipino title"),
+            "description": read_optional_text(
+                getattr(args, "fil_description", ""),
+                getattr(args, "fil_description_file", ""),
+                label="Filipino description",
             ),
         },
         "zh-CN": {
@@ -2207,13 +2215,16 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--hi-title", default="", help="Hindi localized YouTube title.")
     metadata_parser.add_argument("--hi-description", default="", help="Hindi localized YouTube description. Prefer --hi-description-file for multiline copy.")
     metadata_parser.add_argument("--hi-description-file", default="", help="UTF-8 Hindi description file.")
+    metadata_parser.add_argument("--fil-title", default="", help="Filipino localized YouTube title.")
+    metadata_parser.add_argument("--fil-description", default="", help="Filipino localized YouTube description. Prefer --fil-description-file for multiline copy.")
+    metadata_parser.add_argument("--fil-description-file", default="", help="UTF-8 Filipino description file.")
     metadata_parser.add_argument("--zh-title", default="", help="Simplified Chinese localized YouTube title.")
     metadata_parser.add_argument("--zh-description", default="", help="Simplified Chinese localized YouTube description. Prefer --zh-description-file for multiline copy.")
     metadata_parser.add_argument("--zh-description-file", default="", help="UTF-8 Simplified Chinese description file.")
     metadata_parser.add_argument("--zh-tw-title", default="", help="Traditional Chinese localized YouTube title.")
     metadata_parser.add_argument("--zh-tw-description", default="", help="Traditional Chinese localized YouTube description. Prefer --zh-tw-description-file for multiline copy.")
     metadata_parser.add_argument("--zh-tw-description-file", default="", help="UTF-8 Traditional Chinese description file.")
-    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, zh-CN, or zh-TW.")
+    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, fil, zh-CN, or zh-TW.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)
