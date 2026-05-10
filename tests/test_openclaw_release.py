@@ -25,7 +25,6 @@ from scripts.openclaw_release import (
     slack_notify_command,
     upload_audio_file_to_release,
     upload_single_candidates,
-    validate_loop_video_duration,
 )
 
 
@@ -120,23 +119,6 @@ def test_release_has_uploaded_loop_video_requires_manual_upload_source() -> None
         }
     )
     assert not release_has_uploaded_loop_video({"loop_video_path": "/tmp/loop.mp4"})
-
-
-def test_loop_video_duration_rejects_dreamina_default_5s(tmp_path, monkeypatch) -> None:
-    loop_video = tmp_path / "dreamina-default.mp4"
-    loop_video.write_bytes(b"fake")
-    monkeypatch.setattr(openclaw_release, "probe_media_duration_seconds", lambda _path: 5.0)
-
-    with pytest.raises(RuntimeError, match="5s default"):
-        validate_loop_video_duration(loop_video)
-
-
-def test_loop_video_duration_accepts_10s(tmp_path, monkeypatch) -> None:
-    loop_video = tmp_path / "dreamina-10s.mp4"
-    loop_video.write_bytes(b"fake")
-    monkeypatch.setattr(openclaw_release, "probe_media_duration_seconds", lambda _path: 10.0)
-
-    validate_loop_video_duration(loop_video)
 
 
 def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:

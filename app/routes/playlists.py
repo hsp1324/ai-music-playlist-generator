@@ -58,8 +58,6 @@ router = APIRouter(prefix="/playlists", tags=["playlists"])
 
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_LOOP_VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
-LOOP_VIDEO_MIN_SECONDS = 8.0
-LOOP_VIDEO_MAX_SECONDS = 12.0
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -146,21 +144,6 @@ def _validate_loop_video_file(video_path: str, *, ffmpeg_binary: str) -> None:
     streams = payload.get("streams") or []
     if not any(stream.get("codec_type") == "video" for stream in streams):
         raise HTTPException(status_code=400, detail="Uploaded loop video must contain a video stream.")
-    try:
-        duration_seconds = float((payload.get("format") or {}).get("duration") or 0)
-    except (TypeError, ValueError):
-        duration_seconds = 0
-    if not LOOP_VIDEO_MIN_SECONDS <= duration_seconds <= LOOP_VIDEO_MAX_SECONDS:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Loop video must be close to 10 seconds long "
-                f"({LOOP_VIDEO_MIN_SECONDS:.0f}-{LOOP_VIDEO_MAX_SECONDS:.0f}s accepted). "
-                "If Dreamina/Seedance exported the 5s default clip, set duration to 10 seconds "
-                "and regenerate before upload."
-            ),
-        )
-
 
 def _delete_uploaded_video_file(video_path: str | None) -> dict:
     if not video_path:

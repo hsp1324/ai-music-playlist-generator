@@ -179,7 +179,7 @@ Required moving visual:
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
 - Normal auto-publish must include `--loop-video`. Do not use the thumbnail image or any text-heavy image as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`.
-- The app validates uploaded loop videos only for technical readability and expected duration. It does not reject low-motion clips. If the loop looks too static, regenerate it as a quality decision, not because the app blocks upload.
+- The app validates uploaded loop videos only for technical readability. It does not reject low-motion clips or alternate clip lengths. If the normal OpenClaw automation accidentally generates Dreamina's 5 second default clip, regenerate it as a quality decision before upload unless the human explicitly asked to use the shorter clip.
 
 Dreamina website workflow for OpenClaw:
 
@@ -511,7 +511,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - OpenClaw must create a Dreamina/Seedance clip and pass the 10 second MP4 as `--loop-video` before normal video render/private publish. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `10 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
-- Dreamina/Seedance often defaults to `5 seconds`. Before generating, confirm the duration UI still says `10 seconds`. After download, verify the MP4 duration is close to 10 seconds; if it is about 5 seconds, discard it and regenerate. The app and `scripts/openclaw-release` reject 5 second default clips.
+- Dreamina/Seedance often defaults to `5 seconds`. For normal OpenClaw auto-publish work, before generating, confirm the duration UI still says `10 seconds`. After download, verify the MP4 duration; if it is about 5 seconds because the UI stayed on the default, discard it and regenerate at 10 seconds. The app and `scripts/openclaw-release` allow intentionally provided shorter clips, so do not rely on upload rejection to catch this mistake.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.
