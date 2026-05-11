@@ -120,7 +120,18 @@ Use this for `HaruHaru`, K-pop, Korean pop, Korean dance-pop, Korean synth-pop, 
 - Let the playlist concept decide the cover, thumbnail, and loop-video scene.
 - The cover must contain only the large lower-left `HaruHaru` brand label.
 - The thumbnail should use short K-pop click text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, plus `HARUHARU`.
-- The loop video should animate the selected cover concept, not borrow Tokyo Daydream, Soft Hour, sundaze, or Solwave signatures.
+- The loop video should animate the selected cover concept, not borrow Tokyo Daydream, Soft Hour, HaruHaru, Midnight Cue, sundaze, or Solwave signatures.
+
+## Midnight Cue Radio Visual Skill
+
+Use this for `Midnight Cue Radio`, legacy connected `AI썰전`, mystery BGM, investigation music, documentary BGM, noir, dark ambient, urban legend, and cinematic story-background releases.
+
+- No fixed recurring visual signature yet.
+- Let the playlist concept decide the mystery scene, object, palette, and loop-video motion.
+- The cover must contain only the large lower-left `Midnight Cue Radio` brand label.
+- The thumbnail should use short mystery/story click text such as `MYSTERY`, `DARK CASE`, `NOIR`, `INVESTIGATION`, `URBAN LEGEND`, `DOCUMENTARY`, `COLD CASE`, or `NIGHT FILES`, plus `MIDNIGHT CUE RADIO`.
+- The loop video should animate the selected cover concept with restrained atmospheric motion, not borrow Soft Hour calm-use-case visuals or Tokyo walking signatures.
+- Do not use gore, real crime photos, real victims/suspects, weapons aimed at people, copyrighted characters, celebrity likenesses, or explicit violent imagery.
 
 ## Other Channels Or Explicit Requests
 

@@ -9,6 +9,7 @@ from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
+    MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
     SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     approve_metadata,
@@ -21,6 +22,7 @@ from scripts.openclaw_release import (
     release_has_uploaded_cover,
     release_has_uploaded_loop_video,
     release_has_uploaded_thumbnail,
+    resolve_youtube_channel_id,
     resolve_lyrics_items,
     resolve_style_items,
     slack_notify_command,
@@ -170,6 +172,19 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
             description="Spanish vocal pop playlist",
         )
     ) == SOLWAVE_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Midnight Mystery Documentary BGM",
+            description="dark ambient investigation music for story videos",
+        )
+    ) == MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="AI썰전 사건 다큐 BGM",
+        )
+    ) == MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE
 
 
 def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> None:
@@ -235,6 +250,18 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert haruharu["profile_doc"] == "docs/openclaw-channel-profiles/haruharu.md"
     assert haruharu["concept_doc"] == "docs/openclaw-channel-concepts/haruharu.md"
 
+    midnight_cue = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Cinematic Mystery BGM",
+            description="dark ambient documentary investigation music",
+        )
+    )
+    assert midnight_cue["youtube_channel_title"] == MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE
+    assert midnight_cue["profile"] == "midnight-cue-radio"
+    assert midnight_cue["profile_doc"] == "docs/openclaw-channel-profiles/midnight-cue-radio.md"
+    assert midnight_cue["concept_doc"] == "docs/openclaw-channel-concepts/midnight-cue-radio.md"
+
     custom = build_channel_profile(
         _auto_publish_args(
             "/tmp/audio.mp3",
@@ -247,6 +274,27 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert custom["profile_doc"] == "docs/openclaw-channel-profiles/custom-channel.md"
     assert custom["concept_doc"] == "docs/openclaw-channel-concepts/custom-channel.md"
     assert custom["explicit_channel_requested"] is True
+
+
+def test_resolve_youtube_channel_id_uses_midnight_cue_legacy_alias() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/youtube/status"
+        return httpx.Response(
+            200,
+            json={
+                "channels": [
+                    {"id": "legacy-ai-sseoljeon", "title": "AI썰전"},
+                    {"id": "soft-hour", "title": DEFAULT_YOUTUBE_CHANNEL_TITLE},
+                ]
+            },
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    assert (
+        resolve_youtube_channel_id(client, title=MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE)
+        == "legacy-ai-sseoljeon"
+    )
 
 
 def test_slack_notify_command_posts_plain_message() -> None:
