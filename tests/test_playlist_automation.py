@@ -166,7 +166,7 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
         assert "OpenClaw Next Release Planner Skill" in calls[0]["text"]
         assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
-        assert "/youtube/status의 channels 목록을 현재 활성 채널 roster로 사용" in calls[0]["text"]
+        assert "/youtube/status의 channels 목록을 읽고" in calls[0]["text"]
         assert "현재 활성 채널을 순서대로 번갈아 운영" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]

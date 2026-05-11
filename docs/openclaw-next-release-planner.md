@@ -22,14 +22,14 @@ The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MA
 
 Choose the next channel and a fresh one-hour playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.
 
-The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list. Current known channels include:
+The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. Current known active channels include:
 
 - `Tokyo Daydream Radio`
 - `Soft Hour Radio`
 - `sundaze`
 - `Solwave Radio`
 
-Future channels do not need code changes before entering rotation. If a connected channel does not have dedicated files, use the custom fallback files:
+Future channels do not need code changes before entering rotation. Newly connected channels are active by default. If a connected channel does not have dedicated files, use the custom fallback files:
 
 - `docs/openclaw-channel-profiles/custom-channel.md`
 - `docs/openclaw-channel-concepts/custom-channel.md`
@@ -73,7 +73,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 3. Choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
 4. Do not pick the same channel twice in a row unless another channel is blocked, not connected, unavailable, or explicitly requested.
 5. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
-6. When future channels are added, rotate across all connected channels from `/youtube/status`. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
+6. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
 
 ## Channel Concept Delegation
 
@@ -157,7 +157,7 @@ If YouTube status is configured=false, authenticated=false, ready=false, or chan
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Use `/youtube/status` `channels` as the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, and Solwave Radio; newly connected channels must also enter rotation.
+- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, and Solwave Radio; newly connected non-excluded channels must also enter rotation.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.

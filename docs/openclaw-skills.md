@@ -87,6 +87,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - Latin/Spanish-language pop, Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, verano latino, or similar Spanish vocal releases go to `Solwave Radio`. Treat this as the Spanish/Latin counterpart to Tokyo Daydream Radio.
 - If the human explicitly names a target channel, that explicit channel overrides automatic channel inference and also controls the visual skill. Example: `Soft Hour Radio에 올려줘` means use the Soft Hour channel profile even if the music has light Japan/city-pop influence.
 - Do not use `MusicSun` unless the human explicitly requests it.
+- For continuous next-release automation, newly connected YouTube channels are active by default unless these docs explicitly mark them inactive/excluded. If a selected connected channel has no dedicated profile/concept docs yet, `scripts/openclaw-release channel-profile` returns the `custom-channel` docs; read those and infer the channel identity from the channel title, local release history, and human instructions.
 - `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass the explicit `--youtube-channel-title` when the human names a channel.
 - YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
 - Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release auto-publish-single`, `scripts/openclaw-release auto-publish-playlist`, or the app's local `/approve-publish` API only. The app uploads through the YouTube Data API and stores the resulting `youtube_video_id`/channel metadata.
@@ -355,7 +356,7 @@ Use this skill when the user asks for a playlist, mix, compilation, or approxima
 
 Create one Playlist Release, generate enough tracks, upload them as approved tracks, render audio/video, generate and approve metadata, and upload the result privately to YouTube on the correct channel.
 
-Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases. Use `sundaze` for English/American pop. Use `Solwave Radio` for Latin/Spanish pop.
+Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases. Use `sundaze` for English/American pop. Use `Solwave Radio` for Latin/Spanish pop. If the next-release planner selected another connected non-excluded channel, pass that channel title explicitly and use the returned custom or dedicated channel docs.
 
 The human does not review every playlist track before rendering. The human reviews the final private YouTube upload later and only intervenes if something sounds wrong.
 
@@ -425,7 +426,7 @@ Goal:
 - Approve the cover.
 - Render video.
 - Generate and approve YouTube metadata.
-- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases, `sundaze` for English/American pop, `Solwave Radio` for Latin/Spanish pop, and `Soft Hour Radio` for default BGM/background releases.
+- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases, `sundaze` for English/American pop, `Solwave Radio` for Latin/Spanish pop, and `Soft Hour Radio` for default BGM/background releases. If the planner selected another connected non-excluded channel, use that exact channel title and the returned channel docs.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 
 First, before opening Suno or submitting the first playlist prompt, create the destination release:

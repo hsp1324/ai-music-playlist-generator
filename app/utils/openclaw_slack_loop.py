@@ -291,7 +291,7 @@ def build_next_playlist_request_message(
             "- /youtube/status가 configured=false, authenticated=false, ready=false, channels=[]이면 잘못된 API를 보고 있는 것이므로 audio/Suno/Dreamina/publish를 시작하지 말고 중단 사유를 알려줘.",
             "- 먼저 docs/openclaw-next-release-planner.md를 읽고 그대로 따라줘.",
             "- 그 다음 docs/openclaw-skills.md, docs/openclaw-channel-concepts/README.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
-            "- 매번 /youtube/status의 channels 목록을 현재 활성 채널 roster로 사용해줘. 새 채널이 연결되어 있으면 자동으로 rotation에 포함해줘.",
+            "- 매번 /youtube/status의 channels 목록을 읽고, 문서에서 비활성/제외로 표시하지 않은 연결 채널을 현재 활성 roster로 사용해줘. 새 채널은 기본적으로 rotation에 포함해줘.",
             "- 현재 활성 채널을 순서대로 번갈아 운영하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
             "- channel-profile이 custom-channel 문서를 반환하면 그 custom 문서를 읽고, 채널명/기존 업로드/사람 요청을 바탕으로 채널 컨셉을 추론해 진행해줘.",
             "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 10s loop video, metadata, private publish까지 완료해줘.",
