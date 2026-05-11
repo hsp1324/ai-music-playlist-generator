@@ -22,7 +22,7 @@ from app.routes.tracks import _extract_embedded_cover
 from app.services.background_worker import BackgroundJobWorker
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
-from app.utils.openclaw_slack_loop import record_auto_loop_upload
+from app.utils.openclaw_slack_loop import handle_auto_loop_control_message, record_auto_loop_upload
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 
 
@@ -166,6 +166,7 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
         assert "OpenClaw Next Release Planner Skill" in calls[0]["text"]
         assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
+        assert "/youtube/status의 channels 목록을 현재 활성 채널 roster로 사용" in calls[0]["text"]
         assert "현재 활성 채널을 순서대로 번갈아 운영" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]
@@ -217,6 +218,56 @@ def test_openclaw_auto_loop_upload_limit_stops_after_n_uploads(tmp_path) -> None
     assert third["remaining_uploads"] == 0
     assert duplicate["should_request_next"] is False
     assert duplicate["completed_uploads"] == 3
+
+
+def test_openclaw_auto_loop_unlimited_can_be_stopped_and_resumed(tmp_path) -> None:
+    common = {
+        "storage_root": tmp_path,
+        "max_uploads": 0,
+        "channel_id": "C0AVBUYP150",
+        "trigger_prefix": "OPENCLAW_RUN:",
+    }
+
+    first = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-1",
+        youtube_video_id="yt-1",
+    )
+    stopped = handle_auto_loop_control_message(
+        storage_root=tmp_path,
+        text="OpenClaw 자동화 멈춰",
+        user_id="U123",
+        channel_id="C0AVBUYP150",
+        message_ts="111.222",
+    )
+    blocked = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-2",
+        youtube_video_id="yt-2",
+    )
+    resumed = handle_auto_loop_control_message(
+        storage_root=tmp_path,
+        text="OPENCLAW_LOOP_START",
+        user_id="U123",
+        channel_id="C0AVBUYP150",
+        message_ts="333.444",
+    )
+    after_resume = record_auto_loop_upload(
+        **common,
+        playlist_id="playlist-2",
+        youtube_video_id="yt-2",
+    )
+
+    assert first["should_request_next"] is True
+    assert first["limited"] is False
+    assert first["reason"] == "unlimited"
+    assert stopped["action"] == "stop"
+    assert blocked["should_request_next"] is False
+    assert blocked["reason"] == "auto_loop_stopped"
+    assert blocked["stop_requested_by"] == "U123"
+    assert resumed["action"] == "start"
+    assert after_resume["should_request_next"] is True
+    assert after_resume["reason"] == "unlimited"
 
 
 def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:

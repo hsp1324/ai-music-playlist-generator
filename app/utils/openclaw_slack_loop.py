@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,28 @@ from sqlalchemy.orm import Session
 from app.models.playlist import Playlist
 
 OPENCLAW_AUTO_LOOP_STATE_FILE = "openclaw-auto-loop-state.json"
+
+_AUTO_LOOP_STOP_COMMANDS = {
+    "openclaw_stop",
+    "openclaw loop stop",
+    "openclaw_loop_stop",
+    "stop openclaw loop",
+    "stop_openclaw_loop",
+    "auto_loop_stop",
+    "automation_stop",
+}
+_AUTO_LOOP_START_COMMANDS = {
+    "openclaw_start",
+    "openclaw loop start",
+    "openclaw_loop_start",
+    "start openclaw loop",
+    "start_openclaw_loop",
+    "auto_loop_start",
+    "automation_start",
+}
+_AUTO_LOOP_SUBJECT_RE = re.compile(r"(openclaw|open\s*claw|오픈\s*클로|오픈클로|자동화|무한\s*반복|auto\s*loop)", re.I)
+_AUTO_LOOP_STOP_RE = re.compile(r"(멈춰|멈추|중지|정지|그만|꺼줘|종료|stop|pause|halt)", re.I)
+_AUTO_LOOP_START_RE = re.compile(r"(시작|재개|다시\s*돌|다시\s*시작|켜줘|resume|start|continue)", re.I)
 
 
 def _with_trigger_prefix(text: str, trigger_prefix: str | None) -> str:
@@ -50,6 +73,104 @@ def _write_auto_loop_state(path: Path, state: dict[str, Any]) -> None:
     tmp_path.replace(path)
 
 
+def _auto_loop_state_path(storage_root: Path) -> Path:
+    return Path(storage_root) / OPENCLAW_AUTO_LOOP_STATE_FILE
+
+
+def parse_auto_loop_control_message(text: str) -> str | None:
+    """Return 'stop'/'start' when a human Slack message controls the OpenClaw loop."""
+
+    normalized = re.sub(r"[\s:：!！.,，]+", " ", str(text or "").strip()).lower()
+    compact = normalized.replace(" ", "_")
+    candidates = {normalized, compact}
+    if candidates & _AUTO_LOOP_STOP_COMMANDS:
+        return "stop"
+    if candidates & _AUTO_LOOP_START_COMMANDS:
+        return "start"
+    if _AUTO_LOOP_SUBJECT_RE.search(normalized) and _AUTO_LOOP_STOP_RE.search(normalized):
+        return "stop"
+    if _AUTO_LOOP_SUBJECT_RE.search(normalized) and _AUTO_LOOP_START_RE.search(normalized):
+        return "start"
+    return None
+
+
+def set_auto_loop_stopped(
+    *,
+    storage_root: Path,
+    stopped: bool,
+    reason: str,
+    user_id: str = "",
+    channel_id: str = "",
+    message_ts: str = "",
+) -> dict[str, Any]:
+    state_path = _auto_loop_state_path(storage_root)
+    state = _read_auto_loop_state(state_path)
+    now = _utcnow_iso()
+    if stopped:
+        state.update(
+            {
+                "stopped": True,
+                "stop_reason": reason,
+                "stop_requested_at": now,
+                "stop_requested_by": user_id,
+                "stop_channel_id": channel_id,
+                "stop_message_ts": message_ts,
+                "updated_at": now,
+            }
+        )
+    else:
+        state["stopped"] = False
+        state["resume_reason"] = reason
+        state["resume_requested_at"] = now
+        state["resume_requested_by"] = user_id
+        state["resume_channel_id"] = channel_id
+        state["resume_message_ts"] = message_ts
+        state.pop("stop_reason", None)
+        state.pop("stop_requested_at", None)
+        state.pop("stop_requested_by", None)
+        state.pop("stop_channel_id", None)
+        state.pop("stop_message_ts", None)
+        state["updated_at"] = now
+    _write_auto_loop_state(state_path, state)
+    return {
+        "ok": True,
+        "action": "stop" if stopped else "start",
+        "stopped": stopped,
+        "state_path": str(state_path),
+        "updated_at": now,
+    }
+
+
+def handle_auto_loop_control_message(
+    *,
+    storage_root: Path,
+    text: str,
+    user_id: str = "",
+    channel_id: str = "",
+    message_ts: str = "",
+) -> dict[str, Any] | None:
+    action = parse_auto_loop_control_message(text)
+    if action == "stop":
+        return set_auto_loop_stopped(
+            storage_root=storage_root,
+            stopped=True,
+            reason="slack_control_message",
+            user_id=user_id,
+            channel_id=channel_id,
+            message_ts=message_ts,
+        )
+    if action == "start":
+        return set_auto_loop_stopped(
+            storage_root=storage_root,
+            stopped=False,
+            reason="slack_control_message",
+            user_id=user_id,
+            channel_id=channel_id,
+            message_ts=message_ts,
+        )
+    return None
+
+
 def record_auto_loop_upload(
     *,
     storage_root: Path,
@@ -62,24 +183,28 @@ def record_auto_loop_upload(
     """Record a successful upload and decide whether the loop may request another release."""
 
     normalized_max_uploads = max(0, int(max_uploads or 0))
-    if normalized_max_uploads <= 0:
+    state_path = _auto_loop_state_path(storage_root)
+    existing_state = _read_auto_loop_state(state_path)
+    if existing_state.get("stopped"):
         return {
             "enabled": True,
-            "limited": False,
-            "max_uploads": 0,
-            "completed_uploads": None,
-            "remaining_uploads": None,
-            "should_request_next": True,
-            "reason": "unlimited",
+            "limited": normalized_max_uploads > 0,
+            "max_uploads": normalized_max_uploads,
+            "completed_uploads": existing_state.get("completed_uploads"),
+            "remaining_uploads": existing_state.get("remaining_uploads"),
+            "should_request_next": False,
+            "reason": "auto_loop_stopped",
+            "stop_requested_at": existing_state.get("stop_requested_at"),
+            "stop_requested_by": existing_state.get("stop_requested_by"),
+            "state_path": str(state_path),
         }
 
-    state_path = Path(storage_root) / OPENCLAW_AUTO_LOOP_STATE_FILE
     session_key = _auto_loop_session_key(
         channel_id=channel_id,
         trigger_prefix=trigger_prefix,
         max_uploads=normalized_max_uploads,
     )
-    state = _read_auto_loop_state(state_path)
+    state = existing_state
     if state.get("session_key") != session_key:
         state = {
             "session_key": session_key,
@@ -106,19 +231,29 @@ def record_auto_loop_upload(
 
     state["counted_uploads"] = counted_uploads
     state["completed_uploads"] = len(counted_uploads)
-    state["remaining_uploads"] = max(normalized_max_uploads - len(counted_uploads), 0)
+    state["remaining_uploads"] = (
+        max(normalized_max_uploads - len(counted_uploads), 0) if normalized_max_uploads > 0 else None
+    )
     state["updated_at"] = _utcnow_iso()
     _write_auto_loop_state(state_path, state)
 
-    should_request_next = len(counted_uploads) < normalized_max_uploads
+    should_request_next = normalized_max_uploads <= 0 or len(counted_uploads) < normalized_max_uploads
     return {
         "enabled": True,
-        "limited": True,
+        "limited": normalized_max_uploads > 0,
         "max_uploads": normalized_max_uploads,
         "completed_uploads": len(counted_uploads),
-        "remaining_uploads": max(normalized_max_uploads - len(counted_uploads), 0),
+        "remaining_uploads": max(normalized_max_uploads - len(counted_uploads), 0)
+        if normalized_max_uploads > 0
+        else None,
         "should_request_next": should_request_next,
-        "reason": "under_limit" if should_request_next else "max_uploads_reached",
+        "reason": (
+            "unlimited"
+            if normalized_max_uploads <= 0
+            else "under_limit"
+            if should_request_next
+            else "max_uploads_reached"
+        ),
         "state_path": str(state_path),
     }
 
@@ -156,7 +291,9 @@ def build_next_playlist_request_message(
             "- /youtube/status가 configured=false, authenticated=false, ready=false, channels=[]이면 잘못된 API를 보고 있는 것이므로 audio/Suno/Dreamina/publish를 시작하지 말고 중단 사유를 알려줘.",
             "- 먼저 docs/openclaw-next-release-planner.md를 읽고 그대로 따라줘.",
             "- 그 다음 docs/openclaw-skills.md, docs/openclaw-channel-concepts/README.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
+            "- 매번 /youtube/status의 channels 목록을 현재 활성 채널 roster로 사용해줘. 새 채널이 연결되어 있으면 자동으로 rotation에 포함해줘.",
             "- 현재 활성 채널을 순서대로 번갈아 운영하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
+            "- channel-profile이 custom-channel 문서를 반환하면 그 custom 문서를 읽고, 채널명/기존 업로드/사람 요청을 바탕으로 채널 컨셉을 추론해 진행해줘.",
             "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 10s loop video, metadata, private publish까지 완료해줘.",
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
         ]

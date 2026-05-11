@@ -222,6 +222,19 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert solwave["profile_doc"] == "docs/openclaw-channel-profiles/solwave-radio.md"
     assert solwave["concept_doc"] == "docs/openclaw-channel-concepts/solwave-radio.md"
 
+    custom = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="New Channel Playlist",
+            youtube_channel_title="Future Pop Radio",
+        )
+    )
+    assert custom["youtube_channel_title"] == "Future Pop Radio"
+    assert custom["profile"] == "custom-channel"
+    assert custom["profile_doc"] == "docs/openclaw-channel-profiles/custom-channel.md"
+    assert custom["concept_doc"] == "docs/openclaw-channel-concepts/custom-channel.md"
+    assert custom["explicit_channel_requested"] is True
+
 
 def test_slack_notify_command_posts_plain_message() -> None:
     captured_payloads = []

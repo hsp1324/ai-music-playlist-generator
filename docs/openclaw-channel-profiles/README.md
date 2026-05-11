@@ -138,3 +138,6 @@ Profiles:
 - [Tokyo Daydream Radio](tokyo-daydream-radio.md)
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
+- [Custom Channel](custom-channel.md)
+
+The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.

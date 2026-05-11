@@ -16,23 +16,25 @@ When the OpenClaw Slack listener receives a channel message that starts with `OP
 
 For safety, ignore ordinary channel messages that do not start with `OPENCLAW_RUN:` unless the human explicitly addresses OpenClaw through the listener's normal manual command path. The prefix is what separates web-app automation from casual Slack conversation.
 
-The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS`. If the cap is reached after a successful YouTube upload, the app intentionally stops sending the next `OPENCLAW_RUN:` message. Do not treat silence after a completed publish as an error unless the human asks.
+The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS`. `0` means unlimited. If the cap is reached after a successful YouTube upload, or if the human posts a stop command in the configured OpenClaw Slack channel, the app intentionally stops sending the next `OPENCLAW_RUN:` message. Do not treat silence after a completed publish as an error unless the human asks.
 
 ## Goal
 
 Choose the next channel and a fresh one-hour playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.
 
-The current active channel roster is:
+The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list. Current known channels include:
 
 - `Tokyo Daydream Radio`
 - `Soft Hour Radio`
 - `sundaze`
 - `Solwave Radio`
 
-Future channels must get both files before entering rotation:
+Future channels do not need code changes before entering rotation. If a connected channel does not have dedicated files, use the custom fallback files:
 
-- `docs/openclaw-channel-profiles/CHANNEL.md`
-- `docs/openclaw-channel-concepts/CHANNEL.md`
+- `docs/openclaw-channel-profiles/custom-channel.md`
+- `docs/openclaw-channel-concepts/custom-channel.md`
+
+When the human later wants a stronger identity for that channel, add dedicated channel files and the planner will use them after the repo is updated.
 
 ## Source Of Truth
 
@@ -71,7 +73,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 3. Choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
 4. Do not pick the same channel twice in a row unless another channel is blocked, not connected, unavailable, or explicitly requested.
 5. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
-6. When future channels are added, rotate across all active channels while respecting each channel's concept planner and profile.
+6. When future channels are added, rotate across all connected channels from `/youtube/status`. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
 
 ## Channel Concept Delegation
 
@@ -89,12 +91,13 @@ scripts/openclaw-release channel-profile \
   --youtube-channel-title "Tokyo Daydream Radio"
 ```
 
-The active channel concept docs are:
+Known channel concept docs are:
 
 - `docs/openclaw-channel-concepts/tokyo-daydream-radio.md`
 - `docs/openclaw-channel-concepts/soft-hour-radio.md`
 - `docs/openclaw-channel-concepts/sundaze.md`
 - `docs/openclaw-channel-concepts/solwave-radio.md`
+- `docs/openclaw-channel-concepts/custom-channel.md`
 
 ## Freshness Rules
 
@@ -154,11 +157,12 @@ If YouTube status is configured=false, authenticated=false, ready=false, or chan
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Current active channels are Tokyo Daydream Radio, Soft Hour Radio, sundaze, and Solwave Radio.
+- Use `/youtube/status` `channels` as the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, and Solwave Radio; newly connected channels must also enter rotation.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.
 - Read the returned profile_doc before making cover, thumbnail, and loop video assets.
+- If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the Automatic Private Playlist Publisher skill from docs/openclaw-skills.md.

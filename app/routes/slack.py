@@ -15,6 +15,7 @@ from app.models.playlist import Playlist
 from app.models.slack_installation import SlackInstallation
 from app.models.track import Track
 from app.services.registry import ServiceRegistry
+from app.utils.openclaw_slack_loop import handle_auto_loop_control_message
 from app.workflows.approvals import apply_track_decision
 from app.workflows.playlist_automation import (
     assign_track_to_playlist,
@@ -152,6 +153,21 @@ async def slack_events(
         return JSONResponse({"challenge": payload["challenge"]})
 
     event = payload.get("event", {})
+    if event.get("type") == "message":
+        channel_id = str(event.get("channel") or "").strip()
+        configured_openclaw_channel = services.settings.openclaw_slack_channel_id.strip()
+        is_human_message = not event.get("bot_id") and not event.get("subtype")
+        if is_human_message and configured_openclaw_channel and channel_id == configured_openclaw_channel:
+            control_result = handle_auto_loop_control_message(
+                storage_root=services.settings.storage_root,
+                text=str(event.get("text") or ""),
+                user_id=str(event.get("user") or ""),
+                channel_id=channel_id,
+                message_ts=str(event.get("ts") or ""),
+            )
+            if control_result:
+                return JSONResponse({"ok": True, "openclaw_auto_loop": control_result})
+
     if event.get("type") == "app_home_opened":
         token = _bot_token_for_team(services, db, payload.get("team_id"))
         status_counts = _status_counts(db)

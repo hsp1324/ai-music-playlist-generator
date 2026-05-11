@@ -39,3 +39,6 @@ Return a compact plan before generating audio:
 - [Tokyo Daydream Radio](tokyo-daydream-radio.md)
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
+- [Custom Channel](custom-channel.md)
+
+The rotation roster is not limited to this file. For automation, OpenClaw must read `/youtube/status` and include every connected channel in `channels`. If a connected channel has no dedicated planner yet, use `custom-channel.md` and infer the channel direction from its name, local app history, and the human's recent instructions.
