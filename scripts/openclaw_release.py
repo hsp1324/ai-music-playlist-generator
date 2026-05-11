@@ -1835,6 +1835,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
+            "For sundaze/English pop releases, keep English track titles in every localized timestamped timeline row; translate only the surrounding prose, use-case text, and hashtags. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
             "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
