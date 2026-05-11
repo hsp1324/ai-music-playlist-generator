@@ -112,6 +112,16 @@ Use this for `Solwave Radio`, Latin/Spanish-language pop, Latin pop, Spanish pop
 - The thumbnail should use short Latin/Spanish click text such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`, plus `SOLWAVE RADIO`.
 - The loop video should animate the selected cover concept, not borrow Tokyo Daydream or Soft Hour signatures.
 
+## HaruHaru Visual Skill
+
+Use this for `HaruHaru`, K-pop, Korean pop, Korean dance-pop, Korean synth-pop, Korean R&B pop, idol-pop inspired music, and similar Korean vocal releases.
+
+- No fixed recurring visual signature yet.
+- Let the playlist concept decide the cover, thumbnail, and loop-video scene.
+- The cover must contain only the large lower-left `HaruHaru` brand label.
+- The thumbnail should use short K-pop click text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, plus `HARUHARU`.
+- The loop video should animate the selected cover concept, not borrow Tokyo Daydream, Soft Hour, sundaze, or Solwave signatures.
+
 ## Other Channels Or Explicit Requests
 
 - If the channel is not one of the documented profiles, derive a visual system from the channel name, release concept, and human request.

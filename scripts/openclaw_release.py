@@ -31,23 +31,27 @@ DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
 SOLWAVE_YOUTUBE_CHANNEL_TITLE = "Solwave Radio"
+HARUHARU_YOUTUBE_CHANNEL_TITLE = "HaruHaru"
 CHANNEL_PROFILE_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/soft-hour-radio.md",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/tokyo-daydream-radio.md",
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/sundaze.md",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/solwave-radio.md",
+    HARUHARU_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/haruharu.md",
 }
 CHANNEL_CONCEPT_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/soft-hour-radio.md",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/tokyo-daydream-radio.md",
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/sundaze.md",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/solwave-radio.md",
+    HARUHARU_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/haruharu.md",
 }
 CHANNEL_PROFILE_NAMES = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "soft-hour-radio",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "tokyo-daydream-radio",
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "sundaze",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "solwave-radio",
+    HARUHARU_YOUTUBE_CHANNEL_TITLE: "haruharu",
 }
 REQUIRED_METADATA_LANGUAGES = (
     "ko",
@@ -152,6 +156,30 @@ ENGLISH_POP_CHANNEL_KEYWORDS = (
     "팝송",
     "英語ポップ",
     "洋楽ポップ",
+)
+KPOP_CHANNEL_KEYWORDS = (
+    "haruharu",
+    "k-pop",
+    "k pop",
+    "kpop",
+    "korean pop",
+    "korean dance-pop",
+    "korean dance pop",
+    "korean synth-pop",
+    "korean synth pop",
+    "korean pop-rock",
+    "korean pop rock",
+    "korean idol pop",
+    "idol pop",
+    "케이팝",
+    "케이 팝",
+    "한국 팝",
+    "한국어 팝",
+    "아이돌 팝",
+    "韓国ポップ",
+    "韓国語ポップ",
+    "ケーポップ",
+    "kポップ",
 )
 POP_FAMILY_KEYWORDS = (
     "anime pop",
@@ -951,6 +979,8 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     has_instrumental_intent = any(keyword in haystack for keyword in INSTRUMENTAL_INTENT_KEYWORDS)
     if any(keyword.lower() in haystack for keyword in LATIN_CHANNEL_KEYWORDS) and not has_instrumental_intent:
         return SOLWAVE_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in KPOP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
+        return HARUHARU_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
         return JAPAN_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in ENGLISH_POP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
@@ -1852,10 +1882,11 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "If you rewrite a displayed title, keep its timestamp fixed. "
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "For sundaze/English pop releases, keep every localized title exactly the same as the English title. Also keep English track titles in every localized timestamped timeline row; translate only the surrounding prose, use-case text, and hashtags. "
+            "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
-            "Use --default-language en for sundaze and --default-language es for Solwave Radio."
+            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "Use --default-language ko for HaruHaru, --default-language en for sundaze, and --default-language es for Solwave Radio."
         ),
     }
 
@@ -2174,7 +2205,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-fade-out-track", action="store_true", help="Deprecated no-op retained for older OpenClaw commands.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
@@ -2204,7 +2235,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")

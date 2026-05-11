@@ -132,12 +132,35 @@ YouTube thumbnail:
 - Add large readable Latin/Spanish text such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
 - Add `SOLWAVE RADIO` brand line, visually consistent with the large cover channel label.
 
+### HaruHaru
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized image for original Korean K-pop vocal releases.
+- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
+- Only text allowed is the large lower-left `HaruHaru` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame according to the specific K-pop playlist concept.
+- Preserve the large lower-left `HaruHaru` brand label exactly for the whole clip.
+- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same subject, placement, lighting, palette, props, and camera angle.
+- Add large readable K-pop text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, or `RAINY KPOP`.
+- Add `HARUHARU` brand line, visually consistent with the large cover channel label.
+
 Profiles:
 
 - [Soft Hour Radio](soft-hour-radio.md)
 - [Tokyo Daydream Radio](tokyo-daydream-radio.md)
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
+- [HaruHaru](haruharu.md)
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
+`AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.

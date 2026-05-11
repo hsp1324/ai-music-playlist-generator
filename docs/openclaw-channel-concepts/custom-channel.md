@@ -17,7 +17,7 @@ Infer the channel identity from the connected channel title, the human request, 
 
 ## Concept Rules
 
-- Keep the channel identity stable. Do not borrow the fixed visual signature or genre rules from Tokyo Daydream Radio, Soft Hour Radio, sundaze, or Solwave Radio unless the channel title or human instruction clearly matches that identity.
+- Keep the channel identity stable. Do not borrow the fixed visual signature or genre rules from Tokyo Daydream Radio, Soft Hour Radio, HaruHaru, sundaze, or Solwave Radio unless the channel title or human instruction clearly matches that identity.
 - Use one clear genre or listening lane per playlist.
 - Choose a specific setting, use case, emotional direction, and thumbnail phrase.
 - Avoid generic titles like `Pop Mix`, `New Playlist`, `BGM`, or `Music for You` unless the human explicitly wants that.

@@ -8,6 +8,7 @@ import scripts.openclaw_release as openclaw_release
 from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
+    HARUHARU_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
     SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     approve_metadata,
@@ -221,6 +222,18 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert solwave["profile"] == "solwave-radio"
     assert solwave["profile_doc"] == "docs/openclaw-channel-profiles/solwave-radio.md"
     assert solwave["concept_doc"] == "docs/openclaw-channel-concepts/solwave-radio.md"
+
+    haruharu = build_channel_profile(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Rainy Seoul K-pop Mix",
+            description="Korean pop playlist with lyrics",
+        )
+    )
+    assert haruharu["youtube_channel_title"] == HARUHARU_YOUTUBE_CHANNEL_TITLE
+    assert haruharu["profile"] == "haruharu"
+    assert haruharu["profile_doc"] == "docs/openclaw-channel-profiles/haruharu.md"
+    assert haruharu["concept_doc"] == "docs/openclaw-channel-concepts/haruharu.md"
 
     custom = build_channel_profile(
         _auto_publish_args(
