@@ -44,9 +44,8 @@ The existing `AI썰전` release worked because it repeatedly used:
 - Glassy arpeggios, soft plucked synth, clocklike mallets, marimba plucks, or muted guitar harmonics.
 - Round bass or smooth sub bass, never aggressive.
 - Low analytical tension: focused and intelligent, but not stressful.
-- Clean resolved endings with no fade-out.
 - Around 84-104 BPM, usually 88-100 BPM.
-- Keep tracks under 4 minutes when prompting Suno. Do not write exact duration ranges inside the style prompt because that can make Suno behave worse. A returned track around three minutes is good, and any returned track under 4:20 is acceptable when it ends cleanly.
+- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 
 Use these elements as the default style vocabulary. Vary the instruments slightly from track to track, but do not leave this family.
 
@@ -67,14 +66,14 @@ Use bracket-only structure blocks in the lyrics/custom-lyrics field:
 [Instrumental Break: ...]
 [Bridge: ...]
 [Final Theme: ...]
-[Outro: ... resolves naturally and stops, no fade-out]
+[Outro: closing section]
 [End]
 ```
 
 Suno style prompts should be close to this template:
 
 ```text
-instrumental only analytical story BGM, no vocals no humming no spoken words, less than 4 minutes, warm analog synth pulse, felt piano motifs, Rhodes chords, muted electronic percussion, glassy arpeggios, round bass, low analytical tension, resolved ending, no fade-out
+instrumental only analytical story BGM, no vocals no humming no spoken words, less than 4 minutes, warm analog synth pulse, felt piano motifs, Rhodes chords, muted electronic percussion, glassy arpeggios, round bass, low analytical tension
 ```
 
 Good style variations:

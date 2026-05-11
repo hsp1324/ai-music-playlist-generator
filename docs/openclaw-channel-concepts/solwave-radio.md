@@ -37,7 +37,7 @@ Use a vivid Latin scene plus substyle:
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Rhythm should be clear and playlist-friendly.
 - Titles should feel curated and editorial, not raw workspace names.
-- Ask for complete Latin/Spanish pop songs under 4 minutes, not exact duration ranges in the Suno style field. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full Latin/Spanish pop arrangement with second verse, bridge or instrumental break, final chorus, and a resolved outro with a clear final chord/hit. Do not use fade-out endings.
+- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.
 
 ## Visual Direction

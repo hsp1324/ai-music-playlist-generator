@@ -47,14 +47,11 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-For playlist releases, OpenClaw should ask Suno for complete tracks under 4 minutes. Avoid exact duration phrases in the style field because they can make Suno behave worse. The returned-output ceiling is 4:45 when the track has a complete ending.
+Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 
-- In style prompts, write `less than 4 minutes`, not exact target duration ranges.
-- Do not intentionally ask for long tracks.
-- Do not request or accept fade-out endings, slow fades, or volume-lowering endings. Use bracketed metatags such as `[Outro: final cadence resolves naturally, clear final chord, no fade-out]` and `[End]`.
-- If Suno returns a track longer than 4:45, regenerate or replace it before publishing.
-- `scripts/openclaw-release auto-publish-playlist` rejects playlist tracks over 285 seconds by default.
-- Only use `--allow-long-track` when the human explicitly approves a longer track.
+- The helper rejects playlist tracks over 4 minutes by default.
+- Do not include extra duration wording in Suno fields beyond `less than 4 minutes`.
+- Do not add extra completion or outro wording to Suno fields.
 
 ## Good Lyrics Field Shape
 
@@ -66,7 +63,7 @@ For playlist releases, OpenClaw should ask Suno for complete tracks under 4 minu
 [Instrumental Break: harp harmonics and soft cymbal swells, melody carried by piano and guitar]
 [Bridge: drums drop to rim clicks, bass holds long notes, strings widen gradually]
 [Final Theme: piano motif returns, guitar answers every 4 bars, gentle lift without a vocal hook]
-[Outro: final piano cadence resolves naturally, rain ambience remains, no fade-out]
+[Outro: piano motif returns with rain ambience]
 [End]
 ```
 

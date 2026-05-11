@@ -45,8 +45,8 @@ def _auto_publish_args(audio_path: str, **overrides):
         "lyrics": [],
         "lyrics_file": [],
         "target_seconds": 3600,
-        "min_track_seconds": 180,
-        "max_track_seconds": 285,
+        "min_track_seconds": openclaw_release.DEFAULT_MIN_PLAYLIST_TRACK_SECONDS,
+        "max_track_seconds": openclaw_release.DEFAULT_MAX_PLAYLIST_TRACK_SECONDS,
         "allow_short_track": False,
         "allow_long_track": False,
         "youtube_channel_title": "",
@@ -67,8 +67,18 @@ def _auto_publish_args(audio_path: str, **overrides):
     return SimpleNamespace(**values)
 
 
-def test_playlist_track_duration_rejects_short_tracks_by_default() -> None:
+def test_playlist_track_duration_allows_short_tracks_by_default() -> None:
     args = _auto_publish_args("song.mp3")
+
+    openclaw_release.require_playlist_track_duration(
+        {"title": "Short Pop", "duration_seconds": 150},
+        args=args,
+        context="duration check",
+    )
+
+
+def test_playlist_track_duration_rejects_short_tracks_when_min_configured() -> None:
+    args = _auto_publish_args("song.mp3", min_track_seconds=180)
 
     with pytest.raises(RuntimeError, match="at least 03:00"):
         openclaw_release.require_playlist_track_duration(
@@ -771,7 +781,7 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
     assert not render_requested
 
 
-def test_auto_publish_playlist_rejects_tracks_longer_than_four_forty_five(tmp_path) -> None:
+def test_auto_publish_playlist_rejects_tracks_longer_than_four_minutes(tmp_path) -> None:
     audio_path = tmp_path / "long.mp3"
     audio_path.write_bytes(b"long audio")
     render_requested = False
@@ -828,7 +838,7 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_four_forty_five(tmp_pa
     assert not render_requested
     assert slack_notices
     assert "Long Track" in slack_notices[-1]
-    assert "04:45 or shorter" in slack_notices[-1]
+    assert "04:00 or shorter" in slack_notices[-1]
 
 
 def test_auto_publish_single_requires_final_cover_before_side_effects(tmp_path) -> None:
