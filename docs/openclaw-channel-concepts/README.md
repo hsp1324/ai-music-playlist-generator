@@ -40,9 +40,9 @@ Return a compact plan before generating audio:
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
 - [HaruHaru](haruharu.md)
-- [Midnight Cue Radio](midnight-cue-radio.md)
+- [Signal Room Radio](signal-room-radio.md)
 - [Custom Channel](custom-channel.md)
 
 The rotation roster is not limited to this file. For automation, OpenClaw must read `/youtube/status` and include every connected channel in `channels` unless the docs explicitly mark that channel inactive/excluded. Newly connected channels are active by default. If a connected channel has no dedicated planner yet, use `custom-channel.md` and infer the channel direction from its name, local app history, and the human's recent instructions.
-If `/youtube/status` shows `AI썰전`, treat it as legacy `Midnight Cue Radio` until the human manually renames/reconnects the YouTube channel.
+If `/youtube/status` shows `AI썰전`, treat it as legacy `Signal Room Radio` until the human manually renames/reconnects the YouTube channel.
 `AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.

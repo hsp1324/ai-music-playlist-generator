@@ -37,7 +37,7 @@ Combine one use case, one setting, and one instrument palette:
 - Follow `../suno-v55-instrumental-format.md`.
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
 - Fill Suno Advanced Options excluded styles with vocal-related exclusions.
-- Target roughly 3:00-3:30 per track; returned tracks up to 4:45 are acceptable when they end cleanly, but do not intentionally ask for long tracks. Do not use fade-out endings; prefer a natural final cadence or resolved ending.
+- Ask for complete instrumental tracks under 4 minutes, not exact duration ranges in the Suno style field. Returned tracks up to 4:45 are acceptable when they end cleanly, but do not intentionally ask for long tracks. Do not use fade-out endings; prefer a natural final cadence or resolved ending.
 - Prioritize low listener fatigue, smooth flow, and practical usefulness.
 
 ## Visual Direction

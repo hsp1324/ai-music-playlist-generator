@@ -29,7 +29,7 @@ The active channel roster is dynamic. Always read `/youtube/status` and use ever
 - `sundaze`
 - `Solwave Radio`
 - `HaruHaru`
-- `Midnight Cue Radio` (currently connected as legacy `AI썰전` until the human renames/reconnects it)
+- `Signal Room Radio` (currently connected as legacy `AI썰전` until the human renames/reconnects it)
 
 Current known connected channels excluded from automatic playlist rotation:
 
@@ -104,7 +104,7 @@ Known channel concept docs are:
 - `docs/openclaw-channel-concepts/sundaze.md`
 - `docs/openclaw-channel-concepts/solwave-radio.md`
 - `docs/openclaw-channel-concepts/haruharu.md`
-- `docs/openclaw-channel-concepts/midnight-cue-radio.md`
+- `docs/openclaw-channel-concepts/signal-room-radio.md`
 - `docs/openclaw-channel-concepts/custom-channel.md`
 
 ## Freshness Rules
@@ -119,6 +119,7 @@ Before finalizing a concept:
 6. Keep the channel identity stable while varying the specific concept.
 7. Prefer concepts that are clear from title and thumbnail within a few seconds.
 8. Prefer search/click-friendly phrases, but do not stuff keywords or make titles feel machine-generated.
+9. Keep titles broad enough to match the whole playlist mood and use case. Do not trap a release inside one tiny keyword if a broader phrase such as mystery BGM, focus BGM, night drive pop, party warmup, or research music better matches the actual sound.
 
 Do not choose a concept if it only changes adjectives while repeating the same channel, use case, setting, visual scene, and music direction as a recent upload.
 
@@ -165,7 +166,7 @@ If YouTube status is configured=false, authenticated=false, ready=false, or chan
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, and Midnight Cue Radio. If the status still shows `AI썰전`, treat it as legacy Midnight Cue Radio until the channel is manually renamed/reconnected. Newly connected non-excluded channels must also enter rotation.
+- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, and Signal Room Radio. If the status still shows `AI썰전`, treat it as legacy Signal Room Radio until the channel is manually renamed/reconnected. Newly connected non-excluded channels must also enter rotation.
 - Exclude AnimeMix from automatic playlist rotation because it is a manual-only popular-song remake/cover channel.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.

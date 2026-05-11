@@ -9,7 +9,7 @@ from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
-    MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE,
+    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
     SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     approve_metadata,
@@ -175,16 +175,16 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
-            release_title="Midnight Mystery Documentary BGM",
+            release_title="Mystery Documentary BGM",
             description="dark ambient investigation music for story videos",
         )
-    ) == MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE
+    ) == SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="AI썰전 사건 다큐 BGM",
         )
-    ) == MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE
+    ) == SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
 
 
 def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> None:
@@ -250,17 +250,17 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert haruharu["profile_doc"] == "docs/openclaw-channel-profiles/haruharu.md"
     assert haruharu["concept_doc"] == "docs/openclaw-channel-concepts/haruharu.md"
 
-    midnight_cue = build_channel_profile(
+    signal_room = build_channel_profile(
         _auto_publish_args(
             "/tmp/audio.mp3",
-            release_title="Cinematic Mystery BGM",
-            description="dark ambient documentary investigation music",
+            release_title="AI Debate Prep BGM",
+            description="research story documentary music",
         )
     )
-    assert midnight_cue["youtube_channel_title"] == MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE
-    assert midnight_cue["profile"] == "midnight-cue-radio"
-    assert midnight_cue["profile_doc"] == "docs/openclaw-channel-profiles/midnight-cue-radio.md"
-    assert midnight_cue["concept_doc"] == "docs/openclaw-channel-concepts/midnight-cue-radio.md"
+    assert signal_room["youtube_channel_title"] == SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
+    assert signal_room["profile"] == "signal-room-radio"
+    assert signal_room["profile_doc"] == "docs/openclaw-channel-profiles/signal-room-radio.md"
+    assert signal_room["concept_doc"] == "docs/openclaw-channel-concepts/signal-room-radio.md"
 
     custom = build_channel_profile(
         _auto_publish_args(
@@ -276,7 +276,7 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert custom["explicit_channel_requested"] is True
 
 
-def test_resolve_youtube_channel_id_uses_midnight_cue_legacy_alias() -> None:
+def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/api/youtube/status"
         return httpx.Response(
@@ -292,7 +292,7 @@ def test_resolve_youtube_channel_id_uses_midnight_cue_legacy_alias() -> None:
     client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
 
     assert (
-        resolve_youtube_channel_id(client, title=MIDNIGHT_CUE_YOUTUBE_CHANNEL_TITLE)
+        resolve_youtube_channel_id(client, title=SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE)
         == "legacy-ai-sseoljeon"
     )
 

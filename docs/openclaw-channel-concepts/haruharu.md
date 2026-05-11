@@ -38,7 +38,7 @@ Use one vivid Korean-pop situation plus a clear emotional hook:
 - Every track needs a distinct Korean lyric concept, chorus hook, title, and Suno style/settings.
 - Do not upload lyricless, BGM-only, hum-only, or instrumental K-pop unless the human explicitly requests it.
 - Use Korean song titles by default. Avoid `A/B`, `1/2`, or batch labels in public track titles.
-- Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full K-pop arrangement with second verse, bridge or dance break, final chorus, and a resolved outro with a clear final chord/hit. Do not use fade-out endings.
+- Ask for complete K-pop songs under 4 minutes, not exact duration ranges in the Suno style field. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full K-pop arrangement with second verse, bridge or dance break, final chorus, and a resolved outro with a clear final chord/hit. Do not use fade-out endings.
 - Set Suno `More options` / `Vocal gender` when the lead vocal is known: `male` for male lead, `female` for female lead, blank for mixed/duet/group/unspecified.
 - Keep vocal gender stable across retries of the same track unless the track concept changes.
 

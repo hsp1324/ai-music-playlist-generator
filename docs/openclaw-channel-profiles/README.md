@@ -153,27 +153,27 @@ YouTube thumbnail:
 - Add large readable K-pop text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, or `RAINY KPOP`.
 - Add `HARUHARU` brand line, visually consistent with the large cover channel label.
 
-### Midnight Cue Radio
+### Signal Room Radio
 
 Cover / first frame:
 
-- 16:9 illustrated/anime/stylized/cinematic image for mystery, documentary, investigation, noir, urban legend, dark ambient, or story BGM releases.
-- No fixed recurring visual signature yet. The playlist concept decides the mystery scene, object, palette, and camera.
-- Only text allowed is the large lower-left `Midnight Cue Radio` brand label.
-- If the connected YouTube channel still appears as `AI썰전`, use `Midnight Cue Radio` as the intended public brand label and report that the channel should be manually renamed/reconnected.
+- 16:9 illustrated/anime/stylized/cinematic image for AI debate prep, research, story analysis, mystery, documentary, data review, newsroom, or deep-focus BGM releases.
+- No fixed recurring visual signature yet. The playlist concept decides the signal-room/research/story scene, object, palette, and camera.
+- Only text allowed is the large lower-left `Signal Room Radio` brand label.
+- If the connected YouTube channel still appears as `AI썰전`, use `Signal Room Radio` as the intended public brand label and report that the channel should be manually renamed/reconnected.
 
 Loop video:
 
 - Animate the cover/first-frame with restrained but clearly visible atmospheric motion.
-- Preserve the large lower-left `Midnight Cue Radio` brand label exactly for the whole clip.
+- Preserve the large lower-left `Signal Room Radio` brand label exactly for the whole clip.
 - Do not add subtitles, title text, duration text, logos, UI, gore, real crime photos, or unrelated words.
 
 YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable mystery/story text such as `MYSTERY`, `DARK CASE`, `NOIR`, `INVESTIGATION`, `URBAN LEGEND`, `DOCUMENTARY`, `COLD CASE`, or `NIGHT FILES`.
-- Add `MIDNIGHT CUE RADIO` brand line, visually consistent with the large cover channel label.
+- Add large readable analytical/story text such as `AI DEBATE`, `RESEARCH`, `SCRIPT NOTES`, `FACT CHECK`, `DEEP WORK`, `DATA REVIEW`, `MYSTERY`, `DOCUMENTARY`, or `SIGNAL ROOM`.
+- Add `SIGNAL ROOM RADIO` brand line, visually consistent with the large cover channel label.
 
 Profiles:
 
@@ -182,9 +182,9 @@ Profiles:
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
 - [HaruHaru](haruharu.md)
-- [Midnight Cue Radio](midnight-cue-radio.md)
+- [Signal Room Radio](signal-room-radio.md)
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
-If `/youtube/status` shows `AI썰전`, treat it as legacy `Midnight Cue Radio` until the human manually renames/reconnects the YouTube channel.
+If `/youtube/status` shows `AI썰전`, treat it as legacy `Signal Room Radio` until the human manually renames/reconnects the YouTube channel.
 `AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.
