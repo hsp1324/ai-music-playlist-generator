@@ -216,6 +216,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "- Localizations that are not the main language should be natural translations/adaptations, not machine-looking literal copies.",
                 "- For Solwave Radio, Latin pop, Spanish pop, reggaeton, bachata, salsa, cumbia, urbano latino, or Spanish-language pop releases, write the main metadata in Spanish and keep lyrics/title language Spanish-forward.",
                 "- For sundaze, English pop, American pop, US/UK pop, western pop, or mainstream English pop releases, write the main metadata in English and keep lyrics/title language English-forward.",
+                "- For sundaze, every localized title must use the exact same English title as the en localization. Translate localized descriptions only.",
                 "- Keep title under 100 characters.",
                 "- For playlist releases, every YouTube title in every language must start exactly with '[playlist]'.",
                 "- After '[playlist]', do not repeat playlist nouns such as '플레이리스트', 'Playlist', 'プレイリスト', or 'lista de reproducción'. Use music/mix/radio wording instead.",

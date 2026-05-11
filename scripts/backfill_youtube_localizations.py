@@ -203,7 +203,7 @@ def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
             "- Keep each title natural for YouTube and no longer than 100 characters.",
             "- Preserve every timestamp exactly. Do not add, remove, reorder, round, or translate timestamp tokens.",
             "- Preserve the tracklist order exactly. Translate only the displayed track title text after each timestamp.",
-            "- Exception: for sundaze or English/American pop releases, keep the track title text after each timestamp in English in every localized description. Translate only the surrounding prose, use-case line, and hashtags.",
+            "- Exception: for sundaze or English/American pop releases, keep every localized title exactly the same as the English title. Also keep the track title text after each timestamp in English in every localized description. Translate only the surrounding prose, use-case line, and hashtags.",
             "- Keep hashtag lines at the end of every description; translate or localize hashtags where natural, but do not omit them.",
             "- Do not invent upload status, URLs, channel claims, or extra metadata fields.",
             "- Use natural localized copy for listeners in each requested language. For zh-CN, use Simplified Chinese. For zh-TW, use Traditional Chinese suitable for Taiwan.",

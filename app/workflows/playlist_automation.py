@@ -35,6 +35,8 @@ FAILED_WORKFLOW_STATES = {
     "publish_failed",
 }
 FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
+SUNDAZE_CHANNEL_ID = "UCQh5O10XfZLLNZqdGuQR7Jw"
+SUNDAZE_CHANNEL_TITLE = "sundaze"
 REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "ko",
     "ja",
@@ -92,6 +94,33 @@ def _store_youtube_channel_metadata(
     channel_title = _resolve_youtube_channel_title(services, channel_id)
     if channel_title:
         meta["youtube_channel_title"] = channel_title
+
+
+def _is_sundaze_release(meta: dict) -> bool:
+    return (
+        str(meta.get("youtube_channel_id") or "").strip() == SUNDAZE_CHANNEL_ID
+        or str(meta.get("youtube_channel_title") or "").strip().lower() == SUNDAZE_CHANNEL_TITLE
+    )
+
+
+def _enforce_sundaze_english_localized_titles(meta: dict, *, is_playlist: bool) -> None:
+    if not _is_sundaze_release(meta):
+        return
+    localizations = dict(meta.get("youtube_localizations") or {})
+    english_copy = dict(localizations.get("en") or {})
+    english_title = str(english_copy.get("title") or meta.get("youtube_title") or "").strip()
+    if not english_title:
+        return
+    english_title = ensure_playlist_title_prefix(english_title, is_playlist=is_playlist)
+    for language, copy in localizations.items():
+        copy = dict(copy or {})
+        copy["title"] = english_title
+        localizations[language] = copy
+    if "en" in localizations:
+        meta["youtube_default_language"] = "en"
+        meta["youtube_title"] = english_title
+        meta["youtube_description"] = localizations["en"].get("description") or meta.get("youtube_description")
+    meta["youtube_localizations"] = localizations
 
 
 def _parse_metadata_datetime(value: str | datetime | None) -> datetime | None:
@@ -1327,6 +1356,7 @@ def generate_playlist_metadata(
             localized_copy.get("description") or "",
             meta["youtube_tags"],
         )
+    _enforce_sundaze_english_localized_titles(meta, is_playlist=is_playlist_release)
     meta["metadata_provider"] = youtube_metadata.provider
     if youtube_metadata.error:
         meta["metadata_generation_error"] = youtube_metadata.error
@@ -1424,6 +1454,7 @@ def approve_playlist_metadata(
         if default_copy:
             meta["youtube_title"] = default_copy["title"]
             meta["youtube_description"] = default_copy["description"]
+    _enforce_sundaze_english_localized_titles(meta, is_playlist=is_playlist_release)
     if is_playlist_release:
         _validate_playlist_metadata_ready(meta)
 
@@ -2249,6 +2280,7 @@ def approve_playlist_publish(
     )
 
     _store_youtube_channel_metadata(meta, services, channel_id=youtube_channel_id)
+    _enforce_sundaze_english_localized_titles(meta, is_playlist=is_playlist_release)
     playlist.metadata_json = meta
 
     _queue_publish_job(
