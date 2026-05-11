@@ -23,6 +23,7 @@ from app.services.background_worker import BackgroundJobWorker
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 from app.utils.openclaw_slack_loop import record_auto_loop_upload
+from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 
 
 def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> TestClient:
@@ -278,11 +279,29 @@ def prepare_release_for_final_publish(client: TestClient, workspace_id: str, *, 
     assert metadata_ready["output_video_path"].endswith(".mp4")
     assert metadata_ready["youtube_title"]
 
+    metadata_description = metadata_ready["youtube_description"]
+    if "00:00" not in metadata_description:
+        metadata_description = f"{metadata_description}\n\n00:00:00 Single Track\n\n#Music #Playlist"
+    localizations = {
+        language: {
+            "title": metadata_ready["youtube_title"],
+            "description": metadata_description,
+        }
+        for language in SUPPORTED_YOUTUBE_LANGUAGES
+    }
     approve_metadata_response = client.post(
         f"/api/playlists/{workspace_id}/metadata/approve",
-        json={"actor": "test-suite", "note": "metadata approved"},
+        json={
+            "actor": "test-suite",
+            "note": "metadata approved",
+            "title": metadata_ready["youtube_title"],
+            "description": metadata_description,
+            "tags": ",".join(metadata_ready["youtube_tags"]),
+            "default_language": metadata_ready.get("youtube_default_language") or "ko",
+            "localizations": localizations,
+        },
     )
-    assert approve_metadata_response.status_code == 200
+    assert approve_metadata_response.status_code == 200, approve_metadata_response.text
     approved = approve_metadata_response.json()
     assert approved["workflow_state"] == "publish_ready"
     assert approved["metadata_approved"] is True
@@ -2448,14 +2467,26 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             json={
                 "actor": "test-suite",
                 "title": "한국어 제목",
-                "description": "한국어 설명",
+                "description": "한국어 설명\n\n00:00:00 Single Track\n\n#jpop #playlist",
                 "tags": "jpop,playlist",
                 "default_language": "ko",
                 "localizations": {
-                    "ko": {"title": "한국어 제목", "description": "한국어 설명"},
-                    "ja": {"title": "日本語タイトル", "description": "日本語の説明"},
-                    "en": {"title": "English Title", "description": "English description"},
-                    "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
+                    language: {
+                        "title": {
+                            "ko": "한국어 제목",
+                            "ja": "日本語タイトル",
+                            "en": "English Title",
+                            "es": "Titulo en espanol",
+                        }.get(language, f"{language} Title"),
+                        "description": {
+                            "ko": "한국어 설명",
+                            "ja": "日本語の説明",
+                            "en": "English description",
+                            "es": "Descripcion en espanol",
+                        }.get(language, f"{language} description")
+                        + "\n\n00:00:00 Single Track\n\n#jpop #playlist",
+                    }
+                    for language in SUPPORTED_YOUTUBE_LANGUAGES
                 },
             },
         )
@@ -2518,9 +2549,29 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         )
         assert render_again_response.status_code == 200
         assert drain_background_jobs(client) == 1
+        metadata_again_response = client.get("/api/playlists/workspaces")
+        metadata_again = next(item for item in metadata_again_response.json() if item["id"] == workspace_id)
+        metadata_again_description = metadata_again["youtube_description"]
+        if "00:00" not in metadata_again_description:
+            metadata_again_description = f"{metadata_again_description}\n\n00:00:00 Single Track\n\n#Music #Playlist"
+        metadata_again_localizations = {
+            language: {
+                "title": metadata_again["youtube_title"],
+                "description": metadata_again_description,
+            }
+            for language in SUPPORTED_YOUTUBE_LANGUAGES
+        }
         approve_again_response = client.post(
             f"/api/playlists/{workspace_id}/metadata/approve",
-            json={"actor": "test-suite", "note": "metadata approved again"},
+            json={
+                "actor": "test-suite",
+                "note": "metadata approved again",
+                "title": metadata_again["youtube_title"],
+                "description": metadata_again_description,
+                "tags": ",".join(metadata_again["youtube_tags"]),
+                "default_language": metadata_again.get("youtube_default_language") or "ko",
+                "localizations": metadata_again_localizations,
+            },
         )
         assert approve_again_response.status_code == 200
         second_video_path = approve_again_response.json()["output_video_path"]

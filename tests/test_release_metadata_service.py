@@ -8,6 +8,7 @@ from app.models.track import Track
 from app.services.codex_metadata_service import CodexMetadataService
 from app.services.release_metadata_service import ReleaseMetadataService
 from app.utils.youtube_localizations import (
+    SUPPORTED_YOUTUBE_LANGUAGES,
     ensure_playlist_title_prefix,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
@@ -59,7 +60,23 @@ def test_playlist_metadata_ready_requires_all_languages_and_timeline() -> None:
             "title": "[playlist] Test",
             "description": "Description\n\n00:00:00 Track One\n03:00 Track Two\n\n#Music #Playlist",
         }
-        for language in ("ko", "ja", "en", "es", "vi", "th", "hi", "zh-CN", "zh-TW")
+        for language in (
+            "ko",
+            "ja",
+            "en",
+            "es",
+            "vi",
+            "th",
+            "hi",
+            "fil",
+            "id",
+            "pt-BR",
+            "fr",
+            "de",
+            "ar",
+            "zh-CN",
+            "zh-TW",
+        )
     }
     _validate_playlist_metadata_ready(
         {
@@ -248,7 +265,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "timeline_timestamp_format" in input
         assert "Japanese title plus Korean translation in parentheses" in input
         assert "never use the transliterated words" in input
-        assert "listening use cases directly in the title" in input
+        assert "real listening situation or viewer intent directly in the title" in input
         assert "every YouTube title in every language must start exactly with '[playlist]'" in input
         output_path.write_text(
             json.dumps(
@@ -256,6 +273,13 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
                     "title": "조용한 카페 피아노",
                     "description": "잔잔한 피아노입니다.\n\n00:00 Cinnamon Keys A",
                     "tags": ["Piano", "#CafePiano", "Piano"],
+                    "localizations": {
+                        language: {
+                            "title": "조용한 카페 피아노",
+                            "description": "잔잔한 피아노입니다.\n\n00:00 Cinnamon Keys A",
+                        }
+                        for language in SUPPORTED_YOUTUBE_LANGUAGES
+                    },
                 },
                 ensure_ascii=False,
             ),

@@ -24,7 +24,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - YouTube API tags and public description hashtags are separate. `--tags` sends hidden YouTube tags; the description text itself must also end with one public hashtag line.
 - Every main description and every localized description must end with 5-8 public hashtags, for example `#Jpop #TokyoDaydreamRadio #CityPop #DriveMusic #WorkMusic`. Do not assume `--tags` will appear publicly.
 - Never use AI/process/tool hashtags or YouTube tags on any channel. Do not write `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, or `Codex` as tags or public hashtags.
-- Playlist metadata approval is now blocked unless all 10 configured languages are present and the main description plus every localized description contains a timestamped tracklist.
+- Playlist metadata approval is now blocked unless all 15 configured languages are present and the main description plus every localized description contains a timestamped tracklist.
 - Keep the title under 100 characters.
 - For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
@@ -49,7 +49,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - Spanish description: use the Spanish translated title only, for example `00:03:22 Destello junto al mar`.
 - For `sundaze` English pop releases, use English as the main/default metadata language with `--default-language en`. The English description should contain English track titles; every other localized description must keep the same English track titles in timestamped tracklist rows while translating the surrounding prose, use-case line, and hashtags.
 - For `Solwave Radio` Latin/Spanish pop releases, use Spanish as the main/default metadata language with `--default-language es`. The Spanish description should contain Spanish track titles; every other localized description should translate only the displayed title text while keeping timestamps fixed.
-- Keep the exact same timestamps and playback order in Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese descriptions.
+- Keep the exact same timestamps and playback order in Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions.
 - If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
 
 ## Metadata Style Prompt
@@ -67,9 +67,9 @@ Use the returned timestamps exactly for the tracklist.
 Use `display_timestamp_lines` as the starting point when present.
 If a displayed title still reads like A/B, 1/2, or a paired alternative, rewrite only the title text so it is natural and unique.
 If the release is one hour or longer, keep all timestamps in HH:MM:SS form, including 00:00:00 at the first row.
-For Japan/J-pop/Tokyo Daydream Radio releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese descriptions. In the Korean/default tracklist, use Japanese title plus Korean translation in parentheses. In the Japanese tracklist, use Japanese title only. In the English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese tracklists, translate only the displayed title text and keep timestamps fixed.
-For sundaze English pop releases, write the main title/description in English, use `--default-language en`, and provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese localized versions. In every localized timestamped tracklist, keep the track title text in English exactly as in the English description; translate only the surrounding prose, use-case line, and hashtag line.
-For Solwave Radio Latin/Spanish pop releases, write the main title/description in Spanish, use `--default-language es`, and provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese localized versions.
+For Japan/J-pop/Tokyo Daydream Radio releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions. In the Korean/default tracklist, use Japanese title plus Korean translation in parentheses. In the Japanese tracklist, use Japanese title only. In the English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese tracklists, translate only the displayed title text and keep timestamps fixed.
+For sundaze English pop releases, write the main title/description in English, use `--default-language en`, and provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese localized versions. In every localized timestamped tracklist, keep the track title text in English exactly as in the English description; translate only the surrounding prose, use-case line, and hashtag line.
+For Solwave Radio Latin/Spanish pop releases, write the main title/description in Spanish, use `--default-language es`, and provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese localized versions.
 For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, `Tokyo`, city-pop, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. If language matters, mention it naturally in the description instead.
 For `sundaze` and `Solwave Radio`, titles should read like curated editorial or `Essential` playlists: vivid situation/emotion + genre identity + listening use case. Do not use raw workspace names or short generic labels such as `Golden Hour Drive Pop`, `Ruta Dorada Pop`, `English Pop`, `Spanish Pop`, or `Latin Pop` by themselves.
 Good `sundaze` example: `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`.
@@ -78,7 +78,7 @@ Good `Solwave Radio` example: `[playlist] Pop Latino para Ruta al Atardecer | Ca
 In Korean title/description/localizations, never write `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Say `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 For Playlist Releases, start the main title and every localized title exactly with `[playlist]`. Do not add `[playlist]` to Single Releases.
 After `[playlist]`, do not include duplicate words like `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; write `음악`, `music`, `mix`, or a natural use-case phrase instead.
-End the description with one public hashtag line containing 5-8 relevant hashtags. Also include equivalent hashtag lines in Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese localized descriptions.
+End the description with one public hashtag line containing 5-8 relevant hashtags. Also include equivalent hashtag lines in Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese localized descriptions.
 Never use AI/process/tool hashtags or YouTube tags on any channel. Do not write `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, or `Codex` as tags or public hashtags.
 Write metadata in this shape:
 
@@ -99,10 +99,10 @@ Tags:
 <comma-separated tags without # symbols>
 
 Localized metadata:
-- Also write Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese title/description files.
+- Also write Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description files.
 - If the selected channel is sundaze, make the English file the default top-level title/description and approve with `--default-language en`.
 - If the selected channel is Solwave Radio, make the Spanish file the default top-level title/description and approve with `--default-language es`.
-- Use `--ko-title`, `--ko-description-file`, `--ja-title`, `--ja-description-file`, `--en-title`, `--en-description-file`, `--es-title`, `--es-description-file`, `--vi-title`, `--vi-description-file`, `--th-title`, `--th-description-file`, `--hi-title`, `--hi-description-file`, `--zh-title`, `--zh-description-file`, `--zh-tw-title`, and `--zh-tw-description-file` when approving metadata.
+- Use `--ko-title`, `--ko-description-file`, `--ja-title`, `--ja-description-file`, `--en-title`, `--en-description-file`, `--es-title`, `--es-description-file`, `--vi-title`, `--vi-description-file`, `--th-title`, `--th-description-file`, `--hi-title`, `--hi-description-file`, `--fil-title`, `--fil-description-file`, `--id-title`, `--id-description-file`, `--pt-title`, `--pt-description-file`, `--fr-title`, `--fr-description-file`, `--de-title`, `--de-description-file`, `--ar-title`, `--ar-description-file`, `--zh-title`, `--zh-description-file`, `--zh-tw-title`, and `--zh-tw-description-file` when approving metadata.
 
 For a cafe piano playlist, use this direction:
 - quiet solo piano

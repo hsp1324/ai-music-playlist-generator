@@ -62,7 +62,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Main upload metadata should be English. Use `--default-language en` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--en-title` / `--en-description-file` should match.
 - In every localized description, keep timestamped tracklist song titles in English exactly as the English description. Translate only the surrounding description prose, recommended use-case line, and hashtag line.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.

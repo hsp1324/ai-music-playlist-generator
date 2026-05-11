@@ -89,6 +89,11 @@ const METADATA_LANGUAGES = [
   { code: "th", label: "Thai", shortLabel: "TH" },
   { code: "hi", label: "Hindi", shortLabel: "HI" },
   { code: "fil", label: "Filipino", shortLabel: "FIL" },
+  { code: "id", label: "Indonesian", shortLabel: "ID" },
+  { code: "pt-BR", label: "Portuguese (Brazil)", shortLabel: "PT" },
+  { code: "fr", label: "French", shortLabel: "FR" },
+  { code: "de", label: "German", shortLabel: "DE" },
+  { code: "ar", label: "Arabic", shortLabel: "AR" },
   { code: "zh-CN", label: "Chinese Simplified", shortLabel: "ZH" },
   { code: "zh-TW", label: "Chinese Traditional", shortLabel: "TW" },
 ];

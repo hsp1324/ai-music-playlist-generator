@@ -31,7 +31,23 @@ from app.utils.youtube_localizations import (
 )
 
 
-TARGET_LANGUAGES = ("ko", "ja", "en", "es", "vi", "th", "hi", "fil", "zh-CN", "zh-TW")
+TARGET_LANGUAGES = (
+    "ko",
+    "ja",
+    "en",
+    "es",
+    "vi",
+    "th",
+    "hi",
+    "fil",
+    "id",
+    "pt-BR",
+    "fr",
+    "de",
+    "ar",
+    "zh-CN",
+    "zh-TW",
+)
 LANGUAGE_NAMES = {
     "ko": "Korean",
     "ja": "Japanese",
@@ -41,6 +57,11 @@ LANGUAGE_NAMES = {
     "th": "Thai",
     "hi": "Hindi",
     "fil": "Filipino",
+    "id": "Indonesian",
+    "pt-BR": "Brazilian Portuguese",
+    "fr": "French",
+    "de": "German",
+    "ar": "Arabic",
     "zh-CN": "Simplified Chinese",
     "zh-TW": "Traditional Chinese",
 }
@@ -48,7 +69,7 @@ LANGUAGE_NAMES = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate missing ko/ja/en/es/vi/th/hi/fil/zh-CN/zh-TW YouTube localizations and push them to YouTube."
+        description="Generate missing ko/ja/en/es/vi/th/hi/fil/id/pt-BR/fr/de/ar/zh-CN/zh-TW YouTube localizations and push them to YouTube."
     )
     parser.add_argument("--release-id", action="append", default=[], help="Limit to a release id. Repeatable.")
     parser.add_argument("--target-language", action="append", default=[], help="Limit backfill to one supported language code. Repeatable.")
@@ -182,10 +203,12 @@ def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
             "- Keep each title natural for YouTube and no longer than 100 characters.",
             "- Preserve every timestamp exactly. Do not add, remove, reorder, round, or translate timestamp tokens.",
             "- Preserve the tracklist order exactly. Translate only the displayed track title text after each timestamp.",
+            "- Exception: for sundaze or English/American pop releases, keep the track title text after each timestamp in English in every localized description. Translate only the surrounding prose, use-case line, and hashtags.",
             "- Keep hashtag lines at the end of every description; translate or localize hashtags where natural, but do not omit them.",
             "- Do not invent upload status, URLs, channel claims, or extra metadata fields.",
             "- Use natural localized copy for listeners in each requested language. For zh-CN, use Simplified Chinese. For zh-TW, use Traditional Chinese suitable for Taiwan.",
             "- For fil, write natural Filipino/Tagalog metadata for Filipino listeners. Keep timestamps unchanged.",
+            "- For id, write natural Indonesian metadata. For pt-BR, write Brazilian Portuguese. For fr, de, and ar, write natural French, German, and Arabic metadata.",
             "",
             "Source metadata JSON:",
             source_json,
