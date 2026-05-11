@@ -1,4 +1,8 @@
 import json
+import math
+import subprocess
+import wave
+from array import array
 from types import SimpleNamespace
 
 import httpx
@@ -46,6 +50,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "max_track_seconds": 285,
         "allow_short_track": False,
         "allow_long_track": False,
+        "allow_fade_out_track": False,
         "youtube_channel_title": "",
         "youtube_channel_id": "",
         "force_under_target": False,
@@ -62,6 +67,35 @@ def _auto_publish_args(audio_path: str, **overrides):
     }
     values.update(overrides)
     return SimpleNamespace(**values)
+
+
+def _write_test_wav(path, *, fade_out: bool) -> None:
+    sample_rate = 8000
+    duration_seconds = 130
+    frames = array("h")
+    for index in range(sample_rate * duration_seconds):
+        timestamp = index / sample_rate
+        remaining = duration_seconds - timestamp
+        amplitude = 0.6
+        if fade_out and remaining <= 24:
+            amplitude *= max(remaining / 24, 0.0)
+        elif not fade_out and remaining <= 1:
+            amplitude = 0.0
+        sample = int(32767 * amplitude * math.sin(2 * math.pi * 440 * timestamp))
+        frames.append(sample)
+    with wave.open(str(path), "wb") as handle:
+        handle.setnchannels(1)
+        handle.setsampwidth(2)
+        handle.setframerate(sample_rate)
+        handle.writeframes(frames.tobytes())
+
+
+def _skip_without_ffmpeg() -> None:
+    try:
+        subprocess.run(["ffmpeg", "-version"], check=True, capture_output=True, timeout=5)
+        subprocess.run(["ffprobe", "-version"], check=True, capture_output=True, timeout=5)
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        pytest.skip("ffmpeg/ffprobe is required for audio ending detection tests")
 
 
 def test_playlist_track_duration_rejects_short_tracks_by_default() -> None:
@@ -82,6 +116,37 @@ def test_playlist_track_duration_allows_short_tracks_with_explicit_flag() -> Non
         {"title": "Short Pop", "duration_seconds": 150},
         args=args,
         context="duration check",
+    )
+
+
+def test_playlist_ending_check_rejects_likely_fade_out(tmp_path) -> None:
+    _skip_without_ffmpeg()
+    audio_path = tmp_path / "fade-out.wav"
+    _write_test_wav(audio_path, fade_out=True)
+
+    profile = openclaw_release.audio_tail_rms_profile(audio_path)
+
+    assert openclaw_release.audio_tail_looks_like_fade_out(profile)
+    with pytest.raises(RuntimeError, match="long fade-out"):
+        openclaw_release.require_no_playlist_fade_out(
+            audio_path,
+            args=_auto_publish_args(str(audio_path)),
+            context="ending check",
+        )
+
+
+def test_playlist_ending_check_allows_hard_ending(tmp_path) -> None:
+    _skip_without_ffmpeg()
+    audio_path = tmp_path / "hard-ending.wav"
+    _write_test_wav(audio_path, fade_out=False)
+
+    profile = openclaw_release.audio_tail_rms_profile(audio_path)
+
+    assert not openclaw_release.audio_tail_looks_like_fade_out(profile)
+    openclaw_release.require_no_playlist_fade_out(
+        audio_path,
+        args=_auto_publish_args(str(audio_path)),
+        context="ending check",
     )
 
 
@@ -700,6 +765,7 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
                 release_title="Cafe BGM Playlist",
                 description="instrumental cafe BGM",
                 tags="BGM,instrumental",
+                allow_fade_out_track=True,
             ),
         )
 
@@ -761,6 +827,7 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_four_forty_five(tmp_pa
                 release_title="Cafe BGM Playlist",
                 description="instrumental cafe BGM",
                 tags="BGM,instrumental",
+                allow_fade_out_track=True,
             ),
         )
 

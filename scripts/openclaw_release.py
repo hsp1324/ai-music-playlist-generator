@@ -8,10 +8,13 @@ local API by default, bypassing public Google OAuth protection.
 from __future__ import annotations
 
 import argparse
+import array
 import json
+import math
 import mimetypes
 import os
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -27,6 +30,8 @@ DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 180
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 285
+ENDING_CHECK_WINDOW_SECONDS = 8.0
+ENDING_CHECK_MIN_DURATION_SECONDS = 120.0
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
@@ -312,6 +317,155 @@ def validate_local_audio_file(audio_path: Path) -> None:
         raise RuntimeError(f"Audio path is not a file: {audio_path}")
     if audio_path.stat().st_size <= 0:
         raise RuntimeError(f"Audio file is empty: {audio_path}")
+
+
+def _ffprobe_binary(ffmpeg_binary: str) -> str:
+    candidate = Path(ffmpeg_binary).with_name("ffprobe")
+    return str(candidate) if candidate.exists() else "ffprobe"
+
+
+def _audio_duration_seconds(audio_path: Path, *, ffmpeg_binary: str = "ffmpeg") -> float:
+    try:
+        result = subprocess.run(
+            [
+                _ffprobe_binary(ffmpeg_binary),
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(audio_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(
+            f"Could not inspect audio duration for ending validation: {audio_path}. "
+            "Install ffmpeg/ffprobe or regenerate the track on a runtime that can validate endings."
+        ) from exc
+    try:
+        return float(result.stdout.strip())
+    except ValueError as exc:
+        raise RuntimeError(f"ffprobe returned invalid duration for {audio_path}: {result.stdout!r}") from exc
+
+
+def _audio_window_rms_db(
+    audio_path: Path,
+    *,
+    start_seconds: float,
+    duration_seconds: float,
+    ffmpeg_binary: str = "ffmpeg",
+) -> float | None:
+    try:
+        result = subprocess.run(
+            [
+                ffmpeg_binary,
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-ss",
+                f"{max(start_seconds, 0.0):.3f}",
+                "-t",
+                f"{max(duration_seconds, 0.1):.3f}",
+                "-i",
+                str(audio_path),
+                "-vn",
+                "-ac",
+                "1",
+                "-ar",
+                "8000",
+                "-f",
+                "f32le",
+                "pipe:1",
+            ],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(
+            f"Could not decode audio for ending validation: {audio_path}. "
+            "Install ffmpeg or regenerate the track on a runtime that can validate endings."
+        ) from exc
+    if not result.stdout:
+        return None
+    samples = array.array("f")
+    usable_bytes = result.stdout[: len(result.stdout) - (len(result.stdout) % samples.itemsize)]
+    samples.frombytes(usable_bytes)
+    if not samples:
+        return None
+    rms = math.sqrt(sum(sample * sample for sample in samples) / len(samples))
+    return 20.0 * math.log10(max(rms, 1e-9))
+
+
+def audio_tail_rms_profile(audio_path: Path, *, ffmpeg_binary: str = "ffmpeg") -> dict[str, Any]:
+    duration = _audio_duration_seconds(audio_path, ffmpeg_binary=ffmpeg_binary)
+    if duration < ENDING_CHECK_MIN_DURATION_SECONDS:
+        return {
+            "duration_seconds": duration,
+            "checked": False,
+            "reason": "too_short_for_tail_profile",
+        }
+    window = ENDING_CHECK_WINDOW_SECONDS
+    starts = {
+        "early_tail_db": duration - (window * 3),
+        "mid_tail_db": duration - (window * 2),
+        "final_tail_db": duration - window,
+    }
+    profile: dict[str, Any] = {
+        "duration_seconds": duration,
+        "checked": True,
+        "window_seconds": window,
+    }
+    for key, start in starts.items():
+        profile[key] = _audio_window_rms_db(
+            audio_path,
+            start_seconds=start,
+            duration_seconds=window,
+            ffmpeg_binary=ffmpeg_binary,
+        )
+    return profile
+
+
+def audio_tail_looks_like_fade_out(profile: dict[str, Any]) -> bool:
+    if not profile.get("checked"):
+        return False
+    early = profile.get("early_tail_db")
+    mid = profile.get("mid_tail_db")
+    final = profile.get("final_tail_db")
+    if early is None or mid is None or final is None:
+        return False
+    return bool(
+        early > -42.0
+        and mid <= early - 3.0
+        and final <= mid - 3.0
+        and early - final >= 10.0
+        and final <= -18.0
+    )
+
+
+def require_no_playlist_fade_out(audio_path: Path, *, args: argparse.Namespace, context: str) -> None:
+    if bool(getattr(args, "allow_fade_out_track", False)):
+        return
+    profile = audio_tail_rms_profile(
+        audio_path,
+        ffmpeg_binary=os.environ.get("AIMP_FFMPEG_BINARY", "ffmpeg").strip() or "ffmpeg",
+    )
+    if not audio_tail_looks_like_fade_out(profile):
+        return
+    title = file_stem(audio_path)
+    raise RuntimeError(
+        f"{context} rejected `{title}` because the last 24 seconds look like a long fade-out "
+        f"(RMS dB: {profile.get('early_tail_db'):.1f} -> {profile.get('mid_tail_db'):.1f} -> "
+        f"{profile.get('final_tail_db'):.1f}). "
+        "Fade-out endings are not desired for this channel automation. Regenerate or extend the Suno track with "
+        "a complete/resolved outro, final cadence, or hard final hit. Use --allow-fade-out-track only with "
+        "explicit human approval."
+    )
 
 
 def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
@@ -691,6 +845,8 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         context="upload-audio",
         concept_values=[release.get("title"), title, args.prompt, args.style, args.tags],
     )
+    if auto_approve_playlist:
+        require_no_playlist_fade_out(audio_path, args=args, context="upload-audio playlist ending check")
     try:
         track = upload_audio_file_to_release(
             client,
@@ -1225,6 +1381,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     uploaded_tracks = []
     failed_uploads: list[dict[str, str]] = []
     for audio_path, track_title, lyrics, style in zip(audio_paths, display_titles, lyrics_items, style_items):
+        require_no_playlist_fade_out(audio_path, args=args, context="auto-publish-playlist ending check")
         try:
             track = upload_audio_file_to_release(
                 client,
@@ -2126,6 +2283,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 285.")
     audio_parser.add_argument("--allow-short-track", action="store_true", help="Allow a playlist track shorter than --min-track-seconds. Use only with explicit human approval.")
     audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds. Use only with explicit human approval.")
+    audio_parser.add_argument("--allow-fade-out-track", action="store_true", help="Allow a playlist track whose ending looks like a fade-out. Use only with explicit human approval.")
     audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded when playlist uploads are auto-approved.")
     audio_parser.set_defaults(func=upload_audio)
 
@@ -2171,6 +2329,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 285.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
+    auto_playlist_parser.add_argument("--allow-fade-out-track", action="store_true", help="Allow playlist tracks whose endings look like fade-outs. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")

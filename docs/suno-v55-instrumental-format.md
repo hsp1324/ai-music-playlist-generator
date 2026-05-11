@@ -51,7 +51,7 @@ For playlist releases, OpenClaw should ask Suno for songs around 3:00 to 3:30. T
 
 - Target roughly 3:00 to 3:30 per track when prompting Suno.
 - Treat 3:45 as still acceptable, but do not intentionally ask for long tracks.
-- Do not request or accept fade-out endings. Use bracketed metatags such as `[Outro: final cadence resolves naturally, no fade-out]` and `[End]`.
+- Do not request or accept fade-out endings, slow fades, or volume-lowering endings. Use bracketed metatags such as `[Outro: final cadence resolves naturally, clear final chord, no fade-out]` and `[End]`.
 - If Suno returns a track longer than 4:45, regenerate or replace it before publishing.
 - `scripts/openclaw-release auto-publish-playlist` rejects playlist tracks over 285 seconds by default.
 - Only use `--allow-long-track` when the human explicitly approves a longer track.
