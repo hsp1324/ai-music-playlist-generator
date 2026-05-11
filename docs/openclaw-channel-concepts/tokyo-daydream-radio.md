@@ -37,7 +37,7 @@ Use one lane, then vary substyle and lyric premise:
 - Always create original Japanese lyrics by default.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Keep choruses memorable and playlist-friendly.
-- Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full J-pop arrangement with second verse, bridge or instrumental break, final chorus, and outro.
+- Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full J-pop arrangement with second verse, bridge or instrumental break, final chorus, and a resolved outro with a clear final chord/hit. Do not use fade-out endings.
 - Do not make lyricless, BGM-only, hum-only, or instrumental tracks unless the human explicitly requested it.
 - Do not over-emphasize `Japanese language` in titles. Use `J-POP`, Tokyo/Japan scene, mood, and listening use case instead.
 - Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade/game-center/friends/night-out concepts, use arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup instead.

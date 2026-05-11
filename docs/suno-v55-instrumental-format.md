@@ -47,12 +47,13 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-For playlist releases, OpenClaw should ask Suno for songs around 3:00 to 3:30. The preferred range can extend to about 3:45, while 4:20 is only the acceptable returned-output ceiling.
+For playlist releases, OpenClaw should ask Suno for songs around 3:00 to 3:30. The preferred range can extend to about 3:45, while 4:45 is only the acceptable returned-output ceiling when the track has a complete ending.
 
 - Target roughly 3:00 to 3:30 per track when prompting Suno.
-- Treat 3:45 as still acceptable, but do not intentionally ask for 4-minute tracks.
-- If Suno returns a track longer than 4:20, regenerate or replace it before publishing.
-- `scripts/openclaw-release auto-publish-playlist` rejects playlist tracks over 260 seconds by default.
+- Treat 3:45 as still acceptable, but do not intentionally ask for long tracks.
+- Do not request or accept fade-out endings. Use bracketed metatags such as `[Outro: final cadence resolves naturally, no fade-out]` and `[End]`.
+- If Suno returns a track longer than 4:45, regenerate or replace it before publishing.
+- `scripts/openclaw-release auto-publish-playlist` rejects playlist tracks over 285 seconds by default.
 - Only use `--allow-long-track` when the human explicitly approves a longer track.
 
 ## Good Lyrics Field Shape
@@ -65,7 +66,7 @@ For playlist releases, OpenClaw should ask Suno for songs around 3:00 to 3:30. T
 [Instrumental Break: harp harmonics and soft cymbal swells, melody carried by piano and guitar]
 [Bridge: drums drop to rim clicks, bass holds long notes, strings widen gradually]
 [Final Theme: piano motif returns, guitar answers every 4 bars, gentle lift without a vocal hook]
-[Outro: solo piano and rain ambience, slow fade]
+[Outro: final piano cadence resolves naturally, rain ambience remains, no fade-out]
 [End]
 ```
 

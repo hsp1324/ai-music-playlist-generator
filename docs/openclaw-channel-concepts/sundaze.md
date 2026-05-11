@@ -38,7 +38,7 @@ Use a vivid situation or emotion plus pop identity:
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
-- Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full pop arrangement with second verse, bridge or instrumental break, final chorus, and outro.
+- Target 3:00-3:30 per song. Do not accept a 2:30-ish short radio edit as the normal playlist output; extend/regenerate it into a full pop arrangement with second verse, bridge or instrumental break, final chorus, and a resolved outro with a clear final chord/hit. Do not use fade-out endings.
 - Do not make lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly requests it.
 
 ## Visual Direction
