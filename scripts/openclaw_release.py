@@ -1145,7 +1145,7 @@ def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id
         track_id=track_id,
         release_id=release_id,
         actor=actor,
-        rationale="Auto-approved for private playlist publishing.",
+        rationale="Auto-approved for app-managed playlist publishing.",
     )
 
 
@@ -1166,7 +1166,7 @@ def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any],
             "title": title,
             "description": description,
             "tags": tags,
-            "note": "Auto-approved metadata for private YouTube upload.",
+            "note": "Auto-approved metadata for app-managed YouTube upload.",
         },
     )
 
@@ -1234,6 +1234,19 @@ def release_has_uploaded_loop_video(release: dict[str, Any]) -> bool:
         release.get("loop_video_path")
         and release.get("loop_video_source") == "manual-upload"
     )
+
+
+def publish_visibility_summary(release: dict[str, Any]) -> dict[str, str]:
+    scheduled_at = str(release.get("youtube_scheduled_publish_at") or "").strip()
+    if scheduled_at:
+        return {
+            "privacy": f"scheduled public at {scheduled_at}",
+            "next": "Listen to the scheduled YouTube upload before it goes public if review is needed.",
+        }
+    return {
+        "privacy": "private (from AIMP_YOUTUBE_PRIVACY_STATUS)",
+        "next": "Review the uploaded YouTube video in Studio if needed.",
+    }
 
 
 def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
@@ -1514,19 +1527,20 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         json={
             "actor": args.actor,
             "youtube_channel_id": channel_id,
-            "note": f"Auto-publish private playlist to {youtube_channel_title}.",
+            "note": f"Auto-publish playlist to {youtube_channel_title}.",
             "force_under_target": args.force_under_target,
         },
     )
     release = wait_for_release(
         client,
         release["id"],
-        stage="YouTube private upload",
+        stage="YouTube upload",
         timeout_seconds=args.wait_timeout_seconds,
         poll_seconds=args.poll_seconds,
         predicate=lambda item: bool(item.get("youtube_video_id")) or item.get("workflow_state") == "ready_for_youtube_auth",
     )
 
+    visibility = publish_visibility_summary(release)
     return {
         "ok": True,
         "action": "auto-publish-playlist",
@@ -1543,10 +1557,10 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "youtube_video_id": release.get("youtube_video_id"),
             "youtube_channel_id": channel_id,
             "youtube_channel_title": youtube_channel_title,
+            "youtube_scheduled_publish_at": release.get("youtube_scheduled_publish_at"),
         },
         "uploaded_tracks": uploaded_tracks,
-        "privacy": "private (from AIMP_YOUTUBE_PRIVACY_STATUS)",
-        "next": "Listen to the private YouTube upload. If it is good, change visibility to Public in YouTube Studio.",
+        **visibility,
     }
 
 
@@ -1808,18 +1822,19 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         json={
             "actor": args.actor,
             "youtube_channel_id": channel_id,
-            "note": f"Auto-publish private single to {youtube_channel_title}.",
+            "note": f"Auto-publish single to {youtube_channel_title}.",
         },
     )
     release = wait_for_release(
         client,
         release["id"],
-        stage="YouTube private single upload",
+        stage="YouTube single upload",
         timeout_seconds=args.wait_timeout_seconds,
         poll_seconds=args.poll_seconds,
         predicate=lambda item: bool(item.get("youtube_video_id")) or item.get("workflow_state") == "ready_for_youtube_auth",
     )
 
+    visibility = publish_visibility_summary(release)
     return {
         "ok": True,
         "action": "auto-publish-single",
@@ -1836,10 +1851,10 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "youtube_video_id": release.get("youtube_video_id"),
             "youtube_channel_id": channel_id,
             "youtube_channel_title": youtube_channel_title,
+            "youtube_scheduled_publish_at": release.get("youtube_scheduled_publish_at"),
         },
         "uploaded_tracks": uploaded_tracks,
-        "privacy": "private (from AIMP_YOUTUBE_PRIVACY_STATUS)",
-        "next": "Listen to the private YouTube upload. If it is good, change visibility to Public in YouTube Studio.",
+        **visibility,
     }
 
 
@@ -2275,7 +2290,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     auto_playlist_parser = subparsers.add_parser(
         "auto-publish-playlist",
-        help="Upload playlist tracks, auto-approve them, render, generate metadata, and private-publish to YouTube.",
+        help="Upload playlist tracks, auto-approve them, render, generate metadata, and publish through the app to YouTube.",
     )
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
@@ -2311,7 +2326,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     auto_single_parser = subparsers.add_parser(
         "auto-publish-single",
-        help="Upload one final single, auto-approve, render, generate metadata, and private-publish to YouTube.",
+        help="Upload one final single, auto-approve, render, generate metadata, and publish through the app to YouTube.",
     )
     auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Use exactly one; run this command again for a second good Suno output.")
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")

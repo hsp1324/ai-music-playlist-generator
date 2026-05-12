@@ -300,7 +300,11 @@ function releasePublishedChannelLabel(workspace) {
 
 function releasePublishedAtLabel(workspace) {
   if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
-  return formatPublishedDate(workspace.youtube_published_at);
+  return formatPublishedDate(workspace.youtube_scheduled_publish_at || workspace.youtube_published_at);
+}
+
+function releaseIsScheduled(workspace) {
+  return Boolean(workspace?.youtube_scheduled_publish_at);
 }
 
 function releaseChannelKey(workspace) {
@@ -457,7 +461,11 @@ function releasePipeline(workspace) {
     return stages.map((stage) => ({
       ...stage,
       status: "done",
-      detail: stage.key === "publish" ? "Uploaded to YouTube." : stage.detail,
+      detail: stage.key === "publish"
+        ? releaseIsScheduled(workspace)
+          ? "Scheduled on YouTube for public release."
+          : "Uploaded to YouTube."
+        : stage.detail,
     }));
   }
 
@@ -1402,10 +1410,13 @@ function appendYouTubePreview(workspace) {
   body.className = "asset-preview-body";
 
   const title = document.createElement("strong");
-  title.textContent = "YouTube Upload";
+  title.textContent = releaseIsScheduled(workspace) ? "YouTube Scheduled Upload" : "YouTube Upload";
 
   const copy = document.createElement("span");
-  copy.textContent = workspace.output_video_path
+  const scheduledLabel = releasePublishedAtLabel(workspace);
+  copy.textContent = releaseIsScheduled(workspace)
+    ? `Uploaded to YouTube as a scheduled public release${scheduledLabel ? ` for ${scheduledLabel}` : ""}.`
+    : workspace.output_video_path
     ? "Uploaded to YouTube. The local rendered MP4 is still available until cleanup runs."
     : "Uploaded to YouTube. The long local MP4 has been removed from this server; use the YouTube link to watch it.";
 
@@ -2288,7 +2299,7 @@ function renderWorkspaceTiles() {
     const publishedChannel = releasePublishedChannelLabel(workspace);
     if (publishedChannel) {
       const publishedAt = releasePublishedAtLabel(workspace);
-      hint.textContent = `Published · ${publishedChannel}${publishedAt ? ` · ${publishedAt}` : ""}`;
+      hint.textContent = `${releaseIsScheduled(workspace) ? "Scheduled" : "Published"} · ${publishedChannel}${publishedAt ? ` · ${publishedAt}` : ""}`;
       hint.classList.add("published-hint");
     } else {
       hint.textContent = workspace.workspace_mode === "single_track_video"

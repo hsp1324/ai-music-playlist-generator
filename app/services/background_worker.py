@@ -724,7 +724,13 @@ class BackgroundJobWorker:
             youtube_status = self.services.youtube.get_status()
             if youtube_status["ready"]:
                 try:
+                    from app.workflows.playlist_automation import (
+                        next_youtube_scheduled_publish_at,
+                        youtube_schedule_metadata,
+                    )
+
                     thumbnail_path = str(meta.get("youtube_thumbnail_path") or "").strip() or cover_image_path
+                    scheduled_publish_at = next_youtube_scheduled_publish_at(db, self.services)
                     result = self.services.youtube.upload_playlist_video(
                         playlist,
                         title=title,
@@ -734,12 +740,14 @@ class BackgroundJobWorker:
                         youtube_channel_id=youtube_channel_id,
                         localizations=localizations,
                         default_language=default_language,
+                        scheduled_publish_at=scheduled_publish_at,
                     )
                     uploaded_video_path = playlist.output_video_path
                     playlist.youtube_video_id = result.video_id
                     playlist.status = PlaylistStatus.uploaded
                     meta["workflow_state"] = "uploaded"
                     meta["youtube_response"] = result.response
+                    meta.update(youtube_schedule_metadata(self.services, scheduled_publish_at))
                     response_snippet = result.response.get("snippet") if isinstance(result.response, dict) else {}
                     meta["youtube_published_at"] = (
                         response_snippet.get("publishedAt")

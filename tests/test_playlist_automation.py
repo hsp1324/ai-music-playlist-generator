@@ -24,6 +24,7 @@ from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 from app.utils.openclaw_slack_loop import handle_auto_loop_control_message, record_auto_loop_upload
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
+from app.workflows.playlist_automation import next_youtube_scheduled_publish_at
 
 
 def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> TestClient:
@@ -47,6 +48,11 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX", None)
     os.environ.pop("AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT", None)
+    os.environ.pop("AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED", None)
+    os.environ.pop("AIMP_YOUTUBE_SCHEDULE_TIMEZONE", None)
+    os.environ.pop("AIMP_YOUTUBE_SCHEDULE_HOUR", None)
+    os.environ.pop("AIMP_YOUTUBE_SCHEDULE_MINUTE", None)
+    os.environ.pop("AIMP_YOUTUBE_SCHEDULE_MIN_LEAD_MINUTES", None)
     get_settings.cache_clear()
 
 
@@ -2838,6 +2844,92 @@ def test_youtube_upload_includes_localized_metadata_in_insert(tmp_path, monkeypa
         "en": {"title": "English Title", "description": "English description"},
         "es": {"title": "Titulo en espanol", "description": "Descripcion en espanol"},
     }
+
+
+def test_youtube_upload_can_schedule_public_release(tmp_path, monkeypatch) -> None:
+    video_path = tmp_path / "release.mp4"
+    video_path.write_bytes(b"fake video")
+    captured = {}
+
+    class FakeInsertRequest:
+        def next_chunk(self):
+            return None, {
+                "id": "yt-scheduled",
+                "status": {
+                    "privacyStatus": "private",
+                    "publishAt": "2026-05-12T22:00:00Z",
+                },
+            }
+
+    class FakeVideos:
+        def insert(self, *, part, body, media_body):
+            captured["part"] = part
+            captured["body"] = body
+            captured["media_body"] = media_body
+            return FakeInsertRequest()
+
+    class FakeYouTube:
+        def videos(self):
+            return FakeVideos()
+
+    monkeypatch.setattr(youtube_service_module, "build", lambda *args, **kwargs: FakeYouTube())
+    monkeypatch.setattr(youtube_service_module, "MediaFileUpload", lambda *args, **kwargs: {"args": args, "kwargs": kwargs})
+
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage", youtube_privacy_status="public"))
+    service._load_credentials = lambda youtube_channel_id=None: object()
+
+    result = service.upload_playlist_video(
+        SimpleNamespace(output_video_path=str(video_path)),
+        title="Scheduled Release",
+        description="Scheduled description",
+        tags=["Music"],
+        scheduled_publish_at=datetime(2026, 5, 12, 22, 0, tzinfo=timezone.utc),
+    )
+
+    assert result.video_id == "yt-scheduled"
+    assert captured["body"]["status"]["privacyStatus"] == "private"
+    assert captured["body"]["status"]["publishAt"] == "2026-05-12T22:00:00Z"
+    assert result.response["scheduled_publish_at"] == "2026-05-12T22:00:00+00:00"
+
+
+def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.youtube_schedule_public_enabled = True
+        services.settings.youtube_schedule_timezone = "Asia/Seoul"
+        services.settings.youtube_schedule_hour = 7
+        services.settings.youtube_schedule_minute = 0
+        services.settings.youtube_schedule_min_lead_minutes = 30
+
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Scheduled 1",
+                    metadata_json={"youtube_scheduled_publish_at": "2026-05-11T22:00:00+00:00"},
+                )
+            )
+            db.add(
+                Playlist(
+                    title="Scheduled 2",
+                    metadata_json={
+                        "youtube_response": {
+                            "status": {"publishAt": "2026-05-12T22:00:00Z"},
+                        },
+                    },
+                )
+            )
+            db.commit()
+
+            scheduled = next_youtube_scheduled_publish_at(
+                db,
+                services,
+                now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
+            )
+
+        assert scheduled == datetime(2026, 5, 13, 22, 0, tzinfo=timezone.utc)
+    finally:
+        clear_isolated_client_env()
 
 
 def test_youtube_upload_audio_language_inference_marks_pop_vocals(tmp_path) -> None:

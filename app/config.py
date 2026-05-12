@@ -74,6 +74,11 @@ class Settings(BaseSettings):
     youtube_category_id: str = "10"
     youtube_contains_synthetic_media: bool = False
     youtube_auto_upload_on_publish: bool = True
+    youtube_schedule_public_enabled: bool = False
+    youtube_schedule_timezone: str = "Asia/Seoul"
+    youtube_schedule_hour: int = 7
+    youtube_schedule_minute: int = 0
+    youtube_schedule_min_lead_minutes: int = 30
     youtube_title_suffix: str = "Official AI Visualizer"
     youtube_default_hashtags: str = "#Music #Visualizer #BackgroundMusic"
 

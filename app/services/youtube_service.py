@@ -362,6 +362,7 @@ class YouTubeService:
         youtube_channel_id: str | None = None,
         localizations: dict[str, dict[str, str]] | None = None,
         default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
+        scheduled_publish_at: datetime | None = None,
     ) -> YouTubeUploadResult:
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
         if not playlist.output_video_path:
@@ -385,6 +386,16 @@ class YouTubeService:
             normalized_localizations,
             default_language=default_language,
         )
+        status = {
+            "privacyStatus": self.settings.youtube_privacy_status,
+            "containsSyntheticMedia": self.settings.youtube_contains_synthetic_media,
+            "selfDeclaredMadeForKids": False,
+        }
+        if scheduled_publish_at is not None:
+            scheduled_publish_at = scheduled_publish_at.astimezone(timezone.utc).replace(microsecond=0)
+            status["privacyStatus"] = "private"
+            status["publishAt"] = scheduled_publish_at.isoformat().replace("+00:00", "Z")
+
         body = {
             "snippet": {
                 "title": title,
@@ -393,11 +404,7 @@ class YouTubeService:
                 "categoryId": self.settings.youtube_category_id,
                 "defaultLanguage": default_language,
             },
-            "status": {
-                "privacyStatus": self.settings.youtube_privacy_status,
-                "containsSyntheticMedia": self.settings.youtube_contains_synthetic_media,
-                "selfDeclaredMadeForKids": False,
-            },
+            "status": status,
         }
         default_audio_language = self._infer_default_audio_language(
             title=title,
@@ -438,6 +445,8 @@ class YouTubeService:
                 "title": channel.get("title"),
             }
         response["default_language"] = default_language
+        if scheduled_publish_at is not None:
+            response["scheduled_publish_at"] = scheduled_publish_at.isoformat()
         if default_audio_language:
             response["default_audio_language"] = default_audio_language
         if normalized_localizations:

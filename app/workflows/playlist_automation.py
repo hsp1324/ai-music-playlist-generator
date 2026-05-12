@@ -2,6 +2,7 @@ import random
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
@@ -137,6 +138,74 @@ def _parse_metadata_datetime(value: str | datetime | None) -> datetime | None:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
+
+
+def _youtube_schedule_timezone(services: ServiceRegistry) -> ZoneInfo:
+    timezone_name = str(services.settings.youtube_schedule_timezone or "Asia/Seoul").strip()
+    try:
+        return ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        return ZoneInfo("UTC")
+
+
+def _scheduled_publish_values_from_meta(meta: dict) -> list[datetime]:
+    values: list[datetime] = []
+    for key in ("youtube_scheduled_publish_at", "youtube_publish_at"):
+        parsed = _parse_metadata_datetime(meta.get(key))
+        if parsed:
+            values.append(parsed)
+    response = meta.get("youtube_response") if isinstance(meta.get("youtube_response"), dict) else {}
+    status = response.get("status") if isinstance(response.get("status"), dict) else {}
+    parsed = _parse_metadata_datetime(status.get("publishAt"))
+    if parsed:
+        values.append(parsed)
+    return values
+
+
+def next_youtube_scheduled_publish_at(
+    db: Session,
+    services: ServiceRegistry,
+    *,
+    now: datetime | None = None,
+) -> datetime | None:
+    if not services.settings.youtube_schedule_public_enabled:
+        return None
+
+    schedule_tz = _youtube_schedule_timezone(services)
+    hour = min(max(int(services.settings.youtube_schedule_hour), 0), 23)
+    minute = min(max(int(services.settings.youtube_schedule_minute), 0), 59)
+    lead_minutes = max(int(services.settings.youtube_schedule_min_lead_minutes), 0)
+    now_utc = _parse_metadata_datetime(now) or _utcnow()
+    now_local = now_utc.astimezone(schedule_tz)
+    candidate = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    if candidate <= now_local + timedelta(minutes=lead_minutes):
+        candidate += timedelta(days=1)
+
+    occupied_local_dates = set()
+    for playlist in db.scalars(select(Playlist)).all():
+        meta = _playlist_meta(playlist)
+        for scheduled_at in _scheduled_publish_values_from_meta(meta):
+            if scheduled_at >= now_utc - timedelta(days=1):
+                occupied_local_dates.add(scheduled_at.astimezone(schedule_tz).date())
+
+    while candidate.date() in occupied_local_dates:
+        candidate += timedelta(days=1)
+    return candidate.astimezone(timezone.utc)
+
+
+def youtube_schedule_metadata(services: ServiceRegistry, scheduled_publish_at: datetime | None) -> dict:
+    if scheduled_publish_at is None:
+        return {}
+    schedule_tz = _youtube_schedule_timezone(services)
+    scheduled_utc = scheduled_publish_at.astimezone(timezone.utc).replace(microsecond=0)
+    scheduled_local = scheduled_utc.astimezone(schedule_tz)
+    return {
+        "youtube_scheduled_publish_at": scheduled_utc.isoformat(),
+        "youtube_schedule_local_time": scheduled_local.isoformat(),
+        "youtube_schedule_timezone": str(services.settings.youtube_schedule_timezone or "Asia/Seoul"),
+        "youtube_schedule_hour": int(services.settings.youtube_schedule_hour),
+        "youtube_schedule_minute": int(services.settings.youtube_schedule_minute),
+    }
 
 
 def _archive_purge_after(archived_at: datetime) -> datetime:
@@ -360,6 +429,13 @@ def _youtube_published_at(playlist: Playlist, meta: dict) -> datetime | None:
     return _parse_metadata_datetime(latest_job.finished_at or latest_job.updated_at or latest_job.created_at)
 
 
+def _youtube_scheduled_publish_at(meta: dict) -> datetime | None:
+    values = _scheduled_publish_values_from_meta(meta)
+    if not values:
+        return None
+    return max(values)
+
+
 def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
     track_count = len(playlist.items)
@@ -423,6 +499,7 @@ def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -
         youtube_video_id=playlist.youtube_video_id,
         youtube_channel_id=meta.get("youtube_channel_id"),
         youtube_channel_title=meta.get("youtube_channel_title"),
+        youtube_scheduled_publish_at=_youtube_scheduled_publish_at(meta),
         youtube_published_at=_youtube_published_at(playlist, meta),
         note=meta.get("note"),
         render_job=_latest_render_job(playlist),

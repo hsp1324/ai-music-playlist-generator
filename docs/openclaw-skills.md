@@ -14,7 +14,7 @@ Use `scripts/openclaw-release` against the deployed AI Music app API. `AIMP_LOCA
 
 ## Continuous Next Release Planning
 
-When the app asks OpenClaw to create the next release after a publish completes, first use [openclaw-next-release-planner.md](openclaw-next-release-planner.md). That planner chooses the next channel, reads the selected channel's concept planner from [openclaw-channel-concepts](openclaw-channel-concepts/README.md), then hands off to this document's automatic private playlist publisher.
+When the app asks OpenClaw to create the next release after an upload/scheduled publish completes, first use [openclaw-next-release-planner.md](openclaw-next-release-planner.md). That planner chooses the next channel, reads the selected channel's concept planner from [openclaw-channel-concepts](openclaw-channel-concepts/README.md), then hands off to this document's automatic playlist publisher.
 
 ## Channel-First Workflow
 
@@ -50,7 +50,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - Human review happens in Slack or the web UI.
 - Single Release means one final song, but it may contain up to two review candidates from Suno.
 - If two Suno candidates from one prompt are both good, publish them as two separate Single Releases. Do not combine them into one song.
-- Playlist Release normally means automatic private publishing. If the human asks for a playlist production run, upload generated tracks as already approved, render everything, generate/approve metadata, and upload privately to YouTube.
+- Playlist Release normally means automatic app-managed YouTube publishing. If the human asks for a playlist production run, upload generated tracks as already approved, render everything, generate/approve metadata, and upload through the app to YouTube.
 - When uploading audio, include lyrics or song-content notes with `--lyrics` or `--lyrics-file` whenever available. For instrumental work, save and upload the exact bracket-only Suno instrumental metatag file so later metadata/visual work can understand the track.
 - BGM/background/lofi/study/sleep/cafe music defaults to instrumental/no vocals unless the human explicitly asks for vocals. For Soft Hour Radio or other instrumental BGM, follow [suno-v55-instrumental-format.md](suno-v55-instrumental-format.md) before pressing Create in Suno.
 - For Soft Hour Radio instrumental work, do not put plain prose in Suno's lyrics/custom-lyrics field. Every non-empty line in that field must start with `[` and end with `]`. Bare arrangement sentences can be interpreted as sung lyrics.
@@ -91,10 +91,10 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - Do not use `AnimeMix` in automatic next-release rotation. It is a manual-only popular-song remake/cover channel unless the human explicitly asks for a specific remake workflow.
 - For continuous next-release automation, newly connected YouTube channels are active by default unless these docs explicitly mark them inactive/excluded. If a selected connected channel has no dedicated profile/concept docs yet, `scripts/openclaw-release channel-profile` returns the `custom-channel` docs; read those and infer the channel identity from the channel title, local release history, and human instructions.
 - `scripts/openclaw-release auto-publish-playlist` can infer the channel when `--youtube-channel-title` is omitted, but OpenClaw should pass the explicit `--youtube-channel-title` when the human names a channel.
-- YouTube visibility must stay private. The app uses `AIMP_YOUTUBE_PRIVACY_STATUS=private`; do not make a public upload from OpenClaw.
+- YouTube visibility is app-managed. With `AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED=true`, the app uploads as a scheduled public release at the next free daily 07:00 slot; otherwise it falls back to `AIMP_YOUTUBE_PRIVACY_STATUS`. Do not manually change visibility from OpenClaw.
 - Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release auto-publish-single`, `scripts/openclaw-release auto-publish-playlist`, or the app's local `/approve-publish` API only. The app uploads through the YouTube Data API and stores the resulting `youtube_video_id`/channel metadata.
 - Do not run `auto-publish-playlist` or `auto-publish-single` against a release that already has `youtube_video_id` unless the human explicitly asks for a re-upload. Create a fresh release for a new video. The helper rejects accidental re-uploads unless `--allow-reupload` is passed.
-- YouTube Studio is only for human final checks after the private API upload, such as watching the private video, changing visibility to Public, reviewing automatic captions, or manual cleanup.
+- YouTube Studio is only for human final checks after the API upload, such as watching the scheduled/private video, confirming the scheduled public time, reviewing automatic captions, or manual cleanup.
 - Do not try to enable automatic captions through browser automation. The app does not upload caption files or toggle caption settings. For vocal releases, the API upload infers and sends `snippet.defaultAudioLanguage` when possible so YouTube knows the likely spoken/sung language; YouTube may generate automatic captions later. For BGM/instrumental/no-vocal releases, do not set captions or audio language unless the human explicitly requests manual captions.
 - YouTube metadata supports localized title/description for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `pt-BR`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW`. For `Tokyo Daydream Radio`, `HaruHaru`, `Signal Room Radio`, `sundaze`, `Solwave Radio`, or any pop-family/story-BGM release, OpenClaw must write all fifteen versions. Use Korean as the default for Tokyo/Soft Hour/HaruHaru unless the channel profile says otherwise. Use `--default-language en` for `sundaze` and `Signal Room Radio`; use `--default-language es` for `Solwave Radio`. Always pass `--ko-title`, `--ko-description-file`, `--ja-title`, `--ja-description-file`, `--en-title`, `--en-description-file`, `--es-title`, `--es-description-file`, `--vi-title`, `--vi-description-file`, `--th-title`, `--th-description-file`, `--hi-title`, `--hi-description-file`, `--fil-title`, `--fil-description-file`, `--id-title`, `--id-description-file`, `--pt-title`, `--pt-description-file`, `--fr-title`, `--fr-description-file`, `--de-title`, `--de-description-file`, `--ar-title`, `--ar-description-file`, `--zh-title`, `--zh-description-file`, `--zh-tw-title`, and `--zh-tw-description-file` to `scripts/openclaw-release approve-metadata`.
 - For Playlist Releases on every channel, start the main YouTube title and every localized title exactly with `[playlist]`. Do not add this prefix to Single Releases.
@@ -136,7 +136,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - The background should come from the selected channel profile and the release concept, not from a hard-coded scene list.
 - All static images and Dreamina/Seedance loop clips must look animated, anime, illustrated, or stylized. Do not make photorealistic, live-action, documentary, camera-photo, or realistic human footage.
 - Generate static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the OpenAI/Image tool environment. Do not use Dreamina for static image generation. Do not assume the OpenAI API is free; use the available Codex/ChatGPT image tool if that is the operator-approved path, or use API billing/credentials when explicitly configured.
-- Use Dreamina/Seedance only for the moving visual clip. For normal private publish automation, OpenClaw must generate exactly one 10 second MP4 and pass it with `--loop-video`. The app rejects video render without an uploaded loop video unless the human explicitly approves the `--allow-still-image-video` fallback. The clip should end close to its opening composition so it can be reused across the full release. OpenClaw should not render a one-hour MP4 itself.
+- Use Dreamina/Seedance only for the moving visual clip. For normal publish automation, OpenClaw must generate exactly one 10 second MP4 and pass it with `--loop-video`. The app rejects video render without an uploaded loop video unless the human explicitly approves the `--allow-still-image-video` fallback. The clip should end close to its opening composition so it can be reused across the full release. OpenClaw should not render a one-hour MP4 itself.
 - Existing releases that already have 8 second loop videos remain valid and should not be regenerated only because the default changed. For all new OpenClaw-created releases, use 10 seconds.
 - The app does not reject low-motion loop videos or alternate clip lengths. It checks that the upload is a readable video. OpenClaw should still visually inspect the loop and regenerate if the motion is too static or if the normal automation accidentally produced a 5 second Dreamina default clip, but this is a generation-quality decision rather than an app upload blocker.
 - Keep these assets separate: `--thumbnail` is the click image with large text and channel branding, `--cover` is the playback visual with only the large lower-left channel brand label, and `--loop-video` is the 10 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
@@ -243,13 +243,13 @@ Next: human should approve one candidate, approve both candidates as separate Si
 - A Single Release can publish only one selected track. If another candidate is approved later, the app creates a separate Single Release for it.
 - If both candidates are rejected later, the app archives the release automatically. Do not manually delete it.
 
-## Skill 2: Automatic Private Single Publisher
+## Skill 2: Automatic Single Publisher
 
-Use this skill when the user explicitly asks OpenClaw to create one standalone song/single and publish it privately to YouTube.
+Use this skill when the user explicitly asks OpenClaw to create one standalone song/single and publish it to YouTube through the app.
 
 ### Goal
 
-Create one Single Release for one final song, generate the needed audio, auto-approve exactly one usable candidate, render the final single video, approve metadata, and upload privately to YouTube on the correct channel.
+Create one Single Release for one final song, generate the needed audio, auto-approve exactly one usable candidate, render the final single video, approve metadata, and upload through the app to YouTube on the correct channel.
 
 This is different from `Single Release Candidate Set`: that skill stops for human candidate review. Use this automatic publisher only when the human says to publish/upload the single.
 
@@ -258,7 +258,7 @@ For mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-p
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and privately publishing one Single Release for the AI Music app.
+You are creating and publishing one Single Release through the AI Music app.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
@@ -288,7 +288,7 @@ Goal:
 - Use the Dreamina prompt shape from the selected channel profile returned by `scripts/openclaw-release channel-profile`.
 - If the human provided a specific visual/video request, replace the selected channel default prompt details with the requested subject/action/composition while keeping the safety/quality constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, preserve the large lower-left channel label, stable composition, no other text/subtitles/logos/UI, no extra unwanted subjects.
 - Always include this Dreamina prompt constraint: `The uploaded first frame contains the exact large, readable lower-left channel brand label "{CHANNEL_NAME}" (for example, "Tokyo Daydream Radio"). The label should match the visual scale of the YouTube thumbnail's channel-brand line, roughly 18-24% of image width or 5-6% of image height for text cap height. Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, shrink, or change the text. Keep the text area stable; animate the surrounding scene naturally.` Keep all other constraints.
-- Render audio/video, generate and approve YouTube metadata, and upload privately.
+- Render audio/video, generate and approve YouTube metadata, and upload through the app.
 - Publish Japanese/J-pop/Tokyo content to `Tokyo Daydream Radio`, Korean/K-pop content to `HaruHaru`, analytical/story/research/mystery BGM to `Signal Room Radio`, English/American pop to `sundaze`, and Latin/Spanish pop to `Solwave Radio`.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 
@@ -324,7 +324,7 @@ Pass exactly one `--audio`, one `--title`, one optional `--lyrics-file`, and one
 
 Do not omit `--cover` or `--thumbnail` for a full private single publish run. If either asset is not ready, stop after audio creation and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is required for normal private publish automation. If it is missing, stop and create/download the Dreamina/Seedance clip first. Use `--allow-still-image-video` only when the human explicitly accepts a static-cover fallback.
+`--loop-video` is required for normal publish automation. If it is missing, stop and create/download the Dreamina/Seedance clip first. Use `--allow-still-image-video` only when the human explicitly accepts a static-cover fallback.
 
 ### Required Output
 
@@ -338,31 +338,31 @@ uploaded tracks:
 - ...
 youtube_video_id: ...
 youtube_channel: SELECTED_CHANNEL_TITLE
-privacy: private
-Next: human should listen to the private YouTube upload and change visibility to Public only if it is good.
+privacy: scheduled public at ... if scheduling is enabled, otherwise private
+Next: human can review the scheduled/private YouTube upload before it goes public.
 ```
 
 ### Safety Checks
 
 - Use `auto-publish-single` only when the human explicitly asks for publishing/uploading the single.
-- Do not upload public. The final upload must be private.
+- Do not manually upload public. The app controls visibility and scheduling.
 - Do not pass two audio files to one `auto-publish-single` command. One command equals one YouTube single.
 - If two Suno candidates are both good, create and publish two separate Single Releases with separate assets.
 - Do not use pair labels like A/B or 1/2 in final titles.
 - Do not publish without a final cover with the large lower-left channel brand label, a separate text thumbnail, and the correct YouTube channel selection.
 - For Japanese/J-pop/Tokyo singles, pass `--youtube-channel-title "Tokyo Daydream Radio"` explicitly. For Korean/K-pop singles, pass `--youtube-channel-title "HaruHaru"`. For English/American pop, pass `--youtube-channel-title "sundaze"`. For Latin/Spanish pop, pass `--youtube-channel-title "Solwave Radio"`.
 
-## Skill 3: Automatic Private Playlist Publisher
+## Skill 3: Automatic Playlist Publisher
 
-Use this skill when the user asks for a playlist, mix, compilation, or approximately one-hour release and expects OpenClaw to finish the private YouTube upload.
+Use this skill when the user asks for a playlist, mix, compilation, or approximately one-hour release and expects OpenClaw to finish the app-managed YouTube upload.
 
 ### Goal
 
-Create one Playlist Release, generate enough tracks, upload them as approved tracks, render audio/video, generate and approve metadata, and upload the result privately to YouTube on the correct channel.
+Create one Playlist Release, generate enough tracks, upload them as approved tracks, render audio/video, generate and approve metadata, and upload the result through the app to YouTube on the correct channel.
 
 Use `Soft Hour Radio` for normal background/cafe/sleep/study/chill releases. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar Japan-themed vocal pop releases. Use `HaruHaru` for Korean/K-pop vocal releases. Use `Signal Room Radio` for analytical/story/research/mystery BGM releases; if the connected title is still `AI썰전`, treat it as legacy Signal Room Radio. Use `sundaze` for English/American pop. Use `Solwave Radio` for Latin/Spanish pop. If the next-release planner selected another connected non-excluded channel, pass that channel title explicitly and use the returned custom or dedicated channel docs.
 
-The human does not review every playlist track before rendering. The human reviews the final private YouTube upload later and only intervenes if something sounds wrong.
+The human does not review every playlist track before rendering. The human reviews the final scheduled/private YouTube upload later and only intervenes if something sounds wrong.
 
 ### Important Duration Rule
 
@@ -381,7 +381,7 @@ Generate enough material before publishing:
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and privately publishing a one-hour Playlist Release for the AI Music app.
+You are creating and publishing a one-hour Playlist Release through the AI Music app.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
@@ -430,7 +430,7 @@ Goal:
 - Approve the cover.
 - Render video.
 - Generate and approve YouTube metadata.
-- Publish privately to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases, `HaruHaru` for Korean/K-pop vocal releases, `Signal Room Radio` for analytical/story/research/mystery BGM releases, `sundaze` for English/American pop, `Solwave Radio` for Latin/Spanish pop, and `Soft Hour Radio` for default BGM/background releases. If the planner selected another connected non-excluded channel, use that exact channel title and the returned channel docs.
+- Publish through the app to the selected YouTube channel. Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop/Tokyo pop releases, `HaruHaru` for Korean/K-pop vocal releases, `Signal Room Radio` for analytical/story/research/mystery BGM releases, `sundaze` for English/American pop, `Solwave Radio` for Latin/Spanish pop, and `Soft Hour Radio` for default BGM/background releases. If the planner selected another connected non-excluded channel, use that exact channel title and the returned channel docs.
 - Return the command output JSON, including release.id, uploaded track ids, YouTube video id, and output paths.
 
 First, before opening Suno or submitting the first playlist prompt, create the destination release:
@@ -444,18 +444,18 @@ scripts/openclaw-release create-release \
 
 ### Slack Command Example
 
-If the human gives this instruction through Slack, interpret it as approval to run the full private playlist automation:
+If the human gives this instruction through Slack, interpret it as approval to run the full playlist automation:
 
 ```text
-카페 피아노 1시간 플레이리스트 만들어서 Soft Hour Radio에 private으로 업로드까지 해줘.
+카페 피아노 1시간 플레이리스트 만들어서 Soft Hour Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
-마지막 private 업로드가 끝나면 YouTube video id만 알려줘.
+마지막 업로드/예약이 끝나면 YouTube video id와 예약 공개 시간을 알려줘.
 ```
 
 Japan routing example:
 
 ```text
-도쿄 시티팝 1시간 플레이리스트 만들어서 Tokyo Daydream Radio에 private으로 업로드까지 해줘.
+도쿄 시티팝 1시간 플레이리스트 만들어서 Tokyo Daydream Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
 썸네일에는 큰 J-POP과 작은 TOKYO DAYDREAM RADIO를 같은 위치/스타일로 넣어줘.
 ```
@@ -463,7 +463,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B �
 English pop routing example:
 
 ```text
-Summer night drive English pop 1시간 플레이리스트 만들어서 sundaze에 private으로 업로드까지 해줘.
+Summer night drive English pop 1시간 플레이리스트 만들어서 sundaze에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 영어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
 커버, 썸네일, 10초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```
@@ -471,7 +471,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 영어 가사를
 Latin/Spanish routing example:
 
 ```text
-Verano latino reggaeton pop 1시간 플레이리스트 만들어서 Solwave Radio에 private으로 업로드까지 해줘.
+Verano latino reggaeton pop 1시간 플레이리스트 만들어서 Solwave Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 스페인어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
 커버, 썸네일, 10초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```
@@ -505,9 +505,9 @@ scripts/openclaw-release auto-publish-playlist \
   --randomize-order
 ```
 
-Do not omit `--cover` or `--thumbnail` for a full private publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
+Do not omit `--cover` or `--thumbnail` for a full publish run. If either asset is not ready, stop after audio upload/render and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
-`--loop-video` is required for normal private publish automation. If it is omitted, the app refuses to render/publish unless OpenClaw passes `--allow-still-image-video` after explicit human approval. The generated clip should end close to its opening composition so it can be reused across the full audio duration.
+`--loop-video` is required for normal publish automation. If it is omitted, the app refuses to render/publish unless OpenClaw passes `--allow-still-image-video` after explicit human approval. The generated clip should end close to its opening composition so it can be reused across the full audio duration.
 Use `--randomize-order` when the uploaded playlist contains similar Suno two-output pairs next to each other. Omit it when the human already arranged a deliberate final order.
 
 If the release is mainstream J-pop/Japanese pop/Tokyo pop, set `--youtube-channel-title "Tokyo Daydream Radio"`. If it is Korean/K-pop, set `--youtube-channel-title "HaruHaru"`. If it is analytical/story/research/mystery BGM, set `--youtube-channel-title "Signal Room Radio"`; the helper can resolve legacy connected title `AI썰전`. If it is English/American pop, set `--youtube-channel-title "sundaze"`. If it is Latin/Spanish pop, set `--youtube-channel-title "Solwave Radio"`. Otherwise set `--youtube-channel-title "Soft Hour Radio"` or omit the flag and let the helper infer the default.
@@ -521,7 +521,7 @@ Only use `--force-under-target` if the human explicitly accepted a shorter playl
 OpenClaw should finish with:
 
 ```text
-Private playlist upload completed.
+Playlist upload completed.
 release.id: ...
 release.title: ...
 uploaded tracks:
@@ -529,8 +529,8 @@ uploaded tracks:
 - ...
 youtube_video_id: ...
 youtube_channel: SELECTED_CHANNEL_TITLE
-privacy: private
-Next: human should listen to the private YouTube upload and change visibility to Public only if it is good.
+privacy: scheduled public at ... if scheduling is enabled, otherwise private
+Next: human can review the scheduled/private YouTube upload before it goes public.
 ```
 
 ### Safety Checks
@@ -539,7 +539,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not create a Single Release for playlist candidates.
 - Do not use the `MusicSun` channel for playlist publishing unless the human explicitly overrides the channel.
 - Do not use the `AnimeMix` channel for automatic playlist publishing unless the human explicitly asks for a specific manual remake/cover workflow.
-- Do not upload public. The final upload must be private.
+- Do not manually upload public. The app controls visibility and scheduling.
 - Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general BGM releases, `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop releases, `HaruHaru` for Korean/K-pop vocal releases, `Signal Room Radio` for analytical/story/research/mystery BGM releases, `sundaze` for English/American pop, and `Solwave Radio` for Latin/Spanish pop.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
 - Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
@@ -555,7 +555,7 @@ Next: human should listen to the private YouTube upload and change visibility to
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not use AI/process/tool hashtags or YouTube tags on any channel. Avoid `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, and `Codex` in public hashtags and API tags.
-- Do not auto-approve the app's template metadata for playlist releases. Before private publish, playlist metadata must include a timestamped tracklist in the main description and every localization, plus all 15 configured localizations: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
+- Do not auto-approve the app's template metadata for playlist releases. Before publish, playlist metadata must include a timestamped tracklist in the main description and every localization, plus all 15 configured localizations: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
 - If `auto-publish-playlist` stops with `Refusing to auto-approve incomplete playlist metadata`, run `scripts/openclaw-release metadata-context --release-id RELEASE_ID`, write full timeline/localized metadata, run `scripts/openclaw-release approve-metadata` with every localization file, then call publish approval again.
 - Do not create a Slack review message for every playlist track during automatic playlist publishing.
 - If the automation times out while waiting for render/upload, report the exact stage and current release state. Do not start a duplicate publish blindly.
@@ -568,17 +568,17 @@ Use `Single Release Candidate Set` when:
 - Suno returns two alternatives for the same prompt.
 - The human needs to choose A or B.
 
-Use `Automatic Private Single Publisher` when:
+Use `Automatic Single Publisher` when:
 
 - The user asks for one song, one single, or one standalone track and explicitly says to publish/upload it.
-- The goal is a private YouTube upload without stopping for candidate review.
-- The release needs a final cover with a large lower-left channel brand label, separate text thumbnail, a 10 second Dreamina/Seedance loop video, metadata approval, and private upload.
+- The goal is an app-managed YouTube upload without stopping for candidate review.
+- The release needs a final cover with a large lower-left channel brand label, separate text thumbnail, a 10 second Dreamina/Seedance loop video, metadata approval, and app-managed upload.
 
-Use `Automatic Private Playlist Publisher` when:
+Use `Automatic Playlist Publisher` when:
 
 - The user asks for a playlist, mix, compilation, batch, or one-hour release.
 - The goal is many tracks.
-- The human expects OpenClaw to upload privately to YouTube and review only the final result.
+- The human expects OpenClaw to upload through the app to YouTube and review only the final result.
 
 Use `OpenClaw YouTube Metadata Skill` when:
 

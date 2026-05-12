@@ -174,6 +174,7 @@ class PlaylistWorkspaceRead(BaseModel):
     youtube_video_id: str | None
     youtube_channel_id: str | None = None
     youtube_channel_title: str | None = None
+    youtube_scheduled_publish_at: datetime | None = None
     youtube_published_at: datetime | None = None
     note: str | None = None
     render_job: PlaylistJobRead | None = None

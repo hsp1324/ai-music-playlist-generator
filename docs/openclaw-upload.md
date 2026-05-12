@@ -349,7 +349,8 @@ For automatic playlist publishing, `scripts/openclaw-release auto-publish-playli
 - Do not use `MusicSun` unless the human explicitly requests it.
 - Do not use `AnimeMix` in automatic next-release rotation. It is a manual-only popular-song remake/cover channel unless the human explicitly asks for a specific remake workflow.
 - For continuous automation, newly connected YouTube channels are active by default unless explicitly marked inactive/excluded in docs. If the selected connected channel has no dedicated profile/concept docs yet, use the `custom-channel` docs returned by `scripts/openclaw-release channel-profile`.
-- After publish, `/api/playlists/workspaces` exposes `youtube_video_id`, `youtube_channel_id`, and `youtube_channel_title`. OpenClaw can use those fields to confirm which channel received the private upload; web UI layout changes do not affect OpenClaw because it should use the helper script or local API, not click the dashboard.
+- After publish, `/api/playlists/workspaces` exposes `youtube_video_id`, `youtube_channel_id`, `youtube_channel_title`, and when enabled `youtube_scheduled_publish_at`. OpenClaw can use those fields to confirm which channel received the upload and which daily 07:00 slot was assigned; web UI layout changes do not affect OpenClaw because it should use the helper script or local API, not click the dashboard.
+- If `AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED=true`, the app uploads with YouTube `status.publishAt` for the next free daily 07:00 slot in `AIMP_YOUTUBE_SCHEDULE_TIMEZONE`. If that date already has a scheduled app upload, the app automatically uses the following day. OpenClaw should not manually change YouTube visibility in Studio.
 - YouTube publish/re-upload uses the app setting `AIMP_YOUTUBE_CONTAINS_SYNTHETIC_MEDIA=false` by default, meaning uploads are submitted as not containing realistic altered/synthetic media. Do not override this unless the requested video realistically depicts altered or synthetic people, places, or events.
 - YouTube publish/re-upload always declares `selfDeclaredMadeForKids=false`, meaning "No, it's not made for kids." OpenClaw does not need to set this separately.
 
@@ -471,7 +472,7 @@ scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_C
 If the human explicitly asks OpenClaw to publish one single all the way to YouTube, use the automatic single publisher instead:
 
 ```text
-Create an original single release and publish it privately.
+Create an original single release and publish it through the app.
 Generate or obtain:
 - one final Suno audio file per YouTube single
 - a final clean 16:9 cover image
@@ -500,10 +501,10 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 
 ## Safety Rules
 
-- Do not call `Approve Publish` automatically unless the human explicitly asks for full private publishing.
+- Do not call `Approve Publish` automatically unless the human explicitly asks for full publishing.
 - Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release auto-publish-single`, `scripts/openclaw-release auto-publish-playlist`, or the app's local `/approve-publish` API only. The app performs the real YouTube upload through the YouTube Data API.
 - Do not use an existing `--release-id` that already has `youtube_video_id` for a normal new publish. Create a new release instead. `auto-publish-playlist` and `auto-publish-single` reject accidental re-uploads unless `--allow-reupload` is passed, and that flag should be used only when the human explicitly asks to upload the same release again.
-- YouTube Studio is only for human final review after the private API upload, such as watching the result, changing visibility to Public, reviewing automatic captions, or manual fixes.
+- YouTube Studio is only for human final review after the API upload, such as watching the result, confirming the scheduled public time, reviewing automatic captions, or manual fixes.
 - Do not try to turn on automatic captions through browser automation. The app does not upload caption tracks or toggle caption settings. For vocal releases, API upload can send the inferred `snippet.defaultAudioLanguage`; YouTube may generate automatic captions later. For BGM/instrumental/no-vocal releases, leave captions/audio language alone unless the human explicitly asks for manual captions.
 - Do not open Suno or generate audio before creating/selecting the app release workspace. Fresh work starts with `scripts/openclaw-release create-release`; continuing work starts with `scripts/openclaw-release list-releases` and `--release-id`.
 - Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
@@ -524,7 +525,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Generate the thumbnail from the final cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, background continuity, and the channel-brand line style; only add click text/branding and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
-- OpenClaw must create a Dreamina/Seedance clip and pass the 10 second MP4 as `--loop-video` before normal video render/private publish. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
+- OpenClaw must create a Dreamina/Seedance clip and pass the 10 second MP4 as `--loop-video` before normal video render/publish. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
 - Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `10 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
 - Dreamina/Seedance often defaults to `5 seconds`. For normal OpenClaw auto-publish work, before generating, confirm the duration UI still says `10 seconds`. After download, verify the MP4 duration; if it is about 5 seconds because the UI stayed on the default, discard it and regenerate at 10 seconds. The app and `scripts/openclaw-release` allow intentionally provided shorter clips, so do not rely on upload rejection to catch this mistake.
