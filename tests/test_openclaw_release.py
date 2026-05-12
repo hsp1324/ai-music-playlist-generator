@@ -62,6 +62,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "loop_video": "",
         "hard_loop_video": False,
         "allow_still_image_video": False,
+        "allow_short_loop_video": False,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -132,6 +133,31 @@ def test_release_has_uploaded_loop_video_requires_manual_upload_source() -> None
         }
     )
     assert not release_has_uploaded_loop_video({"loop_video_path": "/tmp/loop.mp4"})
+
+
+def test_require_normal_loop_video_duration_rejects_dreamina_default(monkeypatch, tmp_path) -> None:
+    loop_video = tmp_path / "dreamina-default.mp4"
+    loop_video.write_bytes(b"fake mp4")
+    monkeypatch.setattr(openclaw_release, "probe_media_duration_seconds", lambda _path: 5.0)
+
+    with pytest.raises(RuntimeError, match="Dreamina's 5 second default"):
+        openclaw_release.require_normal_loop_video_duration(
+            loop_video,
+            SimpleNamespace(allow_short_loop_video=False),
+            context="auto-publish-playlist",
+        )
+
+
+def test_require_normal_loop_video_duration_allows_explicit_short_override(monkeypatch, tmp_path) -> None:
+    loop_video = tmp_path / "intentional-short.mp4"
+    loop_video.write_bytes(b"fake mp4")
+    monkeypatch.setattr(openclaw_release, "probe_media_duration_seconds", lambda _path: 5.0)
+
+    openclaw_release.require_normal_loop_video_duration(
+        loop_video,
+        SimpleNamespace(allow_short_loop_video=True),
+        context="upload-loop-video",
+    )
 
 
 def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
