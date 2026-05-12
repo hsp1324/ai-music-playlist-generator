@@ -36,6 +36,9 @@ Use a vivid Latin scene plus substyle:
 - Original Spanish lyrics by default.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Rhythm should be clear and playlist-friendly.
+- Treat the playlist title/use case as packaging and rhythm direction, not as the required lyric topic. If the playlist is for carretera, playa, fiesta, workout, morning energy, or night drive, the groove, tempo, percussion, and vocal attitude should fit that context, but the lyrics do not need to literally describe that activity.
+- Write each song like a real standalone Spanish/Latin pop track: natural Spanish phrasing, catchy chorus, believable romance, desire, confidence, freedom, night-out, heartbreak, summer, or dance-floor emotion. Avoid over-literal lyrics that repeat the YouTube title/use case.
+- Match lyrics to the melody, rhythm, vocal tone, and hook first. A song can fit a drive/fiesta/workout playlist because of its groove and energy while the lyrics tell an independent Latin pop story.
 - Titles should feel curated and editorial, not raw workspace names.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.
@@ -57,6 +60,8 @@ Use a vivid Latin scene plus substyle:
 ## Bad Directions
 
 - Generic titles like `Latin Pop`, `Spanish Pop`, or `Ruta Dorada Pop` by themselves.
+- Lyrics that literally describe the playlist setting instead of working as a standalone song.
+- Forcing title/use-case words such as carretera, playa, fiesta, manejar, workout, morning energy, or night drive into lyrics unless they naturally belong in the song.
 - Repeating beach sunset every time.
 - English lyrics by default.
 - Instrumental Latin pop unless explicitly requested.

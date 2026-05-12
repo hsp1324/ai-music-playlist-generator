@@ -22,6 +22,7 @@ Infer the channel identity from the connected channel title, the human request, 
 - Choose a specific setting, use case, emotional direction, and thumbnail phrase.
 - Avoid generic titles like `Pop Mix`, `New Playlist`, `BGM`, or `Music for You` unless the human explicitly wants that.
 - If the channel appears to be language-specific, write lyrics and metadata in that language by default.
+- If the channel is vocal/pop-focused, separate playlist packaging from lyrics. The release title/use case can describe when to listen, but lyrics should work as standalone songs with natural emotion, strong hooks, and genre-appropriate phrasing rather than literally repeating the title/use-case words.
 - If the channel appears to be instrumental/background-specific, avoid vocals unless the human explicitly requests them.
 
 ## Output

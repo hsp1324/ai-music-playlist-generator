@@ -36,6 +36,9 @@ Use one vivid Korean-pop situation plus a clear emotional hook:
 
 - Original Korean lyrics are required by default.
 - Every track needs a distinct Korean lyric concept, chorus hook, title, and Suno style/settings.
+- Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is `댄스 연습실 K-POP`, the beat, tempo, confidence, and performance energy should fit dance practice, but the lyrics do not need to mention dance practice, mirrors, choreography, or working out.
+- Write each song like a real standalone K-pop track: natural Korean phrasing, believable emotion, relationship tension, confidence, crush, breakup, comeback, night-out, youth, or self-belief. Avoid over-literal or cringe lyrics that repeat the YouTube title/use case.
+- Match lyrics to the melody, beat, vocal tone, and hook first. A song can fit a workout/getting-ready playlist because of rhythm and energy, while the lyrics are about love, confidence, moving on, or a memorable pop story.
 - Do not upload lyricless, BGM-only, hum-only, or instrumental K-pop unless the human explicitly requests it.
 - Use Korean song titles by default. Avoid `A/B`, `1/2`, or batch labels in public track titles.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
@@ -61,6 +64,8 @@ Use one vivid Korean-pop situation plus a clear emotional hook:
 
 - Instrumental K-pop unless explicitly requested.
 - Lyrics that reuse the same chorus hook across multiple tracks.
+- Lyrics that literally describe the playlist setting instead of working as a standalone song.
+- Forcing title/use-case words such as `댄스 연습실`, `운동`, `산책`, `공부`, `드라이브`, or `외출 준비` into lyrics unless they naturally belong in the song.
 - Titles like `KPOP Playlist`, `Korean Pop`, or `Seoul Music` by themselves.
 - Concepts that sound like J-pop/Tokyo Daydream Radio or English pop/sundaze.
 - Remake/cover concepts based on existing popular songs. HaruHaru is for original K-pop.

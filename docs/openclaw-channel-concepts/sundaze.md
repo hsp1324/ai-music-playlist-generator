@@ -36,6 +36,9 @@ Use a vivid situation or emotion plus pop identity:
 
 - Original English lyrics by default.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
+- Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for driving, getting ready, running, workout, night walk, work, or a party warmup, the beat, tempo, energy, and vocal attitude should fit that context, but the lyrics do not need to literally mention those activities.
+- Write each song like a real standalone English pop track: natural phrasing, strong hook, believable emotion, relationship tension, confidence, moving on, night-out, summer, heartbreak, or self-discovery. Avoid over-literal lyrics that repeat the YouTube title/use case.
+- Match lyrics to the melody, beat, vocal tone, and hook first. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
@@ -59,6 +62,8 @@ Use a vivid situation or emotion plus pop identity:
 
 - Short generic titles like `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
 - Mismatched use cases, such as calling a club-like rooftop dance-pop playlist `focus`, `study`, or `quiet work` music.
+- Lyrics that literally describe the playlist setting instead of working as a standalone song.
+- Forcing title/use-case words such as drive, workout, running, party, getting ready, walk, or work into lyrics unless they naturally belong in the song.
 - Reusing the same golden-hour/road-trip concept repeatedly.
 - Instrumental pop unless explicitly requested.
 - Cover/thumbnail scenes that look unrelated to the playlist title.
