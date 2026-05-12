@@ -4,15 +4,15 @@ Use this after the selected channel is `Tokyo Daydream Radio`. This document dec
 
 ## Channel Promise
 
-Tokyo Daydream Radio is a mainstream J-pop/Japanese pop channel. It can include anime-pop, but it is not an anime OST-only channel.
+Tokyo Daydream Radio is a mainstream J-pop/Japanese pop channel. It can include anime-pop, but it is not an anime OST-only channel. The channel name contains Tokyo, but release titles do not need to contain `Tokyo` unless the selected concept is actually Tokyo-specific.
 
-The audience should immediately understand: hook-driven Japanese vocal pop for Tokyo/Japan lifestyle listening.
+The audience should immediately understand: hook-driven Japanese vocal pop for Japan lifestyle listening, with Tokyo as one possible setting rather than the default title word.
 
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Tokyo Daydream Radio` releases and avoid repeating:
 
-- The same city/season/weather setting, such as rainy Tokyo, forest walk, beach walk, night park, fantasy forest, or commute.
+- The same city/season/weather setting, such as rainy Tokyo, Osaka night out, Kyoto evening, forest walk, beach walk, night park, fantasy forest, or commute.
 - The same pop substyle, such as city-pop, dance-pop, synth-pop, guitar pop, pop-rock, anime-pop, or ballad.
 - The same lyric premise, such as first love, walking home, new start, night escape, seaside memory, or weekend freedom.
 - The same title pattern or thumbnail phrase.
@@ -25,6 +25,7 @@ If a setting appeared in the latest 3 Tokyo releases, do not use it again unless
 Use one lane, then vary substyle and lyric premise:
 
 - Tokyo night drive, neon train lines, city lights, late commute, rooftop skyline.
+- Osaka weekend neon, Kyoto evening streets, Yokohama bay lights, seaside train, summer festival, station road, school-after-hours, shopping street, karaoke night, or Japan travel/lifestyle scenes that are not Tokyo.
 - Rainy Shibuya or Shinjuku, umbrellas, station road, after-work walk.
 - Summer beach walk, seaside train, coastal evening, festival night.
 - Weekend shopping street, cafe date, spring afternoon, sunny crosswalk.
@@ -39,7 +40,8 @@ Use one lane, then vary substyle and lyric premise:
 - Keep choruses memorable and playlist-friendly.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 - Do not make lyricless, BGM-only, hum-only, or instrumental tracks unless the human explicitly requested it.
-- Do not over-emphasize `Japanese language` in titles. Use `J-POP`, Tokyo/Japan scene, mood, and listening use case instead.
+- Do not over-emphasize `Japanese language` in titles. Use `J-POP`, the actual Japan scene, mood, and listening use case instead.
+- Do not put `Tokyo` / `도쿄` in every title. Use it only when the chosen concept is specifically Tokyo, Shibuya, Shinjuku, Tokyo commute, Tokyo skyline, or a clearly Tokyo-coded scene. For generic J-pop, beach, forest, festival, school, karaoke, or Japan lifestyle concepts, omit Tokyo from the title.
 - Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade/game-center/friends/night-out concepts, use arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup instead.
 
 ## Visual Direction
@@ -51,11 +53,13 @@ Use one lane, then vary substyle and lyric premise:
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Tokyo Rooftop Dance Pop | City Lights, Night Out and J-POP`
-- `[playlist] Tokyo Arcade Night J-POP | Neon Games, Friends and Weekend Energy`
+- `[playlist] Rooftop Dance Pop J-POP | City Lights, Night Out and Weekend Energy`
+- `[playlist] Arcade Night J-POP | Neon Games, Friends and Weekend Energy`
 - `[playlist] Weekend Train Ride J-POP | Spring Streets and Feel-Good Japanese Pop`
 - `[playlist] Summer Coast J-POP | Beach Walk, Seaside Train and Bright Pop`
 - `[playlist] Shibuya Rain Synth-Pop | Night Commute and Japanese Vocal Pop`
+- `[playlist] Kyoto Evening J-POP | Lantern Streets, New Love and Soft Pop`
+- `[playlist] Osaka Weekend J-POP | Neon Friends, Karaoke and Night Out`
 
 ## Bad Directions
 
@@ -63,4 +67,5 @@ Use one lane, then vary substyle and lyric premise:
 - Making Japan-themed BGM without vocals and calling it J-pop.
 - Using `일본어 J-pop`, `Japanese vocal`, or language-first titles unless the human explicitly asks.
 - Reusing the same rainy Tokyo/night walk/beach/forest concept too soon.
+- Adding `Tokyo` to titles when the concept is not Tokyo-specific.
 - Forcing `walk` / `산책` into indoor arcade, game-center, karaoke, party, or friend-hangout concepts.
