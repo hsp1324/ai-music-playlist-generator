@@ -53,7 +53,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 
 - Vocal songs with original lyrics are the default and expected output.
 - Do not make instrumental/no-vocal Old Verse releases unless the human explicitly asks for BGM or instrumental meditation.
-- Default vocal language is English unless the human explicitly asks for Korean or another language.
+- Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The Old Verse unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
