@@ -38,6 +38,10 @@ FAILED_WORKFLOW_STATES = {
 FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
 SUNDAZE_CHANNEL_ID = "UCQh5O10XfZLLNZqdGuQR7Jw"
 SUNDAZE_CHANNEL_TITLE = "sundaze"
+LEGACY_YOUTUBE_CHANNEL_TITLES = {
+    "ai썰전": "Club Bloom",
+    "ai sseoljeon": "Club Bloom",
+}
 REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "ko",
     "ja",
@@ -68,6 +72,13 @@ def _default_target_duration_seconds(services: ServiceRegistry) -> int:
 
 def _playlist_meta(playlist: Playlist) -> dict:
     return dict(playlist.metadata_json or {})
+
+
+def _canonical_youtube_channel_title(title: str | None) -> str | None:
+    clean = str(title or "").strip()
+    if not clean:
+        return None
+    return LEGACY_YOUTUBE_CHANNEL_TITLES.get(clean.lower(), clean)
 
 
 def _resolve_youtube_channel_title(services: ServiceRegistry, channel_id: str | None) -> str | None:
@@ -499,7 +510,7 @@ def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -
         rendered_duration_seconds=meta.get("rendered_duration_seconds"),
         youtube_video_id=playlist.youtube_video_id,
         youtube_channel_id=meta.get("youtube_channel_id"),
-        youtube_channel_title=meta.get("youtube_channel_title"),
+        youtube_channel_title=_canonical_youtube_channel_title(meta.get("youtube_channel_title")),
         youtube_scheduled_publish_at=_youtube_scheduled_publish_at(meta),
         youtube_published_at=_youtube_published_at(playlist, meta),
         note=meta.get("note"),

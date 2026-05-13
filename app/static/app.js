@@ -80,6 +80,10 @@ const textModalCloseButton = document.querySelector("#text-modal-close-button");
 const CHANNEL_FILTER_ALL = "__all_channels__";
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
+const LEGACY_YOUTUBE_CHANNEL_TITLES = {
+  "ai썰전": "Club Bloom",
+  "ai sseoljeon": "Club Bloom",
+};
 const METADATA_LANGUAGES = [
   { code: "ko", label: "Korean", shortLabel: "KO" },
   { code: "ja", label: "Japanese", shortLabel: "JA" },
@@ -295,7 +299,7 @@ function releaseOptionLabel(workspace) {
 
 function releasePublishedChannelLabel(workspace) {
   if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
-  return workspace.youtube_channel_title || workspace.youtube_channel_id || "YouTube";
+  return canonicalYouTubeChannelTitle(workspace.youtube_channel_title) || workspace.youtube_channel_id || "YouTube";
 }
 
 function releasePublishedAtLabel(workspace) {
@@ -310,18 +314,24 @@ function releaseIsScheduled(workspace) {
 function releaseChannelKey(workspace) {
   const channelId = String(workspace?.youtube_channel_id || "").trim();
   if (channelId) return `id:${channelId}`;
-  const channelTitle = String(workspace?.youtube_channel_title || "").trim();
+  const channelTitle = canonicalYouTubeChannelTitle(workspace?.youtube_channel_title);
   if (channelTitle) return `title:${channelTitle}`;
   return "unknown";
 }
 
 function releaseChannelDisplayLabel(workspace) {
-  return workspace?.youtube_channel_title || workspace?.youtube_channel_id || "Unknown Channel";
+  return canonicalYouTubeChannelTitle(workspace?.youtube_channel_title) || workspace?.youtube_channel_id || "Unknown Channel";
+}
+
+function canonicalYouTubeChannelTitle(title) {
+  const clean = String(title || "").trim();
+  if (!clean) return "";
+  return LEGACY_YOUTUBE_CHANNEL_TITLES[clean.toLowerCase()] || clean;
 }
 
 function connectedYouTubeChannel(channelId, channelTitle = "") {
   const channels = state.youtubeStatus?.channels || [];
-  const normalizedTitle = String(channelTitle || "").trim().toLowerCase();
+  const normalizedTitle = canonicalYouTubeChannelTitle(channelTitle).toLowerCase();
   if (channelId) {
     const match = channels.find((channel) => channel.id === channelId);
     if (match) return match;
@@ -335,6 +345,7 @@ function connectedYouTubeChannel(channelId, channelTitle = "") {
 function channelInitials(label) {
   const clean = String(label || "YT").replace(/[@#]/g, "").trim();
   if (!clean) return "YT";
+  if (clean.toLowerCase() === "all channels") return "ALL";
   const parts = clean.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) {
     return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
@@ -1893,6 +1904,23 @@ function channelFilterOptions() {
 
 function channelUploadSummaries() {
   const channels = new Map();
+  (state.youtubeStatus?.channels || []).forEach((channel) => {
+    const key = channel?.id ? `id:${channel.id}` : `title:${canonicalYouTubeChannelTitle(channel?.title)}`;
+    if (!key || key === "title:") return;
+    channels.set(key, {
+      key,
+      label: canonicalYouTubeChannelTitle(channel?.title) || channel?.id || "Unknown Channel",
+      thumbnailUrl: channel?.thumbnail_url || "",
+      count: 0,
+      playlistCount: 0,
+      singleCount: 0,
+      totalDuration: 0,
+      latestTitle: "",
+      latestAt: 0,
+      latestAtLabel: "",
+    });
+  });
+
   activeWorkspaces().forEach((workspace) => {
     if (!releasePublishedChannelLabel(workspace)) return;
     const key = releaseChannelKey(workspace);
