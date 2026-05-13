@@ -61,6 +61,47 @@ def _rendered_snapshot_matches_current_tracks(playlist: Playlist, key: str) -> b
     return list(rendered_track_ids) == _playlist_track_ids(playlist)
 
 
+def _is_long_video_verification_upload_error(error_text: str, playlist: Playlist) -> bool:
+    meta = dict(playlist.metadata_json or {})
+    duration_seconds = max(
+        int(playlist.actual_duration_seconds or 0),
+        int(float(meta.get("rendered_duration_seconds") or 0)),
+    )
+    if duration_seconds < 14 * 60:
+        return False
+    normalized = error_text.lower()
+    duration_markers = (
+        "15 minute",
+        "15-minute",
+        "fifteen minute",
+        "longer than 15",
+        "longer than fifteen",
+        "too long",
+        "video duration",
+        "duration too long",
+        "long video",
+        "long videos",
+        "uploadlimitexceeded",
+        "upload limit",
+        "exceeded the number of videos",
+    )
+    verification_markers = (
+        "verify",
+        "verified",
+        "verification",
+        "phone",
+        "account",
+        "longer than 15",
+        "15 minute",
+        "15-minute",
+        "uploadlimitexceeded",
+        "upload limit",
+    )
+    return any(marker in normalized for marker in duration_markers) and any(
+        marker in normalized for marker in verification_markers
+    )
+
+
 @dataclass
 class WorkerLoopState:
     running: bool = False
@@ -832,6 +873,39 @@ class BackgroundJobWorker:
                             if next_request_result.get("ok"):
                                 meta["openclaw_next_request_youtube_video_id"] = playlist.youtube_video_id
                 except Exception as exc:  # noqa: BLE001
+                    if _is_long_video_verification_upload_error(str(exc), playlist):
+                        playlist.status = PlaylistStatus.ready
+                        meta["workflow_state"] = "youtube_upload_deferred_verification"
+                        meta["note"] = (
+                            "YouTube account verification appears to block this long video upload. "
+                            "The rendered release is kept for later manual upload/retry, and automation may continue."
+                        )
+                        meta["youtube_upload_error"] = str(exc)
+                        meta["youtube_upload_deferred_reason"] = "long_video_phone_verification"
+                        meta["youtube_upload_deferred_at"] = _utcnow().isoformat()
+                        if self.settings.openclaw_auto_request_next_on_publish:
+                            playlist.metadata_json = meta
+                            sent_for_playlist_id = str(
+                                meta.get("openclaw_next_request_deferred_playlist_id") or ""
+                            ).strip()
+                            if sent_for_playlist_id != playlist.id:
+                                try:
+                                    next_request_result = asyncio.run(
+                                        post_next_playlist_request(
+                                            db,
+                                            self.services,
+                                            playlist,
+                                        )
+                                    )
+                                except Exception as slack_exc:  # noqa: BLE001
+                                    next_request_result = {"ok": False, "error": str(slack_exc)}
+                                meta["openclaw_next_request"] = next_request_result
+                                meta["openclaw_next_request_at"] = _utcnow().isoformat()
+                                if next_request_result.get("ok"):
+                                    meta["openclaw_next_request_deferred_playlist_id"] = playlist.id
+                        playlist.metadata_json = meta
+                        db.add(playlist)
+                        return
                     playlist.status = PlaylistStatus.ready
                     meta["workflow_state"] = "youtube_upload_failed"
                     meta["note"] = f"Automatic YouTube upload failed: {exc}"

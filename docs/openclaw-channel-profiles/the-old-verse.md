@@ -61,7 +61,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no direct dep
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language should be English unless the human asks otherwise.
-- Include the passage reference in the description, not necessarily in the title.
+- Include the passage reference in the main title, every localized title, and the description, for example `Genesis 1:1-5`.
 - Titles should include Old Testament/Bible/scripture keywords plus a listening use case such as worship, reflection, prayer, study, or quiet focus.
 - Make titles broad and public-facing first. Use exact passage scene details as atmosphere unless they are the strongest searchable hook.
 - Avoid denominational claims, copyrighted translation names, and protected media references.

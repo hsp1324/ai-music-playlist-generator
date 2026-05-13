@@ -14,12 +14,15 @@ The audience should immediately understand: Old Testament stories and messages t
 
 ## Sequence Rule
 
-- Always inspect recent `The Old Verse` releases in `scripts/openclaw-release list-releases`.
-- Continue from the most recent passage range on this channel. Do not jump randomly to Psalms, Exodus, prophets, or famous stories unless the sequence has reached them or the human explicitly asks.
+- Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. This ledger is mandatory, not optional.
+- Always inspect recent `The Old Verse` releases in `scripts/openclaw-release list-releases` and compare them with `scripts/openclaw-scripture-sequence status --init`.
+- Continue from the ledger's `next_start` / `last_completed`. Do not jump randomly to Psalms, Exodus, prophets, or famous stories unless the sequence has reached them or the human explicitly asks.
 - If there is no prior app catalog history, start with `Genesis 1:1-5`.
-- Put the passage reference in the private plan and description, for example `Genesis 1:1-5`.
+- Mark the chosen passage as `in_progress` with `scripts/openclaw-scripture-sequence start` before opening Suno.
+- Put the passage reference in the private plan, title, and description, for example `Genesis 1:1-5`.
 - For a 40+ minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
-- Keep an internal progress note in the release description/metadata context so the next run knows what passage comes next.
+- After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-scripture-sequence complete` and set the next canonical start.
+- If the ledger and app catalog disagree, stop and report the mismatch. Do not guess and do not reuse a passage already marked `in_progress`, `scheduled`, or `published`.
 
 ## Scripture Handling
 
@@ -69,10 +72,10 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Genesis Creation Songs | Old Testament Music for Worship and Reflection`
-- `[playlist] Eden Garden Bible Music | Scripture Songs for Prayer and Quiet Focus`
-- `[playlist] Noah's Ark Scripture Songs | Old Testament Music for Faith and Reflection`
-- `[playlist] Abraham Covenant Songs | Bible Music for Prayer, Hope and Waiting`
+- `[playlist] Genesis 1:1-5 Creation Songs | Old Testament Music for Worship and Reflection`
+- `[playlist] Genesis 2:4-17 Eden Garden Songs | Scripture Music for Prayer and Quiet Focus`
+- `[playlist] Genesis 6:9-22 Noah's Ark Songs | Old Testament Music for Faith and Reflection`
+- `[playlist] Genesis 15 Covenant Songs | Bible Music for Prayer, Hope and Waiting`
 
 ## Bad Directions
 

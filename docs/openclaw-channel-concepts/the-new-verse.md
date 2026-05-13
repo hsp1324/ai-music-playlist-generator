@@ -14,12 +14,15 @@ The audience should immediately understand: New Testament messages turned into o
 
 ## Sequence Rule
 
-- Always inspect recent `The New Verse` releases in `scripts/openclaw-release list-releases`.
-- Continue from the most recent passage range on this channel. Do not jump randomly to John, Romans, Revelation, or famous Jesus sayings unless the sequence has reached them or the human explicitly asks.
+- Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. This ledger is mandatory, not optional.
+- Always inspect recent `The New Verse` releases in `scripts/openclaw-release list-releases` and compare them with `scripts/openclaw-scripture-sequence status --init`.
+- Continue from the ledger's `next_start` / `last_completed`. Do not jump randomly to John, Romans, Revelation, or famous Jesus sayings unless the sequence has reached them or the human explicitly asks.
 - If there is no prior app catalog history, start with `Matthew 1:1-17`.
-- Put the passage reference in the private plan and description, for example `Matthew 1:1-17`.
+- Mark the chosen passage as `in_progress` with `scripts/openclaw-scripture-sequence start` before opening Suno.
+- Put the passage reference in the private plan, title, and description, for example `Matthew 1:1-17`.
 - For a 40+ minute playlist, choose a coherent passage block, usually one scene, teaching section, parable, or short chapter section. Do not cover too much scripture at once.
-- Keep an internal progress note in the release description/metadata context so the next run knows what passage comes next.
+- After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-scripture-sequence complete` and set the next canonical start.
+- If the ledger and app catalog disagree, stop and report the mismatch. Do not guess and do not reuse a passage already marked `in_progress`, `scheduled`, or `published`.
 
 ## Scripture Handling
 
@@ -70,10 +73,10 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Matthew Gospel Songs | New Testament Worship Music for Prayer`
-- `[playlist] Grace Worship Songs | New Testament Music for Hope and Reflection`
-- `[playlist] Jesus Parables Worship | Gospel Songs for Prayer and Quiet Focus`
-- `[playlist] Resurrection Hope Music | New Testament Worship Songs for Faith`
+- `[playlist] Matthew 1:1-17 Gospel Songs | New Testament Worship Music for Prayer`
+- `[playlist] Matthew 2:1-12 Star of Bethlehem Songs | Gospel Music for Hope and Wonder`
+- `[playlist] Matthew 5:1-12 Beatitudes Worship | New Testament Songs for Prayer`
+- `[playlist] Matthew 28:1-10 Resurrection Hope Songs | New Testament Worship for Faith`
 
 ## Bad Directions
 

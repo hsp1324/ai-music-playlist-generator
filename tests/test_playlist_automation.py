@@ -19,7 +19,7 @@ from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes import playlists as playlist_routes
 from app.routes.tracks import _extract_embedded_cover
-from app.services.background_worker import BackgroundJobWorker
+from app.services.background_worker import BackgroundJobWorker, _is_long_video_verification_upload_error
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 from app.utils.openclaw_slack_loop import handle_auto_loop_control_message, record_auto_loop_upload
@@ -89,6 +89,32 @@ def test_dreamina_prompt_uses_tokyo_daydream_three_person_signature() -> None:
     assert "Preserve this text exactly" in prompt
     assert "No other text" in prompt
     assert "exactly three people seen from behind" in prompt
+
+
+def test_long_video_verification_upload_error_is_detected_for_long_release() -> None:
+    playlist = Playlist(
+        title="Long deferred release",
+        actual_duration_seconds=60 * 60,
+        metadata_json={"rendered_duration_seconds": 60 * 60},
+    )
+
+    assert _is_long_video_verification_upload_error(
+        "UploadLimitExceeded: this account must be verified to upload videos longer than 15 minutes",
+        playlist,
+    )
+
+
+def test_long_video_verification_upload_error_ignores_short_release() -> None:
+    playlist = Playlist(
+        title="Short single",
+        actual_duration_seconds=3 * 60,
+        metadata_json={"rendered_duration_seconds": 3 * 60},
+    )
+
+    assert not _is_long_video_verification_upload_error(
+        "UploadLimitExceeded: this account must be verified to upload videos longer than 15 minutes",
+        playlist,
+    )
 
 
 def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:

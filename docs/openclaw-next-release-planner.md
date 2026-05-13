@@ -22,7 +22,7 @@ The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MA
 
 Choose the next channel and a fresh 40+ minute playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.
 
-The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. Current known active channels include:
+The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. `MusicSun` is manual-only and is excluded from automatic rotation. Current known active channels include:
 
 - `Tokyo Daydream Radio`
 - `Soft Hour Radio`
@@ -37,6 +37,7 @@ The active channel roster is dynamic. Always read `/youtube/status` and use ever
 
 Current known connected channels excluded from automatic playlist rotation:
 
+- `MusicSun`: manual-only channel. Never select it for automatic next-release rotation unless the human explicitly requests MusicSun.
 - `Signal Room Radio`, `Signal Desk Radio`, and `Midnight Cue Radio`: retired names. Do not select them unless the human explicitly revives those channels.
 
 Future channels do not need code changes before entering rotation. Newly connected channels are active by default. If a connected channel does not have dedicated files, use the custom fallback files:
@@ -83,12 +84,12 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 3. Choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
 4. Do not pick the same channel twice in a row unless another channel is blocked, not connected, unavailable, or explicitly requested.
 5. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
-6. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
+6. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. `MusicSun` remains excluded because it is the only manual-only channel. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
 7. Within the selected channel, choose a fresh concept with controlled randomness across the channel's concept lanes after checking recent releases. Do not cycle through a fixed template list in the same order.
 
 ## Channel Concept Delegation
 
-After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. Read both returned docs:
+After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. If the selected channel is `The Old Verse` or `The New Verse`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md), inspect `scripts/openclaw-scripture-sequence status --init`, and reserve the next canonical passage before generating audio. Read both returned docs:
 
 - `concept_doc`: choose the next playlist concept and avoid recent repetition.
 - `profile_doc`: generate cover, thumbnail, and 8 second loop video without mixing channel visual signatures.
@@ -147,8 +148,11 @@ Return this compact plan before generating audio:
 - `metadata_language_plan`
 - `recent_releases_checked`
 - `why_this_is_fresh`
+- For `The Old Verse` / `The New Verse`: `scripture_ledger_path`, `scripture_last_completed`, `scripture_next_start`, `selected_passage_range`, and `why_this_passage_is_next`
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
+
+If YouTube upload is blocked only because phone/account verification does not allow a 14+ minute video, keep the rendered release and metadata intact, report the deferred upload, and continue to the next release plan. Do not delete or re-render just because upload is deferred.
 
 After the plan, immediately continue into [openclaw-skills.md](openclaw-skills.md) Skill 3: `Automatic Private Playlist Publisher`, using the selected channel and concept.
 
@@ -175,12 +179,13 @@ If YouTube status is configured=false, authenticated=false, ready=false, or chan
 
 Choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation.
+- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.
 - Read the returned profile_doc before making cover, thumbnail, and loop video assets.
+- If the selected channel is The Old Verse or The New Verse, read docs/openclaw-scripture-sequence.md, run scripts/openclaw-scripture-sequence status --init, reserve the next canonical passage with scripts/openclaw-scripture-sequence start before Suno, include that passage range in every YouTube title, and mark it scheduled/published after upload.
 - If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.
 

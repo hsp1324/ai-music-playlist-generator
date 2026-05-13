@@ -274,7 +274,7 @@ def build_next_playlist_request_message(
         "OpenClaw Next Release Planner Skill을 실행해줘.",
         "목표: 다음에 만들 40분 이상 Playlist Release의 채널과 컨셉을 결정하고, private YouTube publish까지 진행해줘.",
         "",
-        "이전 publish 완료 정보:",
+        "이전 자동화 완료 정보:",
         f"- release: {playlist.title}",
         f"- youtube: {youtube_link}",
     ]
@@ -291,10 +291,11 @@ def build_next_playlist_request_message(
             "- /youtube/status가 configured=false, authenticated=false, ready=false, channels=[]이면 잘못된 API를 보고 있는 것이므로 audio/Suno/Dreamina/publish를 시작하지 말고 중단 사유를 알려줘.",
             "- 먼저 docs/openclaw-next-release-planner.md를 읽고 그대로 따라줘.",
             "- 그 다음 docs/openclaw-skills.md, docs/openclaw-channel-concepts/README.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
-            "- 매번 /youtube/status의 channels 목록을 읽고, 문서에서 비활성/제외로 표시하지 않은 연결 채널을 현재 활성 roster로 사용해줘. 새 채널은 기본적으로 rotation에 포함해줘.",
+            "- 매번 /youtube/status의 channels 목록을 읽고, MusicSun만 수동 전용으로 제외하고 나머지 연결 채널을 현재 활성 roster로 사용해줘. 새 채널은 기본적으로 rotation에 포함해줘.",
             "- 현재 활성 채널을 순서대로 번갈아 운영하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
             "- channel-profile이 custom-channel 문서를 반환하면 그 custom 문서를 읽고, 채널명/기존 업로드/사람 요청을 바탕으로 채널 컨셉을 추론해 진행해줘.",
             "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, metadata, private publish까지 완료해줘.",
+            "- YouTube 전화번호/계정 인증 제한 때문에 14분 이상 긴 영상 업로드가 막히면, 렌더된 release는 그대로 남기고 업로드를 나중으로 미룬 뒤 다음 playlist 작업으로 넘어가줘.",
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
         ]
     )
