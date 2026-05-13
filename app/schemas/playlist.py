@@ -44,6 +44,7 @@ class PlaylistCoverApproveRequest(BaseModel):
 class PlaylistVideoRenderRequest(BaseModel):
     actor: str = "web-ui"
     allow_still_image_fallback: bool = False
+    video_spectrum_overlay_style: str | None = None
 
 
 class PlaylistMetadataGenerateRequest(BaseModel):
@@ -159,6 +160,7 @@ class PlaylistWorkspaceRead(BaseModel):
     loop_video_path: str | None = None
     loop_video_source: str | None = None
     loop_video_smooth: bool = True
+    video_spectrum_overlay_style: str = "bars"
     youtube_thumbnail_path: str | None = None
     youtube_thumbnail_source: str | None = None
     youtube_title: str | None = None

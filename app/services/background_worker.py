@@ -389,6 +389,11 @@ class BackgroundJobWorker:
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
         loop_video_path = str(meta.get("loop_video_path") or "").strip()
         allow_still_image_fallback = bool((job.payload_json or {}).get("allow_still_image_fallback"))
+        video_spectrum_overlay_style = str(
+            (job.payload_json or {}).get("video_spectrum_overlay_style")
+            or meta.get("video_spectrum_overlay_style")
+            or "bars"
+        )
         if loop_video_path and Path(loop_video_path).exists():
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
@@ -397,6 +402,7 @@ class BackgroundJobWorker:
                     audio_path,
                     video_path,
                     smooth_loop=bool(meta.get("loop_video_smooth", True)),
+                    spectrum_overlay_style=video_spectrum_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -409,6 +415,7 @@ class BackgroundJobWorker:
                     audio_path,
                     Path(cover_image_path),
                     video_path,
+                    spectrum_overlay_style=video_spectrum_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -455,6 +462,7 @@ class BackgroundJobWorker:
             return
 
         playlist.output_video_path = rendered_video_path
+        meta["video_spectrum_overlay_style"] = video_spectrum_overlay_style
         tracks = [
             item.track
             for item in sorted(playlist.items, key=lambda item: item.order_index)
@@ -470,6 +478,7 @@ class BackgroundJobWorker:
             "loop_video_render_mode",
             "loop_video_smooth",
             "loop_video_source",
+            "video_spectrum_overlay_style",
         ):
             if key in render_meta:
                 meta[key] = render_meta[key]

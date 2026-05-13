@@ -479,6 +479,7 @@ def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -
         loop_video_path=meta.get("loop_video_path"),
         loop_video_source=_loop_video_source(meta),
         loop_video_smooth=bool(meta.get("loop_video_smooth", True)),
+        video_spectrum_overlay_style=str(meta.get("video_spectrum_overlay_style") or "bars"),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
@@ -1328,6 +1329,7 @@ def queue_workspace_video_render(
     playlist_id: str,
     actor: str,
     allow_still_image_fallback: bool = False,
+    video_spectrum_overlay_style: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -1348,10 +1350,12 @@ def queue_workspace_video_render(
         raise ValueError("Uploaded 10 second loop video is required before rendering video.")
 
     active_job = _find_active_video_job(db, playlist)
+    visualizer_style = _normalize_video_spectrum_overlay_style(video_spectrum_overlay_style)
     meta["workflow_state"] = "video_queued"
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
     meta["note"] = "Video render queued from the web dashboard."
+    meta["video_spectrum_overlay_style"] = visualizer_style
     meta.pop("video_build_error", None)
     meta.pop("publish_approved_by", None)
     playlist.output_video_path = None
@@ -1371,6 +1375,7 @@ def queue_workspace_video_render(
                     "actor": actor,
                     "trigger": "manual-video-render",
                     "allow_still_image_fallback": allow_still_image_fallback,
+                    "video_spectrum_overlay_style": visualizer_style,
                 },
                 result_json={},
                 playlist=playlist,
@@ -1379,6 +1384,35 @@ def queue_workspace_video_render(
 
     db.commit()
     return _load_playlist_with_tracks(db, playlist.id)
+
+
+def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
+    normalized = str(value or "bars").strip().lower().replace("_", "-")
+    aliases = {
+        "bar": "bars",
+        "spectrum": "bars",
+        "spectrum-bars": "bars",
+        "waveform": "multiwave",
+        "wave": "multiwave",
+        "multi-wave": "multiwave",
+        "waves": "multiwave",
+        "thin-wave": "thinwave",
+        "clean-wave": "thinwave",
+        "dot": "dots",
+        "particles": "dots",
+        "mirror": "mirror-bars",
+        "mirrorbars": "mirror-bars",
+        "mirrored-bars": "mirror-bars",
+        "circle": "radial",
+        "ring": "radial",
+        "radial-bars": "radial",
+        "pulse-line": "pulse",
+        "pulses": "pulse",
+    }
+    normalized = aliases.get(normalized, normalized)
+    if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"}:
+        return "bars"
+    return normalized
 
 
 def generate_playlist_metadata(

@@ -930,6 +930,53 @@ function localActionButton(label, className, handler) {
   return button;
 }
 
+function chooseVisualizerStyle(workspace) {
+  const styles = {
+    bars: "20-bar spectrum, current default",
+    multiwave: "layered audio waveform",
+    thinwave: "clean thin waveform",
+    dots: "audio-reactive dot wave",
+    "mirror-bars": "center mirrored bars",
+    radial: "large circular spectrum",
+    pulse: "pulse line visualizer",
+  };
+  const current = workspace.video_spectrum_overlay_style || "bars";
+  const message = [
+    "Visualizer preset:",
+    ...Object.entries(styles).map(([key, label]) => `${key} - ${label}`),
+    "",
+    "Enter preset name.",
+  ].join("\n");
+  const raw = window.prompt(message, current);
+  if (raw === null) return null;
+  const normalized = raw.trim().toLowerCase().replace(/_/g, "-");
+  const aliases = {
+    bar: "bars",
+    spectrum: "bars",
+    wave: "multiwave",
+    waveform: "multiwave",
+    waves: "multiwave",
+    "thin-wave": "thinwave",
+    "clean-wave": "thinwave",
+    dot: "dots",
+    particle: "dots",
+    particles: "dots",
+    mirror: "mirror-bars",
+    mirrorbars: "mirror-bars",
+    circle: "radial",
+    ring: "radial",
+    "radial-bars": "radial",
+    "pulse-line": "pulse",
+    pulses: "pulse",
+  };
+  const style = aliases[normalized] || normalized || "bars";
+  if (!Object.prototype.hasOwnProperty.call(styles, style)) {
+    window.alert("Unknown visualizer preset. Use bars, multiwave, thinwave, dots, mirror-bars, radial, or pulse.");
+    return null;
+  }
+  return style;
+}
+
 function openTextModal(title, text) {
   if (!textModal || !textModalTitle || !textModalBody) {
     alert(text || "");
@@ -2631,10 +2678,13 @@ function renderWorkspaceDetail() {
             );
             return;
           }
+          const videoSpectrumOverlayStyle = chooseVisualizerStyle(workspace);
+          if (!videoSpectrumOverlayStyle) return;
           await api(`/api/playlists/${workspace.id}/video/render`, {
             method: "POST",
             body: JSON.stringify({
               actor: "web-ui",
+              video_spectrum_overlay_style: videoSpectrumOverlayStyle,
             }),
           });
         })

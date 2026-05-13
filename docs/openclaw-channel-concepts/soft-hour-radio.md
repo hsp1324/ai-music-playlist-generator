@@ -8,6 +8,8 @@ Soft Hour Radio is for long-listening BGM: study, work, reading, sleep, rest, ca
 
 The audience should immediately understand the practical listening use case.
 
+Visual scenes can be specific, such as a pottery studio, greenhouse, library desk, cottage kitchen, or quiet workshop, but the public title and main description should stay broad enough for general listeners. Lead with useful situations like study, work, reading, writing, focus, rest, sleep, cafe, or calm handwork. Mention the niche scene only as visual atmosphere or a secondary detail unless the human explicitly asks for a niche title.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Soft Hour Radio` releases and avoid repeating:
@@ -59,4 +61,5 @@ Combine one use case, one setting, and one instrument palette:
 - Vocal tracks unless the human explicitly asks.
 - Reusing solo piano cafe every time.
 - Generic titles that do not include a use case.
+- Titles that are too niche for discovery, such as leading with pottery, glazing, kiln rooms, or other craft-specific terms when the music is really general focus/work/rest BGM.
 - Visuals that are too busy, flashy, or character-driven for background listening.

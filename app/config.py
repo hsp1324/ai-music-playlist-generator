@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     ffmpeg_binary: str = "ffmpeg"
     ffmpeg_stall_timeout_seconds: int = 900
+    video_spectrum_overlay_enabled: bool = True
+    video_spectrum_overlay_style: Literal[
+        "bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"
+    ] = "bars"
     playlist_target_minutes: int = 60
     crossfade_seconds: float = 2.0
 

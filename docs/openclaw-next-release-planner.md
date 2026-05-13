@@ -29,11 +29,14 @@ The active channel roster is dynamic. Always read `/youtube/status` and use ever
 - `sundaze`
 - `Solwave Radio`
 - `HaruHaru`
-- `Signal Room Radio` (currently connected as legacy `AI썰전` until the human renames/reconnects it)
+- `Storylight OST`
+- `Cinematic Pulse`
+- `Club Bloom`
 
 Current known connected channels excluded from automatic playlist rotation:
 
 - `AnimeMix`: manual-only popular-song remake/cover channel. Do not select it for automatic next-release generation unless the human explicitly asks for a specific manual remake workflow.
+- `AI썰전`, `Signal Room Radio`, `Signal Desk Radio`, and `Midnight Cue Radio`: retired names. If one of these still appears in `/youtube/status`, use it only as a legacy upload destination for `Storylight OST` until the channel is manually renamed/reconnected.
 
 Future channels do not need code changes before entering rotation. Newly connected channels are active by default. If a connected channel does not have dedicated files, use the custom fallback files:
 
@@ -80,6 +83,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 4. Do not pick the same channel twice in a row unless another channel is blocked, not connected, unavailable, or explicitly requested.
 5. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
 6. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
+7. Within the selected channel, choose a fresh concept with controlled randomness across the channel's concept lanes after checking recent releases. Do not cycle through a fixed template list in the same order.
 
 ## Channel Concept Delegation
 
@@ -104,7 +108,9 @@ Known channel concept docs are:
 - `docs/openclaw-channel-concepts/sundaze.md`
 - `docs/openclaw-channel-concepts/solwave-radio.md`
 - `docs/openclaw-channel-concepts/haruharu.md`
-- `docs/openclaw-channel-concepts/signal-room-radio.md`
+- `docs/openclaw-channel-concepts/storylight-ost.md`
+- `docs/openclaw-channel-concepts/cinematic-pulse.md`
+- `docs/openclaw-channel-concepts/club-bloom.md`
 - `docs/openclaw-channel-concepts/custom-channel.md`
 
 ## Freshness Rules
@@ -166,8 +172,9 @@ If YouTube status is configured=false, authenticated=false, ready=false, or chan
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, and Signal Room Radio. If the status still shows `AI썰전`, treat it as legacy Signal Room Radio until the channel is manually renamed/reconnected. Newly connected non-excluded channels must also enter rotation.
+- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, and Club Bloom. If the status still shows `AI썰전`, treat it as the legacy upload destination for Storylight OST until the channel is manually renamed/reconnected. Newly connected non-excluded channels must also enter rotation.
 - Exclude AnimeMix from automatic playlist rotation because it is a manual-only popular-song remake/cover channel.
+- Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue concept direction. Replace that slot with Storylight OST.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.

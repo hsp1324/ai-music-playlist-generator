@@ -158,7 +158,9 @@ Static image creation rules:
 - For `sundaze` or English/American pop releases, use the sundaze profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals.
 - For `Solwave Radio` or Latin/Spanish pop releases, use the Solwave Radio profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals.
 - For `HaruHaru` or Korean/K-pop releases, use the HaruHaru profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals. Lyrics are Korean by default.
-- For `Signal Room Radio` or legacy `AI썰전`, use the Signal Room Radio profile. This is an instrumental analytical/story BGM channel for research, debate prep, documentary, mystery, and focused work. It is not a narrated talk/debate channel in the current music automation pipeline.
+- For `Storylight OST` or legacy `AI썰전`, use the Storylight OST profile. Legacy `AI썰전` is only an upload destination until the channel is renamed/reconnected; do not continue the retired AI썰전/Signal Room concept direction.
+- For `Cinematic Pulse`, use the Cinematic Pulse profile for epic cinematic, trailer, battle, final boss, heroic, sci-fi action, dark fantasy, and game-combat instrumental music.
+- For `Club Bloom`, use the Club Bloom profile for EDM, house, dance, festival, workout, night-drive, gaming, club, and party-energy releases.
 - If the human explicitly names the upload channel, that channel controls visual routing.
 - Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - For thumbnails, the main default/requested subject must stay centered and visually important. Text must not push it to the side, crop it, cover it, or make it feel secondary. Put text into safe negative space around the centered composition.
@@ -171,7 +173,9 @@ Static image creation rules:
 - For `sundaze`, use thumbnail wording such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`, with smaller `SUNDAZE` branding.
 - For `Solwave Radio`, use thumbnail wording such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`, with smaller `SOLWAVE RADIO` branding.
 - For `HaruHaru`, use thumbnail wording such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, with smaller `HARUHARU` branding.
-- For `Signal Room Radio`, use thumbnail wording such as `AI DEBATE`, `RESEARCH`, `SCRIPT NOTES`, `FACT CHECK`, `DEEP WORK`, `DATA REVIEW`, `MYSTERY`, `DOCUMENTARY`, or `SIGNAL ROOM`, with smaller `SIGNAL ROOM RADIO` branding.
+- For `Storylight OST`, use thumbnail wording such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`, with smaller `STORYLIGHT OST` branding.
+- For `Cinematic Pulse`, use thumbnail wording such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`, with smaller `CINEMATIC PULSE` branding.
+- For `Club Bloom`, use thumbnail wording such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`, with smaller `CLUB BLOOM` branding.
 - Do not add duration text or badges to thumbnails. Avoid `1 HOUR`, `60 MIN`, `1時間`, clocks, timers, and duration stickers.
 - Keep the channel-brand line size/style consistent between the thumbnail and the cover channel label when possible.
 - Use the cover or a separate first-frame image with only the lower-left channel brand label for Dreamina/Seedance video generation. Do not use the final text thumbnail as the first-frame reference; generated video often makes large thumbnail text flicker, disappear, or reappear.
@@ -279,8 +283,8 @@ Thumbnail text rules for OpenClaw:
 Localized YouTube metadata rules for OpenClaw:
 
 - The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `pt-BR`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW`.
-- For `Tokyo Daydream Radio`, `HaruHaru`, `Signal Room Radio`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, analytical/story/research/mystery BGM, or similar pop-family/story-BGM releases, always write all fifteen language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
-- Use Korean as the default upload metadata for Tokyo/Soft Hour/HaruHaru unless the channel profile says otherwise. Use `--default-language en` for `Signal Room Radio` and `sundaze`; use `--default-language es` for `Solwave Radio`.
+- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, fantasy/story/game-OST BGM, cinematic/trailer/battle BGM, EDM/house/dance, or similar pop-family/story-BGM releases, always write all fifteen language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
+- Use Korean as the default upload metadata for Tokyo/Soft Hour/HaruHaru unless the channel profile says otherwise. Use `--default-language en` for `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, and `sundaze`; use `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
 - Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
@@ -346,7 +350,9 @@ For automatic playlist publishing, `scripts/openclaw-release auto-publish-playli
 - Use `sundaze` for English/American pop, US/UK pop, western pop, mainstream English vocal pop, dance-pop, synth-pop, pop-rock, or similar English pop concepts.
 - Use `Solwave Radio` for Latin/Spanish pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, verano latino, or similar Spanish vocal concepts.
 - Use `HaruHaru` for K-pop, Korean pop, Korean dance-pop, Korean synth-pop, Korean pop-rock, Korean R&B pop, idol-pop inspired music, or similar Korean vocal concepts.
-- Use `Signal Room Radio` for analytical/story/research BGM, AI debate prep, documentary BGM, mystery BGM, data review, fact-checking, newsroom focus, or similar instrumental story-background concepts. If the connected channel still appears as `AI썰전`, treat it as legacy Signal Room Radio.
+- Use `Storylight OST` for fantasy/fairy-tale/cozy RPG/game-OST BGM concepts. If the connected channel still appears as `AI썰전`, treat it as the legacy upload destination for Storylight OST.
+- Use `Cinematic Pulse` for cinematic/trailer/battle/final-boss/heroic/sci-fi-action/game-combat instrumental concepts.
+- Use `Club Bloom` for EDM/house/dance/festival/workout/night-drive/gaming/club concepts.
 - Pass `--youtube-channel-title` explicitly when the human names a target channel.
 - Do not use `MusicSun` unless the human explicitly requests it.
 - Do not use `AnimeMix` in automatic next-release rotation. It is a manual-only popular-song remake/cover channel unless the human explicitly asks for a specific remake workflow.
@@ -497,7 +503,7 @@ scripts/openclaw-release auto-publish-single \
   --tags "TAGS" \
   --youtube-channel-title "Tokyo Daydream Radio"
 
-For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", analytical/story/research/mystery BGM goes to "Signal Room Radio" (legacy "AI썰전"), English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
+For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", fantasy/fairy-tale/cozy RPG/game-OST BGM goes to "Storylight OST" (legacy upload destination may still be "AI썰전"), cinematic/trailer/battle/game-combat BGM goes to "Cinematic Pulse", EDM/house/dance goes to "Club Bloom", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
 Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice.
 ```
 

@@ -34,6 +34,9 @@ JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
 SOLWAVE_YOUTUBE_CHANNEL_TITLE = "Solwave Radio"
 HARUHARU_YOUTUBE_CHANNEL_TITLE = "HaruHaru"
+STORYLIGHT_YOUTUBE_CHANNEL_TITLE = "Storylight OST"
+CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
+CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE = "Club Bloom"
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
@@ -44,10 +47,13 @@ CHANNEL_PROFILE_DOCS = {
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/sundaze.md",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/solwave-radio.md",
     HARUHARU_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/haruharu.md",
-    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/signal-room-radio.md",
-    SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/signal-room-radio.md",
-    MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/signal-room-radio.md",
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/signal-room-radio.md",
+    STORYLIGHT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
+    CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/cinematic-pulse.md",
+    CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/club-bloom.md",
+    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
+    SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
+    MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
+    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
 }
 CHANNEL_CONCEPT_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/soft-hour-radio.md",
@@ -55,10 +61,13 @@ CHANNEL_CONCEPT_DOCS = {
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/sundaze.md",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/solwave-radio.md",
     HARUHARU_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/haruharu.md",
-    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/signal-room-radio.md",
-    SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/signal-room-radio.md",
-    MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/signal-room-radio.md",
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/signal-room-radio.md",
+    STORYLIGHT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
+    CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/cinematic-pulse.md",
+    CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/club-bloom.md",
+    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
+    SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
+    MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
+    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
 }
 CHANNEL_PROFILE_NAMES = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "soft-hour-radio",
@@ -66,28 +75,41 @@ CHANNEL_PROFILE_NAMES = {
     SUNDAZE_YOUTUBE_CHANNEL_TITLE: "sundaze",
     SOLWAVE_YOUTUBE_CHANNEL_TITLE: "solwave-radio",
     HARUHARU_YOUTUBE_CHANNEL_TITLE: "haruharu",
-    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "signal-room-radio",
-    SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "signal-room-radio",
-    MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "signal-room-radio",
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "signal-room-radio",
+    STORYLIGHT_YOUTUBE_CHANNEL_TITLE: "storylight-ost",
+    CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE: "cinematic-pulse",
+    CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: "club-bloom",
+    SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "storylight-ost",
+    SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "storylight-ost",
+    MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "storylight-ost",
+    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "storylight-ost",
 }
 CHANNEL_TITLE_ALIASES = {
+    STORYLIGHT_YOUTUBE_CHANNEL_TITLE: (
+        AI_SSEOLJEON_LEGACY_CHANNEL_TITLE,
+        SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
+        SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
+        MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
+    ),
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: (
+        STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         AI_SSEOLJEON_LEGACY_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
     ),
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: (
+        STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         AI_SSEOLJEON_LEGACY_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
     ),
     AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: (
+        STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
     ),
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: (
+        STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
         AI_SSEOLJEON_LEGACY_CHANNEL_TITLE,
@@ -220,6 +242,92 @@ KPOP_CHANNEL_KEYWORDS = (
     "韓国語ポップ",
     "ケーポップ",
     "kポップ",
+)
+STORYLIGHT_CHANNEL_KEYWORDS = (
+    "storylight",
+    "storylight ost",
+    "fantasy ost",
+    "fairy tale",
+    "fairytale",
+    "fantasy village",
+    "cozy rpg",
+    "rpg town",
+    "game town",
+    "game ost",
+    "storybook",
+    "story bgm",
+    "magical bgm",
+    "magic village",
+    "forest village",
+    "castle town",
+    "secret library",
+    "fantasy train",
+    "동화",
+    "판타지 ost",
+    "판타지 브금",
+    "판타지 bgm",
+    "게임 ost",
+    "게임 브금",
+    "rpg 마을",
+    "마법 마을",
+    "숲속 마을",
+    "스토리 bgm",
+)
+CINEMATIC_PULSE_CHANNEL_KEYWORDS = (
+    "cinematic pulse",
+    "epic orchestral",
+    "epic battle",
+    "battle music",
+    "battle ost",
+    "boss battle",
+    "final boss",
+    "heroic trailer",
+    "trailer music",
+    "dark fantasy",
+    "sci-fi action",
+    "sci fi action",
+    "war drums",
+    "cinematic action",
+    "cinematic battle",
+    "orchestral battle",
+    "영화 음악",
+    "시네마틱",
+    "웅장한",
+    "전투 음악",
+    "전투 bgm",
+    "보스전",
+    "최종 보스",
+    "트레일러 음악",
+    "다크 판타지",
+    "히어로ic",
+)
+CLUB_BLOOM_CHANNEL_KEYWORDS = (
+    "club bloom",
+    "edm",
+    "edm mix",
+    "house music",
+    "future house",
+    "dance music",
+    "dance mix",
+    "festival edm",
+    "club music",
+    "club hits",
+    "night club",
+    "night drive edm",
+    "workout edm",
+    "gaming dance",
+    "rooftop house",
+    "beach club",
+    "dj booth",
+    "일렉트로닉",
+    "edm 믹스",
+    "하우스",
+    "클럽 음악",
+    "클럽",
+    "댄스 믹스",
+    "페스티벌 edm",
+    "운동 edm",
+    "나이트 드라이브 edm",
 )
 SIGNAL_ROOM_CHANNEL_KEYWORDS = (
     "signal room",
@@ -1101,6 +1209,13 @@ def wait_for_release(
 def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     explicit_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
     if explicit_title:
+        if explicit_title in {
+            AI_SSEOLJEON_LEGACY_CHANNEL_TITLE,
+            SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
+            SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
+            MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
+        }:
+            return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
         return explicit_title
 
     haystack = " ".join(
@@ -1119,10 +1234,16 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
         return HARUHARU_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
         return JAPAN_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in CLUB_BLOOM_CHANNEL_KEYWORDS):
+        return CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in ENGLISH_POP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
         return SUNDAZE_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in CINEMATIC_PULSE_CHANNEL_KEYWORDS):
+        return CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in STORYLIGHT_CHANNEL_KEYWORDS):
+        return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in SIGNAL_ROOM_CHANNEL_KEYWORDS):
-        return SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
+        return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
     return DEFAULT_YOUTUBE_CHANNEL_TITLE
 
 
@@ -1539,7 +1660,11 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         client,
         "POST",
         f"/playlists/{release['id']}/video/render",
-        json={"actor": args.actor, "allow_still_image_fallback": bool(args.allow_still_image_video)},
+        json={
+            "actor": args.actor,
+            "allow_still_image_fallback": bool(args.allow_still_image_video),
+            "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
+        },
     )
     release = wait_for_release(
         client,
@@ -1835,7 +1960,11 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         client,
         "POST",
         f"/playlists/{release['id']}/video/render",
-        json={"actor": args.actor, "allow_still_image_fallback": bool(args.allow_still_image_video)},
+        json={
+            "actor": args.actor,
+            "allow_still_image_fallback": bool(args.allow_still_image_video),
+            "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
+        },
     )
     release = wait_for_release(
         client,
@@ -2041,11 +2170,12 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "For sundaze/English pop releases, keep every localized title exactly the same as the English title. Also keep English track titles in every localized timestamped timeline row; translate only the surrounding prose, use-case text, and hashtags. "
             "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. "
-            "For Signal Room Radio or legacy AI썰전 BGM releases, write English default metadata and position it as no-vocal analytical/story focus music for research, debate prep, scripts, fact-checking, documentaries, mystery, and deep work without locking every title to one narrow keyword. "
+            "For Storylight OST or legacy AI썰전 BGM releases, write English default metadata and position it as no-vocal fantasy/story/game-OST music for writing, reading, worldbuilding, cozy RPG scenes, fairy-tale scenes, and calm adventure. "
+            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic/trailer/battle/game-focus music. For Club Bloom releases, write English default metadata and position it as EDM/house/dance music for night drive, workout, gaming, party warmup, or club listening. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Signal Room Radio/AI썰전/research/story BGM, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
-            "Use --default-language ko for HaruHaru, --default-language en for sundaze and Signal Room Radio, and --default-language es for Solwave Radio."
+            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/fantasy OST, Cinematic Pulse/cinematic OST, Club Bloom/EDM, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "Use --default-language ko for HaruHaru, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, and Club Bloom."
         ),
     }
 
@@ -2363,8 +2493,14 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, research/story/mystery BGM uses Signal Room Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, EDM/house/dance uses Club Bloom, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
+    auto_playlist_parser.add_argument(
+        "--video-spectrum-overlay-style",
+        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"],
+        default="bars",
+        help="App-rendered audio visualizer preset. Default: bars.",
+    )
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
@@ -2394,8 +2530,14 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, research/story/mystery BGM uses Signal Room Radio, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, EDM/house/dance uses Club Bloom, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
+    auto_single_parser.add_argument(
+        "--video-spectrum-overlay-style",
+        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"],
+        default="bars",
+        help="App-rendered audio visualizer preset. Default: bars.",
+    )
     auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
     auto_single_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")

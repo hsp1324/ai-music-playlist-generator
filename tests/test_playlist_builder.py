@@ -35,6 +35,7 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
         Settings(
             storage_root=tmp_path / "storage",
             ffmpeg_binary=str(ffmpeg_path),
+            video_spectrum_overlay_enabled=False,
         )
     )
 
@@ -135,6 +136,7 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
         Settings(
             storage_root=tmp_path / "storage",
             ffmpeg_binary=str(ffmpeg_path),
+            video_spectrum_overlay_enabled=False,
         )
     )
 

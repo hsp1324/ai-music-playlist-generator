@@ -1,5 +1,9 @@
+import colorsys
+import math
 import subprocess
 import time
+from array import array
+from io import BytesIO
 from dataclasses import dataclass
 from math import ceil
 from mimetypes import guess_type
@@ -7,6 +11,8 @@ from pathlib import Path
 from selectors import EVENT_READ, DefaultSelector
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable
+
+from PIL import Image, ImageDraw, ImageOps
 
 from app.config import Settings
 from app.models.track import Track
@@ -27,6 +33,13 @@ YOUTUBE_LOOP_VIDEO_FILTER = (
 )
 DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 10
 DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 2
+SPECTRUM_OVERLAY_WIDTH = 430
+SPECTRUM_OVERLAY_HEIGHT = 90
+SPECTRUM_OVERLAY_FPS = 12
+SPECTRUM_OVERLAY_BARS = 20
+SPECTRUM_ANALYSIS_SAMPLE_RATE = 4000
+RADIAL_SPECTRUM_OVERLAY_WIDTH = 320
+RADIAL_SPECTRUM_OVERLAY_HEIGHT = 320
 
 
 @dataclass
@@ -308,6 +321,7 @@ class FFMpegPlaylistBuilder:
         cover_image_path: Path,
         output_path: Path,
         *,
+        spectrum_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -318,6 +332,7 @@ class FFMpegPlaylistBuilder:
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         image_mimetype = guess_type(str(cover_image_path))[0] or "image/png"
+        render_output_path = self._base_render_path(output_path) if self._spectrum_overlay_enabled() else output_path
 
         command = [
             self.settings.ffmpeg_binary,
@@ -351,15 +366,30 @@ class FFMpegPlaylistBuilder:
             "+faststart",
             "-metadata:s:v:0",
             f"mimetype={image_mimetype}",
-            str(output_path),
+            str(render_output_path),
         ]
         output_path.unlink(missing_ok=True)
-        self._run_ffmpeg_with_progress(
-            command,
-            output_path=output_path,
-            total_duration_seconds=total_duration_seconds,
-            progress_callback=progress_callback,
-        )
+        render_output_path.unlink(missing_ok=True)
+        try:
+            self._run_ffmpeg_with_progress(
+                command,
+                output_path=render_output_path,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
+            if render_output_path != output_path:
+                self._apply_spectrum_overlay(
+                    render_output_path,
+                    audio_path,
+                    cover_image_path,
+                    output_path,
+                    spectrum_overlay_style=spectrum_overlay_style,
+                    total_duration_seconds=total_duration_seconds,
+                    progress_callback=progress_callback,
+                )
+        finally:
+            if render_output_path != output_path:
+                render_output_path.unlink(missing_ok=True)
         return output_path
 
     def build_looped_video(
@@ -369,6 +399,7 @@ class FFMpegPlaylistBuilder:
         output_path: Path,
         *,
         smooth_loop: bool = True,
+        spectrum_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -381,6 +412,7 @@ class FFMpegPlaylistBuilder:
         loop_source_path = clip_path
         loop_unit_path: Path | None = None
         concat_list_path: Path | None = None
+        render_output_path = self._base_render_path(output_path) if self._spectrum_overlay_enabled() else output_path
         command: list[str]
         if smooth_loop:
             source_seconds = self._resolve_loop_source_seconds(clip_path)
@@ -428,7 +460,7 @@ class FFMpegPlaylistBuilder:
                 "-shortest",
                 "-movflags",
                 "+faststart",
-                str(output_path),
+                str(render_output_path),
             ]
         else:
             command = [
@@ -461,17 +493,30 @@ class FFMpegPlaylistBuilder:
                 "-shortest",
                 "-movflags",
                 "+faststart",
-                str(output_path),
+                str(render_output_path),
             ]
         output_path.unlink(missing_ok=True)
+        render_output_path.unlink(missing_ok=True)
         try:
             self._run_ffmpeg_with_progress(
                 command,
-                output_path=output_path,
+                output_path=render_output_path,
                 total_duration_seconds=total_duration_seconds,
                 progress_callback=progress_callback,
             )
+            if render_output_path != output_path:
+                self._apply_spectrum_overlay(
+                    render_output_path,
+                    audio_path,
+                    clip_path,
+                    output_path,
+                    spectrum_overlay_style=spectrum_overlay_style,
+                    total_duration_seconds=total_duration_seconds,
+                    progress_callback=progress_callback,
+                )
         finally:
+            if render_output_path != output_path:
+                render_output_path.unlink(missing_ok=True)
             if loop_unit_path:
                 loop_unit_path.unlink(missing_ok=True)
             if concat_list_path:
@@ -479,6 +524,820 @@ class FFMpegPlaylistBuilder:
             if smooth_loop:
                 intro_path.unlink(missing_ok=True)
         return output_path
+
+    def _spectrum_overlay_enabled(self) -> bool:
+        return bool(getattr(self.settings, "video_spectrum_overlay_enabled", True))
+
+    def _base_render_path(self, output_path: Path) -> Path:
+        return output_path.with_name(f"{output_path.stem}-base-render{output_path.suffix}")
+
+    def _normalize_spectrum_overlay_style(self, style: str) -> str:
+        normalized = str(style or "bars").strip().lower().replace("_", "-")
+        aliases = {
+            "bar": "bars",
+            "spectrum": "bars",
+            "spectrum-bars": "bars",
+            "wave": "multiwave",
+            "waveform": "multiwave",
+            "waves": "multiwave",
+            "multi-wave": "multiwave",
+            "thin-wave": "thinwave",
+            "clean-wave": "thinwave",
+            "dot": "dots",
+            "particles": "dots",
+            "mirror": "mirror-bars",
+            "mirrorbars": "mirror-bars",
+            "mirrored-bars": "mirror-bars",
+            "circle": "radial",
+            "ring": "radial",
+            "radial-bars": "radial",
+            "pulse-line": "pulse",
+            "pulses": "pulse",
+        }
+        normalized = aliases.get(normalized, normalized)
+        if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"}:
+            return "bars"
+        return normalized
+
+    def _apply_spectrum_overlay(
+        self,
+        base_video_path: Path,
+        audio_path: Path,
+        visual_source_path: Path,
+        output_path: Path,
+        *,
+        spectrum_overlay_style: str | None,
+        total_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None,
+    ) -> None:
+        style = self._normalize_spectrum_overlay_style(
+            spectrum_overlay_style or str(getattr(self.settings, "video_spectrum_overlay_style", "bars") or "bars")
+        )
+
+        output_path.unlink(missing_ok=True)
+        visual_frame = self._normalize_preview_frame(self._load_visual_source_frame(visual_source_path))
+        primary, accent = self._extract_spectrum_palette(visual_frame)
+        overlay_size = self._spectrum_overlay_size(style)
+        x, y = self._choose_spectrum_overlay_position(
+            visual_frame,
+            overlay_size,
+        )
+        overlay_path = output_path.with_name(f"{output_path.stem}-spectrum-overlay.mov")
+
+        if progress_callback:
+            progress_callback(
+                {
+                    "stage": "video_spectrum_prepare",
+                    "progress_ratio": 0.0,
+                    "percent": 0.0,
+                    "processed_seconds": 0.0,
+                    "total_seconds": round(float(total_duration_seconds or 0), 1)
+                    if total_duration_seconds
+                    else None,
+                    "eta_seconds": None,
+                    "message": "Preparing audio-reactive visualizer overlay.",
+                    "status": "running",
+                }
+            )
+
+        try:
+            self._build_spectrum_overlay_video(
+                audio_path,
+                overlay_path,
+                primary=primary,
+                accent=accent,
+                style=style,
+                overlay_size=overlay_size,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
+            command = [
+                self.settings.ffmpeg_binary,
+                "-y",
+                "-hide_banner",
+                "-nostats",
+                "-progress",
+                "pipe:1",
+                "-i",
+                str(base_video_path),
+                "-stream_loop",
+                "-1",
+                "-i",
+                str(overlay_path),
+                "-filter_complex",
+                (
+                    "[1:v]format=rgba[visualizer];"
+                    f"[0:v][visualizer]overlay=x={x}:y={y}:shortest=1:format=auto,"
+                    "format=yuv420p[v]"
+                ),
+                "-map",
+                "[v]",
+                "-map",
+                "0:a:0",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-crf",
+                "24",
+                "-c:a",
+                "copy",
+                "-shortest",
+                "-movflags",
+                "+faststart",
+                str(output_path),
+            ]
+            self._run_ffmpeg_with_progress(
+                command,
+                output_path=output_path,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+                stage="video_spectrum_overlay",
+            )
+        finally:
+            overlay_path.unlink(missing_ok=True)
+
+    def _build_spectrum_overlay_video(
+        self,
+        audio_path: Path,
+        output_path: Path,
+        *,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+        style: str,
+        overlay_size: tuple[int, int],
+        total_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> Path:
+        duration_seconds = float(total_duration_seconds or 0)
+        if duration_seconds <= 0:
+            duration_seconds = self._probe_media_duration(audio_path)
+        duration_seconds = max(duration_seconds, 0.1)
+        if progress_callback:
+            progress_callback(
+                {
+                    "stage": "video_spectrum_prepare",
+                    "progress_ratio": 0.0,
+                    "percent": 0.0,
+                    "processed_seconds": 0.0,
+                    "total_seconds": round(duration_seconds, 1),
+                    "eta_seconds": None,
+                    "status": "analyzing_audio",
+                }
+            )
+        samples = self._read_audio_samples(audio_path, duration_seconds)
+        frame_count = max(1, int(math.ceil(duration_seconds * SPECTRUM_OVERLAY_FPS)))
+        overlay_width, overlay_height = overlay_size
+
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgba",
+            "-s",
+            f"{overlay_width}x{overlay_height}",
+            "-r",
+            str(SPECTRUM_OVERLAY_FPS),
+            "-i",
+            "pipe:0",
+            "-an",
+            "-c:v",
+            "qtrle",
+            str(output_path),
+        ]
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        if process.stdin is None:
+            raise RuntimeError("ffmpeg overlay pipe could not be opened.")
+
+        smoothed = 0.0
+        started = time.monotonic()
+        last_emit = 0.0
+
+        def emit_overlay_progress(frame_index: int, *, force: bool = False) -> None:
+            nonlocal last_emit
+            if progress_callback is None:
+                return
+            now = time.monotonic()
+            if not force and now - last_emit < 2:
+                return
+            last_emit = now
+            processed_seconds = min(frame_index / SPECTRUM_OVERLAY_FPS, duration_seconds)
+            ratio = min(processed_seconds / duration_seconds, 1.0) if duration_seconds > 0 else 0.0
+            eta_seconds = None
+            if ratio > 0 and ratio < 1:
+                elapsed = max(now - started, 0.1)
+                eta_seconds = max(elapsed * (1 - ratio) / ratio, 0.0)
+            progress_callback(
+                {
+                    "stage": "video_spectrum_prepare",
+                    "progress_ratio": ratio,
+                    "percent": round(ratio * 100, 1),
+                    "processed_seconds": round(processed_seconds, 1),
+                    "total_seconds": round(duration_seconds, 1),
+                    "eta_seconds": round(eta_seconds, 1) if eta_seconds is not None else None,
+                    "elapsed_seconds": round(now - started, 1),
+                    "frame": str(frame_index),
+                    "status": "rendering_overlay",
+                }
+            )
+
+        try:
+            for frame_index in range(frame_count):
+                timestamp = frame_index / SPECTRUM_OVERLAY_FPS
+                raw_level = self._audio_level_for_time(samples, timestamp)
+                if raw_level > smoothed:
+                    smoothed = (smoothed * 0.45) + (raw_level * 0.55)
+                else:
+                    smoothed = (smoothed * 0.82) + (raw_level * 0.18)
+                if style == "multiwave":
+                    frame = self._draw_wave_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        raw_level=raw_level,
+                        samples=samples,
+                        timestamp=timestamp,
+                        primary=primary,
+                        accent=accent,
+                    )
+                elif style == "thinwave":
+                    frame = self._draw_thin_wave_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        raw_level=raw_level,
+                        samples=samples,
+                        timestamp=timestamp,
+                        primary=primary,
+                        accent=accent,
+                    )
+                elif style == "dots":
+                    frame = self._draw_dot_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        raw_level=raw_level,
+                        samples=samples,
+                        timestamp=timestamp,
+                        primary=primary,
+                        accent=accent,
+                    )
+                elif style == "mirror-bars":
+                    frame = self._draw_mirror_bar_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        primary=primary,
+                        accent=accent,
+                    )
+                elif style == "radial":
+                    frame = self._draw_radial_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        primary=primary,
+                        accent=accent,
+                        overlay_size=overlay_size,
+                    )
+                elif style == "pulse":
+                    frame = self._draw_pulse_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        raw_level=raw_level,
+                        samples=samples,
+                        timestamp=timestamp,
+                        primary=primary,
+                        accent=accent,
+                    )
+                else:
+                    frame = self._draw_bar_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        primary=primary,
+                        accent=accent,
+                    )
+                process.stdin.write(frame.tobytes())
+                emit_overlay_progress(frame_index)
+            emit_overlay_progress(frame_count, force=True)
+        except BrokenPipeError as exc:
+            raise RuntimeError("ffmpeg overlay pipe closed unexpectedly.") from exc
+        finally:
+            process.stdin.close()
+
+        stderr = process.stderr.read().decode("utf-8", errors="replace") if process.stderr else ""
+        return_code = process.wait()
+        if return_code != 0:
+            details = "\n".join(line for line in stderr.splitlines()[-8:] if line.strip())
+            raise RuntimeError(f"ffmpeg failed while preparing visualizer overlay: {details or return_code}")
+        return output_path
+
+    def _spectrum_overlay_size(self, style: str) -> tuple[int, int]:
+        if style == "radial":
+            return (RADIAL_SPECTRUM_OVERLAY_WIDTH, RADIAL_SPECTRUM_OVERLAY_HEIGHT)
+        return (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT)
+
+    def _read_audio_samples(self, audio_path: Path, duration_seconds: float) -> array:
+        command = [
+            self.settings.ffmpeg_binary,
+            "-v",
+            "error",
+            "-t",
+            self._format_seconds(duration_seconds),
+            "-i",
+            str(audio_path),
+            "-vn",
+            "-ac",
+            "1",
+            "-ar",
+            str(SPECTRUM_ANALYSIS_SAMPLE_RATE),
+            "-f",
+            "s16le",
+            "pipe:1",
+        ]
+        try:
+            result = subprocess.run(command, check=True, capture_output=True)
+        except subprocess.CalledProcessError as exc:
+            details = (exc.stderr or b"").decode("utf-8", errors="replace").strip()
+            raise RuntimeError(f"ffmpeg failed while reading audio for visualizer: {details or exc}") from exc
+
+        samples = array("h")
+        samples.frombytes(result.stdout[: len(result.stdout) - (len(result.stdout) % samples.itemsize)])
+        return samples
+
+    def _audio_level_for_time(self, samples: array, timestamp: float) -> float:
+        if not samples:
+            return 0.0
+        center = int(timestamp * SPECTRUM_ANALYSIS_SAMPLE_RATE)
+        radius = max(int(SPECTRUM_ANALYSIS_SAMPLE_RATE * 0.055), 1)
+        start = max(center - radius, 0)
+        end = min(center + radius, len(samples))
+        if end <= start:
+            return 0.0
+        total = 0
+        peak = 0
+        for value in samples[start:end]:
+            magnitude = abs(int(value))
+            total += magnitude
+            peak = max(peak, magnitude)
+        average = total / max(end - start, 1) / 32768
+        peak_ratio = peak / 32768
+        return min(((average * 3.9) + (peak_ratio * 0.45)) ** 0.72, 1.0)
+
+    def _draw_bar_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        bottom = SPECTRUM_OVERLAY_HEIGHT - 12
+        max_height = SPECTRUM_OVERLAY_HEIGHT - 30
+        bar_width = 8
+        total_gap = SPECTRUM_OVERLAY_WIDTH - (SPECTRUM_OVERLAY_BARS * bar_width)
+        gap = total_gap / max(SPECTRUM_OVERLAY_BARS - 1, 1)
+        center = 0.52 + (math.sin(frame_index * 0.055) * 0.08)
+
+        for index in range(SPECTRUM_OVERLAY_BARS):
+            ratio = index / max(SPECTRUM_OVERLAY_BARS - 1, 1)
+            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.22**2))
+            ripple = 0.76 + (0.24 * math.sin((frame_index * 0.24) + (index * 1.37)))
+            height = 7 + int(max_height * (0.10 + (level * (0.24 + (0.82 * gaussian)) * ripple)))
+            height = max(5, min(height, max_height))
+            x = int(round(index * (bar_width + gap)))
+            y = bottom - height
+            color = self._mix_rgb(primary, accent, ratio)
+            glow_alpha = int(30 + (level * 44) + (gaussian * 24))
+            fill_alpha = int(112 + (level * 74) + (gaussian * 34))
+            draw.rounded_rectangle(
+                [x - 3, y - 3, x + bar_width + 3, bottom + 3],
+                radius=6,
+                fill=(*color, min(glow_alpha, 105)),
+            )
+            draw.rounded_rectangle(
+                [x, y, x + bar_width, bottom],
+                radius=4,
+                fill=(*color, min(fill_alpha, 220)),
+            )
+        return image
+
+    def _draw_mirror_bar_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        center_y = SPECTRUM_OVERLAY_HEIGHT // 2
+        max_height = (SPECTRUM_OVERLAY_HEIGHT // 2) - 10
+        bar_width = 8
+        total_gap = SPECTRUM_OVERLAY_WIDTH - (SPECTRUM_OVERLAY_BARS * bar_width)
+        gap = total_gap / max(SPECTRUM_OVERLAY_BARS - 1, 1)
+        center = 0.52 + (math.sin(frame_index * 0.075) * 0.10)
+
+        for index in range(SPECTRUM_OVERLAY_BARS):
+            ratio = index / max(SPECTRUM_OVERLAY_BARS - 1, 1)
+            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.24**2))
+            ripple = 0.70 + (0.30 * math.sin((frame_index * 0.36) + (index * 1.6)))
+            half_height = 4 + int(max_height * (0.08 + (level * (0.30 + (0.95 * gaussian)) * ripple)))
+            half_height = max(3, min(half_height, max_height))
+            x = int(round(index * (bar_width + gap)))
+            color = self._mix_rgb(primary, accent, ratio)
+            alpha = int(120 + (level * 82) + (gaussian * 32))
+            draw.rounded_rectangle(
+                [x - 2, center_y - half_height - 2, x + bar_width + 2, center_y + half_height + 2],
+                radius=5,
+                fill=(*color, min(alpha // 2, 100)),
+            )
+            draw.rounded_rectangle(
+                [x, center_y - half_height, x + bar_width, center_y + half_height],
+                radius=4,
+                fill=(*color, min(alpha, 225)),
+            )
+        return image
+
+    def _draw_dot_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        raw_level: float,
+        samples: array,
+        timestamp: float,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        dot_count = 24
+        center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.55)
+        transient = max(raw_level - (level * 0.78), 0.0)
+        punch = min((raw_level * 1.2) + (transient * 5.0), 1.0)
+        x_gap = SPECTRUM_OVERLAY_WIDTH / max(dot_count - 1, 1)
+
+        for index in range(dot_count):
+            ratio = index / max(dot_count - 1, 1)
+            sample_time = timestamp + ((ratio - 0.5) * 0.22)
+            signal = self._audio_signal_at_time(samples, sample_time)
+            envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.34**2))
+            radius = 3 + int((abs(signal) * 7) + (punch * 5 * envelope))
+            x = int(round(index * x_gap))
+            y = center_y + int(signal * (22 + (punch * 24)) * (0.45 + envelope))
+            color = self._mix_rgb(primary, accent, ratio)
+            draw.ellipse(
+                [x - radius - 4, y - radius - 4, x + radius + 4, y + radius + 4],
+                fill=(*color, 34 + int(punch * 34)),
+            )
+            draw.ellipse(
+                [x - radius, y - radius, x + radius, y + radius],
+                fill=(*color, min(130 + int(punch * 85), 220)),
+            )
+        return image
+
+    def _draw_radial_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+        overlay_size: tuple[int, int],
+    ) -> Image.Image:
+        overlay_width, overlay_height = overlay_size
+        image = Image.new("RGBA", (overlay_width, overlay_height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        center_x = int(overlay_width * 0.50)
+        center_y = int(overlay_height * 0.50)
+        base_radius = 60
+        ring_count = 48
+        pulse = 0.75 + (0.25 * math.sin(frame_index * 0.23))
+        for index in range(ring_count):
+            ratio = index / ring_count
+            angle = (ratio * math.tau) - (math.pi / 2)
+            color = self._mix_rgb(primary, accent, ratio)
+            ripple = 0.60 + (0.40 * math.sin((frame_index * 0.36) + (index * 1.23)))
+            length = 12 + int(54 * level * pulse * ripple)
+            inner = base_radius + int(level * 9)
+            outer = inner + length
+            x1 = center_x + math.cos(angle) * inner
+            y1 = center_y + math.sin(angle) * inner
+            x2 = center_x + math.cos(angle) * outer
+            y2 = center_y + math.sin(angle) * outer
+            draw.line((x1, y1, x2, y2), fill=(*color, 100 + int(level * 95)), width=7)
+        glow_color = self._mix_rgb(primary, accent, 0.5)
+        glow_radius = base_radius + 12 + int(level * 24)
+        draw.ellipse(
+            [
+                center_x - glow_radius,
+                center_y - glow_radius,
+                center_x + glow_radius,
+                center_y + glow_radius,
+            ],
+            outline=(*glow_color, 46 + int(level * 40)),
+            width=6,
+        )
+        return image
+
+    def _draw_pulse_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        raw_level: float,
+        samples: array,
+        timestamp: float,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.57)
+        transient = max(raw_level - (level * 0.76), 0.0)
+        punch = min((raw_level * 1.25) + (transient * 5.8), 1.0)
+        points_top: list[tuple[int, int]] = []
+        points_bottom: list[tuple[int, int]] = []
+        for x in range(0, SPECTRUM_OVERLAY_WIDTH, 5):
+            ratio = x / max(SPECTRUM_OVERLAY_WIDTH - 1, 1)
+            sample_time = timestamp + ((ratio - 0.5) * 0.18)
+            signal = abs(self._audio_signal_at_time(samples, sample_time))
+            envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.32**2))
+            height = int((4 + (signal * 34) + (punch * 16)) * (0.35 + (0.80 * envelope)))
+            points_top.append((x, center_y - height))
+            points_bottom.append((x, center_y + int(height * 0.45)))
+        glow = self._mix_rgb(primary, accent, 0.45)
+        draw.line(points_top, fill=(*glow, 72), width=10, joint="curve")
+        draw.line(points_bottom, fill=(*glow, 42), width=8, joint="curve")
+        draw.line(points_top, fill=(*accent, 182), width=4, joint="curve")
+        draw.line(points_bottom, fill=(*primary, 124), width=3, joint="curve")
+        draw.line([(0, center_y), (SPECTRUM_OVERLAY_WIDTH, center_y)], fill=(*primary, 72), width=2)
+        return image
+
+    def _draw_thin_wave_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        raw_level: float,
+        samples: array,
+        timestamp: float,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.56)
+        transient = max(raw_level - (level * 0.82), 0.0)
+        punch = min((raw_level * 1.05) + (transient * 4.2), 1.0)
+        amplitude = 18 + (level * 34) + (punch * 18)
+        window_seconds = 0.24
+        lines = [
+            (-10, -0.018, 0.70, primary, 94, 2),
+            (0, 0.000, 1.00, accent, 150, 3),
+            (10, 0.018, 0.70, self._mix_rgb(primary, accent, 0.62), 94, 2),
+        ]
+        for offset, time_shift, amp_scale, color, alpha, width in lines:
+            points: list[tuple[int, int]] = []
+            for x in range(0, SPECTRUM_OVERLAY_WIDTH, 4):
+                ratio = x / max(SPECTRUM_OVERLAY_WIDTH - 1, 1)
+                envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.31**2))
+                signal = self._audio_signal_at_time(samples, timestamp + time_shift + ((ratio - 0.5) * window_seconds))
+                y = center_y + offset + int(signal * amplitude * amp_scale * (0.35 + (0.82 * envelope)))
+                points.append((x, y))
+            draw.line(points, fill=(*color, min(alpha + int(punch * 36), 190)), width=width, joint="curve")
+        return image
+
+    def _draw_wave_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        raw_level: float,
+        samples: array,
+        timestamp: float,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.55)
+        transient = max(raw_level - (level * 0.78), 0.0)
+        punch = min((raw_level * 1.15) + (transient * 5.2), 1.0)
+        base_amplitude = 18 + (level * 36) + (punch * 28)
+        window_seconds = 0.28
+        glow = self._mix_rgb(primary, accent, 0.50)
+        lines = [
+            (-17, -0.030, 0.58, primary, 66, 2),
+            (-8, -0.014, 0.76, self._mix_rgb(primary, accent, 0.30), 94, 2),
+            (0, 0.000, 1.02, accent, 132, 3),
+            (8, 0.014, 0.76, self._mix_rgb(primary, accent, 0.68), 94, 2),
+            (17, 0.030, 0.58, glow, 62, 2),
+        ]
+
+        # A soft bloom keeps the punchy lines integrated with the background.
+        midline = [
+            (
+                x,
+                center_y
+                + int(
+                    self._audio_signal_at_time(samples, timestamp + ((x / SPECTRUM_OVERLAY_WIDTH) - 0.5) * 0.08)
+                    * base_amplitude
+                    * 0.22
+                ),
+            )
+            for x in range(0, SPECTRUM_OVERLAY_WIDTH, 5)
+        ]
+        draw.line(midline, fill=(*glow, 32), width=8, joint="curve")
+
+        for offset, time_shift, amp_scale, color, alpha, width in lines:
+            points: list[tuple[int, int]] = []
+            for x in range(0, SPECTRUM_OVERLAY_WIDTH, 3):
+                ratio = x / max(SPECTRUM_OVERLAY_WIDTH - 1, 1)
+                envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.28**2))
+                sample_time = timestamp + time_shift + ((ratio - 0.5) * window_seconds)
+                wave = self._audio_signal_at_time(samples, sample_time)
+                y = center_y + offset + int(
+                    wave * base_amplitude * amp_scale * (0.35 + (0.95 * envelope))
+                )
+                points.append((x, y))
+            draw.line(points, fill=(*color, min(alpha + int(punch * 58), 225)), width=width, joint="curve")
+        return image
+
+    def _audio_signal_at_time(self, samples: array, timestamp: float) -> float:
+        if not samples:
+            return 0.0
+        sample_index = min(max(timestamp * SPECTRUM_ANALYSIS_SAMPLE_RATE, 0.0), len(samples) - 1)
+        left_index = int(sample_index)
+        right_index = min(left_index + 1, len(samples) - 1)
+        ratio = sample_index - left_index
+        left = int(samples[left_index]) / 32768
+        right = int(samples[right_index]) / 32768
+        value = left + ((right - left) * ratio)
+        return math.copysign(min(abs(value) ** 0.58, 1.0), value)
+
+    def _load_visual_source_frame(self, source_path: Path) -> Image.Image:
+        mimetype = guess_type(str(source_path))[0] or ""
+        if mimetype.startswith("image/"):
+            try:
+                with Image.open(source_path) as image:
+                    return image.convert("RGB").copy()
+            except OSError:
+                pass
+
+        try:
+            result = subprocess.run(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-v",
+                    "error",
+                    "-ss",
+                    "0",
+                    "-i",
+                    str(source_path),
+                    "-frames:v",
+                    "1",
+                    "-f",
+                    "image2pipe",
+                    "-vcodec",
+                    "png",
+                    "pipe:1",
+                ],
+                check=True,
+                capture_output=True,
+            )
+            with Image.open(BytesIO(result.stdout)) as image:
+                return image.convert("RGB").copy()
+        except (OSError, subprocess.CalledProcessError):
+            return Image.new("RGB", (1280, 720), "#10141d")
+
+    def _normalize_preview_frame(self, source: Image.Image) -> Image.Image:
+        image = ImageOps.contain(source.convert("RGB"), (1280, 720), Image.Resampling.LANCZOS)
+        canvas = Image.new("RGB", (1280, 720), "#000000")
+        canvas.paste(image, ((1280 - image.width) // 2, (720 - image.height) // 2))
+        return canvas
+
+    def _extract_spectrum_palette(self, image: Image.Image) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
+        sample = image.resize((96, 54), Image.Resampling.BILINEAR).convert("RGB")
+        candidates: list[tuple[float, float, tuple[int, int, int]]] = []
+        for r, g, b in sample.getdata():
+            h, lightness, saturation = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)
+            brightness = max(r, g, b) / 255
+            if brightness < 0.16:
+                continue
+            if saturation < 0.12 and brightness > 0.84:
+                continue
+            score = (saturation * 0.72) + (brightness * 0.28)
+            candidates.append((score, h, (r, g, b)))
+
+        if not candidates:
+            return (86, 232, 255), (255, 88, 210)
+
+        candidates.sort(reverse=True, key=lambda item: item[0])
+        primary = self._enhance_overlay_color(self._average_rgb([rgb for _, _, rgb in candidates[:80]]))
+        primary_hue = colorsys.rgb_to_hls(*(channel / 255 for channel in primary))[0]
+        accent_rgb = next(
+            (
+                rgb
+                for _, hue, rgb in candidates[:260]
+                if min(abs(hue - primary_hue), 1 - abs(hue - primary_hue)) > 0.13
+            ),
+            self._rotate_hue(primary, 0.16),
+        )
+        accent = self._enhance_overlay_color(accent_rgb)
+        return primary, accent
+
+    def _choose_spectrum_overlay_position(self, image: Image.Image, size: tuple[int, int]) -> tuple[int, int]:
+        width, height = size
+        if width >= 300 and height >= 300:
+            candidates = [
+                (930, 380),
+                (950, 370),
+                (900, 395),
+                (875, 360),
+                (930, 300),
+                (760, 360),
+            ]
+        else:
+            candidates = [
+                (800, 585),
+                (760, 585),
+                (825, 500),
+                (430, 585),
+                (610, 600),
+                (760, 455),
+            ]
+        candidates = [(x, y) for x, y in candidates if x + width <= 1280 and y + height <= 720]
+        if not candidates:
+            return max(1280 - width - 50, 0), max(720 - height - 45, 0)
+
+        scored = [(self._overlay_region_score(image, x, y, width, height), (x, y)) for x, y in candidates]
+        default_score = scored[0][0]
+        best_score, best_position = min(scored, key=lambda item: item[0])
+        if default_score <= 0.46 or default_score <= best_score + 0.12:
+            return candidates[0]
+        return best_position
+
+    def _overlay_region_score(self, image: Image.Image, x: int, y: int, width: int, height: int) -> float:
+        crop = image.crop((x, y, x + width, y + height)).resize((72, 24), Image.Resampling.BILINEAR).convert("RGB")
+        pixels = list(crop.getdata())
+        if not pixels:
+            return 0.0
+        bright = 0
+        white = 0
+        saturated = 0
+        luma_sum = 0.0
+        for r, g, b in pixels:
+            luma = ((r * 0.2126) + (g * 0.7152) + (b * 0.0722)) / 255
+            luma_sum += luma
+            if luma > 0.72:
+                bright += 1
+            if min(r, g, b) > 190:
+                white += 1
+            if max(r, g, b) - min(r, g, b) > 95 and luma > 0.36:
+                saturated += 1
+        count = len(pixels)
+        return ((bright / count) * 0.9) + ((white / count) * 1.5) + ((saturated / count) * 0.45) + (
+            (luma_sum / count) * 0.15
+        )
+
+    def _average_rgb(self, values: list[tuple[int, int, int]]) -> tuple[int, int, int]:
+        if not values:
+            return 86, 232, 255
+        count = len(values)
+        return (
+            int(sum(value[0] for value in values) / count),
+            int(sum(value[1] for value in values) / count),
+            int(sum(value[2] for value in values) / count),
+        )
+
+    def _enhance_overlay_color(self, rgb: tuple[int, int, int]) -> tuple[int, int, int]:
+        h, lightness, saturation = colorsys.rgb_to_hls(*(channel / 255 for channel in rgb))
+        lightness = min(max(lightness, 0.52), 0.70)
+        saturation = min(max(saturation, 0.58), 0.92)
+        r, g, b = colorsys.hls_to_rgb(h, lightness, saturation)
+        return int(r * 255), int(g * 255), int(b * 255)
+
+    def _rotate_hue(self, rgb: tuple[int, int, int], amount: float) -> tuple[int, int, int]:
+        h, lightness, saturation = colorsys.rgb_to_hls(*(channel / 255 for channel in rgb))
+        r, g, b = colorsys.hls_to_rgb((h + amount) % 1.0, lightness, saturation)
+        return int(r * 255), int(g * 255), int(b * 255)
+
+    def _mix_rgb(
+        self,
+        first: tuple[int, int, int],
+        second: tuple[int, int, int],
+        ratio: float,
+    ) -> tuple[int, int, int]:
+        ratio = min(max(ratio, 0.0), 1.0)
+        return (
+            int(first[0] + ((second[0] - first[0]) * ratio)),
+            int(first[1] + ((second[1] - first[1]) * ratio)),
+            int(first[2] + ((second[2] - first[2]) * ratio)),
+        )
 
     def _write_loop_concat_list(
         self,

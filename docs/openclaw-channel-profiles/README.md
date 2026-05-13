@@ -154,27 +154,69 @@ YouTube thumbnail:
 - Add large readable K-pop text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, or `RAINY KPOP`.
 - Add `HARUHARU` brand line, visually consistent with the large cover channel label.
 
-### Signal Room Radio
+### Storylight OST
 
 Cover / first frame:
 
-- 16:9 illustrated/anime/stylized/cinematic image for AI debate prep, research, story analysis, mystery, documentary, data review, newsroom, or deep-focus BGM releases.
-- No fixed recurring visual signature yet. The playlist concept decides the signal-room/research/story scene, object, palette, and camera.
-- Only text allowed is the large lower-left `Signal Room Radio` brand label.
-- If the connected YouTube channel still appears as `AI썰전`, use `Signal Room Radio` as the intended public brand label and report that the channel should be manually renamed/reconnected.
+- 16:9 illustrated/anime/stylized/storybook image for fantasy, fairy-tale, cozy RPG, game-OST, magical village, forest path, castle road, story BGM, or calm adventure instrumental releases.
+- No fixed recurring visual signature yet. The playlist concept decides the fantasy/story scene, object, palette, and camera.
+- Only text allowed is the large lower-left `Storylight OST` brand label.
+- If the connected YouTube channel still appears as `AI썰전`, use it only as the upload destination; the intended public brand label is `Storylight OST`.
 
 Loop video:
 
-- Animate the cover/first-frame with restrained but clearly visible atmospheric motion.
-- Preserve the large lower-left `Signal Room Radio` brand label exactly for the whole clip.
-- Do not add subtitles, title text, duration text, logos, UI, gore, real crime photos, or unrelated words.
+- Animate the cover/first-frame with visible storybook environmental motion such as lantern glow, fireflies, drifting magic dust, leaves, candle flame, window glow, snow, water shimmer, clouds, or star shimmer.
+- Preserve the large lower-left `Storylight OST` brand label exactly for the whole clip.
+- Do not add subtitles, title text, duration text, logos, UI, protected characters, studio references, or unrelated words.
 
 YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable analytical/story text such as `AI DEBATE`, `RESEARCH`, `SCRIPT NOTES`, `FACT CHECK`, `DEEP WORK`, `DATA REVIEW`, `MYSTERY`, `DOCUMENTARY`, or `SIGNAL ROOM`.
-- Add `SIGNAL ROOM RADIO` brand line, visually consistent with the large cover channel label.
+- Add large readable fantasy/story text such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`.
+- Add `STORYLIGHT OST` brand line, visually consistent with the large cover channel label.
+
+### Cinematic Pulse
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized/poster-art image for cinematic, trailer, battle, final boss, heroic, sci-fi action, dark fantasy, game-combat, or epic orchestral instrumental releases.
+- Strong focal scene, bold lighting, readable silhouettes, and high contrast.
+- Only text allowed is the large lower-left `Cinematic Pulse` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame with controlled cinematic motion such as storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, or atmospheric light movement.
+- Preserve the large lower-left `Cinematic Pulse` brand label exactly for the whole clip.
+- Do not add gore, real war footage, protected characters, franchise references, subtitles, title text, logos, UI, or unrelated words.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same subject, placement, lighting, palette, props, and camera angle.
+- Add large readable cinematic text such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`.
+- Add `CINEMATIC PULSE` brand line, visually consistent with the large cover channel label.
+
+### Club Bloom
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized neon image for EDM, house, dance, festival, workout, night-drive, gaming, club, or party-energy releases.
+- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
+- Only text allowed is the large lower-left `Club Bloom` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame with visible rhythmic motion such as light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
+- Preserve the large lower-left `Club Bloom` brand label exactly for the whole clip.
+- Do not add subtitles, lyrics, title text, duration text, UI, logos, explicit nudity, unsafe minors, protected brands, or unrelated words.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same subject, placement, lighting, palette, props, and camera angle.
+- Add large readable dance text such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`.
+- Add `CLUB BLOOM` brand line, visually consistent with the large cover channel label.
 
 Profiles:
 
@@ -183,9 +225,11 @@ Profiles:
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
 - [HaruHaru](haruharu.md)
-- [Signal Room Radio](signal-room-radio.md)
+- [Storylight OST](storylight-ost.md)
+- [Cinematic Pulse](cinematic-pulse.md)
+- [Club Bloom](club-bloom.md)
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
-If `/youtube/status` shows `AI썰전`, treat it as legacy `Signal Room Radio` until the human manually renames/reconnects the YouTube channel.
+If `/youtube/status` shows `AI썰전`, treat it as the legacy upload destination for `Storylight OST` until the human manually renames/reconnects the YouTube channel. Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue concept direction.
 `AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.

@@ -18,6 +18,8 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 - The cover/first-frame channel brand label is mandatory for every channel. Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words.
 - The Dreamina/Seedance loop video must preserve the exact lower-left channel label for the full clip. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
 - The thumbnail should use larger click text plus a channel-brand line whose size/style matches the cover channel label.
+- Do not include spectrum bars, waveform graphics, equalizers, or other audio-reactive overlays in generated assets. The app adds an audio-reactive visualizer during final video render, chooses colors from the cover/loop-video palette, and positions it away from channel text when possible.
+- Available app-rendered visualizer presets are `bars`, `multiwave`, `thinwave`, `dots`, `mirror-bars`, `radial`, and `pulse`. Use the default `bars` unless the human asks for another effect.
 - Human visual requests override the channel default. If the human asks for a specific scene, subject, action, camera angle, animal, object, or character type, apply that concept consistently to the cover, thumbnail, and loop video.
 - All generated visuals should look animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage unless the human explicitly asks and the YouTube synthetic-media policy is handled.
 - If Dreamina/Seedance blocks a loop-video generation for inappropriate content, copyright, moderation, or policy reasons, OpenClaw should rewrite the prompt and retry up to 10 total attempts. Each failure must be reported to Slack before retrying with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
@@ -120,18 +122,40 @@ Use this for `HaruHaru`, K-pop, Korean pop, Korean dance-pop, Korean synth-pop, 
 - Let the playlist concept decide the cover, thumbnail, and loop-video scene.
 - The cover must contain only the large lower-left `HaruHaru` brand label.
 - The thumbnail should use short K-pop click text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, plus `HARUHARU`.
-- The loop video should animate the selected cover concept, not borrow Tokyo Daydream, Soft Hour, HaruHaru, Signal Room, sundaze, or Solwave signatures.
+- The loop video should animate the selected cover concept, not borrow Tokyo Daydream, Soft Hour, HaruHaru, Storylight, Cinematic Pulse, Club Bloom, sundaze, or Solwave signatures.
 
-## Signal Room Radio Visual Skill
+## Storylight OST Visual Skill
 
-Use this for `Signal Room Radio`, legacy connected `AI썰전`, analytical BGM, research music, AI debate prep, mystery BGM, documentary BGM, data review, newsroom focus, and instrumental story-background releases.
+Use this for `Storylight OST`, fantasy OST, fairy-tale BGM, cozy RPG music, magical village BGM, game-town BGM, storybook instrumental releases, or legacy connected `AI썰전` after the human replaces that channel direction.
 
 - No fixed recurring visual signature yet.
-- Let the playlist concept decide the signal-room/research/mystery-documentary scene, object, palette, and loop-video motion.
-- The cover must contain only the large lower-left `Signal Room Radio` brand label.
-- The thumbnail should use short analytical/story click text such as `AI DEBATE`, `RESEARCH`, `SCRIPT NOTES`, `FACT CHECK`, `DEEP WORK`, `DATA REVIEW`, `MYSTERY`, `DOCUMENTARY`, or `SIGNAL ROOM`, plus `SIGNAL ROOM RADIO`.
-- The loop video should animate the selected cover concept with restrained atmospheric motion, not borrow Soft Hour calm-use-case visuals or Tokyo walking signatures.
-- Do not use gore, exploitative real crime photos, real victims/suspects, weapons aimed at people, copyrighted characters, celebrity likenesses, or explicit violent imagery.
+- Let the playlist concept decide the fantasy/story/game-OST scene, object, palette, and loop-video motion.
+- The cover must contain only the large lower-left `Storylight OST` brand label.
+- The thumbnail should use short fantasy/story click text such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`, plus `STORYLIGHT OST`.
+- The loop video should animate the selected cover concept with visible storybook environmental motion, not borrow Soft Hour calm-use-case visuals or Tokyo walking signatures.
+- Do not use protected IP, real studio names, franchise names, exact game titles, copyrighted characters, celebrity likenesses, or `in the style of` wording.
+
+## Cinematic Pulse Visual Skill
+
+Use this for `Cinematic Pulse`, epic orchestral, trailer music, battle OST, final boss music, heroic music, sci-fi action, dark fantasy, or game-combat instrumental releases.
+
+- No fixed recurring visual signature yet.
+- Let the playlist concept decide the cinematic/trailer/battle scene, object, palette, and loop-video motion.
+- The cover must contain only the large lower-left `Cinematic Pulse` brand label.
+- The thumbnail should use short cinematic click text such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`, plus `CINEMATIC PULSE`.
+- The loop video should animate the selected cover concept with controlled cinematic motion: storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, or atmospheric light movement.
+- Do not use gore, real war footage, political symbols, protected IP, franchise names, copyrighted characters, or celebrity likenesses.
+
+## Club Bloom Visual Skill
+
+Use this for `Club Bloom`, EDM, house, dance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
+
+- No fixed recurring visual signature yet.
+- Let the playlist concept decide the neon/dance/nightlife scene, subject, palette, and loop-video motion.
+- The cover must contain only the large lower-left `Club Bloom` brand label.
+- The thumbnail should use short dance click text such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`, plus `CLUB BLOOM`.
+- The loop video should animate the selected cover concept with rhythmic neon motion: light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
+- Tasteful adult nightlife subjects are allowed when the concept fits, but do not use explicit nudity, unsafe minors, fetish framing, protected brands, photorealistic club footage, or UI overlays.
 
 ## Other Channels Or Explicit Requests
 
