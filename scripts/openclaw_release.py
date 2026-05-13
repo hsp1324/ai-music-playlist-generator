@@ -311,6 +311,27 @@ CLUB_BLOOM_CHANNEL_KEYWORDS = (
     "edm mix",
     "house music",
     "future house",
+    "deep house",
+    "tech house",
+    "progressive house",
+    "melodic techno",
+    "peak-time techno",
+    "peak time techno",
+    "techno",
+    "trance",
+    "progressive trance",
+    "big-room",
+    "big room",
+    "bass house",
+    "electro house",
+    "uk garage",
+    "garage",
+    "drum and bass",
+    "liquid dnb",
+    "dnb",
+    "tropical house",
+    "afro house",
+    "synthwave club",
     "dance music",
     "dance mix",
     "festival edm",
@@ -2232,7 +2253,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For sundaze/English pop releases, keep every localized title exactly the same as the English title. Also keep English track titles in every localized timestamped timeline row; translate only the surrounding prose, use-case text, and hashtags. "
             "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. "
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal fantasy/story/game-OST music for writing, reading, worldbuilding, cozy RPG scenes, fairy-tale scenes, and calm adventure. "
-            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic/trailer/battle/game-focus music. For Club Bloom or legacy AI썰전 releases, write English default metadata and position it as EDM/house/dance music for night drive, workout, gaming, party warmup, or club listening. "
+            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic/trailer/battle/game-focus music. For Club Bloom or legacy AI썰전 releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. "
             "For The Old Verse releases, write English default metadata and position it as Old Testament scripture-inspired music that follows the biblical sequence from Genesis onward. For The New Verse releases, write English default metadata and position it as New Testament scripture-inspired worship music that follows the sequence from Matthew onward. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
@@ -2555,7 +2576,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, EDM/house/dance uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -2592,7 +2613,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, EDM/house/dance uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",

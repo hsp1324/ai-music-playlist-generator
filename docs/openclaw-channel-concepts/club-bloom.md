@@ -4,11 +4,11 @@ Use this after the selected channel is `Club Bloom`. This document decides the n
 
 ## Channel Promise
 
-Club Bloom is an EDM, house, dance, festival, workout, night-drive, gaming, and party-energy channel.
+Club Bloom is a no-vocal club music channel: instrumental EDM, house, techno, trance, club, workout, night-drive, gaming, festival, and party-energy releases.
 
-It fills the high-energy dance lane that is currently separate from sundaze pop, Tokyo J-pop, Solwave Latin pop, and HaruHaru K-pop.
+It fills the high-energy instrumental dance lane that is currently separate from sundaze pop, Tokyo J-pop, Solwave Latin pop, and HaruHaru K-pop.
 
-The audience should immediately understand: modern dance music for movement, nightlife, gaming, workout, driving, and party warmup.
+The audience should immediately understand: modern no-vocal dance music for movement, nightlife, gaming, workout, driving, and party warmup.
 
 Titles should be broad dance/EDM packaging first. Use the specific club, rooftop, city, or visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
 
@@ -24,24 +24,40 @@ From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` relea
 
 If the latest Club Bloom release was neon club or night drive, choose festival, workout, gaming, rooftop, beach club, or future house next.
 
-## Concept Lanes
+## Club Style Lanes
 
-- House music: clean four-on-the-floor groove, club lights, stylish dance floor.
-- Future house / dance-pop: bright synth hooks, vocal chops if explicitly allowed, glossy city energy.
-- Festival EDM: big drops, wide stage, lasers, crowd silhouettes, summer night.
-- Night drive: electronic bass, neon highway, tunnel lights, fast but controlled energy.
-- Workout EDM: punchy drums, motivational pulse, gym/run/cycling energy.
-- Gaming dance mix: cyber lights, arcade/neon interface mood without UI overlays.
-- Beach club: tropical house, sunset deck, warm dance rhythm.
+Every Club Bloom playlist must choose one primary club style lane and stay inside that lane for the whole release. Do not make a generic all-purpose EDM playlist that mixes unrelated club subgenres. The visual concept, title, Suno style prompts, metadata, and thumbnail text should all match the selected lane.
+
+Good style lanes:
+
+- Deep house: smooth late-night groove, warm bass, clean four-on-the-floor, stylish lounge/club energy.
+- Tech house: tighter drums, bouncy bassline, minimal vocal-free hooks, modern club floor momentum.
+- Progressive house: emotional chord builds, wide synths, steady lift, euphoric but controlled energy.
+- Future house: bright synth stabs, glossy sidechain pulse, clean drop energy without vocal chops.
+- Melodic techno: darker hypnotic arps, pulsing kick, cinematic club atmosphere, neon/night visuals.
+- Peak-time techno: harder kick, driving bass, warehouse/strobe energy, intense but clean.
+- Trance / progressive trance: rolling bass, uplifting leads, long builds, highway/night-sky momentum.
+- Big-room / festival EDM: big kicks, simple anthem leads, laser-stage energy, no crowd-chant vocals.
+- Bass house: aggressive bass movement, punchy drums, darker club attitude.
+- Electro house: sharp synth riffs, high-energy drops, retro-futuristic club feel.
+- Garage / UK garage: shuffling rhythm, bouncy bass, late-night city movement, no vocal samples.
+- Drum and bass / liquid DnB: fast breakbeats, rolling bass, liquid pads for running/gaming energy.
+- Tropical house / beach club: warm percussion, sunset deck mood, light dance rhythm, no vocal hooks.
+- Afro house: organic percussion, deep groove, hypnotic club pulse, no chant/vocal phrases.
+- Synthwave club: retro neon arps, driving electronic drums, night-drive energy.
+- Workout EDM: punchy instrumental club tracks optimized for running, gym, cycling, or sprint sets.
+- Gaming dance mix: cyber/neon instrumental club music for arcade, racing, FPS, or fast focus.
 
 ## Music Direction
 
-- Instrumental/no-vocal by default unless the human asks for vocal dance-pop.
-- Follow `../suno-v55-instrumental-format.md` for no-vocal Club Bloom tracks.
-- If vocal dance-pop is explicitly requested, lyrics must be original, natural, and song-first; do not make lyrics literally describe the playlist title. Song quality is the first priority, and lyrics may be unrelated to the title/use case when they fit the beat, vocal tone, hook, and dance energy better.
+- Instrumental/no-vocal is mandatory. Do not create lyrics, sung hooks, vocal chops, chants, hype shouts, spoken-word tags, or vocal ad-libs for Club Bloom.
+- Follow `../suno-v55-instrumental-format.md` for every Club Bloom track.
+- In Suno advanced/excluded styles, add vocal blockers such as `vocals, vocal, voice, singer, singing, lyrics, words, rap, spoken word, chant, chanting, humming, choir, crowd chant, vocal chops, acapella, topline, producer tag`.
+- Use bracketed instrumental arrangement cues only, for example `[Intro: kick and filtered bass]`, `[Build: rising synth arp]`, `[Drop: no-vocal bass house groove]`, `[Breakdown: pads and drums only]`.
+- If the human asks for vocal dance-pop, route it to sundaze, HaruHaru, Tokyo Daydream Radio, or Solwave Radio depending on language/style instead of Club Bloom.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
-- Prioritize strong groove, clean drops, energy changes, and replayable rhythm.
-- Avoid muddy mixes, overly long intros, and tracks that feel like unfinished loops.
+- Prioritize strong groove, clean drops, energy changes, and replayable rhythm inside the selected style lane.
+- Avoid muddy mixes, overly long intros, generic mixed-genre EDM, and tracks that feel like unfinished loops.
 
 ## Visual Direction
 

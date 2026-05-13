@@ -160,7 +160,7 @@ Static image creation rules:
 - For `HaruHaru` or Korean/K-pop releases, use the HaruHaru profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals. Lyrics are Korean by default.
 - For `Storylight OST`, use the Storylight OST profile for fantasy/fairy-tale/cozy RPG/game-OST BGM releases.
 - For `Cinematic Pulse`, use the Cinematic Pulse profile for epic cinematic, trailer, battle, final boss, heroic, sci-fi action, dark fantasy, and game-combat instrumental music.
-- For `Club Bloom` or legacy `AI썰전`, use the Club Bloom profile for EDM, house, dance, festival, workout, night-drive, gaming, club, and party-energy releases. Legacy `AI썰전` is only the old connected title until YouTube status refreshes after the channel rename.
+- For `Club Bloom` or legacy `AI썰전`, use the Club Bloom profile for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases. Each playlist must choose one club style lane and stay within it. Legacy `AI썰전` is only the old connected title until YouTube status refreshes after the channel rename.
 - For `The Old Verse`, use the Old Verse profile for Old Testament scripture-inspired music that follows the Bible sequence from Genesis onward.
 - For `The New Verse`, use the New Verse profile for New Testament/Gospel/worship music that follows the Bible sequence from Matthew onward.
 - If the human explicitly names the upload channel, that channel controls visual routing.
@@ -177,7 +177,7 @@ Static image creation rules:
 - For `HaruHaru`, use thumbnail wording such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, with smaller `HARUHARU` branding.
 - For `Storylight OST`, use thumbnail wording such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`, with smaller `STORYLIGHT OST` branding.
 - For `Cinematic Pulse`, use thumbnail wording such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`, with smaller `CINEMATIC PULSE` branding.
-- For `Club Bloom`, use thumbnail wording such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`, with smaller `CLUB BLOOM` branding.
+- For `Club Bloom`, use style-specific thumbnail wording such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`, with smaller `CLUB BLOOM` branding.
 - For `The Old Verse`, use thumbnail wording such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`, with smaller `THE OLD VERSE` branding.
 - For `The New Verse`, use thumbnail wording such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, `SCRIPTURE SONGS`, or `WORSHIP POP`, with smaller `THE NEW VERSE` branding.
 - Do not add duration text or badges to thumbnails. Avoid `1 HOUR`, `60 MIN`, `1時間`, clocks, timers, and duration stickers.
@@ -287,7 +287,7 @@ Thumbnail text rules for OpenClaw:
 Localized YouTube metadata rules for OpenClaw:
 
 - The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `pt-BR`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW`.
-- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, fantasy/story/game-OST BGM, cinematic/trailer/battle BGM, EDM/house/dance, scripture music, or similar pop-family/story-BGM releases, always write all fifteen language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
+- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, fantasy/story/game-OST BGM, cinematic/trailer/battle BGM, no-vocal club music, scripture music, or similar pop-family/story-BGM releases, always write all fifteen language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
 - Use Korean as the default upload metadata for Tokyo/Soft Hour/HaruHaru unless the channel profile says otherwise. Use `--default-language en` for `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, and `sundaze`; use `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
@@ -356,7 +356,7 @@ For automatic playlist publishing, `scripts/openclaw-release auto-publish-playli
 - Use `HaruHaru` for K-pop, Korean pop, Korean dance-pop, Korean synth-pop, Korean pop-rock, Korean R&B pop, idol-pop inspired music, or similar Korean vocal concepts.
 - Use `Storylight OST` for fantasy/fairy-tale/cozy RPG/game-OST BGM concepts.
 - Use `Cinematic Pulse` for cinematic/trailer/battle/final-boss/heroic/sci-fi-action/game-combat instrumental concepts.
-- Use `Club Bloom` for EDM/house/dance/festival/workout/night-drive/gaming/club concepts. If the connected channel still appears as `AI썰전`, treat it as the legacy/old title for Club Bloom until YouTube status refreshes to the renamed channel.
+- Use `Club Bloom` for no-vocal EDM/house/techno/trance/festival/workout/night-drive/gaming/club concepts. If the connected channel still appears as `AI썰전`, treat it as the legacy/old title for Club Bloom until YouTube status refreshes to the renamed channel.
 - Use `The Old Verse` for Old Testament, Genesis, Exodus, Psalms, Bible verse music, scripture-inspired worship, or ancient biblical music concepts.
 - Use `The New Verse` for New Testament, Gospel, Jesus words, grace music, scripture worship, Bible verse songs, or worship pop concepts.
 - Pass `--youtube-channel-title` explicitly when the human names a target channel.
@@ -509,7 +509,7 @@ scripts/openclaw-release auto-publish-single \
   --tags "TAGS" \
   --youtube-channel-title "Tokyo Daydream Radio"
 
-For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", fantasy/fairy-tale/cozy RPG/game-OST BGM goes to "Storylight OST", cinematic/trailer/battle/game-combat BGM goes to "Cinematic Pulse", EDM/house/dance goes to "Club Bloom" (legacy connected title may still be "AI썰전"), Old Testament scripture music goes to "The Old Verse", New Testament/Gospel/worship music goes to "The New Verse", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
+For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", fantasy/fairy-tale/cozy RPG/game-OST BGM goes to "Storylight OST", cinematic/trailer/battle/game-combat BGM goes to "Cinematic Pulse", no-vocal EDM/house/techno/trance club music goes to "Club Bloom" (legacy connected title may still be "AI썰전"), Old Testament scripture music goes to "The Old Verse", New Testament/Gospel/worship music goes to "The New Verse", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
 Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice.
 ```
 

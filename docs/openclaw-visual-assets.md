@@ -148,12 +148,12 @@ Use this for `Cinematic Pulse`, epic orchestral, trailer music, battle OST, fina
 
 ## Club Bloom Visual Skill
 
-Use this for `Club Bloom`, legacy connected `AI썰전` after the channel rename, EDM, house, dance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
+Use this for `Club Bloom`, legacy connected `AI썰전` after the channel rename, no-vocal EDM, house, techno, trance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
 
 - No fixed recurring visual signature yet.
-- Let the playlist concept decide the neon/dance/nightlife scene, subject, palette, and loop-video motion.
+- Let the selected club style lane decide the neon/dance/nightlife scene, subject, palette, and loop-video motion.
 - The cover must contain only the large lower-left `Club Bloom` brand label.
-- The thumbnail should use short dance click text such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`, plus `CLUB BLOOM`.
+- The thumbnail should use short style-specific dance click text such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`, plus `CLUB BLOOM`.
 - The loop video should animate the selected cover concept with rhythmic neon motion: light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
 - Tasteful adult nightlife subjects are allowed when the concept fits, but do not use explicit nudity, unsafe minors, fetish framing, protected brands, photorealistic club footage, or UI overlays.
 

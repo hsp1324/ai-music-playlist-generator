@@ -5,7 +5,8 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 ## Routing Contract
 
 - Explicit channel request wins.
-- Club Bloom is for EDM, house, dance, festival, workout, night-drive, gaming, club, and party-energy releases.
+- Club Bloom is for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases.
+- Club Bloom should not publish vocal dance-pop. If a vocal club-pop concept is requested, route it to the appropriate vocal channel instead.
 - Do not use this profile for mainstream pop playlists, Latin pop, K-pop, J-pop, cozy BGM, fantasy OST, or cinematic trailer music.
 
 ## Visual Identity
@@ -22,13 +23,13 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - The cover must include only a large lower-left `Club Bloom` channel brand label.
 - Make `Club Bloom` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
-- Match the scene to the playlist concept: club, DJ booth, festival stage, rooftop night, neon highway, gym/run energy, gaming neon, beach club, or cyber dance floor.
+- Match the scene to the selected club style lane: deep house lounge, tech-house club floor, progressive house skyline, melodic-techno warehouse, trance highway/night sky, big-room festival stage, bass-house basement, UK-garage city night, DnB running/gaming energy, tropical beach club, Afro-house sunset deck, synthwave night drive, or cyber dance floor.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Add short readable click text, for example `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`.
+- Add short readable click text that matches the selected style lane, for example `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
 - Add `CLUB BLOOM` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
@@ -46,7 +47,7 @@ Prompt shape:
 
 ```text
 Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Club Bloom".
-Create one continuous animated neon dance music visualizer shot for a Club Bloom EDM/house release.
+Create one continuous animated neon dance music visualizer shot for a Club Bloom no-vocal club release in the selected style lane.
 Preserve the opening composition, lighting, palette, illustrated/stylized visual language, and the specific nightlife/dance scene from the first frame.
 Preserve the large, readable lower-left "Club Bloom" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 Animate visible rhythmic environmental motion naturally present in the scene: light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses when appropriate.
@@ -59,6 +60,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no explicit n
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
-- Titles should include clear dance-listening situations such as night drive, workout, party warmup, gaming, club, running, festival, or rooftop.
+- Titles should include the selected club style lane plus clear dance-listening situations such as night drive, workout, party warmup, gaming, club, running, festival, or rooftop.
 - Make titles broad and public-facing first. Use the exact visual scene as atmosphere unless it is the strongest searchable hook.
+- Metadata should describe the release as no-vocal/instrumental club music. Do not imply vocals, singers, lyrics, or pop songs.
 - Avoid AI/process/tool hashtags and avoid overstating `hits` if the music is original.

@@ -202,8 +202,8 @@ YouTube thumbnail:
 
 Cover / first frame:
 
-- 16:9 illustrated/anime/stylized neon image for EDM, house, dance, festival, workout, night-drive, gaming, club, or party-energy releases.
-- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
+- 16:9 illustrated/anime/stylized neon image for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, or party-energy releases.
+- No fixed recurring visual signature yet. The selected club style lane decides the scene, subject, color, and camera.
 - Only text allowed is the large lower-left `Club Bloom` brand label.
 
 Loop video:
@@ -216,7 +216,7 @@ YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable dance text such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`.
+- Add large readable style-specific dance text such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
 - Add `CLUB BLOOM` brand line, visually consistent with the large cover channel label.
 
 ### The Old Verse
