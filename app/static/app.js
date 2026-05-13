@@ -319,6 +319,123 @@ function releaseChannelDisplayLabel(workspace) {
   return workspace?.youtube_channel_title || workspace?.youtube_channel_id || "Unknown Channel";
 }
 
+function connectedYouTubeChannel(channelId, channelTitle = "") {
+  const channels = state.youtubeStatus?.channels || [];
+  const normalizedTitle = String(channelTitle || "").trim().toLowerCase();
+  if (channelId) {
+    const match = channels.find((channel) => channel.id === channelId);
+    if (match) return match;
+  }
+  if (normalizedTitle) {
+    return channels.find((channel) => String(channel.title || "").trim().toLowerCase() === normalizedTitle) || null;
+  }
+  return null;
+}
+
+function channelInitials(label) {
+  const clean = String(label || "YT").replace(/[@#]/g, "").trim();
+  if (!clean) return "YT";
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0] || ""}${parts[1][0] || ""}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+function channelAvatar(channel, className = "channel-avatar") {
+  const label = channel?.title || channel?.label || channel?.id || channel?.key || "YouTube";
+  const thumbnailUrl = channel?.thumbnail_url || channel?.thumbnailUrl || "";
+  const avatar = document.createElement("span");
+  avatar.className = className;
+  if (thumbnailUrl) {
+    const img = document.createElement("img");
+    img.src = thumbnailUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    img.referrerPolicy = "no-referrer";
+    avatar.appendChild(img);
+  } else {
+    avatar.textContent = channelInitials(label);
+  }
+  return avatar;
+}
+
+function channelPickerLabel(item) {
+  const base = item?.title || item?.label || item?.id || item?.key || "Channel";
+  return item?.count ? `${base} (${item.count})` : base;
+}
+
+function channelPickerValue(item) {
+  return item?.id || item?.key || "";
+}
+
+function enhanceChannelSelect(select, items) {
+  if (!select) return;
+  const list = (items || []).filter(Boolean);
+  select.classList.toggle("native-channel-select", Boolean(list.length));
+  select.parentElement?.querySelector(`[data-channel-picker-for="${select.id}"]`)?.remove();
+  if (!list.length) return;
+
+  const picker = document.createElement("div");
+  picker.className = "channel-avatar-select";
+  picker.dataset.channelPickerFor = select.id;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "channel-avatar-select-button";
+  button.setAttribute("aria-haspopup", "listbox");
+  button.setAttribute("aria-expanded", "false");
+
+  const menu = document.createElement("div");
+  menu.className = "channel-avatar-select-menu";
+  menu.setAttribute("role", "listbox");
+  menu.hidden = true;
+
+  const renderButton = () => {
+    const selectedValue = select.value || channelPickerValue(list[0]);
+    const selected = list.find((item) => channelPickerValue(item) === selectedValue) || list[0];
+    button.innerHTML = "";
+    button.appendChild(channelAvatar(selected));
+    const text = document.createElement("span");
+    text.className = "channel-avatar-select-text";
+    text.textContent = channelPickerLabel(selected);
+    button.appendChild(text);
+  };
+
+  list.forEach((item) => {
+    const value = channelPickerValue(item);
+    const optionButton = document.createElement("button");
+    optionButton.type = "button";
+    optionButton.className = "channel-avatar-select-option";
+    optionButton.setAttribute("role", "option");
+    optionButton.dataset.value = value;
+    optionButton.appendChild(channelAvatar(item));
+    const text = document.createElement("span");
+    text.textContent = channelPickerLabel(item);
+    optionButton.appendChild(text);
+    optionButton.addEventListener("click", () => {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      picker.classList.remove("open");
+      menu.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      renderButton();
+    });
+    menu.appendChild(optionButton);
+  });
+
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const open = picker.classList.toggle("open");
+    menu.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+  });
+
+  renderButton();
+  picker.append(button, menu);
+  select.insertAdjacentElement("afterend", picker);
+}
+
 function releaseArtworkUrl(workspace) {
   const trackImage = workspace?.tracks?.find((track) => track.metadata_json?.image_url)?.metadata_json?.image_url;
   return normalizeMediaUrl(workspace?.cover_image_path || workspace?.youtube_thumbnail_path || trackImage || "");
@@ -796,6 +913,7 @@ function buildYouTubeChannelPicker() {
   select.value = state.youtubeStatus?.selected_channel_id || channels[0].id;
   label.appendChild(caption);
   label.appendChild(select);
+  enhanceChannelSelect(select, channels);
   return { element: label, select };
 }
 
@@ -1769,6 +1887,7 @@ function channelFilterOptions() {
     key: channel.key,
     label: channel.label,
     count: channel.count,
+    thumbnailUrl: channel.thumbnailUrl,
   }));
 }
 
@@ -1777,11 +1896,13 @@ function channelUploadSummaries() {
   activeWorkspaces().forEach((workspace) => {
     if (!releasePublishedChannelLabel(workspace)) return;
     const key = releaseChannelKey(workspace);
+    const connectedChannel = connectedYouTubeChannel(workspace.youtube_channel_id, workspace.youtube_channel_title);
     const updatedAt = new Date(workspace.updated_at || workspace.created_at || 0);
     const updatedTime = Number.isNaN(updatedAt.getTime()) ? 0 : updatedAt.getTime();
     const existing = channels.get(key) || {
       key,
       label: releaseChannelDisplayLabel(workspace),
+      thumbnailUrl: connectedChannel?.thumbnail_url || "",
       count: 0,
       playlistCount: 0,
       singleCount: 0,
@@ -1790,6 +1911,9 @@ function channelUploadSummaries() {
       latestAt: 0,
       latestAtLabel: "",
     };
+    if (!existing.thumbnailUrl && connectedChannel?.thumbnail_url) {
+      existing.thumbnailUrl = connectedChannel.thumbnail_url;
+    }
     existing.count += 1;
     existing.totalDuration += Number(workspace.rendered_duration_seconds || workspace.actual_duration_seconds || 0);
     if (isSingleRelease(workspace)) {
@@ -1900,6 +2024,14 @@ function renderChannelFilter() {
   channelFilterSelect.value = state.channelFilter;
   channelFilterSelect.disabled = !options.length;
   channelFilterSelect.closest(".channel-filter")?.classList.toggle("disabled", !options.length);
+  enhanceChannelSelect(channelFilterSelect, [
+    {
+      key: CHANNEL_FILTER_ALL,
+      label: "All Channels",
+      count: activeWorkspaces().length,
+    },
+    ...options,
+  ]);
 }
 
 function setChannelFilter(channelKey, scrollToList = false) {
@@ -1983,7 +2115,7 @@ function channelSummaryCard(channel) {
   const latestDate = channel.latestAtLabel ? ` · ${channel.latestAtLabel}` : "";
   latest.textContent = `${channel.latestTitle || "최근 업로드 없음"}${latestDate}`;
 
-  card.append(label, count, caption, meta, latest);
+  card.append(channelAvatar(channel, "channel-summary-avatar"), label, count, caption, meta, latest);
   return card;
 }
 
@@ -3214,6 +3346,7 @@ function renderYouTubeStatus(youtubeStatus) {
     if (youtubeStatus.selected_channel_id) {
       youtubeChannelSelect.value = youtubeStatus.selected_channel_id;
     }
+    enhanceChannelSelect(youtubeChannelSelect, channels);
   }
   if (youtubeImportButton) {
     youtubeImportButton.disabled = !youtubeStatus.ready || !channels.length;
@@ -3481,6 +3614,16 @@ document.addEventListener("play", (event) => {
     pauseOtherAudioPlayers(event.target);
   }
 }, true);
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".channel-avatar-select.open").forEach((picker) => {
+    if (picker.contains(event.target)) return;
+    picker.classList.remove("open");
+    const menu = picker.querySelector(".channel-avatar-select-menu");
+    const button = picker.querySelector(".channel-avatar-select-button");
+    if (menu) menu.hidden = true;
+    if (button) button.setAttribute("aria-expanded", "false");
+  });
+});
 document.addEventListener("visibilitychange", resumeDeferredAutoRefresh);
 
 window.setInterval(() => {
