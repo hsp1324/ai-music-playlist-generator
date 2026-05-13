@@ -1,6 +1,6 @@
 # OpenClaw Next Release Planner Skill
 
-Use this skill when the AI Music web app asks OpenClaw to make the next one-hour playlist after a private YouTube publish completes.
+Use this skill when the AI Music web app asks OpenClaw to make the next 40+ minute playlist after a private YouTube publish completes.
 
 This is the first step of the continuous automation loop. It chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the automatic private playlist publisher in [openclaw-skills.md](openclaw-skills.md).
 
@@ -20,7 +20,7 @@ The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MA
 
 ## Goal
 
-Choose the next channel and a fresh one-hour playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.
+Choose the next channel and a fresh 40+ minute playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.
 
 The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. Current known active channels include:
 
@@ -93,7 +93,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. Read both returned docs:
 
 - `concept_doc`: choose the next playlist concept and avoid recent repetition.
-- `profile_doc`: generate cover, thumbnail, and 10 second loop video without mixing channel visual signatures.
+- `profile_doc`: generate cover, thumbnail, and 8 second loop video without mixing channel visual signatures.
 
 Example:
 
@@ -175,7 +175,7 @@ curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
 
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
-Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
+Choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
 - Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. If the status still shows `AI썰전`, treat it as the legacy/old title for Club Bloom until YouTube status refreshes to the renamed channel. Newly connected non-excluded channels must also enter rotation.
 - Exclude AnimeMix from automatic playlist rotation because it is a manual-only popular-song remake/cover channel.
@@ -188,7 +188,7 @@ Choose the next one-hour Playlist Release using docs/openclaw-next-release-plann
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the Automatic Private Playlist Publisher skill from docs/openclaw-skills.md.
-Create enough audio for at least 3600 seconds, generate final cover, separate YouTube thumbnail, a 10 second loop video, metadata, and publish privately to the selected YouTube channel. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, metadata, and publish privately to the selected YouTube channel. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

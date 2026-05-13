@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: sundaze
 
-Use this after the selected channel is `sundaze`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/sundaze.md` afterward for cover, thumbnail, and 10 second loop-video production rules.
+Use this after the selected channel is `sundaze`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/sundaze.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
 
 ## Channel Promise
 

@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: The New Verse
 
-Use this after the selected channel is `The New Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-new-verse.md` afterward for cover, thumbnail, and 10 second loop-video production rules.
+Use this after the selected channel is `The New Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-new-verse.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
 
 ## Channel Promise
 
@@ -18,7 +18,7 @@ The audience should immediately understand: New Testament messages turned into o
 - Continue from the most recent passage range on this channel. Do not jump randomly to John, Romans, Revelation, or famous Jesus sayings unless the sequence has reached them or the human explicitly asks.
 - If there is no prior app catalog history, start with `Matthew 1:1-17`.
 - Put the passage reference in the private plan and description, for example `Matthew 1:1-17`.
-- For a one-hour playlist, choose a coherent passage block, usually one scene, teaching section, parable, or short chapter section. Do not cover too much scripture at once.
+- For a 40+ minute playlist, choose a coherent passage block, usually one scene, teaching section, parable, or short chapter section. Do not cover too much scripture at once.
 - Keep an internal progress note in the release description/metadata context so the next run knows what passage comes next.
 
 ## Scripture Handling

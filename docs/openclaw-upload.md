@@ -2,7 +2,7 @@
 
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
-For higher-level OpenClaw skill instructions, including "make one single", "build a one-hour playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
+For higher-level OpenClaw skill instructions, including "make one single", "build a 40+ minute playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned `profile_doc` in [openclaw-channel-profiles](openclaw-channel-profiles/README.md). For next-release concept planning, read the returned `concept_doc` in [openclaw-channel-concepts](openclaw-channel-concepts/README.md).
 
@@ -109,7 +109,7 @@ If `--cover` is provided and this is a Single Release, approving the track autom
 
 ## Upload One Playlist Track
 
-When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a one-hour playlist does not spam Slack.
+When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a 40+ minute playlist does not spam Slack.
 
 Playlist track titles should look like final tracklist titles, not Suno alternatives. Do not upload names like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`. Give every playlist item a standalone title that fits the mood.
 
@@ -187,8 +187,8 @@ Static image creation rules:
 
 Required moving visual:
 
-- `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 10 second Dreamina/Seedance visual clip for the rendered video.
-- OpenClaw should generate/download only the short clip. Do not export a one-hour MP4 from OpenClaw.
+- `--loop-video /absolute/path/to/dreamina-loop.mp4`: exactly 8 second Dreamina/Seedance visual clip for the rendered video.
+- OpenClaw should generate/download only the short clip. Do not export a long MP4 from OpenClaw.
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
 - Normal auto-publish must include `--loop-video`. Do not use the thumbnail image or any text-heavy image as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`.
@@ -204,9 +204,9 @@ Dreamina website workflow for OpenClaw:
 - Leave the last-frame input empty. Do not upload a last-frame reference; it makes the generated motion too static.
 - Set ratio to `16:9` when selectable.
 - Set quality to `720p` when selectable.
-- Set duration to `10 seconds` and re-check this visible control immediately before clicking Generate.
+- Set duration to `8 seconds` and re-check this visible control immediately before clicking Generate.
 - Do not click Generate while the duration control still says `5 seconds`, while it is hidden, or while you are unsure. Do not create a 5 second draft/test clip first.
-- Generate exactly one `10 second` MP4.
+- Generate exactly one `8 second` MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
 - If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video and OpenClaw passes `--allow-still-image-video`.
@@ -228,7 +228,7 @@ Dreamina/Seedance motion prompt guidance:
 
 - Ask Dreamina for one continuous video shot whose final moment returns close to the first-frame composition. If the human requested a different motion/camera concept, ask for that requested continuous shot instead.
 - Do not put duration, ratio, or quality in the prompt. Set those in Dreamina controls only.
-- Do not include `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
+- Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. These words can make Seedance/Dreamina create a shorter repeated segment inside the clip.
 - Ask Dreamina/Seedance to preserve the first-frame image's composition, lighting, palette, illustrated/anime style, channel/requested subject/action, and large lower-left channel label in the first shot.
 - Use the selected channel profile for subject/action/motion. Always require stable composition, no hard cuts, no other text overlays, no subtitles, no logos, no UI, and no photorealism.
 - Ask Dreamina/Seedance to preserve the exact lower-left channel text, spelling, font/lettering, placement, color, and readability for the full clip. Ask it not to rewrite, translate, blur, morph, move, hide, flicker, or change the text. Keep the text area stable and animate only the surrounding scene subtly.
@@ -314,7 +314,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; translate only the displayed title text and surrounding description.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and every other localized description uses translated title text only.
 - For sundaze/English pop metadata, keep every localized YouTube title exactly the same as the English title. In timestamped tracklists, keep the English song title after each timestamp in every localized description. Translate only the surrounding description prose, use-case line, and hashtags.
-- If the release is one hour or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
+- If the release is 40+ minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
 - Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 
 Example localized metadata approval:
@@ -322,26 +322,26 @@ Example localized metadata approval:
 ```bash
 scripts/openclaw-release approve-metadata \
   --release-id RELEASE_ID \
-  --title "[playlist] 기분 좋아지는 J-POP 1시간 | 산책, 드라이브, 작업할 때 듣기 좋은 음악" \
+  --title "[playlist] 기분 좋아지는 J-POP 믹스 | 산책, 드라이브, 작업할 때 듣기 좋은 음악" \
   --description-file /tmp/metadata-ko.txt \
   --tags "Jpop,JapanesePop,TokyoDaydreamRadio,Playlist,DriveMusic,WorkMusic" \
-  --ko-title "[playlist] 기분 좋아지는 J-POP 1시간 | 산책, 드라이브, 작업할 때 듣기 좋은 음악" \
+  --ko-title "[playlist] 기분 좋아지는 J-POP 믹스 | 산책, 드라이브, 작업할 때 듣기 좋은 음악" \
   --ko-description-file /tmp/metadata-ko.txt \
-  --ja-title "[playlist] 気分が上がるJ-POP 1時間 | 散歩・ドライブ・作業用音楽" \
+  --ja-title "[playlist] 気分が上がるJ-POPミックス | 散歩・ドライブ・作業用音楽" \
   --ja-description-file /tmp/metadata-ja.txt \
-  --en-title "[playlist] Feel-Good J-Pop 1 Hour | Walk, Drive, Work Music" \
+  --en-title "[playlist] Feel-Good J-Pop Mix | Walk, Drive, Work Music" \
   --en-description-file /tmp/metadata-en.txt \
-  --es-title "[playlist] J-Pop alegre 1 hora | Música para caminar, conducir y trabajar" \
+  --es-title "[playlist] J-Pop alegre mix | Música para caminar, conducir y trabajar" \
   --es-description-file /tmp/metadata-es.txt \
-  --vi-title "[playlist] J-Pop vui tươi 1 giờ | Nhạc đi dạo, lái xe, làm việc" \
+  --vi-title "[playlist] J-Pop vui tươi mix | Nhạc đi dạo, lái xe, làm việc" \
   --vi-description-file /tmp/metadata-vi.txt \
-  --th-title "[playlist] J-Pop สดใส 1 ชั่วโมง | เพลงสำหรับเดินเล่น ขับรถ ทำงาน" \
+  --th-title "[playlist] J-Pop สดใสมิกซ์ | เพลงสำหรับเดินเล่น ขับรถ ทำงาน" \
   --th-description-file /tmp/metadata-th.txt \
-  --hi-title "[playlist] फील-गुड J-Pop 1 घंटा | वॉक, ड्राइव और काम के लिए संगीत" \
+  --hi-title "[playlist] फील-गुड J-Pop मिक्स | वॉक, ड्राइव और काम के लिए संगीत" \
   --hi-description-file /tmp/metadata-hi.txt \
-  --zh-title "[playlist] 好心情 J-Pop 1小时 | 散步、开车、工作音乐" \
+  --zh-title "[playlist] 好心情 J-Pop Mix | 散步、开车、工作音乐" \
   --zh-description-file /tmp/metadata-zh.txt \
-  --zh-tw-title "[playlist] 好心情 J-Pop 1小時 | 散步、開車、工作音樂" \
+  --zh-tw-title "[playlist] 好心情 J-Pop Mix | 散步、開車、工作音樂" \
   --zh-tw-description-file /tmp/metadata-zh-tw.txt
 ```
 
@@ -461,7 +461,7 @@ scripts/openclaw-release create-release --workspace-mode single --release-title 
 
 For a new playlist/mix, first create one Playlist Release:
 
-scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 3600 --description "CONCEPT"
+scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 2400 --description "CONCEPT"
 
 Keep the returned release.id. Do not create Suno songs before the release.id exists.
 For an existing release, use --release-id and keep all related Suno outputs in that same workspace.
@@ -491,7 +491,7 @@ Generate or obtain:
 - one final Suno audio file per YouTube single
 - a final clean 16:9 cover image
 - a separate YouTube thumbnail image with readable text
-- one exactly 10 second Dreamina/Seedance loop video
+- one exactly 8 second Dreamina/Seedance loop video
 
 Then run:
 
@@ -530,7 +530,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Before pressing Create in Suno, remove producer tags and specific artist references from lyrics, bracketed metatags, style, prompt, tags, and excluded styles. If Suno rejects a word such as `lowlight` as a producer tag, rewrite it to a generic descriptor like `low-lit`, `dim`, `shadowy`, `muted night`, or `soft ambient`, then retry generation.
 - After every audio upload, confirm that the returned `duration_seconds` is close to the actual song length. If it is `0`, much shorter than expected, or the upload fails as unreadable, fix the source file and re-upload before moving on.
 - For playlist work, confirm every uploaded `duration_seconds` is at or below 240 unless the human explicitly approved a longer track.
-- For one-hour playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
+- For 40+ minute playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
 - If Suno style/settings are available, upload them in the same command with `--style`.
 - Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.
 - Do not generate vocal songs by mechanically inserting the release title/use-case words into every verse or chorus. For example, a dance-practice, walking, driving, workout, study, or party playlist should get songs whose sound fits that context; the lyrics can be about love, confidence, heartbreak, freedom, youth, or another strong pop topic.
@@ -541,10 +541,10 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Generate the thumbnail from the final cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, background continuity, and the channel-brand line style; only add click text/branding and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
-- OpenClaw must create a Dreamina/Seedance clip and pass the 10 second MP4 as `--loop-video` before normal video render/publish. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
+- OpenClaw must create a Dreamina/Seedance clip and pass the 8 second MP4 as `--loop-video` before normal video render/publish. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `10 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
-- Dreamina/Seedance often defaults to `5 seconds`. For normal OpenClaw auto-publish work, before generating, confirm the duration UI still says `10 seconds`; do not generate a 5 second draft first. After download, verify the MP4 duration; if it is about 5 seconds because the UI stayed on the default, discard it and regenerate at 10 seconds. The app allows intentionally provided shorter clips, but `scripts/openclaw-release` requires `--allow-short-loop-video` for those cases, so do not rely on upload rejection to catch this mistake.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `8 seconds` through UI controls for loop video generation. Do not put those settings in the prompt.
+- Dreamina/Seedance often defaults to `5 seconds`. For normal OpenClaw auto-publish work, before generating, confirm the duration UI still says `8 seconds`; do not generate a 5 second draft first. After download, verify the MP4 duration; if it is about 5 seconds because the UI stayed on the default, discard it and regenerate at 8 seconds. The app allows intentionally provided shorter clips, but `scripts/openclaw-release` requires `--allow-short-loop-video` for those cases, so do not rely on upload rejection to catch this mistake.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.

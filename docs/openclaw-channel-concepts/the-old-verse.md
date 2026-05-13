@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: The Old Verse
 
-Use this after the selected channel is `The Old Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and 10 second loop-video production rules.
+Use this after the selected channel is `The Old Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
 
 ## Channel Promise
 
@@ -18,7 +18,7 @@ The audience should immediately understand: Old Testament stories and messages t
 - Continue from the most recent passage range on this channel. Do not jump randomly to Psalms, Exodus, prophets, or famous stories unless the sequence has reached them or the human explicitly asks.
 - If there is no prior app catalog history, start with `Genesis 1:1-5`.
 - Put the passage reference in the private plan and description, for example `Genesis 1:1-5`.
-- For a one-hour playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
+- For a 40+ minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
 - Keep an internal progress note in the release description/metadata context so the next run knows what passage comes next.
 
 ## Scripture Handling

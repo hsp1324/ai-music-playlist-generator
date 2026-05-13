@@ -35,8 +35,8 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 ## Loop Video
 
 - Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`.
-- Do not put `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
+- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
 - Animate the selected cover concept with visible rhythmic motion: light sweeps, neon reflections, LED pulses, laser haze, city light motion, stage particles, equalizer-like environmental lighting, road light streaks, or dance-floor glow.
 - Preserve the large, readable lower-left `Club Bloom` text exactly for the full clip.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.

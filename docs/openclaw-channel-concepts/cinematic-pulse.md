@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Cinematic Pulse
 
-Use this after the selected channel is `Cinematic Pulse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/cinematic-pulse.md` afterward for cover, thumbnail, and 10 second loop-video production rules.
+Use this after the selected channel is `Cinematic Pulse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/cinematic-pulse.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
 
 ## Channel Promise
 
@@ -42,7 +42,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi,
 - Fill Suno Advanced Options excluded styles with vocal-related exclusions.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
 - Make each track feel complete, not like a short unfinished cue. Avoid abrupt fade-outs if possible.
-- The playlist should have strong dynamic arcs, but still be listenable for one hour.
+- The playlist should have strong dynamic arcs, but still be listenable for 40+ minutes.
 
 ## Visual Direction
 

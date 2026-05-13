@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     video_spectrum_overlay_style: Literal[
         "bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"
     ] = "bars"
-    playlist_target_minutes: int = 60
-    crossfade_seconds: float = 2.0
+    playlist_target_minutes: int = 40
+    crossfade_seconds: float = 1.5
 
     slack_signing_secret: str = ""
     slack_bot_token: str = ""
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
     dreamina_api_token: str = ""
     dreamina_account: str = ""
     dreamina_video_model: str = "seedance-1.5-pro"
-    dreamina_video_duration_seconds: int = 10
+    dreamina_video_duration_seconds: float = 8.0
     dreamina_video_ratio: str = "16:9"
     dreamina_poll_interval_seconds: float = 10.0
     dreamina_timeout_seconds: float = 240.0

@@ -953,8 +953,8 @@ def require_normal_loop_video_duration(loop_video_path: Path | None, args: argpa
         raise RuntimeError(
             f"{context} rejected `{loop_video_path.name}` because it is {duration_seconds:.1f}s. "
             "This looks like Dreamina's 5 second default. For normal automation, go back to Dreamina, "
-            "set the duration control to exactly 10 seconds before clicking Generate, regenerate once, "
-            "and pass that 10 second MP4. Use --allow-short-loop-video only when the human explicitly "
+            "set the duration control to exactly 8 seconds before clicking Generate, regenerate once, "
+            "and pass that 8 second MP4. Use --allow-short-loop-video only when the human explicitly "
             "requests or accepts a shorter loop."
         )
 
@@ -1204,7 +1204,7 @@ def create_playlist_release(
     client: httpx.Client,
     *,
     title: str,
-    target_duration_seconds: int = 3600,
+    target_duration_seconds: int = 2400,
     description: str = "",
 ) -> dict[str, Any]:
     return request_json(
@@ -1523,7 +1523,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     if not loop_video_path and not args.release_id and not args.allow_still_image_video:
         raise RuntimeError(
             "auto-publish-playlist requires --loop-video when creating a new Playlist Release. "
-            "Generate and download the 10 second Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_10_SECOND_LOOP_MP4. "
+            "Generate and download the 8 second Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4. "
             "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
@@ -1555,7 +1555,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         )
     if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
         raise RuntimeError(
-            "auto-publish-playlist requires an uploaded 10 second loop video before video render. "
+            "auto-publish-playlist requires an uploaded 8 second loop video before video render. "
             "Pass --loop-video ABSOLUTE_10_SECOND_LOOP_MP4, or upload a loop video to the release first. "
             "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
@@ -1842,7 +1842,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     if not loop_video_path and not args.release_id and not args.allow_still_image_video:
         raise RuntimeError(
             "auto-publish-single requires --loop-video when creating a new Single Release. "
-            "Generate and download the 10 second Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_10_SECOND_LOOP_MP4."
+            "Generate and download the 8 second Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-single")
 
@@ -1875,7 +1875,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         )
     if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
         raise RuntimeError(
-            "auto-publish-single requires an uploaded 10 second loop video before video render. "
+            "auto-publish-single requires an uploaded 8 second loop video before video render. "
             "Pass --loop-video ABSOLUTE_10_SECOND_LOOP_MP4, or upload a loop video to the release first. "
             "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
@@ -2464,7 +2464,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
     )
-    create_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Ignored for single releases.")
+    create_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes). Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.set_defaults(func=create_release)
 
@@ -2535,9 +2535,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
     auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release.")
-    auto_playlist_parser.add_argument("--loop-video", default="", help="Required 10 second visual clip generated by Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Required 8 second visual clip generated by Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a 10 second loop video. Do not use unless the human accepts this fallback.")
+    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without an 8 second loop video. Do not use unless the human accepts this fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than 8 seconds. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
@@ -2549,7 +2549,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600.")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes).")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 0 disables the lower bound.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 240.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
@@ -2578,9 +2578,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover image with only the large, readable lower-left channel-name brand label unless an uploaded final cover already exists on the release.")
     auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release.")
-    auto_single_parser.add_argument("--loop-video", default="", help="Required 10 second visual clip generated by Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Required 8 second visual clip generated by Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a 10 second loop video. Do not use unless the human accepts this fallback.")
+    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without an 8 second loop video. Do not use unless the human accepts this fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than 8 seconds. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
@@ -2621,7 +2621,7 @@ def build_parser() -> argparse.ArgumentParser:
     thumbnail_parser.set_defaults(func=upload_thumbnail)
 
     loop_video_parser = subparsers.add_parser("upload-loop-video", help="Upload a short visual loop clip for a release.")
-    loop_video_parser.add_argument("--loop-video", required=True, help="Path to a 10 second loop video: mp4, mov, m4v, or webm.")
+    loop_video_parser.add_argument("--loop-video", required=True, help="Path to an 8 second loop video: mp4, mov, m4v, or webm.")
     loop_video_parser.add_argument("--release-id", default="", help="Existing release id.")
     loop_video_parser.add_argument("--release-title", default="", help="Existing release title.")
     loop_video_parser.add_argument("--hard-loop", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")

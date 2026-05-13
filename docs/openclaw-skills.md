@@ -128,9 +128,9 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - In Korean YouTube titles/descriptions/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Prefer `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, and translated song titles in every other localized description. Keep the same timestamps and order in all languages.
 - In `sundaze` English/American pop metadata, every localized YouTube title must be exactly the same English title as the `en` title. In localized descriptions, timestamped tracklists must keep the English song/track titles in every language. Translate the intro, recommended-for line, and hashtags, but do not translate the song names after each timestamp.
-- For releases one hour or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
+- For releases 40+ minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
 - After audio render, metadata timestamps come from the release's saved `rendered_timeline` snapshot, which uses actual ffprobe source-file durations. Always call `scripts/openclaw-release metadata-context` after render and use its returned timeline; do not manually add rounded track durations.
-- If a one-hour playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release auto-publish-playlist` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
+- If a 40+ minute playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release auto-publish-playlist` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
 - Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
 - Full playlist publishing needs two 16:9 images:
@@ -145,7 +145,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - Channel visual signatures are separate:
 - Tokyo Daydream Radio/Japan/J-pop uses exactly three people walking forward away from the viewer by default. The camera/viewer sees their backs and backs of heads; no front-facing faces as the main composition.
 - Soft Hour Radio/default BGM uses its own channel profile: calm, restrained, long-listening visuals without a fixed recurring mascot, character count, scene list, or camera composition.
-- HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, The New Verse, sundaze, and Solwave Radio do not have fixed visual signatures yet. Use the selected channel profile and let the playlist concept drive the cover, thumbnail, and 10 second loop video.
+- HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, The New Verse, sundaze, and Solwave Radio do not have fixed visual signatures yet. Use the selected channel profile and let the playlist concept drive the cover, thumbnail, and 8 second loop video.
 - Explicit channel requests override genre-based visual routing. If the requested channel is `Soft Hour Radio`, use the Soft Hour profile returned by `scripts/openclaw-release channel-profile`.
 - Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - When a channel/default signature is used, the main subject must stay centered in thumbnails. Text must not push it to the side, crop it, cover it, or make it feel secondary. Place text in safe negative space, usually lower-left or lower area.
@@ -153,21 +153,21 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - The background should come from the selected channel profile and the release concept, not from a hard-coded scene list.
 - All static images and Dreamina/Seedance loop clips must look animated, anime, illustrated, or stylized. Do not make photorealistic, live-action, documentary, camera-photo, or realistic human footage.
 - Generate static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the OpenAI/Image tool environment. Do not use Dreamina for static image generation. Do not assume the OpenAI API is free; use the available Codex/ChatGPT image tool if that is the operator-approved path, or use API billing/credentials when explicitly configured.
-- Use Dreamina/Seedance only for the moving visual clip. For normal publish automation, OpenClaw must generate exactly one 10 second MP4 and pass it with `--loop-video`. The app rejects video render without an uploaded loop video unless the human explicitly approves the `--allow-still-image-video` fallback. The clip should end close to its opening composition so it can be reused across the full release. OpenClaw should not render a one-hour MP4 itself.
-- Existing releases that already have 8 second loop videos remain valid and should not be regenerated only because the default changed. For all new OpenClaw-created releases, use 10 seconds.
+- Use Dreamina/Seedance only for the moving visual clip. For normal publish automation, OpenClaw must generate exactly one 8 second MP4 and pass it with `--loop-video`. The app rejects video render without an uploaded loop video unless the human explicitly approves the `--allow-still-image-video` fallback. The clip should end close to its opening composition so it can be reused across the full release. OpenClaw should not render a long MP4 itself.
+- Existing releases that already have 8 second loop videos remain valid and should not be regenerated only because the default changed. For all new OpenClaw-created releases, use 8 seconds.
 - The app does not reject low-motion loop videos or alternate clip lengths. It checks that the upload is a readable video. OpenClaw should still visually inspect the loop and regenerate if the motion is too static or if the normal automation accidentally produced a 5 second Dreamina default clip, but this is a generation-quality decision rather than an app upload blocker.
-- Keep these assets separate: `--thumbnail` is the click image with large text and channel branding, `--cover` is the playback visual with only the large lower-left channel brand label, and `--loop-video` is the 10 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
-- The 10 second loop video must visually match the thumbnail's scene and brand, but it should start from the cover or a separate first-frame image that contains only the large lower-left channel brand label. Do not use the final text thumbnail as the Dreamina/Seedance first-frame reference, because generated video often makes large thumbnail text flicker, disappear, or reappear during the loop.
-- The lower-left channel label is mandatory inside the rendered video. Let the GPT Image model design the font/lettering to match the scene, channel, and genre, but keep the exact requested spelling large and readable on mobile playback. Then ask Dreamina/Seedance to preserve that baked-in text exactly for the full 10 second clip and never shrink it.
+- Keep these assets separate: `--thumbnail` is the click image with large text and channel branding, `--cover` is the playback visual with only the large lower-left channel brand label, and `--loop-video` is the 8 second moving visual used inside the rendered video. Do not use the text thumbnail as the video visual.
+- The 8 second loop video must visually match the thumbnail's scene and brand, but it should start from the cover or a separate first-frame image that contains only the large lower-left channel brand label. Do not use the final text thumbnail as the Dreamina/Seedance first-frame reference, because generated video often makes large thumbnail text flicker, disappear, or reappear during the loop.
+- The lower-left channel label is mandatory inside the rendered video. Let the GPT Image model design the font/lettering to match the scene, channel, and genre, but keep the exact requested spelling large and readable on mobile playback. Then ask Dreamina/Seedance to preserve that baked-in text exactly for the full 8 second clip and never shrink it.
 - Do not add extra title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover/first-frame or loop video. The lower-left channel label is the only allowed text inside the moving visual unless the human explicitly asks for more.
 - Do not create or bake in spectrum bars, waveform graphics, equalizers, audio meters, or other audio-reactive overlays in the cover, thumbnail, or Dreamina/Seedance loop clip. The app adds the final audio-reactive visualizer during video render. Keep the uploaded loop video visually clean except for the mandatory channel label and the requested scene motion.
 - The normal app-rendered visualizer preset is `bars`. If the human explicitly asks for a different Musicvid-like visualizer effect, `scripts/openclaw-release auto-publish-playlist` and `auto-publish-single` accept `--video-spectrum-overlay-style bars|multiwave|thinwave|dots|mirror-bars|radial|pulse`.
 - After Dreamina/Seedance generation with baked-in text, visually inspect the downloaded MP4 before upload. Reject and regenerate if the channel label flickers, disappears, morphs, changes spelling, changes font/position drastically, or becomes unreadable.
-- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Select Seedance/Dreamina `2.0 Fast`, first/last-frame mode if the UI asks, provide the first frame only, leave the last frame empty, set ratio to `16:9` when selectable, quality to `720p`, duration to exactly `10 seconds`, then create/download the MP4, save it locally, and pass the downloaded file path as `--loop-video`.
-- Dreamina/Seedance may silently keep or return to the `5 seconds` default. Do not click Generate while the duration control says `5 seconds`, while the duration control is hidden, or while you are not certain it is set to `10 seconds`. Re-open the duration selector and confirm `10 seconds` immediately before the final Generate click.
-- Do not create a 5 second draft/test video first and then create a 10 second version. That wastes credits/time and is treated as an automation error. The first generated Dreamina clip for normal OpenClaw work should already be 10 seconds.
-- After download, check the MP4 duration. If it is around 5 seconds and the human did not explicitly ask to use a 5 second clip, discard it, return to Dreamina, set duration to `10 seconds`, regenerate, and only then upload/pass `--loop-video`. `scripts/openclaw-release` rejects short loop videos by default in normal publish/upload commands; only use `--allow-short-loop-video` when the human explicitly accepts a non-standard shorter clip.
-- Do not put `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set duration, ratio, and quality only through Dreamina controls. Use the selected channel profile for camera behavior. For `Soft Hour Radio`, keep the camera locked and animate calm but clearly visible environmental motion across several layers throughout the full clip; do not ask for zoom, dolly, camera breathing, or camera drift.
+- For browser-based Dreamina generation, OpenClaw should use `https://dreamina.capcut.com/ai-tool/home/`. Select Seedance/Dreamina `2.0 Fast`, first/last-frame mode if the UI asks, provide the first frame only, leave the last frame empty, set ratio to `16:9` when selectable, quality to `720p`, duration to exactly `8 seconds`, then create/download the MP4, save it locally, and pass the downloaded file path as `--loop-video`.
+- Dreamina/Seedance may silently keep or return to the `5 seconds` default. Do not click Generate while the duration control says `5 seconds`, while the duration control is hidden, or while you are not certain it is set to `8 seconds`. Re-open the duration selector and confirm `8 seconds` immediately before the final Generate click.
+- Do not create a 5 second draft/test video first and then create an 8 second version. That wastes credits/time and is treated as an automation error. The first generated Dreamina clip for normal OpenClaw work should already be 8 seconds.
+- After download, check the MP4 duration. If it is around 5 seconds and the human did not explicitly ask to use a 5 second clip, discard it, return to Dreamina, set duration to `8 seconds`, regenerate, and only then upload/pass `--loop-video`. `scripts/openclaw-release` rejects short loop videos by default in normal publish/upload commands; only use `--allow-short-loop-video` when the human explicitly accepts a non-standard shorter clip.
+- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set duration, ratio, and quality only through Dreamina controls. Use the selected channel profile for camera behavior. For `Soft Hour Radio`, keep the camera locked and animate calm but clearly visible environmental motion across several layers throughout the full clip; do not ask for zoom, dolly, camera breathing, or camera drift.
 - If Dreamina/Seedance blocks generation for inappropriate content, copyright, moderation, or policy reasons, retry up to 10 total attempts. Do not retry the same prompt. Before every retry, post Slack progress with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
 - For every Dreamina retry, sanitize the prompt: remove named artists, studios, franchises, copyrighted characters, brands, logos, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Replace them with original generic descriptors while preserving mood, channel label, first-frame continuity, and motion intent.
 - If the uploaded first frame appears to be the moderation trigger, regenerate a safer cover/first-frame image first. If all 10 Dreamina attempts fail, post `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback. If approved, pass `--allow-still-image-video`.
@@ -300,12 +300,12 @@ Goal:
 - Apply the selected channel profile to both static images. For J-pop/Japan/Tokyo Daydream Radio singles, use the Tokyo profile. For Soft Hour/default BGM singles, use the Soft Hour profile. For HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, The New Verse, sundaze, or Solwave Radio, use that channel's profile and let the song concept drive the scene. The cover should contain only the large lower-left channel brand label; the thumbnail must be generated from that final cover as a reference/edit derivative, using the same composition plus readable click text and channel branding. In the thumbnail, keep the main channel/requested subject centered; text must fit around the composition rather than moving the subject sideways.
 - Before uploading the thumbnail, compare it against the cover. Character count, subject positions, silhouette, outfit colors, lighting, palette, and core background must remain visually continuous. Regenerate the thumbnail if it looks like a different scene or changes details such as cloak/shirt colors.
 - Keep the visual style animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
-- Generate both static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model. Dreamina is only for the moving 10 second MP4. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
-- Generate exactly one 10 second Dreamina/Seedance MP4 before publish when moving visuals are requested.
+- Generate both static images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model. Dreamina is only for the moving 8 second MP4. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
+- Generate exactly one 8 second Dreamina/Seedance MP4 before publish when moving visuals are requested.
 - Use the cover or a separate first-frame image as the first-frame/start-frame reference for Dreamina/Seedance so the video opening matches the thumbnail scene. This first frame must contain only the large lower-left channel label and preserve it exactly. Use the selected channel profile for the first-frame concept. If the human requested a different visual concept, the first frame and motion prompt must follow that requested concept instead. Do not use the text thumbnail, Omni Reference, or a last-frame reference.
 - The thumbnail, cover, and loop video are three different assets. The thumbnail has readable click text plus channel branding. The cover/loop video contain only the large lower-left channel label as baked-in text. The loop video must still remain free of subtitles, lyrics, UI, logos, title text, duration text, and unrelated words.
-- If using browser automation, open `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, use first/last-frame mode with only the first frame provided, do not use Omni Reference, leave the last frame empty, set `16:9`, `720p`, and `10 seconds` when selectable, re-check that the visible duration is not the `5 seconds` default, create/download the MP4, confirm the local file exists, and pass that absolute path as `--loop-video`.
-- Do not include duration, ratio, or quality words in the Dreamina prompt. Do not write `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. Those are either UI settings or app-render responsibilities.
+- If using browser automation, open `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, use first/last-frame mode with only the first frame provided, do not use Omni Reference, leave the last frame empty, set `16:9`, `720p`, and `8 seconds` when selectable, re-check that the visible duration is not the `5 seconds` default, create/download the MP4, confirm the local file exists, and pass that absolute path as `--loop-video`.
+- Do not include duration, ratio, or quality words in the Dreamina prompt. Do not write `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. Those are either UI settings or app-render responsibilities.
 - Use the Dreamina prompt shape from the selected channel profile returned by `scripts/openclaw-release channel-profile`.
 - If the human provided a specific visual/video request, replace the selected channel default prompt details with the requested subject/action/composition while keeping the safety/quality constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, preserve the large lower-left channel label, stable composition, no other text/subtitles/logos/UI, no extra unwanted subjects.
 - Always include this Dreamina prompt constraint: `The uploaded first frame contains the exact large, readable lower-left channel brand label "{CHANNEL_NAME}" (for example, "Tokyo Daydream Radio"). The label should match the visual scale of the YouTube thumbnail's channel-brand line, roughly 18-24% of image width or 5-6% of image height for text cap height. Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, shrink, or change the text. Keep the text area stable; animate the surrounding scene naturally.` Keep all other constraints.
@@ -323,7 +323,7 @@ scripts/openclaw-release create-release \
 
 ### Run The Full Automation
 
-After one generated audio file, final cover, text thumbnail, and 10 second loop video are ready, run one command:
+After one generated audio file, final cover, text thumbnail, and 8 second loop video are ready, run one command:
 
 ```bash
 scripts/openclaw-release auto-publish-single \
@@ -375,7 +375,7 @@ Next: human can review the scheduled/private YouTube upload before it goes publi
 
 ## Skill 3: Automatic Playlist Publisher
 
-Use this skill when the user asks for a playlist, mix, compilation, or approximately one-hour release and expects OpenClaw to finish the app-managed YouTube upload.
+Use this skill when the user asks for a playlist, mix, compilation, or long-form release and expects OpenClaw to finish the app-managed YouTube upload.
 
 ### Goal
 
@@ -393,8 +393,8 @@ Use randomized audio render when Suno two-output pairs are adjacent and the huma
 
 Generate enough material before publishing:
 
-- Target at least `3600` seconds for a one-hour playlist.
-- A practical buffer of `3900` seconds is acceptable.
+- Target at least `2400` seconds for a normal playlist.
+- A practical buffer of `2700` seconds is acceptable.
 - Do not publish under target unless the human explicitly says a shorter playlist is acceptable.
 - Every helper audio upload retries up to 3 times. If a track still fails, the helper posts a Slack warning, continues uploading the rest of the batch, and stops before render/publish. Re-download or re-export only the failed source files, upload them again, then render/publish after the full intended track set is present.
 - After every successful upload, use the returned JSON as the receipt: confirm `track.id`, `track.status`, and `duration_seconds`. The duration must be close to the actual local audio length.
@@ -402,14 +402,14 @@ Generate enough material before publishing:
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and publishing a one-hour Playlist Release through the AI Music app.
+You are creating and publishing a 40+ minute Playlist Release through the AI Music app.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
 
 Goal:
 - Create or select one Playlist Release workspace before opening Suno or generating audio.
-- Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
+- Generate songs in batches until the usable duration is at least 2400 seconds, preferably around 2700 seconds.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
@@ -434,13 +434,13 @@ Goal:
 - Apply the selected channel profile to both images. Use only the large lower-left channel brand label for `--cover`; use the same centered channel/requested composition plus readable click text and the selected channel brand line for `--thumbnail`. In thumbnails, keep the main subject centered and place text around it in negative space; never move the main subject to one side just to make room for text.
 - The cover and thumbnail should look like the same release art package. Preserve the same characters, poses, clothing colors, background, lighting, palette, and camera angle. If the thumbnail changes those details, regenerate it before uploading.
 - Keep every generated visual animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage.
-- Generate a 10 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
-- The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text plus channel branding; the cover and loop video must contain only the large lower-left channel label as baked-in text. Verify that Dreamina/Seedance preserves it in the 10 second clip.
+- Generate an 8 second Dreamina/Seedance 2.0 motion clip before running the full publish command, then pass it with `--loop-video`.
+- The thumbnail, cover, and loop video are three different assets. The thumbnail must contain readable click text plus channel branding; the cover and loop video must contain only the large lower-left channel label as baked-in text. Verify that Dreamina/Seedance preserves it in the 8 second clip.
 - Use the cover or a separate first-frame image as the visual starting reference for Dreamina/Seedance image-to-video generation. This reference must include only the large lower-left channel label. Use the selected channel profile for the first shot and motion direction. If the human requested a different video concept, use that requested subject/action/composition for the cover, thumbnail, and loop video. Do not use the text thumbnail as the video first frame.
 - For Dreamina motion clips, set duration/ratio/quality in Dreamina controls, not in the prompt. Use the prompt shape from the selected channel profile. For `Soft Hour Radio`, the final moment should keep the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ. The motion should be calm but clearly visible throughout the full clip.
-- Do not include `10 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. These terms cause Seedance/Dreamina to sometimes generate a shorter repeated segment inside the clip.
-- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, choose Seedance/Dreamina `2.0 Fast`, choose the first/last-frame workflow if the UI requires a mode, upload only the first-frame image, leave the last frame empty, do not use Omni Reference, set ratio `16:9`, quality `720p`, duration exactly `10 seconds`, re-check that the visible duration is not the `5 seconds` default, create the video, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
-- Before uploading the downloaded MP4, verify the normal automation output is close to 10 seconds. If the downloaded file is about 5 seconds because Dreamina stayed on its default duration, do not use it for normal automatic publishing; regenerate with the duration control set to `10 seconds`. If the human explicitly requests or provides a 5 second clip, uploading it is allowed only with `--allow-short-loop-video`.
+- Do not include `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. These terms cause Seedance/Dreamina to sometimes generate a shorter repeated segment inside the clip.
+- If using browser automation instead of an API, open `https://dreamina.capcut.com/ai-tool/home/`, choose Seedance/Dreamina `2.0 Fast`, choose the first/last-frame workflow if the UI requires a mode, upload only the first-frame image, leave the last frame empty, do not use Omni Reference, set ratio `16:9`, quality `720p`, duration exactly `8 seconds`, re-check that the visible duration is not the `5 seconds` default, create the video, download the MP4, confirm the local file exists, and use that absolute path for `--loop-video`.
+- Before uploading the downloaded MP4, verify the normal automation output is close to 8 seconds. If the downloaded file is about 5 seconds because Dreamina stayed on its default duration, do not use it for normal automatic publishing; regenerate with the duration control set to `8 seconds`. If the human explicitly requests or provides a 5 second clip, uploading it is allowed only with `--allow-short-loop-video`.
 - If Dreamina rejects the prompt/image for inappropriate content, copyright, moderation, or policy reasons, retry up to 10 total attempts before giving up. Send Slack on every failed attempt before retrying:
   `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`
 - On each retry, make the prompt safer and more original: remove named artists, studios, franchises, copyrighted characters, brands, logos, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Keep the same broad mood, channel label, first-frame continuity, and motion direction.
@@ -459,7 +459,7 @@ First, before opening Suno or submitting the first playlist prompt, create the d
 scripts/openclaw-release create-release \
   --workspace-mode playlist \
   --release-title "PLAYLIST_TITLE" \
-  --target-seconds 3600 \
+  --target-seconds 2400 \
   --description "Short mood/use-case description for metadata generation."
 ```
 
@@ -468,7 +468,7 @@ scripts/openclaw-release create-release \
 If the human gives this instruction through Slack, interpret it as approval to run the full playlist automation:
 
 ```text
-카페 피아노 1시간 플레이리스트 만들어서 Soft Hour Radio에 업로드까지 해줘.
+카페 피아노 40분 이상 플레이리스트 만들어서 Soft Hour Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
 마지막 업로드/예약이 끝나면 YouTube video id와 예약 공개 시간을 알려줘.
 ```
@@ -476,7 +476,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B �
 Japan routing example:
 
 ```text
-도쿄 시티팝 1시간 플레이리스트 만들어서 Tokyo Daydream Radio에 업로드까지 해줘.
+도쿄 시티팝 40분 이상 플레이리스트 만들어서 Tokyo Daydream Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
 썸네일에는 큰 J-POP과 작은 TOKYO DAYDREAM RADIO를 같은 위치/스타일로 넣어줘.
 ```
@@ -484,17 +484,17 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B �
 English pop routing example:
 
 ```text
-Summer night drive English pop 1시간 플레이리스트 만들어서 sundaze에 업로드까지 해줘.
+Summer night drive English pop 40분 이상 플레이리스트 만들어서 sundaze에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 영어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
-커버, 썸네일, 10초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
+커버, 썸네일, 8초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```
 
 Latin/Spanish routing example:
 
 ```text
-Verano latino reggaeton pop 1시간 플레이리스트 만들어서 Solwave Radio에 업로드까지 해줘.
+Verano latino reggaeton pop 40분 이상 플레이리스트 만들어서 Solwave Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 스페인어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
-커버, 썸네일, 10초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
+커버, 썸네일, 8초 영상은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```
 
 ### Run The Full Automation
@@ -564,15 +564,15 @@ Next: human can review the scheduled/private YouTube upload before it goes publi
 - Do not publish if the selected YouTube channel is not connected. Current intended routing is `Soft Hour Radio` for general BGM releases, `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop releases, `HaruHaru` for Korean/K-pop vocal releases, `Storylight OST` for fantasy/fairy-tale/cozy RPG/game-OST BGM releases, `Cinematic Pulse` for cinematic/trailer/battle/game-combat BGM releases, `Club Bloom` for EDM/house/dance releases, `The Old Verse` for Old Testament scripture-inspired music, `The New Verse` for New Testament/Gospel/worship music, `sundaze` for English/American pop, and `Solwave Radio` for Latin/Spanish pop.
 - Do not publish if final cover art was not uploaded. `auto-publish-playlist` requires `--cover` unless a final uploaded cover already exists on the release.
 - Do not publish if final YouTube thumbnail art was not uploaded. `auto-publish-playlist` requires `--thumbnail` unless a final uploaded thumbnail already exists on the release.
-- Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the cover or first-frame image into a 10 second loop video. This image must include only the large lower-left selected-channel-name brand label.
+- Do not use Dreamina to create static cover or thumbnail images. Use OpenAI GPT Image models for static images, then use Dreamina only to animate the cover or first-frame image into an 8 second loop video. This image must include only the large lower-left selected-channel-name brand label.
 - Static cover and thumbnail images must follow the selected channel profile returned by `scripts/openclaw-release channel-profile`.
 - In thumbnails, keep the main channel/requested subject centered; text must not push it sideways.
 - Do not use `--allow-generated-draft-cover` unless the human explicitly says a placeholder cover is acceptable for this upload.
 - Do not use `--allow-cover-as-thumbnail` unless the human explicitly says one image is acceptable for both the video visual and YouTube thumbnail.
-- Do not create a long one-hour MP4 in OpenClaw. Upload only the 10 second loop clip with `--loop-video`; the app handles the long render.
+- Do not create a long MP4 in OpenClaw. Upload only the 8 second loop clip with `--loop-video`; the app handles the long render.
 - Do not add subtitles, lyric overlays, UI elements, title text, genre text, duration text, or unrelated words inside the loop video. The selected channel profile controls the default visual action. An explicit human visual/video request overrides that channel default. If the first-frame reference has baked-in text other than the large lower-left channel label, regenerate a no-extra-text first frame before using Dreamina/Seedance.
 - Do not use Dreamina Omni Reference for loop-video generation. Use first-frame/start-frame input only and leave last-frame input empty.
-- Do not accidentally use or intentionally create a 5 second Dreamina default clip for normal auto-publish work. OpenClaw must catch the Dreamina UI mistake before the Generate click by confirming the visible duration control is `10 seconds`, then verify the downloaded file duration before upload. `scripts/openclaw-release` rejects short loop videos in normal commands unless `--allow-short-loop-video` is passed after explicit human approval.
+- Do not accidentally use or intentionally create a 5 second Dreamina default clip for normal auto-publish work. OpenClaw must catch the Dreamina UI mistake before the Generate click by confirming the visible duration control is `8 seconds`, then verify the downloaded file duration before upload. `scripts/openclaw-release` rejects short loop videos in normal commands unless `--allow-short-loop-video` is passed after explicit human approval.
 - Do not keep A/B, 1/2, or artificial pair suffixes in uploaded track titles.
 - Do not use titles that read like numbered alternatives. Playlist tracks should look like a real album/playlist tracklist.
 - Do not use AI/process/tool hashtags or YouTube tags on any channel. Avoid `AIMusic`, `AI music`, `AI generated`, `AI visualizer`, `Suno`, `OpenClaw`, and `Codex` in public hashtags and API tags.
@@ -593,11 +593,11 @@ Use `Automatic Single Publisher` when:
 
 - The user asks for one song, one single, or one standalone track and explicitly says to publish/upload it.
 - The goal is an app-managed YouTube upload without stopping for candidate review.
-- The release needs a final cover with a large lower-left channel brand label, separate text thumbnail, a 10 second Dreamina/Seedance loop video, metadata approval, and app-managed upload.
+- The release needs a final cover with a large lower-left channel brand label, separate text thumbnail, an 8 second Dreamina/Seedance loop video, metadata approval, and app-managed upload.
 
 Use `Automatic Playlist Publisher` when:
 
-- The user asks for a playlist, mix, compilation, batch, or one-hour release.
+- The user asks for a playlist, mix, compilation, batch, or long-form release.
 - The goal is many tracks.
 - The human expects OpenClaw to upload through the app to YouTube and review only the final result.
 

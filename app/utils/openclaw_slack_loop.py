@@ -272,7 +272,7 @@ def build_next_playlist_request_message(
 
     previous_context = [
         "OpenClaw Next Release Planner Skill을 실행해줘.",
-        "목표: 다음에 만들 1시간 Playlist Release의 채널과 컨셉을 결정하고, private YouTube publish까지 진행해줘.",
+        "목표: 다음에 만들 40분 이상 Playlist Release의 채널과 컨셉을 결정하고, private YouTube publish까지 진행해줘.",
         "",
         "이전 publish 완료 정보:",
         f"- release: {playlist.title}",
@@ -294,7 +294,7 @@ def build_next_playlist_request_message(
             "- 매번 /youtube/status의 channels 목록을 읽고, 문서에서 비활성/제외로 표시하지 않은 연결 채널을 현재 활성 roster로 사용해줘. 새 채널은 기본적으로 rotation에 포함해줘.",
             "- 현재 활성 채널을 순서대로 번갈아 운영하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
             "- channel-profile이 custom-channel 문서를 반환하면 그 custom 문서를 읽고, 채널명/기존 업로드/사람 요청을 바탕으로 채널 컨셉을 추론해 진행해줘.",
-            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 10s loop video, metadata, private publish까지 완료해줘.",
+            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, metadata, private publish까지 완료해줘.",
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
         ]
     )
