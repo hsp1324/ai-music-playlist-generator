@@ -67,6 +67,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--ko-title` / `--ko-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial K-pop playlists, not raw workspace names.
-- Use a title shape with a vivid Korean-pop scene or emotion plus listening use case, for example `[playlist] 비 오는 서울 K-POP 믹스 | 늦은 밤 버스, 이별, 감성 보컬`.
+- Use a title shape with a broad mainstream K-pop listening promise first, then a clear use case or emotion. Good example: `[playlist] 신나는 K-POP 믹스 | 운동, 러닝, 외출 준비, 파티 웜업`.
+- Do not use the visual scene as the main title hook unless it is broadly searchable. A rooftop, rainy street, practice room, cafe, or bus stop can guide cover/video mood, but the title should usually focus on K-pop energy, workout, running, getting ready, party warmup, night drive, heartbreak, confidence, or feel-good listening.
 - Every track should have original Korean lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.
 - In localized descriptions, preserve timestamps exactly. Translate surrounding prose, recommended-use lines, hashtags, and track titles naturally for that language unless the human asks to keep Korean track titles.

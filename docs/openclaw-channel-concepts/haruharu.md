@@ -6,7 +6,9 @@ Use this after the selected channel is `HaruHaru`. This document decides the nex
 
 HaruHaru is a Korean-language K-pop vocal channel. It is for original K-pop, Korean dance-pop, idol-pop inspired tracks, Korean synth-pop, Korean pop-rock, bright romance pop, emotional breakup pop, and Seoul/Korea everyday-scene pop.
 
-The audience should immediately understand: Korean vocal pop with lyrics, built around a clear emotion, scene, or use case.
+The audience should immediately understand: Korean vocal pop with lyrics, built around a mainstream emotion, energy level, or listening use case.
+
+Visual scenes can be specific, such as a rooftop, Seoul street, practice room, bus stop, cafe, or rainy window, but the public title should usually be broader than the visual. Lead with searchable K-pop listening reasons such as workout, running, getting ready, party warmup, dance-pop, heartbreak, night drive, confidence boost, or feel-good K-pop. Mention a niche visual scene only when it is a strong mainstream hook.
 
 ## Recent Release Check
 
@@ -22,15 +24,15 @@ If the latest HaruHaru upload could be summarized by the same scene plus same em
 
 ## Concept Lanes
 
-Use one vivid Korean-pop situation plus a clear emotional hook:
+Use one broad K-pop listening promise plus an optional visual/emotional flavor:
 
-- Seoul night lights, late bus, unread message, emotional synth-pop.
-- Han River evening, summer breeze, first crush, bright dance-pop.
-- Rainy cafe window, breakup recovery, Korean R&B pop or soft pop-rock.
-- Dance practice room, confidence, workout/getting-ready K-pop.
-- School hallway or campus spring, confession, youthful idol-pop.
-- Rooftop afterglow, friends, weekend freedom, upbeat pop-rock.
-- Winter street, warm scarf, reunion, sentimental K-pop ballad-pop.
+- Workout, running, getting ready, party warmup, confidence boost, bright dance-pop.
+- Night drive, city lights, late bus, emotional synth-pop.
+- Heartbreak recovery, rainy mood, Korean R&B pop or soft pop-rock.
+- Dance practice energy, performance confidence, idol-pop.
+- Feel-good weekend, friends, bright pop-rock.
+- Summer crush, campus mood, youthful idol-pop.
+- Reunion or moving-on mood, sentimental K-pop ballad-pop.
 
 ## Music Direction
 
@@ -55,10 +57,10 @@ Use one vivid Korean-pop situation plus a clear emotional hook:
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] 비 오는 서울 K-POP 믹스 | 늦은 밤 버스, 이별, 감성 보컬`
-- `[playlist] 한강 노을 K-POP | 설레는 여름 산책과 첫사랑 노래`
-- `[playlist] 댄스 연습실 K-POP | 운동, 외출 준비, 자신감 충전`
-- `[playlist] 카페 창가 K-POP | 비 오는 날 듣는 이별 감성`
+- `[playlist] 신나는 K-POP 믹스 | 운동, 러닝, 외출 준비, 파티 웜업`
+- `[playlist] 감성 K-POP 플레이리스트 | 이별, 늦은 밤, 혼자 듣는 노래`
+- `[playlist] 설레는 K-POP 믹스 | 여름, 첫사랑, 기분 좋아지는 노래`
+- `[playlist] K-POP 드라이브 믹스 | 밤길, 도시 불빛, 자신감 충전`
 
 ## Bad Directions
 
@@ -67,5 +69,6 @@ Use one vivid Korean-pop situation plus a clear emotional hook:
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.
 - Forcing title/use-case words such as `댄스 연습실`, `운동`, `산책`, `공부`, `드라이브`, or `외출 준비` into lyrics unless they naturally belong in the song.
 - Titles like `KPOP Playlist`, `Korean Pop`, or `Seoul Music` by themselves.
+- Overly narrow visual-scene titles such as rooftop-after-rain, pottery-studio, exact street corners, or prop-first titles when the music is really a broad workout, running, getting-ready, party, heartbreak, or mood playlist.
 - Concepts that sound like J-pop/Tokyo Daydream Radio or English pop/sundaze.
 - Remake/cover concepts based on existing popular songs. HaruHaru is for original K-pop.
