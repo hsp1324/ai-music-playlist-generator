@@ -159,8 +159,8 @@ YouTube thumbnail:
 
 Cover / first frame:
 
-- 16:9 illustrated/anime/stylized/storybook image for fantasy, fairy-tale, cozy RPG, game-OST, magical village, forest path, castle road, story BGM, or calm adventure instrumental releases.
-- No fixed recurring visual signature yet. The playlist concept decides the fantasy/story scene, object, palette, and camera.
+- 16:9 illustrated/anime/stylized game-background image for playful no-vocal Japanese-style game/anime OST, arcade-game BGM, fantasy-game BGM, cute RPG music, item-shop music, mini-game music, or light adventure instrumental releases.
+- No fixed recurring visual signature yet. The playlist concept decides the arcade, fantasy-game, anime-side-story, item-shop, mini-game, cute RPG scene, object, palette, and camera.
 - Only text allowed is the large lower-left `Storylight OST` brand label.
 
 Loop video:
@@ -173,7 +173,7 @@ YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable fantasy/story text such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`.
+- Add large readable game/anime text such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, or `FANTASY GAME`.
 - Add `STORYLIGHT OST` brand line, visually consistent with the large cover channel label.
 
 ### Cinematic Pulse
@@ -276,4 +276,3 @@ Profiles:
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
 Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
-`AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.

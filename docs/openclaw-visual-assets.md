@@ -126,23 +126,23 @@ Use this for `HaruHaru`, K-pop, Korean pop, Korean dance-pop, Korean synth-pop, 
 
 ## Storylight OST Visual Skill
 
-Use this for `Storylight OST`, fantasy OST, fairy-tale BGM, cozy RPG music, magical village BGM, game-town BGM, or storybook instrumental releases.
+Use this for `Storylight OST`, playful no-vocal Japanese-style game/anime OST, arcade-game BGM, fantasy-game BGM, cute RPG music, item-shop music, mini-game music, or light adventure instrumental releases.
 
 - No fixed recurring visual signature yet.
-- Let the playlist concept decide the fantasy/story/game-OST scene, object, palette, and loop-video motion.
+- Let the playlist concept decide the arcade, fantasy-game, anime-side-story, item-shop, mini-game, cute RPG, object, palette, and loop-video motion.
 - The cover must contain only the large lower-left `Storylight OST` brand label.
-- The thumbnail should use short fantasy/story click text such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`, plus `STORYLIGHT OST`.
-- The loop video should animate the selected cover concept with visible storybook environmental motion, not borrow Soft Hour calm-use-case visuals or Tokyo walking signatures.
+- The thumbnail should use short game/anime click text such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, or `FANTASY GAME`, plus `STORYLIGHT OST`.
+- The loop video should animate the selected cover concept with visible playful game/anime environmental motion, not borrow Soft Hour calm-use-case visuals or Tokyo walking signatures.
 - Do not use protected IP, real studio names, franchise names, exact game titles, copyrighted characters, celebrity likenesses, or `in the style of` wording.
 
 ## Cinematic Pulse Visual Skill
 
-Use this for `Cinematic Pulse`, epic orchestral, trailer music, battle OST, final boss music, heroic music, sci-fi action, dark fantasy, or game-combat instrumental releases.
+Use this for `Cinematic Pulse`, no-vocal large-scale cinematic orchestra, movie OST, film score, trailer music, battle OST, final boss music, heroic music, emotional film score, mystery tension, sci-fi action, dark fantasy, or game-combat instrumental releases.
 
 - No fixed recurring visual signature yet.
-- Let the playlist concept decide the cinematic/trailer/battle scene, object, palette, and loop-video motion.
+- Let the playlist concept decide the cinematic orchestra, movie-OST, trailer, battle, emotional film-score, mystery-tension, or sci-fi scene, object, palette, and loop-video motion.
 - The cover must contain only the large lower-left `Cinematic Pulse` brand label.
-- The thumbnail should use short cinematic click text such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`, plus `CINEMATIC PULSE`.
+- The thumbnail should use short cinematic click text such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, or `TRAILER MUSIC`, plus `CINEMATIC PULSE`.
 - The loop video should animate the selected cover concept with controlled cinematic motion: storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, or atmospheric light movement.
 - Do not use gore, real war footage, political symbols, protected IP, franchise names, copyrighted characters, or celebrity likenesses.
 

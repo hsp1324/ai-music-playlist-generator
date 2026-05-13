@@ -39,6 +39,7 @@ CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
 CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE = "Club Bloom"
 OLD_VERSE_YOUTUBE_CHANNEL_TITLE = "The Old Verse"
 NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "The New Verse"
+ANIMEMIX_LEGACY_CHANNEL_TITLE = "AnimeMix"
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
@@ -89,9 +90,13 @@ CHANNEL_PROFILE_NAMES = {
 }
 CHANNEL_TITLE_ALIASES = {
     STORYLIGHT_YOUTUBE_CHANNEL_TITLE: (
+        ANIMEMIX_LEGACY_CHANNEL_TITLE,
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
+    ),
+    ANIMEMIX_LEGACY_CHANNEL_TITLE: (
+        STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
     ),
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: (
         STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
@@ -240,7 +245,29 @@ KPOP_CHANNEL_KEYWORDS = (
 STORYLIGHT_CHANNEL_KEYWORDS = (
     "storylight",
     "storylight ost",
+    "animemix",
+    "anime mix",
+    "anime bgm",
+    "anime ost",
+    "anime game",
+    "anime game ost",
+    "japanese game ost",
+    "japanese game bgm",
+    "japanese arcade",
+    "arcade game",
+    "arcade bgm",
+    "arcade ost",
+    "8-bit",
+    "8bit",
+    "chiptune",
+    "kawaii game",
+    "cute game",
+    "playful ost",
+    "playful bgm",
     "fantasy ost",
+    "fantasy game",
+    "fantasy game ost",
+    "fantasy game bgm",
     "fairy tale",
     "fairytale",
     "fantasy village",
@@ -256,8 +283,20 @@ STORYLIGHT_CHANNEL_KEYWORDS = (
     "castle town",
     "secret library",
     "fantasy train",
+    "아케이드",
+    "아케이드 게임",
+    "애니 bgm",
+    "애니 ost",
+    "애니메이션 bgm",
+    "애니메이션 ost",
+    "일본풍 게임",
+    "일본 게임 ost",
+    "일본 게임 bgm",
     "동화",
     "판타지 ost",
+    "판타지 게임",
+    "판타지 게임 ost",
+    "판타지 게임 bgm",
     "판타지 브금",
     "판타지 bgm",
     "게임 ost",
@@ -269,6 +308,19 @@ STORYLIGHT_CHANNEL_KEYWORDS = (
 )
 CINEMATIC_PULSE_CHANNEL_KEYWORDS = (
     "cinematic pulse",
+    "movie ost",
+    "movie score",
+    "film score",
+    "film-score",
+    "orchestral score",
+    "cinematic orchestra",
+    "cinematic orchestral",
+    "cinematic music",
+    "cinematic bgm",
+    "emotional film score",
+    "emotional orchestra",
+    "mystery tension",
+    "orchestral tension",
     "epic orchestral",
     "epic battle",
     "battle music",
@@ -284,8 +336,16 @@ CINEMATIC_PULSE_CHANNEL_KEYWORDS = (
     "cinematic action",
     "cinematic battle",
     "orchestral battle",
+    "영화 ost",
     "영화 음악",
+    "영화 스코어",
+    "영화 오케스트라",
+    "오케스트라 ost",
+    "오케스트라 bgm",
     "시네마틱",
+    "시네마틱 오케스트라",
+    "감정적인 영화",
+    "미스터리 긴장감",
     "웅장한",
     "전투 음악",
     "전투 bgm",
@@ -1274,6 +1334,8 @@ def wait_for_release(
 def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     explicit_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
     if explicit_title:
+        if explicit_title == ANIMEMIX_LEGACY_CHANNEL_TITLE:
+            return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
         if explicit_title in {
             SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
             SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
@@ -1300,16 +1362,16 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
         return SOLWAVE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in KPOP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
         return HARUHARU_YOUTUBE_CHANNEL_TITLE
-    if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
-        return JAPAN_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in CLUB_BLOOM_CHANNEL_KEYWORDS):
         return CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE
-    if any(keyword.lower() in haystack for keyword in ENGLISH_POP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
-        return SUNDAZE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in CINEMATIC_PULSE_CHANNEL_KEYWORDS):
         return CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in STORYLIGHT_CHANNEL_KEYWORDS):
         return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
+        return JAPAN_YOUTUBE_CHANNEL_TITLE
+    if any(keyword.lower() in haystack for keyword in ENGLISH_POP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
+        return SUNDAZE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in SIGNAL_ROOM_CHANNEL_KEYWORDS):
         return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
     return DEFAULT_YOUTUBE_CHANNEL_TITLE
@@ -2238,12 +2300,12 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "For sundaze/English pop releases, keep every localized title exactly the same as the English title. Also keep English track titles in every localized timestamped timeline row; translate only the surrounding prose, use-case text, and hashtags. "
             "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. "
-            "For Storylight OST BGM releases, write English default metadata and position it as no-vocal fantasy/story/game-OST music for writing, reading, worldbuilding, cozy RPG scenes, fairy-tale scenes, and calm adventure. "
-            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic/trailer/battle/game-focus music. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. "
+            "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
+            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, battle, emotional, mystery-tension, or game-focus music. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. "
             "For The Old Verse releases, write English default metadata and position it as Old Testament scripture-inspired music that follows the biblical sequence from Genesis onward. For The New Verse releases, write English default metadata and position it as New Testament scripture-inspired worship music that follows the sequence from Matthew onward. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/fantasy OST, Cinematic Pulse/cinematic OST, Club Bloom/EDM, The Old Verse/Old Testament, The New Verse/New Testament, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, The Old Verse/Old Testament, The New Verse/New Testament, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
             "Use --default-language ko for HaruHaru, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse."
         ),
     }
@@ -2562,7 +2624,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -2599,7 +2661,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, fantasy/story/game OST uses Storylight OST, cinematic/trailer/battle uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament/Bible sequence uses The Old Verse, New Testament/Gospel/worship uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",

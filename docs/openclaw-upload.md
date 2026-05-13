@@ -158,8 +158,8 @@ Static image creation rules:
 - For `sundaze` or English/American pop releases, use the sundaze profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals.
 - For `Solwave Radio` or Latin/Spanish pop releases, use the Solwave Radio profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals.
 - For `HaruHaru` or Korean/K-pop releases, use the HaruHaru profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals. Lyrics are Korean by default.
-- For `Storylight OST`, use the Storylight OST profile for fantasy/fairy-tale/cozy RPG/game-OST BGM releases.
-- For `Cinematic Pulse`, use the Cinematic Pulse profile for epic cinematic, trailer, battle, final boss, heroic, sci-fi action, dark fantasy, and game-combat instrumental music.
+- For `Storylight OST`, use the Storylight OST profile for playful no-vocal Japanese-style game/anime OST, arcade-game BGM, fantasy-game BGM, cute RPG music, item-shop music, mini-game music, and light adventure instrumental releases.
+- For `Cinematic Pulse`, use the Cinematic Pulse profile for no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, battle, emotional, mystery-tension, sci-fi, dark fantasy, heroic, and game-focus instrumental music.
 - For `Club Bloom`, use the Club Bloom profile for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases. Each playlist must choose one club style lane and stay within it.
 - For `The Old Verse`, use the Old Verse profile for lyric-based Old Testament scripture-inspired songs that follow the Bible sequence from Genesis onward. Vocal songs with original English lyrics are expected unless the human explicitly asks for instrumental/BGM or another lyric language.
 - For `The New Verse`, use the New Verse profile for lyric-based New Testament/Gospel/worship songs that follow the Bible sequence from Matthew onward. Vocal songs with original English lyrics are expected unless the human explicitly asks for instrumental/BGM or another lyric language.
@@ -175,7 +175,7 @@ Static image creation rules:
 - For `sundaze`, use thumbnail wording such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`, with smaller `SUNDAZE` branding.
 - For `Solwave Radio`, use thumbnail wording such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`, with smaller `SOLWAVE RADIO` branding.
 - For `HaruHaru`, use thumbnail wording such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, with smaller `HARUHARU` branding.
-- For `Storylight OST`, use thumbnail wording such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, `STORY BGM`, `FAIRY TALE MUSIC`, or `GAME TOWN BGM`, with smaller `STORYLIGHT OST` branding.
+- For `Storylight OST`, use thumbnail wording such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, or `FANTASY GAME`, with smaller `STORYLIGHT OST` branding.
 - For `Cinematic Pulse`, use thumbnail wording such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`, with smaller `CINEMATIC PULSE` branding.
 - For `Club Bloom`, use style-specific thumbnail wording such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`, with smaller `CLUB BLOOM` branding.
 - For `The Old Verse`, use thumbnail wording such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`, with smaller `THE OLD VERSE` branding.
@@ -287,7 +287,7 @@ Thumbnail text rules for OpenClaw:
 Localized YouTube metadata rules for OpenClaw:
 
 - The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `pt-BR`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW`.
-- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, fantasy/story/game-OST BGM, cinematic/trailer/battle BGM, no-vocal club music, scripture music, or similar pop-family/story-BGM releases, always write all fifteen language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
+- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, playful Japanese game/anime OST BGM, cinematic orchestra/movie-OST/film-score BGM, no-vocal club music, scripture music, or similar pop-family/story-BGM releases, always write all fifteen language versions: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
 - Use Korean as the default upload metadata for Tokyo/Soft Hour/HaruHaru unless the channel profile says otherwise. Use `--default-language en` for `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, and `sundaze`; use `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
 - Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
@@ -354,14 +354,13 @@ For automatic playlist publishing, `scripts/openclaw-release auto-publish-playli
 - Use `sundaze` for English/American pop, US/UK pop, western pop, mainstream English vocal pop, dance-pop, synth-pop, pop-rock, or similar English pop concepts.
 - Use `Solwave Radio` for Latin/Spanish pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, verano latino, or similar Spanish vocal concepts.
 - Use `HaruHaru` for K-pop, Korean pop, Korean dance-pop, Korean synth-pop, Korean pop-rock, Korean R&B pop, idol-pop inspired music, or similar Korean vocal concepts.
-- Use `Storylight OST` for fantasy/fairy-tale/cozy RPG/game-OST BGM concepts.
-- Use `Cinematic Pulse` for cinematic/trailer/battle/final-boss/heroic/sci-fi-action/game-combat instrumental concepts.
+- Use `Storylight OST` for playful no-vocal Japanese-style game/anime OST, arcade-game BGM, fantasy-game BGM, cute RPG music, item-shop music, mini-game music, and light adventure instrumental concepts.
+- Use `Cinematic Pulse` for no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, battle, emotional, mystery-tension, sci-fi, dark fantasy, heroic, and game-focus instrumental concepts.
 - Use `Club Bloom` for no-vocal EDM/house/techno/trance/festival/workout/night-drive/gaming/club concepts.
 - Use `The Old Verse` for Old Testament, Genesis, Exodus, Psalms, Bible verse music, scripture-inspired worship, or ancient biblical music concepts.
 - Use `The New Verse` for New Testament, Gospel, Jesus words, grace music, scripture worship, Bible verse songs, or worship pop concepts.
 - Pass `--youtube-channel-title` explicitly when the human names a target channel.
 - Do not use `MusicSun` unless the human explicitly requests it.
-- Do not use `AnimeMix` in automatic next-release rotation. It is a manual-only popular-song remake/cover channel unless the human explicitly asks for a specific remake workflow.
 - For continuous automation, newly connected YouTube channels are active by default unless explicitly marked inactive/excluded in docs. If the selected connected channel has no dedicated profile/concept docs yet, use the `custom-channel` docs returned by `scripts/openclaw-release channel-profile`.
 - After publish, `/api/playlists/workspaces` exposes `youtube_video_id`, `youtube_channel_id`, `youtube_channel_title`, and when enabled `youtube_scheduled_publish_at`. OpenClaw can use those fields to confirm which channel received the upload and which daily 07:00 slot was assigned; web UI layout changes do not affect OpenClaw because it should use the helper script or local API, not click the dashboard.
 - If `AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED=true`, the app uploads with YouTube `status.publishAt` for the next free daily 07:00 slot in `AIMP_YOUTUBE_SCHEDULE_TIMEZONE`. If that date already has a scheduled app upload, the app automatically uses the following day. OpenClaw should not manually change YouTube visibility in Studio.
@@ -509,7 +508,7 @@ scripts/openclaw-release auto-publish-single \
   --tags "TAGS" \
   --youtube-channel-title "Tokyo Daydream Radio"
 
-For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", fantasy/fairy-tale/cozy RPG/game-OST BGM goes to "Storylight OST", cinematic/trailer/battle/game-combat BGM goes to "Cinematic Pulse", no-vocal EDM/house/techno/trance club music goes to "Club Bloom", Old Testament scripture music goes to "The Old Verse", New Testament/Gospel/worship music goes to "The New Verse", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
+For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", playful no-vocal Japanese-style game/anime OST and arcade/fantasy-game BGM goes to "Storylight OST", no-vocal large-scale cinematic orchestra/movie-OST/film-score BGM goes to "Cinematic Pulse", no-vocal EDM/house/techno/trance club music goes to "Club Bloom", Old Testament scripture music goes to "The Old Verse", New Testament/Gospel/worship music goes to "The New Verse", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
 Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice.
 ```
 
