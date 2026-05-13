@@ -233,8 +233,8 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
-            release_title="Cute Arcade Game OST",
-            youtube_channel_title="AnimeMix",
+            release_title="Fantasy RPG Menu Music",
+            youtube_channel_title=STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         )
     ) == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
 
@@ -346,27 +346,6 @@ def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:
     assert (
         resolve_youtube_channel_id(client, title=SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE)
         == "legacy-signal-desk"
-    )
-
-
-def test_resolve_youtube_channel_id_uses_animemix_renamed_alias() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/api/youtube/status"
-        return httpx.Response(
-            200,
-            json={
-                "channels": [
-                    {"id": "storylight-renamed", "title": "AnimeMix"},
-                    {"id": "soft-hour", "title": DEFAULT_YOUTUBE_CHANNEL_TITLE},
-                ]
-            },
-        )
-
-    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
-
-    assert (
-        resolve_youtube_channel_id(client, title=STORYLIGHT_YOUTUBE_CHANNEL_TITLE)
-        == "storylight-renamed"
     )
 
 

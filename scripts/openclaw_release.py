@@ -39,7 +39,6 @@ CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
 CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE = "Club Bloom"
 OLD_VERSE_YOUTUBE_CHANNEL_TITLE = "The Old Verse"
 NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "The New Verse"
-ANIMEMIX_LEGACY_CHANNEL_TITLE = "AnimeMix"
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
@@ -90,13 +89,9 @@ CHANNEL_PROFILE_NAMES = {
 }
 CHANNEL_TITLE_ALIASES = {
     STORYLIGHT_YOUTUBE_CHANNEL_TITLE: (
-        ANIMEMIX_LEGACY_CHANNEL_TITLE,
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
-    ),
-    ANIMEMIX_LEGACY_CHANNEL_TITLE: (
-        STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
     ),
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: (
         STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
@@ -245,8 +240,6 @@ KPOP_CHANNEL_KEYWORDS = (
 STORYLIGHT_CHANNEL_KEYWORDS = (
     "storylight",
     "storylight ost",
-    "animemix",
-    "anime mix",
     "anime bgm",
     "anime ost",
     "anime game",
@@ -1334,8 +1327,6 @@ def wait_for_release(
 def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     explicit_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
     if explicit_title:
-        if explicit_title == ANIMEMIX_LEGACY_CHANNEL_TITLE:
-            return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
         if explicit_title in {
             SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
             SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
