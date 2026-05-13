@@ -28,7 +28,7 @@ YOUTUBE_LOOP_VIDEO_FILTER = (
     "scale=1280:720:force_original_aspect_ratio=decrease,"
     "pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
     "setsar=1,"
-    "fps=30,"
+    "fps=24,"
     "format=yuv420p"
 )
 DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 8
@@ -332,7 +332,8 @@ class FFMpegPlaylistBuilder:
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         image_mimetype = guess_type(str(cover_image_path))[0] or "image/png"
-        render_output_path = self._base_render_path(output_path) if self._spectrum_overlay_enabled() else output_path
+        apply_spectrum_overlay = self._spectrum_overlay_enabled(spectrum_overlay_style)
+        render_output_path = self._base_render_path(output_path) if apply_spectrum_overlay else output_path
 
         command = [
             self.settings.ffmpeg_binary,
@@ -377,7 +378,7 @@ class FFMpegPlaylistBuilder:
                 total_duration_seconds=total_duration_seconds,
                 progress_callback=progress_callback,
             )
-            if render_output_path != output_path:
+            if apply_spectrum_overlay and render_output_path != output_path:
                 self._apply_spectrum_overlay(
                     render_output_path,
                     audio_path,
@@ -412,7 +413,8 @@ class FFMpegPlaylistBuilder:
         loop_source_path = clip_path
         loop_unit_path: Path | None = None
         concat_list_path: Path | None = None
-        render_output_path = self._base_render_path(output_path) if self._spectrum_overlay_enabled() else output_path
+        apply_spectrum_overlay = self._spectrum_overlay_enabled(spectrum_overlay_style)
+        render_output_path = self._base_render_path(output_path) if apply_spectrum_overlay else output_path
         command: list[str]
         if smooth_loop:
             source_seconds = self._resolve_loop_source_seconds(clip_path)
@@ -504,7 +506,7 @@ class FFMpegPlaylistBuilder:
                 total_duration_seconds=total_duration_seconds,
                 progress_callback=progress_callback,
             )
-            if render_output_path != output_path:
+            if apply_spectrum_overlay and render_output_path != output_path:
                 self._apply_spectrum_overlay(
                     render_output_path,
                     audio_path,
@@ -525,8 +527,10 @@ class FFMpegPlaylistBuilder:
                 intro_path.unlink(missing_ok=True)
         return output_path
 
-    def _spectrum_overlay_enabled(self) -> bool:
-        return bool(getattr(self.settings, "video_spectrum_overlay_enabled", True))
+    def _spectrum_overlay_enabled(self, style: str | None = None) -> bool:
+        if not bool(getattr(self.settings, "video_spectrum_overlay_enabled", True)):
+            return False
+        return self._normalize_spectrum_overlay_style(style) != "none"
 
     def _base_render_path(self, output_path: Path) -> Path:
         return output_path.with_name(f"{output_path.stem}-base-render{output_path.suffix}")
@@ -553,9 +557,15 @@ class FFMpegPlaylistBuilder:
             "radial-bars": "radial",
             "pulse-line": "pulse",
             "pulses": "pulse",
+            "off": "none",
+            "disabled": "none",
+            "disable": "none",
+            "no": "none",
+            "no-spectrum": "none",
+            "fast": "none",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"}:
+        if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse", "none"}:
             return "bars"
         return normalized
 

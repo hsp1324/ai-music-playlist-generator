@@ -939,6 +939,7 @@ function chooseVisualizerStyle(workspace) {
     "mirror-bars": "center mirrored bars",
     radial: "large circular spectrum",
     pulse: "pulse line visualizer",
+    none: "fast render, no spectrum overlay",
   };
   const current = workspace.video_spectrum_overlay_style || "bars";
   const message = [
@@ -968,10 +969,15 @@ function chooseVisualizerStyle(workspace) {
     "radial-bars": "radial",
     "pulse-line": "pulse",
     pulses: "pulse",
+    off: "none",
+    disabled: "none",
+    disable: "none",
+    "no-spectrum": "none",
+    fast: "none",
   };
   const style = aliases[normalized] || normalized || "bars";
   if (!Object.prototype.hasOwnProperty.call(styles, style)) {
-    window.alert("Unknown visualizer preset. Use bars, multiwave, thinwave, dots, mirror-bars, radial, or pulse.");
+    window.alert("Unknown visualizer preset. Use bars, multiwave, thinwave, dots, mirror-bars, radial, pulse, or none.");
     return null;
   }
   return style;

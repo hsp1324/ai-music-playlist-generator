@@ -2559,9 +2559,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"],
+        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse", "none"],
         default="bars",
-        help="App-rendered audio visualizer preset. Default: bars.",
+        help="App-rendered audio visualizer preset. Use none for fastest render without spectrum overlay. Default: bars.",
     )
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
@@ -2596,9 +2596,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"],
+        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse", "none"],
         default="bars",
-        help="App-rendered audio visualizer preset. Default: bars.",
+        help="App-rendered audio visualizer preset. Use none for fastest render without spectrum overlay. Default: bars.",
     )
     auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")

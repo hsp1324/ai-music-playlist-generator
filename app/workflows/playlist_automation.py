@@ -1408,9 +1408,15 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "radial-bars": "radial",
         "pulse-line": "pulse",
         "pulses": "pulse",
+        "off": "none",
+        "disabled": "none",
+        "disable": "none",
+        "no": "none",
+        "no-spectrum": "none",
+        "fast": "none",
     }
     normalized = aliases.get(normalized, normalized)
-    if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse"}:
+    if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse", "none"}:
         return "bars"
     return normalized
 

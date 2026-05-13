@@ -88,9 +88,9 @@ Video render now adds an app-managed audio-reactive visualizer overlay by defaul
 - the app samples the cover/loop-video frame and chooses colors that fit the visual palette
 - the app can move the overlay away from bright text-heavy areas so it does not cover channel branding
 - `AIMP_VIDEO_SPECTRUM_OVERLAY_ENABLED=false` disables it
-- `AIMP_VIDEO_SPECTRUM_OVERLAY_STYLE` can be `bars`, `multiwave`, `thinwave`, `dots`, `mirror-bars`, `radial`, or `pulse`
-- `bars` is the production default; `multiwave` draws layered actual audio waveform lines, `thinwave` is a cleaner thinner waveform, `dots` draws audio-reactive glowing dots, `mirror-bars` draws centered mirrored bars, `radial` draws a large circular spectrum, and `pulse` draws a punchy pulse line
-- the web `Render Video` action and OpenClaw auto-publish commands can pass a per-render visualizer preset; if omitted, `bars` is used
+- `AIMP_VIDEO_SPECTRUM_OVERLAY_STYLE` can be `bars`, `multiwave`, `thinwave`, `dots`, `mirror-bars`, `radial`, `pulse`, or `none`
+- `bars` is the production default; `multiwave` draws layered actual audio waveform lines, `thinwave` is a cleaner thinner waveform, `dots` draws audio-reactive glowing dots, `mirror-bars` draws centered mirrored bars, `radial` draws a large circular spectrum, `pulse` draws a punchy pulse line, and `none` skips the spectrum overlay for the fastest render
+- the web `Render Video` action and OpenClaw auto-publish commands can pass a per-render visualizer preset; if omitted, `bars` is used. Use `none` for long urgent renders where speed matters more than the audio-reactive visualizer.
 - OpenClaw should not bake spectrum bars, waveform graphics, equalizers, or audio meters into the static cover or Dreamina loop video; the app adds those during final render
 
 For `single_track_video`, the intended publish path is:
