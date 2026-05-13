@@ -160,7 +160,7 @@ Static image creation rules:
 - For `HaruHaru` or Korean/K-pop releases, use the HaruHaru profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals. Lyrics are Korean by default.
 - For `Storylight OST`, use the Storylight OST profile for fantasy/fairy-tale/cozy RPG/game-OST BGM releases.
 - For `Cinematic Pulse`, use the Cinematic Pulse profile for epic cinematic, trailer, battle, final boss, heroic, sci-fi action, dark fantasy, and game-combat instrumental music.
-- For `Club Bloom` or legacy `AI썰전`, use the Club Bloom profile for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases. Each playlist must choose one club style lane and stay within it. Legacy `AI썰전` is only the old connected title until YouTube status refreshes after the channel rename.
+- For `Club Bloom`, use the Club Bloom profile for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases. Each playlist must choose one club style lane and stay within it.
 - For `The Old Verse`, use the Old Verse profile for Old Testament scripture-inspired music that follows the Bible sequence from Genesis onward.
 - For `The New Verse`, use the New Verse profile for New Testament/Gospel/worship music that follows the Bible sequence from Matthew onward.
 - If the human explicitly names the upload channel, that channel controls visual routing.
@@ -356,7 +356,7 @@ For automatic playlist publishing, `scripts/openclaw-release auto-publish-playli
 - Use `HaruHaru` for K-pop, Korean pop, Korean dance-pop, Korean synth-pop, Korean pop-rock, Korean R&B pop, idol-pop inspired music, or similar Korean vocal concepts.
 - Use `Storylight OST` for fantasy/fairy-tale/cozy RPG/game-OST BGM concepts.
 - Use `Cinematic Pulse` for cinematic/trailer/battle/final-boss/heroic/sci-fi-action/game-combat instrumental concepts.
-- Use `Club Bloom` for no-vocal EDM/house/techno/trance/festival/workout/night-drive/gaming/club concepts. If the connected channel still appears as `AI썰전`, treat it as the legacy/old title for Club Bloom until YouTube status refreshes to the renamed channel.
+- Use `Club Bloom` for no-vocal EDM/house/techno/trance/festival/workout/night-drive/gaming/club concepts.
 - Use `The Old Verse` for Old Testament, Genesis, Exodus, Psalms, Bible verse music, scripture-inspired worship, or ancient biblical music concepts.
 - Use `The New Verse` for New Testament, Gospel, Jesus words, grace music, scripture worship, Bible verse songs, or worship pop concepts.
 - Pass `--youtube-channel-title` explicitly when the human names a target channel.
@@ -509,7 +509,7 @@ scripts/openclaw-release auto-publish-single \
   --tags "TAGS" \
   --youtube-channel-title "Tokyo Daydream Radio"
 
-For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", fantasy/fairy-tale/cozy RPG/game-OST BGM goes to "Storylight OST", cinematic/trailer/battle/game-combat BGM goes to "Cinematic Pulse", no-vocal EDM/house/techno/trance club music goes to "Club Bloom" (legacy connected title may still be "AI썰전"), Old Testament scripture music goes to "The Old Verse", New Testament/Gospel/worship music goes to "The New Verse", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
+For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", fantasy/fairy-tale/cozy RPG/game-OST BGM goes to "Storylight OST", cinematic/trailer/battle/game-combat BGM goes to "Cinematic Pulse", no-vocal EDM/house/techno/trance club music goes to "Club Bloom", Old Testament scripture music goes to "The Old Verse", New Testament/Gospel/worship music goes to "The New Verse", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
 Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice.
 ```
 

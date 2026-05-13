@@ -1,11 +1,10 @@
 # OpenClaw Channel Profile: Storylight OST
 
-Use this profile only after channel selection returns `Storylight OST`, or when the connected channel is legacy `AI썰전` but the human has replaced it with Storylight OST.
+Use this profile only after channel selection returns `Storylight OST`.
 
 ## Routing Contract
 
 - Explicit channel request wins.
-- If the connected YouTube channel still appears as `AI썰전`, treat it as the upload destination only. The public visual brand and metadata direction should be `Storylight OST`.
 - Storylight OST is for fantasy, fairy-tale, cozy RPG, game-OST-style, and storybook instrumental BGM.
 - Do not use this profile for practical cafe/study BGM, epic trailer/battle music, EDM/house, or vocal pop.
 

@@ -9,8 +9,10 @@ from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
+    SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+    STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
     SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     approve_metadata,
     auto_publish_playlist,
@@ -214,13 +216,13 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
             release_title="Mystery Documentary BGM",
             description="dark ambient investigation music for story videos",
         )
-    ) == SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
+    ) == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
-            release_title="AI썰전 사건 다큐 BGM",
+            release_title="Signal Desk Documentary BGM",
         )
-    ) == SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
+    ) == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
 
 
 def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> None:
@@ -286,17 +288,17 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert haruharu["profile_doc"] == "docs/openclaw-channel-profiles/haruharu.md"
     assert haruharu["concept_doc"] == "docs/openclaw-channel-concepts/haruharu.md"
 
-    signal_room = build_channel_profile(
+    storylight_from_signal = build_channel_profile(
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="AI Debate Prep BGM",
             description="research story documentary music",
         )
     )
-    assert signal_room["youtube_channel_title"] == SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE
-    assert signal_room["profile"] == "signal-room-radio"
-    assert signal_room["profile_doc"] == "docs/openclaw-channel-profiles/signal-room-radio.md"
-    assert signal_room["concept_doc"] == "docs/openclaw-channel-concepts/signal-room-radio.md"
+    assert storylight_from_signal["youtube_channel_title"] == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+    assert storylight_from_signal["profile"] == "storylight-ost"
+    assert storylight_from_signal["profile_doc"] == "docs/openclaw-channel-profiles/storylight-ost.md"
+    assert storylight_from_signal["concept_doc"] == "docs/openclaw-channel-concepts/storylight-ost.md"
 
     custom = build_channel_profile(
         _auto_publish_args(
@@ -319,7 +321,7 @@ def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:
             200,
             json={
                 "channels": [
-                    {"id": "legacy-ai-sseoljeon", "title": "AI썰전"},
+                    {"id": "legacy-signal-desk", "title": SIGNAL_DESK_LEGACY_CHANNEL_TITLE},
                     {"id": "soft-hour", "title": DEFAULT_YOUTUBE_CHANNEL_TITLE},
                 ]
             },
@@ -329,7 +331,7 @@ def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:
 
     assert (
         resolve_youtube_channel_id(client, title=SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE)
-        == "legacy-ai-sseoljeon"
+        == "legacy-signal-desk"
     )
 
 

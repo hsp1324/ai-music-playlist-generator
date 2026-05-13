@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Storylight OST
 
-Use this after the selected channel is `Storylight OST`, or when the connected YouTube channel still appears as legacy `AI썰전` but the human says that channel is being replaced. This document decides the next playlist concept. Use `../openclaw-channel-profiles/storylight-ost.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `Storylight OST`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/storylight-ost.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
 
 ## Channel Promise
 
@@ -12,15 +12,9 @@ The audience should immediately understand: cinematic but warm instrumental musi
 
 Titles should be broad story/game-OST packaging first. Use the exact visual scene as atmosphere unless it is the strongest public hook; do not make narrow prop/location names the main title by default.
 
-## Legacy Replacement Rule
-
-- `AI썰전`, `Signal Room Radio`, `Signal Desk Radio`, and `Midnight Cue Radio` are retired automation directions.
-- If `/youtube/status` still shows `AI썰전`, use it only as the connected upload destination, but produce the release as `Storylight OST`.
-- Use `Storylight OST` as the public brand label on cover, thumbnail, loop-video first frame, and metadata unless the human explicitly says otherwise.
-
 ## Recent Release Check
 
-From `scripts/openclaw-release list-releases`, inspect recent `Storylight OST` releases and any legacy `AI썰전` releases. Avoid repeating:
+From `scripts/openclaw-release list-releases`, inspect recent `Storylight OST` releases. Avoid repeating:
 
 - The same fantasy location, such as forest village, castle road, magic train, lantern town, snowy inn, floating island, or moonlit ruins.
 - The same adventure mood, such as cozy town, quest start, secret library, night market, healing forest, or final farewell.

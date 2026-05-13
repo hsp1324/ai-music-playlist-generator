@@ -54,5 +54,5 @@ Return a compact plan before generating audio:
 - [Custom Channel](custom-channel.md)
 
 The rotation roster is not limited to this file. For automation, OpenClaw must read `/youtube/status` and include every connected channel in `channels` unless the docs explicitly mark that channel inactive/excluded. Newly connected channels are active by default. If a connected channel has no dedicated planner yet, use `custom-channel.md` and infer the channel direction from its name, local app history, and the human's recent instructions.
-If `/youtube/status` shows `AI썰전`, treat it as the legacy/old title for `Club Bloom` until YouTube status refreshes to the renamed channel. Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue research/debate concept direction.
+Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
 `AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.

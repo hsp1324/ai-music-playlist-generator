@@ -148,7 +148,7 @@ Use this for `Cinematic Pulse`, epic orchestral, trailer music, battle OST, fina
 
 ## Club Bloom Visual Skill
 
-Use this for `Club Bloom`, legacy connected `AI썰전` after the channel rename, no-vocal EDM, house, techno, trance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
+Use this for `Club Bloom`, no-vocal EDM, house, techno, trance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
 
 - No fixed recurring visual signature yet.
 - Let the selected club style lane decide the neon/dance/nightlife scene, subject, palette, and loop-video motion.

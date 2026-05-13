@@ -42,7 +42,6 @@ NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "The New Verse"
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
-AI_SSEOLJEON_LEGACY_CHANNEL_TITLE = "AI썰전"
 CHANNEL_PROFILE_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/soft-hour-radio.md",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/tokyo-daydream-radio.md",
@@ -57,7 +56,6 @@ CHANNEL_PROFILE_DOCS = {
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/club-bloom.md",
 }
 CHANNEL_CONCEPT_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/soft-hour-radio.md",
@@ -73,7 +71,6 @@ CHANNEL_CONCEPT_DOCS = {
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/club-bloom.md",
 }
 CHANNEL_PROFILE_NAMES = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "soft-hour-radio",
@@ -89,16 +86,12 @@ CHANNEL_PROFILE_NAMES = {
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "storylight-ost",
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "storylight-ost",
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "storylight-ost",
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: "club-bloom",
 }
 CHANNEL_TITLE_ALIASES = {
     STORYLIGHT_YOUTUBE_CHANNEL_TITLE: (
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
-    ),
-    CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: (
-        AI_SSEOLJEON_LEGACY_CHANNEL_TITLE,
     ),
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: (
         STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
@@ -109,9 +102,6 @@ CHANNEL_TITLE_ALIASES = {
         STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE,
-    ),
-    AI_SSEOLJEON_LEGACY_CHANNEL_TITLE: (
-        CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE,
     ),
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: (
         STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
@@ -443,8 +433,6 @@ SIGNAL_ROOM_CHANNEL_KEYWORDS = (
     "dark ambient",
     "noir bgm",
     "midnight cue",
-    "ai썰전",
-    "썰전",
     "토론",
     "토론 준비",
     "리서치",
@@ -1286,8 +1274,6 @@ def wait_for_release(
 def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     explicit_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
     if explicit_title:
-        if explicit_title == AI_SSEOLJEON_LEGACY_CHANNEL_TITLE:
-            return CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE
         if explicit_title in {
             SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
             SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
@@ -2253,7 +2239,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For sundaze/English pop releases, keep every localized title exactly the same as the English title. Also keep English track titles in every localized timestamped timeline row; translate only the surrounding prose, use-case text, and hashtags. "
             "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. "
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal fantasy/story/game-OST music for writing, reading, worldbuilding, cozy RPG scenes, fairy-tale scenes, and calm adventure. "
-            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic/trailer/battle/game-focus music. For Club Bloom or legacy AI썰전 releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. "
+            "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic/trailer/battle/game-focus music. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. "
             "For The Old Verse releases, write English default metadata and position it as Old Testament scripture-inspired music that follows the biblical sequence from Genesis onward. For The New Verse releases, write English default metadata and position it as New Testament scripture-inspired worship music that follows the sequence from Matthew onward. "
             "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "

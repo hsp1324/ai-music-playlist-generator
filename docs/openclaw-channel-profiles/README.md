@@ -162,7 +162,6 @@ Cover / first frame:
 - 16:9 illustrated/anime/stylized/storybook image for fantasy, fairy-tale, cozy RPG, game-OST, magical village, forest path, castle road, story BGM, or calm adventure instrumental releases.
 - No fixed recurring visual signature yet. The playlist concept decides the fantasy/story scene, object, palette, and camera.
 - Only text allowed is the large lower-left `Storylight OST` brand label.
-- If the connected YouTube channel still appears as `AI썰전`, use it only as the upload destination; the intended public brand label is `Storylight OST`.
 
 Loop video:
 
@@ -276,5 +275,5 @@ Profiles:
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
-If `/youtube/status` shows `AI썰전`, treat it as the legacy/old title for `Club Bloom` until YouTube status refreshes to the renamed channel. Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue research/debate concept direction.
+Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
 `AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.
