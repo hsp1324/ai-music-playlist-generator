@@ -219,6 +219,48 @@ YouTube thumbnail:
 - Add large readable dance text such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`.
 - Add `CLUB BLOOM` brand line, visually consistent with the large cover channel label.
 
+### The Old Verse
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized biblical image for Old Testament scripture-inspired music.
+- Follow the selected Old Testament passage in sequence from Genesis onward.
+- Only text allowed is the large lower-left `The Old Verse` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame with reverent symbolic motion such as light over water, stars, oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, or temple light.
+- Preserve the large lower-left `The Old Verse` brand label exactly for the whole clip.
+- Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same passage scene, lighting, palette, props, and camera angle.
+- Add large readable Bible text such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`.
+- Add `THE OLD VERSE` brand line, visually consistent with the large cover channel label.
+
+### The New Verse
+
+Cover / first frame:
+
+- 16:9 illustrated/anime/stylized Gospel/worship image for New Testament scripture-inspired music.
+- Follow the selected New Testament passage in sequence from Matthew onward.
+- Only text allowed is the large lower-left `The New Verse` brand label.
+
+Loop video:
+
+- Animate the cover/first-frame with warm worshipful motion such as sunrise light, candle glow, dust in light, gentle wind, sea shimmer, doorway light, fabric movement, lamp flame, or cloud movement.
+- Preserve the large lower-left `The New Verse` brand label exactly for the whole clip.
+- Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
+
+YouTube thumbnail:
+
+- Start from the final cover as an image-to-image/reference edit.
+- Preserve the same passage scene, lighting, palette, props, and camera angle.
+- Add large readable worship text such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, `SCRIPTURE SONGS`, or `WORSHIP POP`.
+- Add `THE NEW VERSE` brand line, visually consistent with the large cover channel label.
+
 Profiles:
 
 - [Soft Hour Radio](soft-hour-radio.md)
@@ -229,8 +271,10 @@ Profiles:
 - [Storylight OST](storylight-ost.md)
 - [Cinematic Pulse](cinematic-pulse.md)
 - [Club Bloom](club-bloom.md)
+- [The Old Verse](the-old-verse.md)
+- [The New Verse](the-new-verse.md)
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
-If `/youtube/status` shows `AI썰전`, treat it as the legacy upload destination for `Storylight OST` until the human manually renames/reconnects the YouTube channel. Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue concept direction.
+If `/youtube/status` shows `AI썰전`, treat it as the legacy/old title for `Club Bloom` until YouTube status refreshes to the renamed channel. Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue research/debate concept direction.
 `AnimeMix` is connected but manual-only for popular-song remake/cover work and must not be selected by automatic next-release rotation unless the human explicitly asks.

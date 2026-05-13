@@ -126,7 +126,7 @@ Use this for `HaruHaru`, K-pop, Korean pop, Korean dance-pop, Korean synth-pop, 
 
 ## Storylight OST Visual Skill
 
-Use this for `Storylight OST`, fantasy OST, fairy-tale BGM, cozy RPG music, magical village BGM, game-town BGM, storybook instrumental releases, or legacy connected `AI썰전` after the human replaces that channel direction.
+Use this for `Storylight OST`, fantasy OST, fairy-tale BGM, cozy RPG music, magical village BGM, game-town BGM, or storybook instrumental releases.
 
 - No fixed recurring visual signature yet.
 - Let the playlist concept decide the fantasy/story/game-OST scene, object, palette, and loop-video motion.
@@ -148,7 +148,7 @@ Use this for `Cinematic Pulse`, epic orchestral, trailer music, battle OST, fina
 
 ## Club Bloom Visual Skill
 
-Use this for `Club Bloom`, EDM, house, dance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
+Use this for `Club Bloom`, legacy connected `AI썰전` after the channel rename, EDM, house, dance, festival EDM, workout EDM, night drive EDM, gaming dance, club, or party-energy releases.
 
 - No fixed recurring visual signature yet.
 - Let the playlist concept decide the neon/dance/nightlife scene, subject, palette, and loop-video motion.
@@ -156,6 +156,26 @@ Use this for `Club Bloom`, EDM, house, dance, festival EDM, workout EDM, night d
 - The thumbnail should use short dance click text such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`, plus `CLUB BLOOM`.
 - The loop video should animate the selected cover concept with rhythmic neon motion: light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
 - Tasteful adult nightlife subjects are allowed when the concept fits, but do not use explicit nudity, unsafe minors, fetish framing, protected brands, photorealistic club footage, or UI overlays.
+
+## The Old Verse Visual Skill
+
+Use this for `The Old Verse`, Old Testament songs, Genesis songs, Psalms music, Bible verse music, scripture-inspired worship, or ancient biblical music releases.
+
+- Follow `docs/openclaw-channel-profiles/the-old-verse.md`.
+- The cover must contain only the large lower-left `The Old Verse` brand label.
+- The thumbnail should use short Bible click text such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`, plus `THE OLD VERSE`.
+- The loop video should animate the selected Old Testament passage scene with reverent symbolic motion and preserve the `The Old Verse` label.
+- Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
+
+## The New Verse Visual Skill
+
+Use this for `The New Verse`, New Testament songs, Gospel songs, Jesus words, grace music, scripture worship, Bible verse songs, or worship pop releases.
+
+- Follow `docs/openclaw-channel-profiles/the-new-verse.md`.
+- The cover must contain only the large lower-left `The New Verse` brand label.
+- The thumbnail should use short worship click text such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, `SCRIPTURE SONGS`, or `WORSHIP POP`, plus `THE NEW VERSE`.
+- The loop video should animate the selected New Testament/Gospel passage scene with warm worshipful motion and preserve the `The New Verse` label.
+- Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
 
 ## Other Channels Or Explicit Requests
 

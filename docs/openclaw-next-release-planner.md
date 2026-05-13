@@ -32,11 +32,14 @@ The active channel roster is dynamic. Always read `/youtube/status` and use ever
 - `Storylight OST`
 - `Cinematic Pulse`
 - `Club Bloom`
+- `The Old Verse`
+- `The New Verse`
 
 Current known connected channels excluded from automatic playlist rotation:
 
 - `AnimeMix`: manual-only popular-song remake/cover channel. Do not select it for automatic next-release generation unless the human explicitly asks for a specific manual remake workflow.
-- `AI썰전`, `Signal Room Radio`, `Signal Desk Radio`, and `Midnight Cue Radio`: retired names. If one of these still appears in `/youtube/status`, use it only as a legacy upload destination for `Storylight OST` until the channel is manually renamed/reconnected.
+- `AI썰전`: legacy/old title for `Club Bloom` until YouTube status refreshes to the renamed channel.
+- `Signal Room Radio`, `Signal Desk Radio`, and `Midnight Cue Radio`: retired names. Do not select them unless the human explicitly revives those channels.
 
 Future channels do not need code changes before entering rotation. Newly connected channels are active by default. If a connected channel does not have dedicated files, use the custom fallback files:
 
@@ -111,6 +114,8 @@ Known channel concept docs are:
 - `docs/openclaw-channel-concepts/storylight-ost.md`
 - `docs/openclaw-channel-concepts/cinematic-pulse.md`
 - `docs/openclaw-channel-concepts/club-bloom.md`
+- `docs/openclaw-channel-concepts/the-old-verse.md`
+- `docs/openclaw-channel-concepts/the-new-verse.md`
 - `docs/openclaw-channel-concepts/custom-channel.md`
 
 ## Freshness Rules
@@ -172,9 +177,9 @@ If YouTube status is configured=false, authenticated=false, ready=false, or chan
 
 Choose the next one-hour Playlist Release using docs/openclaw-next-release-planner.md:
 - Rotate active channels instead of repeating the same channel.
-- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, and Club Bloom. If the status still shows `AI썰전`, treat it as the legacy upload destination for Storylight OST until the channel is manually renamed/reconnected. Newly connected non-excluded channels must also enter rotation.
+- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. If the status still shows `AI썰전`, treat it as the legacy/old title for Club Bloom until YouTube status refreshes to the renamed channel. Newly connected non-excluded channels must also enter rotation.
 - Exclude AnimeMix from automatic playlist rotation because it is a manual-only popular-song remake/cover channel.
-- Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue concept direction. Replace that slot with Storylight OST.
+- Do not continue the retired AI썰전/Signal Room/Signal Desk/Midnight Cue research/debate concept direction. AI썰전 is now the old title for Club Bloom; Signal Room/Signal Desk/Midnight Cue remain inactive unless the human explicitly revives them.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.
