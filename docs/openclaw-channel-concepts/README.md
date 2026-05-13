@@ -17,6 +17,12 @@ The channel profile docs in `docs/openclaw-channel-profiles/` control visual ide
 
 If the app catalog looks incomplete or the human says there are YouTube videos outside this app, report that limitation before claiming a concept is non-duplicated.
 
+## Global Planning Rules
+
+- Every channel title should be broad, searchable, and useful to normal viewers. A specific cover/video scene can guide atmosphere, but the release title should usually lead with genre identity plus a listening reason or emotion.
+- For vocal channels, the YouTube title/use case is packaging only. Lyrics should be written as strong standalone songs first; they do not need to mention or explain the title, visual scene, thumbnail text, or playlist use case.
+- Do not sacrifice lyric quality to force SEO terms into the song. The melody, beat, vocal delivery, hook, and emotional arc are the source of truth for lyrics.
+
 ## Output Contract
 
 Return a compact plan before generating audio:

@@ -68,6 +68,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - In every localized description, keep timestamped tracklist song titles in English exactly as the English description. Translate only the surrounding description prose, recommended use-case line, and hashtag line.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
 - Use an `Essential`-style title shape: a vivid situation or emotion + English/American pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Make the title broad and public-facing first. The cover/video scene can be specific, but do not let a narrow scene name become the main hook unless it is the strongest searchable phrase.
 - Match listening use cases to the actual energy. For energetic rooftop, club, dance-pop, bass-heavy, or workout-feeling releases, prefer getting ready, workout, running, party warmup, driving, nightlife, and confidence. Avoid `focus`, `study`, or `quiet work` unless the rendered audio is genuinely calm enough for those uses.
 - Strong examples:
   `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`
@@ -75,3 +76,4 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
   `[playlist] Late Night English Pop Mix | City Lights, Heartbreak and Drive Music`
   `[playlist] Golden Hour Road Trip Pop | Warm Vocals, Open Roads and Good Days`
 - Every track should have original English lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.
+- Lyrics are judged by song quality first: melody fit, vocal tone, hook, emotional arc, and replay value. They do not need to mention the title/use case.

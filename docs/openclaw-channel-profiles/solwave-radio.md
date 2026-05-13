@@ -66,6 +66,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - The top-level `--title` / `--description-file` and `--es-title` / `--es-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Ruta Dorada Pop`, `Latin Pop`, `Spanish Pop`, or `Pop para manejar` by themselves.
 - Use an `Essential`-style title shape: a vivid situation or emotion + Latin/Spanish pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Make the title broad and public-facing first. The cover/video scene can be specific, but do not let a narrow scene name become the main hook unless it is the strongest searchable phrase.
 - Good Solwave title ingredients: `Pop Latino`, `Spanish Pop`, `Reggaeton Suave`, `Verano Latino`, `Noche Latina`, `Ruta al Atardecer`, `Carretera`, `Playa`, `Fiesta`, `Baila`, `Drive`, `Caminar`, `Workout`, `Romance`, `Buenas Vibras`.
 - Strong examples:
   `[playlist] Pop Latino para Ruta al Atardecer | Carretera, Verano y Buenas Vibras`
@@ -74,3 +75,4 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
   `[playlist] Verano Latino Pop Mix | Música para Bailar, Manejar y Sentirse Bien`
 - Avoid repeating `lista de reproducción` after `[playlist]`; use `mix`, `music`, `música`, `radio`, or the use case instead.
 - Every track should have original Spanish lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.
+- Lyrics are judged by song quality first: melody fit, rhythm, vocal tone, hook, emotional arc, and replay value. They do not need to mention the title/use case.

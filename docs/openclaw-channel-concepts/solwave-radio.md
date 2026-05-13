@@ -8,6 +8,8 @@ Solwave Radio is a Spanish/Latin vocal music channel: Latin pop, Spanish pop, ur
 
 The audience should immediately understand: Spanish-language pop for a specific Latin mood, scene, or use case.
 
+Titles should be mainstream Latin/Spanish pop packaging first. Use the specific visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Solwave Radio` releases and avoid repeating:
@@ -38,7 +40,7 @@ Use a vivid Latin scene plus substyle:
 - Rhythm should be clear and playlist-friendly.
 - Treat the playlist title/use case as packaging and rhythm direction, not as the required lyric topic. If the playlist is for carretera, playa, fiesta, workout, morning energy, or night drive, the groove, tempo, percussion, and vocal attitude should fit that context, but the lyrics do not need to literally describe that activity.
 - Write each song like a real standalone Spanish/Latin pop track: natural Spanish phrasing, catchy chorus, believable romance, desire, confidence, freedom, night-out, heartbreak, summer, or dance-floor emotion. Avoid over-literal lyrics that repeat the YouTube title/use case.
-- Match lyrics to the melody, rhythm, vocal tone, and hook first. A song can fit a drive/fiesta/workout playlist because of its groove and energy while the lyrics tell an independent Latin pop story.
+- Match lyrics to the melody, rhythm, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/fiesta/workout playlist because of its groove and energy while the lyrics tell an independent Latin pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.

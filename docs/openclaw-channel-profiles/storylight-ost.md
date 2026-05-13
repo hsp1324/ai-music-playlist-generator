@@ -62,4 +62,5 @@ Stable composition, no hard cuts, no photorealism, no live action, no protected 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
 - Titles should include fantasy/story/game-OST keywords plus a use case such as writing, reading, worldbuilding, study, calm adventure, or cozy focus.
+- Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.
 - Avoid claiming a specific existing game, anime, film, studio, or composer.

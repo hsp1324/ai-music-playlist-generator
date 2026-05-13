@@ -70,4 +70,5 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Use a title shape with a broad mainstream K-pop listening promise first, then a clear use case or emotion. Good example: `[playlist] 신나는 K-POP 믹스 | 운동, 러닝, 외출 준비, 파티 웜업`.
 - Do not use the visual scene as the main title hook unless it is broadly searchable. A rooftop, rainy street, practice room, cafe, or bus stop can guide cover/video mood, but the title should usually focus on K-pop energy, workout, running, getting ready, party warmup, night drive, heartbreak, confidence, or feel-good listening.
 - Every track should have original Korean lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.
+- Lyrics are judged by song quality first: melody fit, beat, vocal tone, hook, emotional arc, and replay value. They do not need to mention the title/use case.
 - In localized descriptions, preserve timestamps exactly. Translate surrounding prose, recommended-use lines, hashtags, and track titles naturally for that language unless the human asks to keep Korean track titles.

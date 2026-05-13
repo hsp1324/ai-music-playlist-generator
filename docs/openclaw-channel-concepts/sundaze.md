@@ -8,6 +8,8 @@ sundaze is an English-language pop channel: English/American/US-UK pop, dance-po
 
 The audience should immediately understand: English vocal pop for a specific everyday scene or emotion.
 
+Titles should be mainstream English/American pop packaging first. Use the specific visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `sundaze` releases and avoid repeating:
@@ -38,7 +40,7 @@ Use a vivid situation or emotion plus pop identity:
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for driving, getting ready, running, workout, night walk, work, or a party warmup, the beat, tempo, energy, and vocal attitude should fit that context, but the lyrics do not need to literally mention those activities.
 - Write each song like a real standalone English pop track: natural phrasing, strong hook, believable emotion, relationship tension, confidence, moving on, night-out, summer, heartbreak, or self-discovery. Avoid over-literal lyrics that repeat the YouTube title/use case.
-- Match lyrics to the melody, beat, vocal tone, and hook first. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story.
+- Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.

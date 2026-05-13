@@ -10,6 +10,8 @@ It fills the high-energy dance lane that is currently separate from sundaze pop,
 
 The audience should immediately understand: modern dance music for movement, nightlife, gaming, workout, driving, and party warmup.
 
+Titles should be broad dance/EDM packaging first. Use the specific club, rooftop, city, or visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` releases and avoid repeating:
@@ -36,7 +38,7 @@ If the latest Club Bloom release was neon club or night drive, choose festival, 
 
 - Instrumental/no-vocal by default unless the human asks for vocal dance-pop.
 - Follow `../suno-v55-instrumental-format.md` for no-vocal Club Bloom tracks.
-- If vocal dance-pop is explicitly requested, lyrics must be original, natural, and song-first; do not make lyrics literally describe the playlist title.
+- If vocal dance-pop is explicitly requested, lyrics must be original, natural, and song-first; do not make lyrics literally describe the playlist title. Song quality is the first priority, and lyrics may be unrelated to the title/use case when they fit the beat, vocal tone, hook, and dance energy better.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
 - Prioritize strong groove, clean drops, energy changes, and replayable rhythm.
 - Avoid muddy mixes, overly long intros, and tracks that feel like unfinished loops.

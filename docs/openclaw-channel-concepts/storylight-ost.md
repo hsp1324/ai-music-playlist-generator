@@ -10,6 +10,8 @@ Soft Hour Radio is practical cafe/study/rest BGM. Storylight OST should feel mor
 
 The audience should immediately understand: cinematic but warm instrumental music that makes a scene appear in the listener's head.
 
+Titles should be broad story/game-OST packaging first. Use the exact visual scene as atmosphere unless it is the strongest public hook; do not make narrow prop/location names the main title by default.
+
 ## Legacy Replacement Rule
 
 - `AI썰전`, `Signal Room Radio`, `Signal Desk Radio`, and `Midnight Cue Radio` are retired automation directions.

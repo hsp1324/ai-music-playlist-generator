@@ -8,6 +8,8 @@ Tokyo Daydream Radio is a mainstream J-pop/Japanese pop channel. It can include 
 
 The audience should immediately understand: hook-driven Japanese vocal pop for Japan lifestyle listening, with Tokyo as one possible setting rather than the default title word.
 
+Titles should be mainstream J-pop packaging first. Use the specific visual scene or city setting as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Tokyo Daydream Radio` releases and avoid repeating:
@@ -40,7 +42,7 @@ Use one lane, then vary substyle and lyric premise:
 - Keep choruses memorable and playlist-friendly.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for a train ride, arcade night, beach walk, commute, or city lights, the melody/beat/energy should fit that listening context, but the lyrics do not need to literally describe riding trains, playing games, walking, commuting, or looking at city lights.
 - Write each song like a real standalone J-pop track: natural Japanese phrasing, memorable hook, believable emotion, youth, longing, first love, distance, courage, new start, night-out, or bittersweet pop story. Avoid over-literal lyrics that repeat the YouTube title/use case.
-- Match lyrics to the melody, beat, vocal tone, and hook first. A song can fit a walk/drive/night playlist because of its rhythm and atmosphere while the lyrics tell an independent pop story.
+- Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a walk/drive/night playlist because of its rhythm and atmosphere while the lyrics tell an independent pop story unrelated to the playlist title.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
 - Do not make lyricless, BGM-only, hum-only, or instrumental tracks unless the human explicitly requested it.
 - Do not over-emphasize `Japanese language` in titles. Use `J-POP`, the actual Japan scene, mood, and listening use case instead.

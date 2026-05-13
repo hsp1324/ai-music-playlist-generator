@@ -10,6 +10,8 @@ Storylight OST is scene-rich and cozy. Cinematic Pulse is bigger, sharper, more 
 
 The audience should immediately understand: powerful cinematic music for battle, training, focus, gaming, trailers, boss fights, sci-fi action, and heroic energy.
 
+Titles should be broad cinematic/trailer/game-energy packaging first. Use the exact visual scene as atmosphere unless it is the strongest public hook; do not make narrow prop/location names the main title by default.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Cinematic Pulse` releases and avoid repeating:

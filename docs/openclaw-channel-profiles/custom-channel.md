@@ -32,3 +32,5 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 - Follow `docs/openclaw-youtube-metadata.md`.
 - If the channel has no dedicated language rule, include every supported localization unless the human says otherwise.
 - Choose the default language from the channel identity. If unclear, use English for global pop-style channels and Korean for Korean-run background/BGM channels.
+- Make titles broad and public-facing first. Use exact visual-scene details as atmosphere unless they are clearly the strongest searchable hook for that custom channel.
+- For vocal channels, lyrics are judged by song quality first: melody fit, beat/rhythm, vocal tone, hook, emotional arc, and replay value. They do not need to mention the title/use case.

@@ -60,4 +60,5 @@ Stable composition, no hard cuts, no photorealism, no live action, no explicit n
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
 - Titles should include clear dance-listening situations such as night drive, workout, party warmup, gaming, club, running, festival, or rooftop.
+- Make titles broad and public-facing first. Use the exact visual scene as atmosphere unless it is the strongest searchable hook.
 - Avoid AI/process/tool hashtags and avoid overstating `hits` if the music is original.

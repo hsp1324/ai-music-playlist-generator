@@ -69,6 +69,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - Use Korean as the default API metadata unless the human changes this app convention.
+- Titles must be broad mainstream J-pop discovery copy first. Use specific city/visual scenes as supporting atmosphere unless they are clearly the strongest public keyword.
 - Do not over-emphasize the language in titles. Prefer `J-POP`, the actual Japan scene, mainstream pop substyle, mood, and listening use cases.
 - Do not put `Tokyo` / `도쿄` in every title. Use it only for Tokyo-specific concepts such as Shibuya, Shinjuku, Tokyo commute, Tokyo skyline, or a clearly Tokyo-coded city scene. For generic J-pop, beach, forest, festival, school, karaoke, Osaka, Kyoto, Yokohama, or other Japan lifestyle concepts, omit Tokyo from the title.
 - Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade, game-center, karaoke, friend-hangout, rooftop, party, or night-out concepts, prefer arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup.

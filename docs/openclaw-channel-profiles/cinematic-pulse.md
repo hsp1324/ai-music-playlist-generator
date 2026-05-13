@@ -60,4 +60,5 @@ Stable composition, no hard cuts, no photorealism, no live action, no gore, no r
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
 - Titles should be bold and search-friendly. Include cinematic/trailer/battle/focus/gaming use cases when accurate.
+- Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.
 - Avoid naming existing films, games, franchises, composers, studios, or characters.
