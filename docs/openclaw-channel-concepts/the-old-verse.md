@@ -51,8 +51,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 
 ## Music Direction
 
-- Vocal songs are allowed and usually preferred when the passage has a clear story, prayer, or message.
-- Instrumental meditation tracks are allowed when the passage is atmospheric, contemplative, or the human asks for BGM.
+- Vocal songs with original lyrics are the default and expected output.
+- Do not make instrumental/no-vocal Old Verse releases unless the human explicitly asks for BGM or instrumental meditation.
 - Default vocal language is English unless the human explicitly asks for Korean or another language.
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.

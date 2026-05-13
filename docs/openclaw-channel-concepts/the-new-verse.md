@@ -51,7 +51,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 
 ## Music Direction
 
-- Vocal worship songs are the default.
+- Vocal worship songs with original lyrics are the default and expected output.
+- Do not make instrumental/no-vocal New Verse releases unless the human explicitly asks for BGM or instrumental prayer music.
 - Default vocal language is English unless the human explicitly asks for Korean or another language.
 - Lyrics must be original, song-first, and worshipful. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.

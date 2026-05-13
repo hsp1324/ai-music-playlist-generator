@@ -161,8 +161,8 @@ Static image creation rules:
 - For `Storylight OST`, use the Storylight OST profile for fantasy/fairy-tale/cozy RPG/game-OST BGM releases.
 - For `Cinematic Pulse`, use the Cinematic Pulse profile for epic cinematic, trailer, battle, final boss, heroic, sci-fi action, dark fantasy, and game-combat instrumental music.
 - For `Club Bloom`, use the Club Bloom profile for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases. Each playlist must choose one club style lane and stay within it.
-- For `The Old Verse`, use the Old Verse profile for Old Testament scripture-inspired music that follows the Bible sequence from Genesis onward.
-- For `The New Verse`, use the New Verse profile for New Testament/Gospel/worship music that follows the Bible sequence from Matthew onward.
+- For `The Old Verse`, use the Old Verse profile for lyric-based Old Testament scripture-inspired songs that follow the Bible sequence from Genesis onward. Vocal songs with original lyrics are expected unless the human explicitly asks for instrumental/BGM.
+- For `The New Verse`, use the New Verse profile for lyric-based New Testament/Gospel/worship songs that follow the Bible sequence from Matthew onward. Vocal songs with original lyrics are expected unless the human explicitly asks for instrumental/BGM.
 - If the human explicitly names the upload channel, that channel controls visual routing.
 - Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - For thumbnails, the main default/requested subject must stay centered and visually important. Text must not push it to the side, crop it, cover it, or make it feel secondary. Put text into safe negative space around the centered composition.
