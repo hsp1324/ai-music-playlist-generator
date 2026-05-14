@@ -2310,6 +2310,98 @@ def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
     }
 
 
+def render_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/render-audio",
+        json={"actor": args.actor, "random": bool(args.randomize_order)},
+    )
+    if not args.no_wait:
+        release = wait_for_release(
+            client,
+            release["id"],
+            stage="audio render",
+            timeout_seconds=args.wait_timeout_seconds,
+            poll_seconds=args.poll_seconds,
+            predicate=lambda item: bool(item.get("output_audio_path")),
+        )
+    return {
+        "ok": True,
+        "action": "render-audio",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "actual_duration_seconds": release.get("actual_duration_seconds"),
+            "output_audio_path": release.get("output_audio_path"),
+        },
+        "next": "Approve cover and queue video render.",
+    }
+
+
+def approve_cover(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/cover/approve",
+        json={
+            "actor": args.actor,
+            "approved": True,
+            "note": args.note or "Cover approved from OpenClaw.",
+        },
+    )
+    return {
+        "ok": True,
+        "action": "approve-cover",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "cover_approved": release.get("cover_approved"),
+            "cover_image_path": release.get("cover_image_path"),
+        },
+        "next": "Queue video render.",
+    }
+
+
+def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/video/render",
+        json={
+            "actor": args.actor,
+            "allow_still_image_fallback": bool(args.allow_still_image_video),
+            "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
+        },
+    )
+    if args.wait:
+        release = wait_for_release(
+            client,
+            release["id"],
+            stage="video render",
+            timeout_seconds=args.wait_timeout_seconds,
+            poll_seconds=args.poll_seconds,
+            predicate=lambda item: bool(item.get("output_video_path")) and bool(item.get("youtube_title")),
+        )
+    return {
+        "ok": True,
+        "action": "render-video",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "output_video_path": release.get("output_video_path"),
+            "youtube_title": release.get("youtube_title"),
+        },
+        "next": "If workflow_state is video_rendering or queued, let a render worker finish it; do not block producer mode.",
+    }
+
+
 def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
     timeline = release_timeline(release)
@@ -2742,6 +2834,39 @@ def build_parser() -> argparse.ArgumentParser:
     loop_video_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than 8 seconds. Use only when the human explicitly accepts a non-standard clip.")
     loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     loop_video_parser.set_defaults(func=upload_loop_video)
+
+    render_audio_parser = subparsers.add_parser("render-audio", help="Render playlist audio for an existing release.")
+    render_audio_parser.add_argument("--release-id", default="", help="Existing release id.")
+    render_audio_parser.add_argument("--release-title", default="", help="Existing release title.")
+    render_audio_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render.")
+    render_audio_parser.add_argument("--no-wait", action="store_true", help="Return immediately after queueing audio render.")
+    render_audio_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for audio render. Default: 6 hours.")
+    render_audio_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for audio render.")
+    render_audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in render history.")
+    render_audio_parser.set_defaults(func=render_audio)
+
+    approve_cover_parser = subparsers.add_parser("approve-cover", help="Approve the uploaded final cover for a release.")
+    approve_cover_parser.add_argument("--release-id", default="", help="Existing release id.")
+    approve_cover_parser.add_argument("--release-title", default="", help="Existing release title.")
+    approve_cover_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in cover approval history.")
+    approve_cover_parser.add_argument("--note", default="", help="Optional cover approval note.")
+    approve_cover_parser.set_defaults(func=approve_cover)
+
+    render_video_parser = subparsers.add_parser("render-video", help="Queue video render for an existing release.")
+    render_video_parser.add_argument("--release-id", default="", help="Existing release id.")
+    render_video_parser.add_argument("--release-title", default="", help="Existing release title.")
+    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video.")
+    render_video_parser.add_argument(
+        "--video-spectrum-overlay-style",
+        choices=["bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse", "none"],
+        default="bars",
+        help="App-rendered audio visualizer preset. OpenClaw should choose this per release.",
+    )
+    render_video_parser.add_argument("--wait", action="store_true", help="Wait for video render completion. Omit in backlog producer mode.")
+    render_video_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for video render. Default: 6 hours.")
+    render_video_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for video render.")
+    render_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in video render history.")
+    render_video_parser.set_defaults(func=render_video)
 
     slack_notify_parser = subparsers.add_parser(
         "slack-notify",

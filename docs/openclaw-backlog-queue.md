@@ -49,9 +49,11 @@ When creating a new release to fill backlog, OpenClaw should produce assets and 
 3. Create the Playlist Release before Suno generation.
 4. Generate and upload enough approved audio for at least 40 minutes.
 5. Upload final cover, YouTube thumbnail, and 8 second Dreamina/Seedance loop video.
-6. Render audio.
-7. Queue video render with the visualizer preset that fits the release.
-8. Once the video render job is queued/running, do not wait for completion if another channel still needs backlog.
+6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
+7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
+8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
+9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset.
+10. Once the video render job is queued/running, do not wait for completion if another channel still needs backlog.
 
 The render worker laptop/VM will claim the queued video render job. OpenClaw should later finish that release on the next backlog request after the video render completes.
 
