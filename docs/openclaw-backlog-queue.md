@@ -1,15 +1,15 @@
 # OpenClaw Backlog Queue Planner
 
-Use this skill when the AI Music app asks OpenClaw to keep production moving while distributed video render workers process queued render jobs.
+Use this skill when the AI Music app asks OpenClaw to produce the next release through the deployed Oracle VM app.
 
-The goal is not "wait for one release to publish, then start the next one." The goal is to keep each automated YouTube channel supplied with 1-2 unfinished Playlist Releases so render workers and OpenClaw can work in parallel.
+The current production mode is the conservative VM-render flow: create or finish one release at a time, let the Oracle VM app background worker render video, wait for that render to complete, then approve metadata and publish before moving to the next release. Do not rely on laptop/external render workers for normal automation.
 
 ## Core Rule
 
-Maintain a small backlog per connected, automated channel:
+Maintain at most one unfinished Playlist Release per connected, automated channel:
 
 - Target backlog: at least 1 unfinished Playlist Release per channel.
-- Maximum backlog: 2 unfinished Playlist Releases per channel.
+- Maximum backlog: 1 unfinished Playlist Release per channel in normal VM-render mode.
 - Excluded channel: `MusicSun` is manual-only and must not be filled by automatic backlog work.
 - Future connected channels are included automatically unless docs explicitly mark them manual-only or retired.
 
@@ -40,8 +40,8 @@ On each `OPENCLAW_RUN:` backlog request:
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
    - `youtube_upload_failed`: retry only if the error is transient or already fixed; otherwise report the blocker.
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
-7. Then fill backlog for channels below the target.
-8. Stop making new releases for any channel that already has 2 unfinished Playlist Releases.
+7. Then fill one channel below the target.
+8. Stop making new releases for any channel that already has an unfinished Playlist Release.
 9. Release the app-side lock when the backlog pass is completed or blocked.
 
 `AIMP_LOCAL_API_BASE` should normally be `http://127.0.0.1:8000/api` on the VM, or a laptop tunnel to that same VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
@@ -86,7 +86,7 @@ Use `--status blocked` if captcha, credits, login, missing API, or YouTube verif
 
 ## Producer Mode
 
-When creating a new release to fill backlog, OpenClaw should produce assets and queue rendering, then move on instead of waiting for the long render:
+When creating a new release, OpenClaw should produce assets, queue rendering in the VM app, wait for render completion, then publish:
 
 1. Choose the channel and fresh concept using `docs/openclaw-next-release-planner.md`.
 2. Read the selected channel's `concept_doc` and `profile_doc`.
@@ -97,11 +97,12 @@ When creating a new release to fill backlog, OpenClaw should produce assets and 
 5. Upload final cover, YouTube thumbnail, and 8 second Dreamina/Seedance loop video.
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
-8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
+8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET --wait`.
 9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset.
-10. Once the video render job is queued/running, do not wait for completion if another channel still needs backlog.
+10. Wait for VM video render completion. Do not start another channel while the current release is rendering.
+11. Run metadata and publish steps before starting the next release.
 
-The render worker laptop/VM will claim the queued video render job. OpenClaw should later finish that release on the next backlog request after the video render completes.
+The Oracle VM app background worker owns normal video rendering. External render workers are optional emergency/manual mode only, not the default OpenClaw automation path.
 
 ## Finisher Mode
 
@@ -121,7 +122,7 @@ Report compactly after every backlog pass:
 
 - finished releases and YouTube ids
 - newly queued releases and release ids
-- channels currently at backlog 0, 1, or 2
+- channels currently at backlog 0 or 1
 - blockers that need human action
 
 Do not spam Slack for every small substep. Report only stage completion, retries, and blockers.
@@ -130,6 +131,6 @@ Do not spam Slack for every small substep. Report only stage completion, retries
 
 - Never use a local dev app API when automation should affect the deployed service.
 - Never upload directly in YouTube Studio. YouTube upload must go through the app API.
-- Do not create more than 2 unfinished Playlist Releases for the same channel.
+- Do not create more than 1 unfinished Playlist Release for the same channel in normal VM-render mode.
 - Do not use MusicSun for automatic backlog.
-- If a release is stuck because a render worker failed, leave the evidence in the release and report it instead of creating duplicates.
+- If a release is stuck because rendering failed, leave the evidence in the release and report it instead of creating duplicates.

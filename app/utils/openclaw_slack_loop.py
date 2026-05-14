@@ -271,9 +271,9 @@ def build_next_playlist_request_message(
         return _with_trigger_prefix(prompt_override, trigger_prefix)
 
     previous_context = [
-        "OpenClaw Backlog Queue Planner Skill을 실행해줘.",
-        "목표: MusicSun을 제외한 연결 채널마다 unfinished Playlist Release queue를 1-2개 유지해줘.",
-        "영상 렌더링은 분산 render worker가 처리하므로, video render job을 queue한 뒤에는 렌더 완료를 기다리지 말고 다음 backlog 작업으로 넘어가도 됩니다.",
+        "OpenClaw Next Release Publisher Skill을 실행해줘.",
+        "목표: MusicSun을 제외한 연결 채널 중 다음 채널을 고르고, release 하나를 끝까지 만들어 VM 앱에서 렌더/metadata/publish까지 완료해줘.",
+        "영상 렌더링은 Oracle VM의 AI Music 앱 background worker가 처리합니다. 외부 laptop render worker를 쓰지 말고, video render를 queue한 뒤 완료될 때까지 기다려 metadata와 publish까지 진행하세요.",
         "",
         "이전 자동화 완료 정보:",
         f"- release: {playlist.title}",
@@ -298,12 +298,12 @@ def build_next_playlist_request_message(
             "- 작업 시작 시 scripts/openclaw-release openclaw-lock-start를 호출하고, 작업 중에는 scripts/openclaw-release openclaw-lock-heartbeat를 1-2분마다 호출해줘.",
             "- 작업 완료/중단 시 scripts/openclaw-release openclaw-lock-finish를 호출해줘.",
             "- 매번 /youtube/status의 channels 목록을 읽고, MusicSun만 수동 전용으로 제외하고 나머지 연결 채널을 현재 활성 roster로 사용해줘. 새 채널은 기본적으로 rotation에 포함해줘.",
-            "- 현재 활성 채널별 unfinished release 수를 계산하고, 2개 이상 쌓인 채널은 새 release를 만들지 마세요.",
+            "- 현재 활성 채널별 unfinished release 수를 계산하고, 이미 진행 중인 release가 있는 채널은 새 release를 만들지 마세요.",
             "- metadata_review, publish_ready, ready_for_youtube_auth, youtube_upload_failed처럼 마무리 가능한 release가 있으면 새 release를 만들기 전에 먼저 finish/publish/retry 하세요.",
-            "- video_rendering 또는 video_render_queued 상태는 정상 backlog로 계산하세요. 렌더 worker가 처리 중이면 기다리지 말고 다른 부족한 채널을 채우세요.",
-            "- backlog가 부족한 채널 중 가장 오래 비어 있거나 최근 업로드가 가장 오래된 채널을 선택하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
+            "- video_rendering 또는 video_render_queued 상태가 있으면 같은 release를 계속 모니터링하고 완료 후 metadata/publish까지 마무리하세요. 다른 채널을 새로 만들지 마세요.",
+            "- 새 release가 필요하면 가장 오래 비어 있거나 최근 업로드가 가장 오래된 채널을 선택하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
             "- channel-profile이 custom-channel 문서를 반환하면 그 custom 문서를 읽고, 채널명/기존 업로드/사람 요청을 바탕으로 채널 컨셉을 추론해 진행해줘.",
-            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, audio render, video render queue까지 진행해줘.",
+            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, audio render, video render, metadata, private/scheduled publish까지 진행해줘.",
             "- 이미 video render가 끝난 release는 metadata를 작성/승인하고 private/scheduled publish까지 완료해줘.",
             "- YouTube 전화번호/계정 인증 제한 때문에 14분 이상 긴 영상 업로드가 막히면, 렌더된 release는 그대로 남기고 업로드를 나중으로 미룬 뒤 다음 playlist 작업으로 넘어가줘.",
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
@@ -325,8 +325,8 @@ def build_backlog_queue_request_message(
     summary = backlog_summary or {}
     channel_payload = summary.get("channels") if isinstance(summary, dict) else {}
     lines = [
-        "OpenClaw Backlog Queue Planner Skill을 실행해줘.",
-        "목표: MusicSun을 제외한 연결 채널마다 unfinished Playlist Release queue를 1-2개 유지해줘.",
+        "OpenClaw Next Release Publisher Skill을 실행해줘.",
+        "목표: MusicSun을 제외한 연결 채널 중 다음 채널을 고르고, release 하나를 끝까지 만들어 VM 앱에서 렌더/metadata/publish까지 완료해줘.",
         f"scheduler_reason: {reason}",
         "",
         "작업 기준:",
@@ -340,8 +340,8 @@ def build_backlog_queue_request_message(
         "- 작업 시작 시 scripts/openclaw-release openclaw-lock-start를 호출하고, 작업 중에는 scripts/openclaw-release openclaw-lock-heartbeat를 1-2분마다 호출해줘.",
         "- 작업 완료/중단 시 scripts/openclaw-release openclaw-lock-finish를 호출해줘.",
         "- 이미 metadata_review/publish_ready release가 있으면 새 release를 만들기 전에 먼저 metadata 작성/승인/publish를 마무리해줘.",
-        "- video_rendering 또는 video_queued 상태는 정상 backlog로 계산하고, 렌더 완료를 기다리지 말고 다른 부족한 채널을 채워줘.",
-        "- 채널별 unfinished release가 2개 이상이면 그 채널에는 새 release를 만들지 마세요.",
+        "- video_rendering 또는 video_queued 상태는 VM 앱 background worker가 처리합니다. 같은 release를 모니터링하고 완료되면 metadata/publish까지 마무리하세요.",
+        "- 채널별 unfinished release가 있으면 그 채널에는 새 release를 만들지 마세요.",
         "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
     ]
     if isinstance(channel_payload, dict) and channel_payload:

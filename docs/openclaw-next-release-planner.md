@@ -165,7 +165,7 @@ For every Playlist Release plan, the main YouTube title and all localized titles
 
 If YouTube upload is blocked only because phone/account verification does not allow a 14+ minute video, keep the rendered release and metadata intact, report the deferred upload, and continue to the next release plan. Do not delete or re-render just because upload is deferred.
 
-After the plan, continue according to [openclaw-backlog-queue.md](openclaw-backlog-queue.md): finish rendered releases first; otherwise create a new release, prepare assets, render audio, queue video render, and do not wait for the long video render if another channel needs backlog.
+After the plan, continue according to [openclaw-backlog-queue.md](openclaw-backlog-queue.md): finish rendered releases first; otherwise create a new release, prepare assets, render audio, queue video render on the VM app, wait for video render completion, then approve metadata and publish before starting another release.
 
 ## Skill Prompt
 
@@ -189,9 +189,9 @@ curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
 Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
-- Keep each active automated channel at 1-2 unfinished Playlist Releases.
+- Keep each active automated channel at no more than 1 unfinished Playlist Release in normal VM-render mode.
 - Finish metadata_review/publish_ready releases before creating new ones.
-- If a video render job is queued/running, count that release as backlog and do not wait for it when another channel needs producer work.
+- If a video render job is queued/running, keep monitoring that release until VM render completes; do not start another channel just to fill backlog.
 - Rotate active channels instead of repeating the same channel.
 - Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
@@ -204,7 +204,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, render audio, and queue video render. Do not skip the loop video unless the human explicitly approves a still-image fallback. If video render completes during this run, finish metadata and private/scheduled publish; otherwise report the queued release and move on.
+Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, render audio, queue video render, wait for VM video render completion, then finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

@@ -2467,7 +2467,7 @@ def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "output_video_path": release.get("output_video_path"),
             "youtube_title": release.get("youtube_title"),
         },
-        "next": "If workflow_state is video_rendering or queued, let a render worker finish it; do not block producer mode.",
+        "next": "If workflow_state is video_rendering or queued, wait for the VM app background worker to finish before metadata approval and publish.",
     }
 
 
@@ -2932,7 +2932,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release.",
     )
-    render_video_parser.add_argument("--wait", action="store_true", help="Wait for video render completion. Omit in backlog producer mode.")
+    render_video_parser.add_argument("--wait", action="store_true", help="Wait for VM video render completion before continuing to metadata/publish.")
     render_video_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for video render. Default: 6 hours.")
     render_video_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for video render.")
     render_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in video render history.")

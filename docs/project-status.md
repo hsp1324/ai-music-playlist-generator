@@ -72,7 +72,7 @@ Background worker handles long-running jobs:
 - local draft cover generation
 - looped video render
 - YouTube upload
-- external render-worker leases for distributed video rendering
+- optional external render-worker leases for manual/emergency distributed video rendering
 
 Long video render jobs now expose ffmpeg progress through the workspace API:
 
@@ -80,7 +80,7 @@ Long video render jobs now expose ffmpeg progress through the workspace API:
 - rendered media time vs total duration
 - ETA when ffmpeg speed is available
 - output file size heartbeat
-- external worker heartbeat/progress when a separate machine claimed the render
+- external worker heartbeat/progress only when optional manual distributed rendering is enabled
 
 The stall guard is progress-based, not a hard wall-clock timeout. It only fails a render if ffmpeg stops reporting progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 
@@ -123,7 +123,7 @@ For `single_track_video`, the intended publish path is:
 - Cafe/solo-piano playlist metadata now generates a Korean YouTube title, use-case description, timestamped tracklist, and music hashtags
 - Approved metadata can be regenerated from the release action area, which creates a new draft that must be approved before re-upload
 - OpenClaw can write and approve YouTube metadata through `scripts/openclaw-release approve-metadata`, passing title, multiline description, and comma-separated tags
-- OpenClaw staged backlog mode can use `scripts/openclaw-release render-audio`, `approve-cover`, and `render-video` to prepare a release and queue video render without blocking on the long render. After a distributed render worker completes video render, OpenClaw can publish a rendered release with approved metadata through `scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title CHANNEL_TITLE`.
+- OpenClaw should normally use the VM-render flow: `scripts/openclaw-release render-audio`, `approve-cover`, and `render-video --wait`, then approve metadata and publish through `scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title CHANNEL_TITLE`.
 - YouTube metadata can now store `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `pt-BR`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW` localized title/description drafts. Releases should provide all fifteen where possible; the publish flow sends the selected default metadata language and sends the other localized title/description drafts as YouTube localizations.
 - Playlist Release YouTube titles now start with `[playlist]` for the default title and every localized title across all channels. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles remain unprefixed.
 - Playlist/BGM YouTube titles should include a real listening situation or viewer intent directly in the title instead of only mood/genre wording. The use case must match the actual music and concept; do not default to study/work/walk/rest wording by habit.
@@ -164,8 +164,8 @@ For `single_track_video`, the intended publish path is:
 - Already-uploaded releases can replace the 8 second loop video from the release detail UI. Replacing the loop video marks the release as needing a new video render before re-upload while keeping the previous YouTube video id visible until the new render starts.
 - After a successful YouTube upload, the app deletes the long rendered local MP4 and keeps the YouTube video id/link as the watch surface. Re-uploading requires rendering a new local video first.
 - Workspace API responses now include `youtube_channel_id` and `youtube_channel_title` next to `youtube_video_id`, so the dashboard and OpenClaw can confirm which channel a published release was uploaded to.
-- The app can send a "maintain OpenClaw backlog" Slack request to the OpenClaw channel after a release is uploaded or scheduled. Configure `AIMP_OPENCLAW_SLACK_CHANNEL_ID`; the web UI shows `Request Next Playlist`, and `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` sends the request automatically after successful YouTube upload with per-video dedupe. `AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED=true` also lets the background worker periodically inspect channel backlog and send a Slack request when an automated channel is under target or has finishable metadata/publish work. If YouTube rejects a 14+ minute video because the account is not phone/account verified for long uploads, the app now keeps the rendered release for later retry and can still request backlog work. `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=N` caps the loop after N successful YouTube uploads; `0` means unlimited. Human Slack messages in the configured OpenClaw channel such as `OpenClaw 자동화 멈춰` stop the app from sending more automatic `OPENCLAW_RUN:` requests, and `OpenClaw 자동화 다시 시작` resumes. Real app-originated OpenClaw task messages are prefixed with `AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX` (default `OPENCLAW_RUN:`). Slack event routing and mention-only behavior belongs in the Slack App/OpenClaw listener configuration, not in the music release skill docs.
-- OpenClaw's continuous automation entry point is now `docs/openclaw-backlog-queue.md`, then `docs/openclaw-next-release-planner.md`. OpenClaw should keep each connected non-excluded automated channel at 1-2 unfinished Playlist Releases, finish rendered releases first, and otherwise create/asset-prepare releases until video render is queued. Video render queued/running counts as backlog, so OpenClaw should not wait for long video render completion before filling another under-supplied channel. The planner reads `/youtube/status`, rotates connected non-excluded channels, reads the selected channel's concept planner/profile, avoids recent concept repetition, chooses the next channel/concept, then follows the production/publish instructions.
+- The app can send a "next release" Slack request to the OpenClaw channel after a release is uploaded or scheduled. Configure `AIMP_OPENCLAW_SLACK_CHANNEL_ID`; the web UI shows `Request Next Playlist`, and `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` sends the request automatically after successful YouTube upload with per-video dedupe. `AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED` is optional and should remain disabled in conservative VM-render mode. If YouTube rejects a 14+ minute video because the account is not phone/account verified for long uploads, the app now keeps the rendered release for later retry. `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=N` caps the loop after N successful YouTube uploads; `0` means unlimited. Human Slack messages in the configured OpenClaw channel such as `OpenClaw 자동화 멈춰` stop the app from sending more automatic `OPENCLAW_RUN:` requests, and `OpenClaw 자동화 다시 시작` resumes. Real app-originated OpenClaw task messages are prefixed with `AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX` (default `OPENCLAW_RUN:`). Slack event routing and mention-only behavior belongs in the Slack App/OpenClaw listener configuration, not in the music release skill docs.
+- OpenClaw's continuous automation entry point is `docs/openclaw-backlog-queue.md`, then `docs/openclaw-next-release-planner.md`. In normal VM-render mode, OpenClaw should finish one release end-to-end before starting another: choose the next non-excluded channel, create/upload assets, render audio, render video on the VM app, wait for completion, approve metadata, and publish. The planner reads `/youtube/status`, rotates connected non-excluded channels, reads the selected channel's concept planner/profile, avoids recent concept repetition, chooses the next channel/concept, then follows the production/publish instructions.
 - OpenClaw must call `scripts/openclaw-release openclaw-lock-start`, refresh with `openclaw-lock-heartbeat` every 1-2 minutes, and call `openclaw-lock-finish` when done/blocked. The app stores this lock in `storage/openclaw-runtime-state.json`; the backlog scheduler will not send another Slack request while the lock is active, and stale locks expire through `AIMP_OPENCLAW_LOCK_TTL_SECONDS`.
 - The Old Verse and The New Verse use `storage/openclaw-scripture-sequence.json` plus `scripts/openclaw-scripture-sequence` as a runtime ledger. OpenClaw must reserve the next canonical passage before Suno generation and mark it scheduled/published after upload so Bible passages are not duplicated or skipped.
 - Track uploads now accept optional lyrics/content notes and Suno style/settings. Both are stored in track metadata and exposed through release/timeline context for later thumbnail, loop-video, metadata, remake, and standalone single workflows.
@@ -249,9 +249,9 @@ This was done to make the UI easier to test without old clutter.
 
 The project does not yet fully automate song generation from Suno in the same way the rest of the release pipeline is automated.
 
-### 2. Production-grade worker separation
+### 2. Optional external render worker mode
 
-The app still has an in-process background worker, but video rendering can now be distributed to external machines with `scripts/render-worker`. External machines poll the app, claim queued video jobs, render with local ffmpeg, upload the finished MP4 back, and stale claimed jobs are requeued after one day.
+The app has an in-process background worker and normal automation should render on the VM. Video rendering can still be distributed to external machines with `scripts/render-worker`, but that mode is optional/manual and should not be assumed by OpenClaw's default flow.
 
 ### 3. Real MCP client transport
 
