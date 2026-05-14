@@ -87,7 +87,7 @@ The stall guard is progress-based, not a hard wall-clock timeout. It only fails 
 Video render now adds an app-managed audio-reactive visualizer overlay:
 
 - the app fallback style is a transparent 20-bar spectrum near the lower-right of the video
-- the final loop video is normalized to 30fps, and the audio-reactive visualizer overlay is generated at 24fps so spectrum motion stays smoother than the old 12fps overlay
+- the final loop video is normalized to 30fps, and the audio-reactive visualizer overlay is generated at 30fps so spectrum motion matches the rendered video cadence
 - the app samples the cover/loop-video frame and chooses colors that fit the visual palette
 - the app can move the overlay away from bright text-heavy areas so it does not cover channel branding
 - `AIMP_VIDEO_SPECTRUM_OVERLAY_ENABLED=false` disables it
