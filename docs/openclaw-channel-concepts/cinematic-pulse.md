@@ -41,9 +41,8 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Instrumental/no-vocal by default.
 - Follow `../suno-v55-instrumental-format.md`.
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
-- Fill Suno Advanced Options excluded styles with vocal-related exclusions.
+- Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
-- Never trim or fade out a generated song just to fit a target duration. Upload the full finished Suno output, and regenerate/extend if it sounds like it disappears around 3:00.
 - Make each track feel complete, not like a short unfinished cue. Avoid abrupt fade-outs if possible.
 - The playlist should feel like a coherent film-score album. It can move between huge, quiet, tense, and emotional cues, but should keep a large cinematic scale and remain listenable for 40+ minutes.
 

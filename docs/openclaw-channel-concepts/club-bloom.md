@@ -52,11 +52,10 @@ Good style lanes:
 
 - Instrumental/no-vocal is mandatory. Do not create lyrics, sung hooks, vocal chops, chants, hype shouts, spoken-word tags, or vocal ad-libs for Club Bloom.
 - Follow `../suno-v55-instrumental-format.md` for every Club Bloom track.
-- In Suno advanced/excluded styles, add vocal blockers such as `vocals, vocal, voice, singer, singing, lyrics, words, rap, spoken word, chant, chanting, humming, choir, crowd chant, vocal chops, acapella, topline, producer tag`.
+- In Suno advanced/excluded styles, add vocal and artificial-noise blockers such as `vocals, vocal, voice, singer, singing, lyrics, words, rap, spoken word, chant, chanting, humming, choir, crowd chant, vocal chops, acapella, topline, producer tag, white noise, static noise, vinyl crackle, record crackle, LP crackle, tape hiss, cassette hiss, analog hiss, noise floor, old record noise, dust noise, crackle, hiss`.
 - Use bracketed instrumental arrangement cues only, for example `[Intro: kick and filtered bass]`, `[Build: rising synth arp]`, `[Drop: no-vocal bass house groove]`, `[Breakdown: pads and drums only]`.
 - If the human asks for vocal dance-pop, route it to sundaze, HaruHaru, Tokyo Daydream Radio, or Solwave Radio depending on language/style instead of Club Bloom.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
-- Never trim or fade out a generated song just to fit a target duration. Upload the full finished Suno output, and regenerate/extend if it sounds like it disappears around 3:00.
 - Prioritize strong groove, clean drops, energy changes, and replayable rhythm inside the selected style lane.
 - Avoid muddy mixes, overly long intros, generic mixed-genre EDM, and tracks that feel like unfinished loops.
 

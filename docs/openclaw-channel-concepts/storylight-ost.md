@@ -39,10 +39,9 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Instrumental/no-vocal by default.
 - Follow `../suno-v55-instrumental-format.md`.
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
-- Fill Suno Advanced Options excluded styles with vocal-related exclusions.
+- Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
 - Do not reference protected studios, franchises, characters, composers, songs, or specific artists in Suno or Dreamina prompts. Use safe generic wording such as `playful Japanese arcade-game OST`, `cute fantasy RPG BGM`, `anime side-story instrumental`, `kawaii game menu music`, or `lighthearted game background music`.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
-- Never trim or fade out a generated song just to fit a target duration. Upload the full finished Suno output, and regenerate/extend if it sounds like it disappears around 3:00.
 - Music should be melodic, catchy, scene-rich, and loop-friendly without sounding like generic sleep music or mainstream vocal J-pop.
 
 ## Visual Direction

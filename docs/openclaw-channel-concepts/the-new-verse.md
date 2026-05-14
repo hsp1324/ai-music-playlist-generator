@@ -61,7 +61,6 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - For worship pop, use natural modern song structure: verse, pre-chorus, chorus, bridge, final chorus when appropriate.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
-- Never trim or fade out a generated song just to fit a target duration. Upload the full finished Suno output, and regenerate/extend if it sounds like it disappears around 3:00.
 - Avoid producer tags, specific artist references, protected worship brands, church names, celebrity pastors, and modern Bible translation names.
 
 ## Visual Direction

@@ -40,7 +40,7 @@ Suno can block lyrics/custom-lyrics, metatags, style, prompts, tags, or excluded
 - In Suno Advanced Options, fill the excluded styles / negative style field for instrumental playlists. Use a direct comma-separated list such as:
 
 ```text
-vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline
+vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline, white noise, static noise, vinyl crackle, record crackle, LP crackle, turntable noise, tape hiss, cassette hiss, analog hiss, noise floor, lo-fi noise, old record noise, dust noise, crackle, hiss
 ```
 
 - Do not put this excluded-style list in the lyrics/custom-lyrics field.
@@ -52,7 +52,6 @@ Suno duration wording should be minimal: use only `less than 4 minutes` or `unde
 - The helper allows playlist tracks up to 4:20 by default.
 - Do not include extra duration wording in Suno fields beyond `less than 4 minutes`.
 - Do not add extra completion or outro wording to Suno fields.
-- Never trim, crop, export a preview, or fade out a generated song just to make it fit a target duration. Upload the full finished Suno output. If the song feels like it abruptly disappears around 3:00, regenerate or extend it instead of uploading a cut file.
 
 ## Good Lyrics Field Shape
 
