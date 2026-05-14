@@ -54,9 +54,10 @@ class YouTubeService:
             self.settings.youtube_client_secrets_path
         ).exists()
         registry = self._read_channel_registry()
-        channels = registry.get("channels", [])
+        raw_channels = registry.get("channels", [])
+        channels = [self._public_channel_payload(channel) for channel in raw_channels]
         selected_channel_id = registry.get("selected_channel_id")
-        selected_channel = self._find_channel(channels, selected_channel_id)
+        selected_channel = self._find_channel(raw_channels, selected_channel_id)
         selected_token_status = self._inspect_token(self._channel_token_path(selected_channel_id)) if selected_channel_id else {
             "authenticated": False
         }
@@ -70,10 +71,16 @@ class YouTubeService:
             "channels": channels,
             "selected_channel_id": selected_channel_id,
             "selected_channel_title": selected_channel.get("title") if selected_channel else None,
-            "client_secrets_path": self.settings.youtube_client_secrets_path or None,
-            "token_path": str(self._token_path_for_channel(selected_channel_id)),
             "redirect_uri": self.redirect_uri,
             "error": selected_token_status.get("error") or legacy_token_status.get("error"),
+        }
+
+    @staticmethod
+    def _public_channel_payload(channel: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in channel.items()
+            if key not in {"token_path"}
         }
 
     @property

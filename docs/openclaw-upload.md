@@ -10,6 +10,15 @@ Run these commands from the OpenClaw repo checkout, normally `~/repos/ai-music-p
 
 Use `scripts/openclaw-release` against the deployed AI Music app API. `AIMP_LOCAL_API_BASE` must point to the deployed VM app API or a tunnel to that API. Do not use OpenClaw's own local dev API; if `/youtube/status` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, stop before generation/publish because the API target is wrong.
 
+Recommended API target:
+
+- If OpenClaw is running on the VM, use `AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api`.
+- If OpenClaw is running on a laptop, use an SSH/Tailscale tunnel to the VM's `127.0.0.1:8000` and point `AIMP_LOCAL_API_BASE` at that tunnel.
+- The public `https://ai-music.168.107.34.175.sslip.io/api` route is protected by Google login. It only works for `scripts/openclaw-release` when `AIMP_API_COOKIE` contains a valid logged-in browser cookie.
+- `AIMP_OPENCLAW_SHARED_TOKEN` is for app-side OpenClaw lock/backlog endpoints only. It does not authenticate track upload, playlist, YouTube status, or publish helper calls.
+
+Do not open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio as part of automation. If YouTube is not ready, report the blocker. If it is ready, use the connected channel list from `/youtube/status` and publish through `scripts/openclaw-release` with an explicit channel title/id.
+
 ## Upload A New Single Candidate Set
 
 Use this when Suno/OpenClaw produced one or two candidates for the same single release. Suno usually returns two songs; upload both to the same new Single Release so a human can choose. If both are good, the second approved candidate becomes its own Single Release instead of being combined.

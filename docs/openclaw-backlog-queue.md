@@ -34,6 +34,7 @@ On each `OPENCLAW_RUN:` backlog request:
 3. Keep the lock alive with heartbeat while working.
 4. Run `scripts/openclaw-release list-releases`.
 5. Check `/youtube/status` and build the active roster from connected channels, excluding `MusicSun` and retired names.
+   Do not open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio. If `/youtube/status` is not ready, report the blocker instead of trying to authenticate.
 6. First finish existing releases that are already past video render:
    - `metadata_review`: write/approve final YouTube metadata, then approve publish.
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
@@ -42,6 +43,8 @@ On each `OPENCLAW_RUN:` backlog request:
 7. Then fill backlog for channels below the target.
 8. Stop making new releases for any channel that already has 2 unfinished Playlist Releases.
 9. Release the app-side lock when the backlog pass is completed or blocked.
+
+`AIMP_LOCAL_API_BASE` should normally be `http://127.0.0.1:8000/api` on the VM, or a laptop tunnel to that same VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
 
 ## Lock And Heartbeat
 

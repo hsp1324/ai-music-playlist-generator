@@ -61,6 +61,16 @@ If that path is missing, try `~/repos/ai리포` or the current checkout before f
 
 `AIMP_LOCAL_API_BASE` must point to the deployed VM app API or to a tunnel that forwards to the deployed VM app. Do not use OpenClaw's own local dev API. If `curl "$AIMP_LOCAL_API_BASE/youtube/status"` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, assume you are pointed at the wrong API and stop before generation/publish.
 
+Use one of these API access patterns:
+
+- On the VM: `AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api`.
+- On a laptop/OpenClaw worker: an SSH/Tailscale tunnel to the VM FastAPI process, then set `AIMP_LOCAL_API_BASE` to the tunnel URL.
+- Public `https://ai-music.168.107.34.175.sslip.io/api` only works with a valid `AIMP_API_COOKIE` from Google login.
+
+Do not assume `AIMP_OPENCLAW_SHARED_TOKEN` can upload tracks or publish releases by itself. That token is for OpenClaw coordination endpoints, not the release-production API surface.
+
+Do not open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio during automation. Channel tokens are managed by the human through the web app. OpenClaw should only read `/youtube/status`, choose a connected channel, and pass the explicit channel title/id into the helper publish command.
+
 Required first commands:
 
 ```bash

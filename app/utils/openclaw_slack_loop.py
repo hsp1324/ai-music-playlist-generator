@@ -290,6 +290,7 @@ def build_next_playlist_request_message(
             "- 최신 main을 pull 해줘.",
             "- AIMP_LOCAL_API_BASE는 배포된 Oracle VM 앱 API 또는 그 API로 연결되는 터널이어야 합니다. OpenClaw 로컬 dev API를 사용하지 마세요.",
             "- /youtube/status가 configured=false, authenticated=false, ready=false, channels=[]이면 잘못된 API를 보고 있는 것이므로 audio/Suno/Dreamina/publish를 시작하지 말고 중단 사유를 알려줘.",
+            "- 자동화 중에는 /youtube/connect, /api/youtube/connect, Google OAuth, YouTube Studio를 열지 마세요. 이미 연결된 /youtube/status channels만 사용하고 publish helper에 명시적 channel title/id를 넘기세요.",
             "- 먼저 docs/openclaw-backlog-queue.md를 읽고 그대로 따라줘.",
             "- 먼저 docs/openclaw-next-release-planner.md를 읽고 그대로 따라줘.",
             "- 그 다음 docs/openclaw-skills.md, docs/openclaw-channel-concepts/README.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",

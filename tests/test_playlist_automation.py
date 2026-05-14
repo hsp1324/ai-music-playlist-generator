@@ -32,6 +32,7 @@ def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> Tes
     os.environ["AIMP_STORAGE_ROOT"] = str(tmp_path / "storage")
     os.environ["AIMP_DATABASE_URL"] = f"sqlite:///{tmp_path / 'app.db'}"
     os.environ["AIMP_WORKER_AUTOSTART"] = "false"
+    os.environ.pop("AIMP_WORKER_CLAIM_VIDEO_JOBS", None)
     os.environ["AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE"] = "true" if cache_remote_audio else "false"
     get_settings.cache_clear()
     return TestClient(create_app())
@@ -41,6 +42,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_STORAGE_ROOT", None)
     os.environ.pop("AIMP_DATABASE_URL", None)
     os.environ.pop("AIMP_WORKER_AUTOSTART", None)
+    os.environ.pop("AIMP_WORKER_CLAIM_VIDEO_JOBS", None)
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
@@ -2140,6 +2142,22 @@ def test_external_render_worker_can_claim_and_complete_video_render(tmp_path) ->
             json={"actor": "test-suite", "approved": True},
         )
         assert approve_cover_response.status_code == 200
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            meta = dict(playlist.metadata_json or {})
+            meta["youtube_title"] = "[playlist] Preserve External Metadata"
+            meta["youtube_description"] = "Keep this human-approved copy.\n\n00:00 External Track\n\n#KeepMetadata"
+            meta["youtube_tags"] = ["KeepMetadata"]
+            meta["youtube_default_language"] = "en"
+            meta["youtube_localizations"] = {
+                "en": {
+                    "title": "[playlist] Preserve External Metadata",
+                    "description": "Keep this human-approved copy.\n\n00:00 External Track\n\n#KeepMetadata",
+                }
+            }
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
 
         render_response = client.post(
             f"/api/playlists/{workspace_id}/video/render",
@@ -2204,6 +2222,8 @@ def test_external_render_worker_can_claim_and_complete_video_render(tmp_path) ->
             assert playlist.output_video_path.endswith(".mp4")
             assert Path(playlist.output_video_path).read_bytes() == b"fake-rendered-mp4"
             assert playlist.metadata_json["workflow_state"] == "metadata_review"
+            assert playlist.metadata_json["youtube_title"] == "[playlist] Preserve External Metadata"
+            assert playlist.metadata_json["youtube_metadata_preserved_after_video_render"] is True
             assert playlist.metadata_json["video_render_progress"]["percent"] == 100.0
     finally:
         clear_isolated_client_env()
@@ -2276,6 +2296,97 @@ def test_external_render_worker_stale_claim_is_requeued(tmp_path) -> None:
             assert job.external_id == "new-worker"
             assert job.result_json["external_render_stale_worker_id"] == "dead-worker"
             assert job.result_json["external_render_worker_id"] == "new-worker"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_background_worker_marks_interrupted_upload_for_retry(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Interrupted Publish",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                metadata_json={
+                    "workflow_state": "publish_queued",
+                    "publish_ready": True,
+                    "publish_approved": True,
+                },
+            )
+            db.add(playlist)
+            db.flush()
+            job = Job(
+                type=JobType.upload_youtube,
+                status=JobStatus.running,
+                source="web",
+                playlist=playlist,
+                playlist_id=playlist.id,
+                payload_json={"playlist_id": playlist.id},
+                result_json={},
+                started_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+            playlist_id = playlist.id
+
+        result = client.app.state.services.worker.recover_interrupted_jobs()
+
+        assert result["failed_uploads"] == 1
+        with SessionLocal() as db:
+            job = db.get(Job, job_id)
+            playlist = db.get(Playlist, playlist_id)
+            assert job.status == JobStatus.failed
+            assert "interrupted" in job.error_text.lower()
+            assert job.result_json["interrupted_worker_resolution"] == "failed_requires_retry"
+            assert playlist.status == PlaylistStatus.ready
+            assert playlist.metadata_json["workflow_state"] == "youtube_upload_failed"
+            assert playlist.metadata_json["publish_approved"] is False
+    finally:
+        clear_isolated_client_env()
+
+
+def test_background_worker_can_leave_video_jobs_for_external_workers(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        client.app.state.settings.worker_claim_video_jobs = False
+
+        with SessionLocal() as db:
+            playlist = Playlist(title="External Only Render", status=PlaylistStatus.building)
+            db.add(playlist)
+            db.flush()
+            video_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist=playlist,
+                playlist_id=playlist.id,
+                payload_json={"playlist_id": playlist.id},
+                result_json={},
+            )
+            publish_job = Job(
+                type=JobType.upload_youtube,
+                status=JobStatus.queued,
+                source="web",
+                playlist=playlist,
+                playlist_id=playlist.id,
+                payload_json={"playlist_id": playlist.id},
+                result_json={},
+            )
+            db.add_all([video_job, publish_job])
+            db.commit()
+            video_job_id = video_job.id
+            publish_job_id = publish_job.id
+
+        claimed_id = client.app.state.services.worker._claim_next_job_id()
+
+        assert claimed_id == publish_job_id
+        with SessionLocal() as db:
+            assert db.get(Job, video_job_id).status == JobStatus.queued
+            assert db.get(Job, publish_job_id).status == JobStatus.running
     finally:
         clear_isolated_client_env()
 
@@ -2921,6 +3032,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert upload_channel_ids[-1] == "UC123"
         assert upload_localizations[-1]["default_language"] == "ko"
         assert upload_localizations[-1]["localizations"]["en"]["title"] == "[playlist] English Title"
+        original_youtube_title = published["youtube_title"]
+        original_youtube_description = published["youtube_description"]
+        original_youtube_localizations = published["youtube_localizations"]
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
@@ -2943,6 +3057,10 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert drain_background_jobs(client) == 1
         metadata_again_response = client.get("/api/playlists/workspaces")
         metadata_again = next(item for item in metadata_again_response.json() if item["id"] == workspace_id)
+        assert metadata_again["youtube_title"] == original_youtube_title
+        assert metadata_again["youtube_description"] == original_youtube_description
+        assert metadata_again["youtube_localizations"] == original_youtube_localizations
+        assert metadata_again["metadata_approved"] is False
         metadata_again_description = metadata_again["youtube_description"]
         if "00:00" not in metadata_again_description:
             metadata_again_description = f"{metadata_again_description}\n\n00:00:00 Single Track\n\n#Music #Playlist"
@@ -3380,6 +3498,9 @@ def test_youtube_channel_selection_updates_active_channel(tmp_path) -> None:
         assert payload["selected_channel_id"] == "UC123"
         assert payload["selected_channel_title"] == "Main Music"
         assert payload["ready"] is True
+        assert "client_secrets_path" not in payload
+        assert "token_path" not in payload
+        assert "token_path" not in payload["channels"][0]
     finally:
         clear_isolated_client_env()
 

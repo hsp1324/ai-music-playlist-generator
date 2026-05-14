@@ -118,6 +118,7 @@ class Settings(BaseSettings):
 
     worker_autostart: bool = True
     worker_poll_interval_seconds: float = 2.0
+    worker_claim_video_jobs: bool = True
 
     @property
     def tracks_dir(self) -> Path:

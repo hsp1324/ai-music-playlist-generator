@@ -17,12 +17,12 @@ from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
 from app.utils.youtube_localizations import (
-    DEFAULT_YOUTUBE_LANGUAGE,
     ensure_playlist_localization_title_prefix,
     ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
 )
+from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 from app.utils.openclaw_slack_loop import post_backlog_queue_request, post_next_playlist_request, record_auto_loop_upload
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.workflows.openclaw_runtime import (
@@ -130,6 +130,7 @@ class BackgroundJobWorker:
         if self.services is None:
             raise RuntimeError("Background worker is not bound to services.")
 
+        self.recover_interrupted_jobs()
         self._stop_event.clear()
         self._thread = threading.Thread(
             target=self._run_loop,
@@ -150,6 +151,98 @@ class BackgroundJobWorker:
             return False
         self._process_job(job_id)
         return True
+
+    def recover_interrupted_jobs(self) -> dict[str, int]:
+        counts = {
+            "requeued": 0,
+            "failed_uploads": 0,
+            "completed_uploads": 0,
+            "skipped_external_renders": 0,
+        }
+        with SessionLocal() as db:
+            jobs = db.scalars(
+                select(Job)
+                .options(selectinload(Job.playlist))
+                .where(
+                    Job.status == JobStatus.running,
+                    Job.type.in_([JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]),
+                )
+            ).all()
+            now = _utcnow()
+            for job in jobs:
+                if job.type == JobType.build_video and str(job.source or "").startswith("external-render-worker"):
+                    counts["skipped_external_renders"] += 1
+                    continue
+
+                result = dict(job.result_json or {})
+                result["interrupted_worker_recovered_at"] = now.isoformat()
+                result["interrupted_worker_previous_source"] = job.source
+
+                if job.type == JobType.upload_youtube:
+                    playlist = job.playlist
+                    if playlist and playlist.youtube_video_id:
+                        job.status = JobStatus.succeeded
+                        job.finished_at = now
+                        result["interrupted_worker_resolution"] = "already_uploaded"
+                        counts["completed_uploads"] += 1
+                    else:
+                        message = (
+                            "Background YouTube upload was interrupted before completion. "
+                            "Retry publish to start a fresh upload."
+                        )
+                        job.status = JobStatus.failed
+                        job.finished_at = now
+                        job.error_text = message
+                        result["interrupted_worker_resolution"] = "failed_requires_retry"
+                        counts["failed_uploads"] += 1
+                        if playlist:
+                            meta = dict(playlist.metadata_json or {})
+                            playlist.status = PlaylistStatus.ready
+                            meta["workflow_state"] = "youtube_upload_failed"
+                            meta["note"] = message
+                            meta["youtube_upload_error"] = message
+                            meta["publish_approved"] = False
+                            playlist.metadata_json = meta
+                            db.add(playlist)
+                else:
+                    job.status = JobStatus.queued
+                    job.started_at = None
+                    job.finished_at = None
+                    job.error_text = None
+                    result["interrupted_worker_resolution"] = "requeued"
+                    counts["requeued"] += 1
+                    if job.playlist:
+                        meta = dict(job.playlist.metadata_json or {})
+                        if job.type == JobType.build_playlist:
+                            meta["workflow_state"] = "render_queued"
+                            meta["note"] = "Interrupted audio render was requeued after worker restart."
+                            meta["audio_render_progress"] = {
+                                **dict(meta.get("audio_render_progress") or {}),
+                                "stage": "audio_render",
+                                "status": "queued",
+                                "message": meta["note"],
+                                "updated_at": now.isoformat(),
+                            }
+                            job.playlist.status = PlaylistStatus.building
+                        elif job.type == JobType.build_video:
+                            meta["workflow_state"] = "video_queued"
+                            meta["note"] = "Interrupted video render was requeued after worker restart."
+                            meta["video_render_progress"] = {
+                                **dict(meta.get("video_render_progress") or {}),
+                                "stage": "video_render",
+                                "status": "queued",
+                                "message": meta["note"],
+                                "updated_at": now.isoformat(),
+                            }
+                            job.playlist.status = PlaylistStatus.building
+                        job.playlist.metadata_json = meta
+                        db.add(job.playlist)
+
+                job.result_json = result
+                db.add(job)
+            if any(counts.values()):
+                db.commit()
+        return counts
 
     def _run_loop(self) -> None:
         self._state.running = True
@@ -199,11 +292,14 @@ class BackgroundJobWorker:
 
     def _claim_next_job_id(self) -> str | None:
         with SessionLocal() as db:
+            claimable_job_types = [JobType.build_playlist, JobType.upload_youtube, JobType.sync_slack]
+            if self.settings.worker_claim_video_jobs:
+                claimable_job_types.append(JobType.build_video)
             candidate_ids = db.scalars(
                 select(Job.id)
                 .where(
                     Job.status == JobStatus.queued,
-                    Job.type.in_([JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]),
+                    Job.type.in_(claimable_job_types),
                 )
                 .order_by(Job.created_at.asc())
                 .limit(10)
@@ -550,7 +646,6 @@ class BackgroundJobWorker:
             for item in sorted(playlist.items, key=lambda item: item.order_index)
             if item.track is not None
         ]
-        youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
         render_meta = meta
         meta = self._current_playlist_meta(db, playlist.id, fallback=meta)
         for key in (
@@ -565,24 +660,20 @@ class BackgroundJobWorker:
             if key in render_meta:
                 meta[key] = render_meta[key]
         is_playlist_release = str(meta.get("workspace_mode") or "playlist") != "single_track_video"
-        meta["youtube_title"] = ensure_playlist_title_prefix(
-            youtube_metadata.title,
-            is_playlist=is_playlist_release,
-        )
-        meta["youtube_description"] = youtube_metadata.description
-        meta["youtube_tags"] = youtube_metadata.tags
-        meta["youtube_default_language"] = normalize_youtube_language(
-            getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
-        )
-        meta["youtube_localizations"] = ensure_playlist_localization_title_prefix(
-            normalize_youtube_localizations(
-                getattr(youtube_metadata, "localizations", {}),
-                default_title=meta["youtube_title"],
-                default_description=youtube_metadata.description,
-                default_language=meta["youtube_default_language"],
-            ),
-            is_playlist=is_playlist_release,
-        )
+        if has_youtube_metadata(meta):
+            meta["youtube_metadata_preserved_after_video_render"] = True
+        else:
+            youtube_metadata = self.services.release_metadata.build_youtube_metadata(playlist, tracks)
+            apply_generated_youtube_metadata(
+                meta,
+                youtube_metadata,
+                is_playlist_release=is_playlist_release,
+            )
+            meta["youtube_title"] = ensure_playlist_title_prefix(
+                meta["youtube_title"],
+                is_playlist=is_playlist_release,
+            )
+            meta["youtube_metadata_preserved_after_video_render"] = False
         meta["metadata_approved"] = False
         meta["publish_approved"] = False
         meta["rendered_video_track_ids"] = video_track_ids

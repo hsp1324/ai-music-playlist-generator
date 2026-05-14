@@ -12,6 +12,15 @@ If that path is missing, try `~/repos/ai리포` or the current checkout. Do not 
 
 Use `scripts/openclaw-release` against the deployed AI Music app API. `AIMP_LOCAL_API_BASE` must point to the deployed VM app API or a tunnel to that API. Do not use OpenClaw's own local dev API; if `/youtube/status` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, stop before generation/publish because the API target is wrong.
 
+Recommended API target:
+
+- On the Oracle VM, use `AIMP_LOCAL_API_BASE=http://127.0.0.1:8000/api`.
+- On a laptop/OpenClaw machine, use an SSH/Tailscale tunnel to the VM FastAPI process and point `AIMP_LOCAL_API_BASE` at the tunnel.
+- The public `https://ai-music.168.107.34.175.sslip.io/api` URL is behind Google login. It requires `AIMP_API_COOKIE` from a logged-in browser session before `scripts/openclaw-release` can upload tracks, create releases, or publish.
+- `AIMP_OPENCLAW_SHARED_TOKEN` only covers OpenClaw coordination endpoints such as lock/backlog when the backend is reachable. It is not a replacement for Google-login cookie or direct/tunneled backend access.
+
+Never open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio from an automation run. YouTube connection is a human setup task. Automation must only read `/youtube/status` and pass the selected connected channel title/id to the helper scripts.
+
 ## Continuous Next Release Planning
 
 When the app asks OpenClaw to create the next release after an upload/scheduled publish completes, first use [openclaw-next-release-planner.md](openclaw-next-release-planner.md). That planner chooses the next channel, reads the selected channel's concept planner from [openclaw-channel-concepts](openclaw-channel-concepts/README.md), then hands off to this document's automatic playlist publisher.

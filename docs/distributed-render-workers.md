@@ -21,6 +21,15 @@ sudo sh -c 'printf "AIMP_RENDER_WORKER_STALE_SECONDS=86400\n" >> /etc/ai-music-p
 sudo systemctl restart ai-music-playlist-generator
 ```
 
+When an external laptop/desktop worker should own video rendering, keep the main VM worker from claiming `build_video` jobs:
+
+```bash
+sudo sh -c 'printf "AIMP_WORKER_CLAIM_VIDEO_JOBS=false\n" >> /etc/ai-music-playlist-generator.env'
+sudo systemctl restart ai-music-playlist-generator
+```
+
+The VM still handles audio render, Slack sync, and YouTube upload jobs.
+
 The protected Nginx template exposes `/api/render-worker/` without Google OAuth, allows large MP4 uploads up to `4G`, disables request buffering, and extends proxy timeouts. Apply the updated template on the VM if it is not already installed:
 
 ```bash
@@ -77,7 +86,8 @@ WantedBy=multi-user.target
 
 ## Operational Notes
 
-- The main app worker can still render jobs. External workers simply compete for queued `build_video` jobs, so if the main VM is busy with one long render, another machine can claim the next queued render.
+- By default, the main app worker can still render jobs. External workers simply compete for queued `build_video` jobs, so if the main VM is busy with one long render, another machine can claim the next queued render.
+- If `AIMP_WORKER_CLAIM_VIDEO_JOBS=false` is set on the main app VM, queued `build_video` jobs are reserved for external render workers. This is recommended when a faster laptop/desktop render worker is online.
 - Workers should not create releases or call YouTube directly. They only render MP4 files and hand them back to the app.
 - If the worker process is killed, the job stays `running` until the one-day stale timeout and then becomes `queued` again.
 - If ffmpeg fails and the worker can still reach the API, the job is marked `video_build_failed` immediately instead of waiting a day.

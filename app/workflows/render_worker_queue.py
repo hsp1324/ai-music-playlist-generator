@@ -18,12 +18,9 @@ from app.services.background_worker import (
     _utcnow,
 )
 from app.utils.youtube_localizations import (
-    DEFAULT_YOUTUBE_LANGUAGE,
-    ensure_playlist_localization_title_prefix,
     ensure_playlist_title_prefix,
-    normalize_youtube_language,
-    normalize_youtube_localizations,
 )
+from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 
 
 EXTERNAL_RENDER_SOURCE_PREFIX = "external-render-worker"
@@ -349,7 +346,6 @@ def complete_external_video_job(
         for item in sorted(playlist.items, key=lambda item: item.order_index)
         if item.track is not None
     ]
-    youtube_metadata = services.release_metadata.build_youtube_metadata(playlist, tracks)
     meta = dict(playlist.metadata_json or {})
     for key in (
         "dreamina_job_id",
@@ -363,24 +359,20 @@ def complete_external_video_job(
         if render_meta.get(key) is not None:
             meta[key] = render_meta[key]
     is_playlist_release = str(meta.get("workspace_mode") or "playlist") != "single_track_video"
-    meta["youtube_title"] = ensure_playlist_title_prefix(
-        youtube_metadata.title,
-        is_playlist=is_playlist_release,
-    )
-    meta["youtube_description"] = youtube_metadata.description
-    meta["youtube_tags"] = youtube_metadata.tags
-    meta["youtube_default_language"] = normalize_youtube_language(
-        getattr(youtube_metadata, "default_language", DEFAULT_YOUTUBE_LANGUAGE)
-    )
-    meta["youtube_localizations"] = ensure_playlist_localization_title_prefix(
-        normalize_youtube_localizations(
-            getattr(youtube_metadata, "localizations", {}),
-            default_title=meta["youtube_title"],
-            default_description=youtube_metadata.description,
-            default_language=meta["youtube_default_language"],
-        ),
-        is_playlist=is_playlist_release,
-    )
+    if has_youtube_metadata(meta):
+        meta["youtube_metadata_preserved_after_video_render"] = True
+    else:
+        youtube_metadata = services.release_metadata.build_youtube_metadata(playlist, tracks)
+        apply_generated_youtube_metadata(
+            meta,
+            youtube_metadata,
+            is_playlist_release=is_playlist_release,
+        )
+        meta["youtube_title"] = ensure_playlist_title_prefix(
+            meta["youtube_title"],
+            is_playlist=is_playlist_release,
+        )
+        meta["youtube_metadata_preserved_after_video_render"] = False
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
     meta["rendered_video_track_ids"] = video_track_ids

@@ -1740,7 +1740,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
         raise RuntimeError(
             "auto-publish-playlist requires an uploaded 8 second loop video before video render. "
-            "Pass --loop-video ABSOLUTE_10_SECOND_LOOP_MP4, or upload a loop video to the release first. "
+            "Pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4, or upload a loop video to the release first. "
             "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
@@ -2059,7 +2059,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
         raise RuntimeError(
             "auto-publish-single requires an uploaded 8 second loop video before video render. "
-            "Pass --loop-video ABSOLUTE_10_SECOND_LOOP_MP4, or upload a loop video to the release first. "
+            "Pass --loop-video ABSOLUTE_8_SECOND_LOOP_MP4, or upload a loop video to the release first. "
             "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
