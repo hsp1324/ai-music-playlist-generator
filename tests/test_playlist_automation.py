@@ -208,9 +208,7 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
         assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
-        assert "/youtube/status의 channels 목록을 읽고" in calls[0]["text"]
-        assert "현재 활성 채널별 unfinished release 수를 계산" in calls[0]["text"]
-        assert "render-video는 VM 큐에 넣되 기다리지 마세요" in calls[0]["text"]
+        assert "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]
         with SessionLocal() as db:
@@ -379,7 +377,7 @@ def test_video_render_event_posts_openclaw_request_after_lock_is_free(tmp_path) 
         assert len(calls) == 1
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert "scheduler_reason: video_render_started" in calls[0]["text"]
-        assert "video_rendering release는 VM 앱 background worker가 처리 중" in calls[0]["text"]
+        assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
         assert "Soft Hour Radio: 1 unfinished" in calls[0]["text"]
         assert "Tokyo Daydream Radio: 0 unfinished" in calls[0]["text"]
         with SessionLocal() as db:
