@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import Settings
@@ -161,22 +161,25 @@ class BackgroundJobWorker:
 
     def _claim_next_job_id(self) -> str | None:
         with SessionLocal() as db:
-            job = db.scalars(
-                select(Job)
+            candidate_ids = db.scalars(
+                select(Job.id)
                 .where(
                     Job.status == JobStatus.queued,
                     Job.type.in_([JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]),
                 )
                 .order_by(Job.created_at.asc())
-            ).first()
-            if not job:
-                return None
-
-            job.status = JobStatus.running
-            job.started_at = _utcnow()
-            db.add(job)
-            db.commit()
-            return job.id
+                .limit(10)
+            ).all()
+            for candidate_id in candidate_ids:
+                result = db.execute(
+                    update(Job)
+                    .where(Job.id == candidate_id, Job.status == JobStatus.queued)
+                    .values(status=JobStatus.running, started_at=_utcnow())
+                )
+                db.commit()
+                if result.rowcount == 1:
+                    return candidate_id
+            return None
 
     def _process_job(self, job_id: str) -> None:
         with SessionLocal() as db:

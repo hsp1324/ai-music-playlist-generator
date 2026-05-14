@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     ] = "bars"
     playlist_target_minutes: int = 40
     crossfade_seconds: float = 1.5
+    render_worker_shared_token: str = ""
+    render_worker_stale_seconds: int = 86400
 
     slack_signing_secret: str = ""
     slack_bot_token: str = ""

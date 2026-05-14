@@ -14,7 +14,8 @@ from PIL import Image
 from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.main import create_app
-from app.models.enums import PlaylistStatus
+from app.models.enums import JobStatus, JobType, PlaylistStatus
+from app.models.job import Job
 from app.models.playlist import Playlist
 from app.models.track import Track
 from app.routes import playlists as playlist_routes
@@ -53,6 +54,8 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_HOUR", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_MINUTE", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_MIN_LEAD_MINUTES", None)
+    os.environ.pop("AIMP_RENDER_WORKER_SHARED_TOKEN", None)
+    os.environ.pop("AIMP_RENDER_WORKER_STALE_SECONDS", None)
     get_settings.cache_clear()
 
 
@@ -1967,6 +1970,204 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
         assert workspace["workflow_state"] == "metadata_review"
         assert workspace["output_video_path"].endswith(".mp4")
         assert workspace["loop_video_path"].endswith(".mp4")
+    finally:
+        clear_isolated_client_env()
+
+
+def test_external_render_worker_can_claim_and_complete_video_render(tmp_path) -> None:
+    try:
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "worker-secret"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "External Render Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "external-source.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "External Track",
+                "prompt": "distributed render test",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        render_workspace_audio(client, workspace_id)
+
+        cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/upload",
+            data={"actor": "test-suite"},
+            files={"cover_file": ("cover.png", b"fake-png", "image/png")},
+        )
+        assert cover_response.status_code == 200
+        upload_test_loop_video(client, workspace_id)
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        assert render_response.json()["workflow_state"] == "video_queued"
+
+        forbidden_claim = client.post(
+            "/api/render-worker/claim",
+            json={"worker_id": "blocked-worker"},
+        )
+        assert forbidden_claim.status_code == 403
+
+        claim_response = client.post(
+            "/api/render-worker/claim",
+            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
+            json={"worker_id": "worker-a1", "capabilities": ["ffmpeg"]},
+        )
+        assert claim_response.status_code == 200, claim_response.text
+        claim = claim_response.json()
+        assert claim["has_job"] is True
+        assert claim["playlist_id"] == workspace_id
+        assert claim["assets"]["audio"]["filename"].endswith(".mp3")
+        assert claim["assets"]["loop_video"]["filename"].endswith(".mp4")
+
+        heartbeat_response = client.post(
+            f"/api/render-worker/jobs/{claim['job_id']}/heartbeat",
+            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
+            json={
+                "lease_token": claim["lease_token"],
+                "worker_id": "worker-a1",
+                "progress": {"percent": 12.5, "processed_seconds": 7},
+            },
+        )
+        assert heartbeat_response.status_code == 200
+
+        asset_response = client.get(
+            f"/api{claim['assets']['loop_video']['path']}",
+            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
+            params={"lease_token": claim["lease_token"]},
+        )
+        assert asset_response.status_code == 200
+        assert asset_response.content == b"fake-loop-mp4"
+
+        complete_response = client.post(
+            f"/api/render-worker/jobs/{claim['job_id']}/complete",
+            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
+            data={"lease_token": claim["lease_token"], "worker_id": "worker-a1"},
+            files={"output_file": ("rendered.mp4", b"fake-rendered-mp4", "video/mp4")},
+        )
+        assert complete_response.status_code == 200, complete_response.text
+        complete_payload = complete_response.json()
+        assert complete_payload["workflow_state"] == "metadata_review"
+        assert complete_payload["output_video_path"].endswith(".mp4")
+
+        with SessionLocal() as db:
+            job = db.get(Job, claim["job_id"])
+            playlist = db.get(Playlist, workspace_id)
+            assert job.status == JobStatus.succeeded
+            assert job.result_json["external_render_worker_id"] == "worker-a1"
+            assert playlist.output_video_path.endswith(".mp4")
+            assert Path(playlist.output_video_path).read_bytes() == b"fake-rendered-mp4"
+            assert playlist.metadata_json["workflow_state"] == "metadata_review"
+            assert playlist.metadata_json["video_render_progress"]["percent"] == 100.0
+    finally:
+        clear_isolated_client_env()
+
+
+def test_external_render_worker_stale_claim_is_requeued(tmp_path) -> None:
+    try:
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "worker-secret"
+        client = create_isolated_client(tmp_path)
+
+        audio_path = tmp_path / "ready.mp3"
+        audio_path.write_bytes(b"fake-mp3")
+        cover_path = tmp_path / "cover.png"
+        cover_path.write_bytes(b"fake-cover")
+        loop_path = tmp_path / "loop.mp4"
+        loop_path.write_bytes(b"fake-loop")
+        old_heartbeat = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Stale External Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "loop_video_smooth": True,
+                },
+            )
+            db.add(playlist)
+            db.flush()
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.running,
+                source="external-render-worker:dead-worker",
+                external_id="dead-worker",
+                playlist=playlist,
+                playlist_id=playlist.id,
+                payload_json={"playlist_id": playlist.id},
+                result_json={
+                    "external_render_worker_id": "dead-worker",
+                    "external_render_lease_token": "old-lease",
+                    "external_render_heartbeat_at": old_heartbeat,
+                },
+                started_at=datetime.now(timezone.utc) - timedelta(days=2),
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+            playlist_id = playlist.id
+
+        claim_response = client.post(
+            "/api/render-worker/claim",
+            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
+            json={"worker_id": "new-worker"},
+        )
+        assert claim_response.status_code == 200, claim_response.text
+        claim = claim_response.json()
+        assert claim["has_job"] is True
+        assert claim["job_id"] == job_id
+        assert claim["playlist_id"] == playlist_id
+        assert claim["lease_token"] != "old-lease"
+
+        with SessionLocal() as db:
+            job = db.get(Job, job_id)
+            assert job.status == JobStatus.running
+            assert job.external_id == "new-worker"
+            assert job.result_json["external_render_stale_worker_id"] == "dead-worker"
+            assert job.result_json["external_render_worker_id"] == "new-worker"
     finally:
         clear_isolated_client_env()
 

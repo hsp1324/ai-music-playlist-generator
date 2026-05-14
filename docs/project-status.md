@@ -72,6 +72,7 @@ Background worker handles long-running jobs:
 - local draft cover generation
 - looped video render
 - YouTube upload
+- external render-worker leases for distributed video rendering
 
 Long video render jobs now expose ffmpeg progress through the workspace API:
 
@@ -79,6 +80,7 @@ Long video render jobs now expose ffmpeg progress through the workspace API:
 - rendered media time vs total duration
 - ETA when ffmpeg speed is available
 - output file size heartbeat
+- external worker heartbeat/progress when a separate machine claimed the render
 
 The stall guard is progress-based, not a hard wall-clock timeout. It only fails a render if ffmpeg stops reporting progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 
@@ -247,7 +249,7 @@ The project does not yet fully automate song generation from Suno in the same wa
 
 ### 2. Production-grade worker separation
 
-The worker is DB-backed, but currently runs with the app process rather than as a fully separate production worker service.
+The app still has an in-process background worker, but video rendering can now be distributed to external machines with `scripts/render-worker`. External machines poll the app, claim queued video jobs, render with local ffmpeg, upload the finished MP4 back, and stale claimed jobs are requeued after one day.
 
 ### 3. Real MCP client transport
 

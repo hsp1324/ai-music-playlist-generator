@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.db import init_db
-from app.routes import health, playlists, slack, suno, tracks, ui, youtube
+from app.routes import health, playlists, render_worker, slack, suno, tracks, ui, youtube
 from app.services import build_service_registry
 
 
@@ -41,6 +41,7 @@ def create_app() -> FastAPI:
     app.include_router(tracks.router, prefix=settings.api_prefix)
     app.include_router(suno.router, prefix=settings.api_prefix)
     app.include_router(playlists.router, prefix=settings.api_prefix)
+    app.include_router(render_worker.router, prefix=settings.api_prefix)
     app.include_router(slack.router, prefix=settings.api_prefix)
     app.include_router(youtube.router, prefix=settings.api_prefix)
     return app
