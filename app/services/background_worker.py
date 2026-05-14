@@ -23,10 +23,17 @@ from app.utils.youtube_localizations import (
     normalize_youtube_localizations,
 )
 from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
-from app.utils.openclaw_slack_loop import post_backlog_queue_request, post_next_playlist_request, record_auto_loop_upload
+from app.utils.openclaw_slack_loop import (
+    get_auto_loop_control_state,
+    post_backlog_queue_request,
+    post_next_playlist_request,
+    record_auto_loop_upload,
+)
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.workflows.openclaw_runtime import (
+    build_openclaw_backlog_summary,
     evaluate_openclaw_backlog_scheduler,
+    get_openclaw_lock_status,
     record_openclaw_backlog_scheduler_request,
 )
 
@@ -157,7 +164,6 @@ class BackgroundJobWorker:
             "requeued": 0,
             "failed_uploads": 0,
             "completed_uploads": 0,
-            "skipped_external_renders": 0,
         }
         with SessionLocal() as db:
             jobs = db.scalars(
@@ -170,10 +176,6 @@ class BackgroundJobWorker:
             ).all()
             now = _utcnow()
             for job in jobs:
-                if job.type == JobType.build_video and str(job.source or "").startswith("external-render-worker"):
-                    counts["skipped_external_renders"] += 1
-                    continue
-
                 result = dict(job.result_json or {})
                 result["interrupted_worker_recovered_at"] = now.isoformat()
                 result["interrupted_worker_previous_source"] = job.source
@@ -292,9 +294,7 @@ class BackgroundJobWorker:
 
     def _claim_next_job_id(self) -> str | None:
         with SessionLocal() as db:
-            claimable_job_types = [JobType.build_playlist, JobType.upload_youtube, JobType.sync_slack]
-            if self.settings.worker_claim_video_jobs:
-                claimable_job_types.append(JobType.build_video)
+            claimable_job_types = [JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]
             candidate_ids = db.scalars(
                 select(Job.id)
                 .where(
@@ -555,6 +555,12 @@ class BackgroundJobWorker:
         db.add(playlist)
         db.commit()
         db.refresh(playlist)
+        self._request_openclaw_for_video_event(
+            playlist_id=playlist.id,
+            job_id=job.id,
+            event="video_render_started",
+            reason="video_render_started",
+        )
 
         workspace_mode = str(meta.get("workspace_mode") or "playlist")
         tracks = [
@@ -704,6 +710,14 @@ class BackgroundJobWorker:
         }
         db.add(playlist)
         db.add(job)
+        db.commit()
+        db.refresh(playlist)
+        self._request_openclaw_for_video_event(
+            playlist_id=playlist.id,
+            job_id=job.id,
+            event="video_render_completed",
+            reason="video_render_completed",
+        )
 
     @staticmethod
     def _call_builder_with_progress(builder_method, *args, progress_callback, total_duration_seconds, **kwargs):
@@ -964,7 +978,10 @@ class BackgroundJobWorker:
                     for item in playlist.items:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)
-                    if self.settings.openclaw_auto_request_next_on_publish:
+                    if (
+                        self.settings.openclaw_auto_request_next_on_publish
+                        and not self.settings.openclaw_request_next_on_video_render_events
+                    ):
                         playlist.metadata_json = meta
                         sent_for_video_id = str(meta.get("openclaw_next_request_youtube_video_id") or "").strip()
                         try:
@@ -1032,7 +1049,10 @@ class BackgroundJobWorker:
                         meta["youtube_upload_error"] = str(exc)
                         meta["youtube_upload_deferred_reason"] = "long_video_phone_verification"
                         meta["youtube_upload_deferred_at"] = _utcnow().isoformat()
-                        if self.settings.openclaw_auto_request_next_on_publish:
+                        if (
+                            self.settings.openclaw_auto_request_next_on_publish
+                            and not self.settings.openclaw_request_next_on_video_render_events
+                        ):
                             playlist.metadata_json = meta
                             sent_for_playlist_id = str(
                                 meta.get("openclaw_next_request_deferred_playlist_id") or ""
@@ -1148,6 +1168,122 @@ class BackgroundJobWorker:
         job.finished_at = _utcnow()
         db.add(job)
         db.commit()
+
+    def _request_openclaw_for_video_event(self, *, playlist_id: str, job_id: str, event: str, reason: str) -> None:
+        if not self.settings.openclaw_request_next_on_video_render_events:
+            return
+        if not self.settings.openclaw_slack_channel_id.strip():
+            return
+        if self.services is None:
+            return
+
+        thread = threading.Thread(
+            target=self._post_openclaw_video_event_request_when_unlocked,
+            name=f"openclaw-{event}-{playlist_id[:8]}",
+            kwargs={
+                "playlist_id": playlist_id,
+                "job_id": job_id,
+                "event": event,
+                "reason": reason,
+            },
+            daemon=True,
+        )
+        thread.start()
+
+    def _post_openclaw_video_event_request_when_unlocked(
+        self,
+        *,
+        playlist_id: str,
+        job_id: str,
+        event: str,
+        reason: str,
+    ) -> None:
+        if self.services is None:
+            return
+
+        lock_wait_deadline = time.monotonic() + max(float(self.settings.openclaw_lock_ttl_seconds or 0), 60.0) + 300.0
+        while time.monotonic() < lock_wait_deadline:
+            lock_status = get_openclaw_lock_status(self.settings.storage_root)
+            if not lock_status.get("active"):
+                break
+            time.sleep(10.0)
+        else:
+            self._record_openclaw_video_event_request(
+                playlist_id=playlist_id,
+                job_id=job_id,
+                event=event,
+                result={"ok": False, "skipped": True, "reason": "openclaw_lock_still_active"},
+            )
+            return
+
+        loop_state = get_auto_loop_control_state(storage_root=self.settings.storage_root)
+        if loop_state.get("stopped"):
+            self._record_openclaw_video_event_request(
+                playlist_id=playlist_id,
+                job_id=job_id,
+                event=event,
+                result={"ok": False, "skipped": True, "reason": "auto_loop_stopped", "loop_state": loop_state},
+            )
+            return
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, playlist_id)
+            if not playlist:
+                return
+            meta = dict(playlist.metadata_json or {})
+            job_key = f"openclaw_{event}_request_job_id"
+            if str(meta.get(job_key) or "") == job_id:
+                return
+
+            summary = build_openclaw_backlog_summary(db, self.services)
+            try:
+                result = asyncio.run(
+                    post_backlog_queue_request(
+                        db,
+                        self.services,
+                        reason=reason,
+                        backlog_summary=summary,
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001
+                result = {"ok": False, "error": str(exc)}
+
+            meta[f"openclaw_{event}_request"] = result
+            meta[f"openclaw_{event}_request_at"] = _utcnow().isoformat()
+            if result.get("ok"):
+                meta[job_key] = job_id
+                record_openclaw_backlog_scheduler_request(
+                    storage_root=self.settings.storage_root,
+                    result={
+                        "reason": reason,
+                        "playlist_id": playlist_id,
+                        "job_id": job_id,
+                        "slack": {key: result.get(key) for key in ("ok", "channel", "ts")},
+                    },
+                )
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
+
+    def _record_openclaw_video_event_request(
+        self,
+        *,
+        playlist_id: str,
+        job_id: str,
+        event: str,
+        result: dict,
+    ) -> None:
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, playlist_id)
+            if not playlist:
+                return
+            meta = dict(playlist.metadata_json or {})
+            meta[f"openclaw_{event}_request"] = result
+            meta[f"openclaw_{event}_request_at"] = _utcnow().isoformat()
+            meta[f"openclaw_{event}_request_job_id"] = job_id
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
 
     @staticmethod
     def _queue_auto_publish_job(db: Session, playlist: Playlist, *, note: str) -> Job | None:

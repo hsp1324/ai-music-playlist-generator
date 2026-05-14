@@ -32,7 +32,6 @@ def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> Tes
     os.environ["AIMP_STORAGE_ROOT"] = str(tmp_path / "storage")
     os.environ["AIMP_DATABASE_URL"] = f"sqlite:///{tmp_path / 'app.db'}"
     os.environ["AIMP_WORKER_AUTOSTART"] = "false"
-    os.environ.pop("AIMP_WORKER_CLAIM_VIDEO_JOBS", None)
     os.environ["AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE"] = "true" if cache_remote_audio else "false"
     get_settings.cache_clear()
     return TestClient(create_app())
@@ -42,12 +41,12 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_STORAGE_ROOT", None)
     os.environ.pop("AIMP_DATABASE_URL", None)
     os.environ.pop("AIMP_WORKER_AUTOSTART", None)
-    os.environ.pop("AIMP_WORKER_CLAIM_VIDEO_JOBS", None)
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH", None)
+    os.environ.pop("AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS", None)
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX", None)
     os.environ.pop("AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT", None)
@@ -63,8 +62,6 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_HOUR", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_MINUTE", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_MIN_LEAD_MINUTES", None)
-    os.environ.pop("AIMP_RENDER_WORKER_SHARED_TOKEN", None)
-    os.environ.pop("AIMP_RENDER_WORKER_STALE_SECONDS", None)
     get_settings.cache_clear()
 
 
@@ -208,12 +205,12 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert response.json()["ok"] is True
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
-        assert "OpenClaw Backlog Queue Planner Skill" in calls[0]["text"]
+        assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
         assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
         assert "/youtube/status의 channels 목록을 읽고" in calls[0]["text"]
         assert "현재 활성 채널별 unfinished release 수를 계산" in calls[0]["text"]
-        assert "video render job을 queue한 뒤에는 렌더 완료를 기다리지 말고" in calls[0]["text"]
+        assert "render-video는 VM 큐에 넣되 기다리지 마세요" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]
         with SessionLocal() as db:
@@ -282,7 +279,7 @@ def test_openclaw_backlog_scheduler_posts_when_channel_is_underfilled(tmp_path) 
         assert len(calls) == 1
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
-        assert "OpenClaw Backlog Queue Planner Skill" in calls[0]["text"]
+        assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
         assert "Soft Hour Radio: 0 unfinished" in calls[0]["text"]
         assert "MusicSun:" not in calls[0]["text"]
     finally:
@@ -318,6 +315,77 @@ def test_openclaw_backlog_scheduler_skips_when_lock_is_active(tmp_path) -> None:
         services.worker._maybe_request_openclaw_backlog()
 
         assert calls == []
+    finally:
+        clear_isolated_client_env()
+
+
+def test_video_render_event_posts_openclaw_request_after_lock_is_free(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS"] = "true"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [
+                {"id": "UC_SOFT", "title": "Soft Hour Radio"},
+                {"id": "UC_TOKYO", "title": "Tokyo Daydream Radio"},
+            ],
+        }
+        services.slack.post_plain_message = fake_post_plain_message
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Rendering Cafe Playlist",
+                status=PlaylistStatus.building,
+                target_duration_seconds=2400,
+                actual_duration_seconds=2400,
+                metadata_json={
+                    "workflow_state": "video_rendering",
+                    "youtube_channel_title": "Soft Hour Radio",
+                },
+            )
+            db.add(playlist)
+            db.flush()
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.running,
+                source="web:render-video",
+                playlist=playlist,
+                playlist_id=playlist.id,
+                payload_json={"playlist_id": playlist.id},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            playlist_id = playlist.id
+            job_id = job.id
+
+        services.worker._post_openclaw_video_event_request_when_unlocked(
+            playlist_id=playlist_id,
+            job_id=job_id,
+            event="video_render_started",
+            reason="video_render_started",
+        )
+
+        assert len(calls) == 1
+        assert calls[0]["channel"] == "C0AVBUYP150"
+        assert "scheduler_reason: video_render_started" in calls[0]["text"]
+        assert "video_rendering release는 VM 앱 background worker가 처리 중" in calls[0]["text"]
+        assert "Soft Hour Radio: 1 unfinished" in calls[0]["text"]
+        assert "Tokyo Daydream Radio: 0 unfinished" in calls[0]["text"]
+        with SessionLocal() as db:
+            updated = db.get(Playlist, playlist_id)
+            assert updated.metadata_json["openclaw_video_render_started_request_job_id"] == job_id
+            assert updated.metadata_json["openclaw_video_render_started_request"]["ok"] is True
     finally:
         clear_isolated_client_env()
 
@@ -2084,222 +2152,6 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_external_render_worker_can_claim_and_complete_video_render(tmp_path) -> None:
-    try:
-        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "worker-secret"
-        client = create_isolated_client(tmp_path)
-        services = client.app.state.services
-
-        def fake_build_audio(tracks, output_path):
-            output_path.write_bytes(b"fake-mp3")
-            return output_path
-
-        services.playlist_builder.build_audio = fake_build_audio
-
-        workspace_response = client.post(
-            "/api/playlists/workspaces",
-            json={
-                "title": "External Render Workspace",
-                "target_duration_seconds": 60,
-            },
-        )
-        workspace_id = workspace_response.json()["id"]
-
-        local_audio = tmp_path / "external-source.mp3"
-        local_audio.write_bytes(b"fake source")
-        track_response = client.post(
-            "/api/tracks",
-            json={
-                "title": "External Track",
-                "prompt": "distributed render test",
-                "duration_seconds": 60,
-                "audio_path": str(local_audio),
-                "metadata": {"source": "test"},
-            },
-        )
-        track_id = track_response.json()["id"]
-        approve_response = client.post(
-            f"/api/tracks/{track_id}/decisions",
-            json={
-                "decision": "approve",
-                "source": "human",
-                "actor": "test-suite",
-                "playlist_id": workspace_id,
-            },
-        )
-        assert approve_response.status_code == 200
-        render_workspace_audio(client, workspace_id)
-
-        cover_response = client.post(
-            f"/api/playlists/{workspace_id}/cover/upload",
-            data={"actor": "test-suite"},
-            files={"cover_file": ("cover.png", b"fake-png", "image/png")},
-        )
-        assert cover_response.status_code == 200
-        upload_test_loop_video(client, workspace_id)
-        approve_cover_response = client.post(
-            f"/api/playlists/{workspace_id}/cover/approve",
-            json={"actor": "test-suite", "approved": True},
-        )
-        assert approve_cover_response.status_code == 200
-        with SessionLocal() as db:
-            playlist = db.get(Playlist, workspace_id)
-            meta = dict(playlist.metadata_json or {})
-            meta["youtube_title"] = "[playlist] Preserve External Metadata"
-            meta["youtube_description"] = "Keep this human-approved copy.\n\n00:00 External Track\n\n#KeepMetadata"
-            meta["youtube_tags"] = ["KeepMetadata"]
-            meta["youtube_default_language"] = "en"
-            meta["youtube_localizations"] = {
-                "en": {
-                    "title": "[playlist] Preserve External Metadata",
-                    "description": "Keep this human-approved copy.\n\n00:00 External Track\n\n#KeepMetadata",
-                }
-            }
-            playlist.metadata_json = meta
-            db.add(playlist)
-            db.commit()
-
-        render_response = client.post(
-            f"/api/playlists/{workspace_id}/video/render",
-            json={"actor": "test-suite"},
-        )
-        assert render_response.status_code == 200
-        assert render_response.json()["workflow_state"] == "video_queued"
-
-        forbidden_claim = client.post(
-            "/api/render-worker/claim",
-            json={"worker_id": "blocked-worker"},
-        )
-        assert forbidden_claim.status_code == 403
-
-        claim_response = client.post(
-            "/api/render-worker/claim",
-            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
-            json={"worker_id": "worker-a1", "capabilities": ["ffmpeg"]},
-        )
-        assert claim_response.status_code == 200, claim_response.text
-        claim = claim_response.json()
-        assert claim["has_job"] is True
-        assert claim["playlist_id"] == workspace_id
-        assert claim["assets"]["audio"]["filename"].endswith(".mp3")
-        assert claim["assets"]["loop_video"]["filename"].endswith(".mp4")
-
-        heartbeat_response = client.post(
-            f"/api/render-worker/jobs/{claim['job_id']}/heartbeat",
-            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
-            json={
-                "lease_token": claim["lease_token"],
-                "worker_id": "worker-a1",
-                "progress": {"percent": 12.5, "processed_seconds": 7},
-            },
-        )
-        assert heartbeat_response.status_code == 200
-
-        asset_response = client.get(
-            f"/api{claim['assets']['loop_video']['path']}",
-            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
-            params={"lease_token": claim["lease_token"]},
-        )
-        assert asset_response.status_code == 200
-        assert asset_response.content == b"fake-loop-mp4"
-
-        complete_response = client.post(
-            f"/api/render-worker/jobs/{claim['job_id']}/complete",
-            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
-            data={"lease_token": claim["lease_token"], "worker_id": "worker-a1"},
-            files={"output_file": ("rendered.mp4", b"fake-rendered-mp4", "video/mp4")},
-        )
-        assert complete_response.status_code == 200, complete_response.text
-        complete_payload = complete_response.json()
-        assert complete_payload["workflow_state"] == "metadata_review"
-        assert complete_payload["output_video_path"].endswith(".mp4")
-
-        with SessionLocal() as db:
-            job = db.get(Job, claim["job_id"])
-            playlist = db.get(Playlist, workspace_id)
-            assert job.status == JobStatus.succeeded
-            assert job.result_json["external_render_worker_id"] == "worker-a1"
-            assert playlist.output_video_path.endswith(".mp4")
-            assert Path(playlist.output_video_path).read_bytes() == b"fake-rendered-mp4"
-            assert playlist.metadata_json["workflow_state"] == "metadata_review"
-            assert playlist.metadata_json["youtube_title"] == "[playlist] Preserve External Metadata"
-            assert playlist.metadata_json["youtube_metadata_preserved_after_video_render"] is True
-            assert playlist.metadata_json["video_render_progress"]["percent"] == 100.0
-    finally:
-        clear_isolated_client_env()
-
-
-def test_external_render_worker_stale_claim_is_requeued(tmp_path) -> None:
-    try:
-        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "worker-secret"
-        client = create_isolated_client(tmp_path)
-
-        audio_path = tmp_path / "ready.mp3"
-        audio_path.write_bytes(b"fake-mp3")
-        cover_path = tmp_path / "cover.png"
-        cover_path.write_bytes(b"fake-cover")
-        loop_path = tmp_path / "loop.mp4"
-        loop_path.write_bytes(b"fake-loop")
-        old_heartbeat = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
-
-        with SessionLocal() as db:
-            playlist = Playlist(
-                title="Stale External Render",
-                status=PlaylistStatus.building,
-                target_duration_seconds=60,
-                actual_duration_seconds=60,
-                output_audio_path=str(audio_path),
-                metadata_json={
-                    "cover_image_path": str(cover_path),
-                    "cover_approved": True,
-                    "loop_video_path": str(loop_path),
-                    "loop_video_smooth": True,
-                },
-            )
-            db.add(playlist)
-            db.flush()
-            job = Job(
-                type=JobType.build_video,
-                status=JobStatus.running,
-                source="external-render-worker:dead-worker",
-                external_id="dead-worker",
-                playlist=playlist,
-                playlist_id=playlist.id,
-                payload_json={"playlist_id": playlist.id},
-                result_json={
-                    "external_render_worker_id": "dead-worker",
-                    "external_render_lease_token": "old-lease",
-                    "external_render_heartbeat_at": old_heartbeat,
-                },
-                started_at=datetime.now(timezone.utc) - timedelta(days=2),
-            )
-            db.add(job)
-            db.commit()
-            job_id = job.id
-            playlist_id = playlist.id
-
-        claim_response = client.post(
-            "/api/render-worker/claim",
-            headers={"X-AIMP-Render-Worker-Token": "worker-secret"},
-            json={"worker_id": "new-worker"},
-        )
-        assert claim_response.status_code == 200, claim_response.text
-        claim = claim_response.json()
-        assert claim["has_job"] is True
-        assert claim["job_id"] == job_id
-        assert claim["playlist_id"] == playlist_id
-        assert claim["lease_token"] != "old-lease"
-
-        with SessionLocal() as db:
-            job = db.get(Job, job_id)
-            assert job.status == JobStatus.running
-            assert job.external_id == "new-worker"
-            assert job.result_json["external_render_stale_worker_id"] == "dead-worker"
-            assert job.result_json["external_render_worker_id"] == "new-worker"
-    finally:
-        clear_isolated_client_env()
-
-
 def test_background_worker_marks_interrupted_upload_for_retry(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -2345,48 +2197,6 @@ def test_background_worker_marks_interrupted_upload_for_retry(tmp_path) -> None:
             assert playlist.status == PlaylistStatus.ready
             assert playlist.metadata_json["workflow_state"] == "youtube_upload_failed"
             assert playlist.metadata_json["publish_approved"] is False
-    finally:
-        clear_isolated_client_env()
-
-
-def test_background_worker_can_leave_video_jobs_for_external_workers(tmp_path) -> None:
-    try:
-        client = create_isolated_client(tmp_path)
-        client.app.state.settings.worker_claim_video_jobs = False
-
-        with SessionLocal() as db:
-            playlist = Playlist(title="External Only Render", status=PlaylistStatus.building)
-            db.add(playlist)
-            db.flush()
-            video_job = Job(
-                type=JobType.build_video,
-                status=JobStatus.queued,
-                source="web:render-video",
-                playlist=playlist,
-                playlist_id=playlist.id,
-                payload_json={"playlist_id": playlist.id},
-                result_json={},
-            )
-            publish_job = Job(
-                type=JobType.upload_youtube,
-                status=JobStatus.queued,
-                source="web",
-                playlist=playlist,
-                playlist_id=playlist.id,
-                payload_json={"playlist_id": playlist.id},
-                result_json={},
-            )
-            db.add_all([video_job, publish_job])
-            db.commit()
-            video_job_id = video_job.id
-            publish_job_id = publish_job.id
-
-        claimed_id = client.app.state.services.worker._claim_next_job_id()
-
-        assert claimed_id == publish_job_id
-        with SessionLocal() as db:
-            assert db.get(Job, video_job_id).status == JobStatus.queued
-            assert db.get(Job, publish_job_id).status == JobStatus.running
     finally:
         clear_isolated_client_env()
 

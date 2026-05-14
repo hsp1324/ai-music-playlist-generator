@@ -28,8 +28,6 @@ class Settings(BaseSettings):
     ] = "bars"
     playlist_target_minutes: int = 40
     crossfade_seconds: float = 1.5
-    render_worker_shared_token: str = ""
-    render_worker_stale_seconds: int = 86400
 
     slack_signing_secret: str = ""
     slack_bot_token: str = ""
@@ -96,6 +94,7 @@ class Settings(BaseSettings):
     openclaw_slack_channel_id: str = ""
     openclaw_auto_request_next_on_publish: bool = False
     openclaw_auto_request_next_max_uploads: int = 0
+    openclaw_request_next_on_video_render_events: bool = False
     openclaw_slack_trigger_prefix: str = "OPENCLAW_RUN:"
     openclaw_next_playlist_prompt: str = ""
     openclaw_shared_token: str = ""
@@ -118,7 +117,6 @@ class Settings(BaseSettings):
 
     worker_autostart: bool = True
     worker_poll_interval_seconds: float = 2.0
-    worker_claim_video_jobs: bool = True
 
     @property
     def tracks_dir(self) -> Path:

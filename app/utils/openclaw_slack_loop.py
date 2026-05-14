@@ -171,6 +171,20 @@ def handle_auto_loop_control_message(
     return None
 
 
+def get_auto_loop_control_state(*, storage_root: Path) -> dict[str, Any]:
+    """Return the persisted human stop/resume state for OpenClaw automation."""
+
+    state = _read_auto_loop_state(_auto_loop_state_path(storage_root))
+    return {
+        "stopped": bool(state.get("stopped")),
+        "stop_reason": state.get("stop_reason"),
+        "stop_requested_at": state.get("stop_requested_at"),
+        "stop_requested_by": state.get("stop_requested_by"),
+        "resume_requested_at": state.get("resume_requested_at"),
+        "state_path": str(_auto_loop_state_path(storage_root)),
+    }
+
+
 def record_auto_loop_upload(
     *,
     storage_root: Path,
@@ -272,8 +286,8 @@ def build_next_playlist_request_message(
 
     previous_context = [
         "OpenClaw Next Release Publisher Skill을 실행해줘.",
-        "목표: MusicSun을 제외한 연결 채널 중 다음 채널을 고르고, release 하나를 끝까지 만들어 VM 앱에서 렌더/metadata/publish까지 완료해줘.",
-        "영상 렌더링은 Oracle VM의 AI Music 앱 background worker가 처리합니다. 외부 laptop render worker를 쓰지 말고, video render를 queue한 뒤 완료될 때까지 기다려 metadata와 publish까지 진행하세요.",
+        "목표: MusicSun을 제외한 연결 채널 중 다음 채널을 고르고, VM 렌더와 OpenClaw 제작이 겹쳐 돌도록 backlog를 한 단계만 앞서 준비해줘.",
+        "영상 렌더링은 Oracle VM의 AI Music 앱 background worker만 처리합니다.",
         "",
         "이전 자동화 완료 정보:",
         f"- release: {playlist.title}",
@@ -300,10 +314,12 @@ def build_next_playlist_request_message(
             "- 매번 /youtube/status의 channels 목록을 읽고, MusicSun만 수동 전용으로 제외하고 나머지 연결 채널을 현재 활성 roster로 사용해줘. 새 채널은 기본적으로 rotation에 포함해줘.",
             "- 현재 활성 채널별 unfinished release 수를 계산하고, 이미 진행 중인 release가 있는 채널은 새 release를 만들지 마세요.",
             "- metadata_review, publish_ready, ready_for_youtube_auth, youtube_upload_failed처럼 마무리 가능한 release가 있으면 새 release를 만들기 전에 먼저 finish/publish/retry 하세요.",
-            "- video_rendering 또는 video_render_queued 상태가 있으면 같은 release를 계속 모니터링하고 완료 후 metadata/publish까지 마무리하세요. 다른 채널을 새로 만들지 마세요.",
+            "- metadata_review/publish_ready release가 있으면 먼저 metadata/publish를 마무리하세요.",
+            "- video_rendering release가 있으면 VM이 렌더 중인 것입니다. 그동안 다른 채널에 unfinished release가 1개 미만이면 다음 release의 audio/cover/thumbnail/8초 loop video/audio render/video render queue까지만 준비하고 lock을 풀어주세요.",
+            "- 새 release에서 render-video는 VM 큐에 넣되 기다리지 마세요. VM이 렌더를 끝내면 앱이 다시 Slack으로 finish 요청을 보냅니다.",
             "- 새 release가 필요하면 가장 오래 비어 있거나 최근 업로드가 가장 오래된 채널을 선택하되, 기존에 만들지 않았던 새 컨셉을 선택해줘.",
             "- channel-profile이 custom-channel 문서를 반환하면 그 custom 문서를 읽고, 채널명/기존 업로드/사람 요청을 바탕으로 채널 컨셉을 추론해 진행해줘.",
-            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, audio render, video render, metadata, private/scheduled publish까지 진행해줘.",
+            "- 선택한 채널/컨셉으로 audio 생성, cover, thumbnail, 8s loop video, audio render, video render queue까지 진행해줘. 새 release의 video render를 기다리지 말고 publish도 하지 마세요.",
             "- 이미 video render가 끝난 release는 metadata를 작성/승인하고 private/scheduled publish까지 완료해줘.",
             "- YouTube 전화번호/계정 인증 제한 때문에 14분 이상 긴 영상 업로드가 막히면, 렌더된 release는 그대로 남기고 업로드를 나중으로 미룬 뒤 다음 playlist 작업으로 넘어가줘.",
             "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
@@ -326,7 +342,7 @@ def build_backlog_queue_request_message(
     channel_payload = summary.get("channels") if isinstance(summary, dict) else {}
     lines = [
         "OpenClaw Next Release Publisher Skill을 실행해줘.",
-        "목표: MusicSun을 제외한 연결 채널 중 다음 채널을 고르고, release 하나를 끝까지 만들어 VM 앱에서 렌더/metadata/publish까지 완료해줘.",
+        "목표: MusicSun을 제외한 연결 채널 중 다음 채널을 고르고, VM 렌더와 OpenClaw 제작이 겹쳐 돌도록 backlog를 한 단계만 앞서 준비해줘.",
         f"scheduler_reason: {reason}",
         "",
         "작업 기준:",
@@ -340,7 +356,9 @@ def build_backlog_queue_request_message(
         "- 작업 시작 시 scripts/openclaw-release openclaw-lock-start를 호출하고, 작업 중에는 scripts/openclaw-release openclaw-lock-heartbeat를 1-2분마다 호출해줘.",
         "- 작업 완료/중단 시 scripts/openclaw-release openclaw-lock-finish를 호출해줘.",
         "- 이미 metadata_review/publish_ready release가 있으면 새 release를 만들기 전에 먼저 metadata 작성/승인/publish를 마무리해줘.",
-        "- video_rendering 또는 video_queued 상태는 VM 앱 background worker가 처리합니다. 같은 release를 모니터링하고 완료되면 metadata/publish까지 마무리하세요.",
+        "- video_rendering release는 VM 앱 background worker가 처리 중입니다. 그동안 다른 채널의 unfinished release가 1개 미만이면 다음 release를 준비할 수 있습니다.",
+        "- 새 release는 audio/cover/thumbnail/8초 loop video/audio render/video render queue까지만 진행하고, render-video는 기다리지 말고 lock을 풀어주세요.",
+        "- VM video render가 끝난 release는 앱이 다시 Slack으로 요청합니다. 그때 metadata/publish를 마무리하세요.",
         "- 채널별 unfinished release가 있으면 그 채널에는 새 release를 만들지 마세요.",
         "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
     ]

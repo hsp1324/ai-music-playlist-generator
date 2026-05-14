@@ -89,7 +89,7 @@ Audio duration and integrity:
 - Treat the command JSON as the upload receipt. A successful upload includes `ok: true`, the uploaded `track.id`, `track.status`, and the probed `duration_seconds`. If `duration_seconds` is `0`, missing, or far from the local file duration, fix and re-upload before continuing.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default.
 - After audio render, the app stores `rendered_timeline` from actual ffprobe source-file durations. Metadata and OpenClaw `metadata-context` should use that rendered snapshot instead of recalculating timestamps from rounded track durations.
-- If a playlist was built from Suno two-output batches and paired variants sit next to each other, pass `--randomize-order` to `auto-publish-playlist` or call `/render-audio` with `random: true`. The app persists the shuffled order before rendering, so final order and metadata timestamps still match the rendered audio.
+- If a playlist was built from Suno two-output batches and paired variants sit next to each other, pass `--randomize-order` to `scripts/openclaw-release render-audio` or call `/render-audio` with `random: true`. The app persists the shuffled order before rendering, so final order and metadata timestamps still match the rendered audio.
 
 ## Upload One New Single Candidate
 
@@ -141,7 +141,7 @@ The JSON result should include:
 
 Only use `--pending-review` if the human explicitly asks to review playlist tracks one by one.
 
-If OpenClaw uploads many playlist files in one automation run, prefer `auto-publish-playlist` with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
+If OpenClaw uploads many playlist files in one automation run, call `upload-audio` once per file with one `--title` per `--audio` so the final YouTube tracklist already has natural titles.
 Also pass one `--lyrics` or `--lyrics-file` per `--audio` when lyrics or instrumental metatag files are available. For BGM/background/instrumental tracks, prefer the exact bracket-only Suno instrumental metatag file from `docs/suno-v55-instrumental-format.md` over empty lyrics. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop releases, lyrics are expected by default and should be uploaded for every track unless the human explicitly requested instrumental/BGM/lofi/no vocals. Pass one shared `--style` or one `--style` per `--audio` whenever Suno style/settings are known.
 For pop-family releases, do not proceed without lyrics. If Suno returns a vocal song but no lyric text is visible, write/capture the final intended lyrics before uploading. If the human explicitly wants a J-pop-feeling instrumental, include BGM/instrumental/no-vocal wording in the prompt/title/tags so the helper treats empty lyrics as intentional.
 For vocal playlist releases, write a different lyric concept for every track before generation. Do not reuse the same chorus hook, verse structure, or only swap a few words between songs. Each track should have a distinct emotional angle and memorable phrase.
@@ -357,7 +357,7 @@ scripts/openclaw-release approve-metadata \
 
 ## YouTube Channel Routing
 
-For automatic playlist publishing, `scripts/openclaw-release auto-publish-playlist` chooses the YouTube channel from the release concept when `--youtube-channel-title` is omitted.
+For automatic playlist publishing, create the release with the chosen `--youtube-channel-title` so backlog accounting and final publish use the intended channel.
 
 - Use `Soft Hour Radio` for default background/cafe/sleep/study/chill playlists.
 - Use `Tokyo Daydream Radio` for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city pop, dance-pop, synth-pop, pop-rock, anime-pop, vaporwave, 도쿄, 시티팝, 제이팝, 東京, Jポップ, or シティポップ concepts.
@@ -412,7 +412,7 @@ Operational rules for OpenClaw:
 - If only a remote Suno/CDN URL is available, submit it as `audio_url` or `audio_path`; the app will download it into local storage before creating the track.
 - Do not leave release candidates pointing directly at `cdn1.suno.ai` unless the local cache step fails and the failure is reported to the human.
 - Existing remote-only tracks should be backfilled to local storage before serious mobile review.
-- Upload all intended playlist tracks before starting audio render, video render, metadata approval, or YouTube publish. Reaching the target duration does not auto-start audio render anymore; OpenClaw must explicitly call the render step only after the upload set is complete. In normal automation, call video render with `--wait` and let the Oracle VM app background worker finish rendering before metadata approval and publish. If late tracks are added after rendering starts, the app treats the existing render as stale and requires or queues a fresh render so the YouTube timeline cannot become longer than the actual video.
+- Upload all intended playlist tracks before starting audio render, video render, metadata approval, or YouTube publish. Reaching the target duration does not auto-start audio render anymore; OpenClaw must explicitly call the render step only after the upload set is complete. In normal automation, call video render without `--wait`, let the Oracle VM app background worker render in the background, and stop after the render is queued. The app will ask OpenClaw again when the rendered video is ready for metadata approval and publish. If late tracks are added after rendering starts, the app treats the existing render as stale and requires or queues a fresh render so the YouTube timeline cannot become longer than the actual video.
 - For playlist releases, audio render can randomize order with `random: true`. Use this when Suno generated similar A/B pairs and both were uploaded, so paired tracks do not remain adjacent. Do not manually shuffle timestamps; metadata must use `metadata-context` after render.
 
 ## Upload To Existing Release
@@ -527,12 +527,12 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 ## Safety Rules
 
 - Do not call `Approve Publish` automatically unless the human explicitly asks for full publishing.
-- Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release auto-publish-single`, `scripts/openclaw-release auto-publish-playlist`, or the app's local `/approve-publish` API only. The app performs the real YouTube upload through the YouTube Data API.
-- Do not use an existing `--release-id` that already has `youtube_video_id` for a normal new publish. Create a new release instead. `auto-publish-playlist` and `auto-publish-single` reject accidental re-uploads unless `--allow-reupload` is passed, and that flag should be used only when the human explicitly asks to upload the same release again.
+- Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release publish-release` or the app's local `/approve-publish` API for playlist finish passes. The app performs the real YouTube upload through the YouTube Data API.
+- Do not use an existing `--release-id` that already has `youtube_video_id` for a normal new publish. Create a new release instead. Re-upload escape hatches should be used only when the human explicitly asks to upload the same release again.
 - YouTube Studio is only for human final review after the API upload, such as watching the result, confirming the scheduled public time, reviewing automatic captions, or manual fixes.
 - Do not try to turn on automatic captions through browser automation. The app does not upload caption tracks or toggle caption settings. For vocal releases, API upload can send the inferred `snippet.defaultAudioLanguage`; YouTube may generate automatic captions later. For BGM/instrumental/no-vocal releases, leave captions/audio language alone unless the human explicitly asks for manual captions.
 - Do not open Suno or generate audio before creating/selecting the app release workspace. Fresh work starts with `scripts/openclaw-release create-release`; continuing work starts with `scripts/openclaw-release list-releases` and `--release-id`.
-- Do not upload to YouTube automatically unless using `auto-publish-single` or `auto-publish-playlist` after explicit human instruction.
+- Do not upload to YouTube automatically unless running a finisher pass for a rendered playlist release or using `auto-publish-single` after explicit human instruction.
 - If cover art is ready with the audio, upload it in the same command with `--cover`; otherwise omit `--cover` and let the human add/regenerate cover later.
 - If lyrics, meaningful song-content notes, or an instrumental Suno metatag file are available, upload them in the same command with `--lyrics` or `--lyrics-file`. Use an empty value only when lyrics/content are truly unknown.
 - For BGM/background/lofi/study/sleep/cafe singles and playlists, instrumental/no-vocal is the default, but an empty lyrics/custom-lyrics field is not preferred. Use `docs/suno-v55-instrumental-format.md`: enable Instrumental when available, write only bracketed metatag lines in Suno's lyrics/custom-lyrics field, and upload that exact file. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop singles and playlists, do not leave lyrics empty by default. Generate/capture original lyrics and upload them; only use empty lyrics when the human explicitly asked for instrumental/no-vocal music or when Suno did not provide lyrics and OpenClaw reports that limitation.
