@@ -562,7 +562,7 @@ curl -X POST http://127.0.0.1:8000/api/playlists/build \
   -H 'content-type: application/json' \
   -d '{
     "title": "Night Drive Vol. 1",
-    "target_duration_seconds": 3600,
+    "target_duration_seconds": 2400,
     "execute_render": false
   }'
 ```

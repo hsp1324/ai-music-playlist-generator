@@ -29,7 +29,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - For Playlist Releases on every channel, every YouTube title in every language must start exactly with `[playlist]`. Single Releases must not use this prefix.
 - After `[playlist]`, do not repeat playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; use music/mix/radio wording instead.
 - Across every channel, the title should be broad, searchable, and immediately understandable to a normal viewer. Lead with the channel's genre identity and a real listening reason, not a narrow visual scene, prop, exact location, or internal workspace concept. The cover/video concept can be specific, but the title and first description paragraph should be more public and useful.
-- For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Choose the situation from the actual concept and sound; do not repeat `study`, `work`, `walk`, or `rest` as defaults. Good Korean BGM patterns when they genuinely fit: `공부할 때 듣기 좋은 숲길 BGM 1시간`, `산책·드라이브할 때 듣기 좋은 해변 BGM 1시간`, `작업할 때 틀어놓기 좋은 카페 피아노 1시간`.
+- For playlist/BGM titles, include a clear listening situation in the title itself, not only in the description. Choose the situation from the actual concept and sound; do not repeat `study`, `work`, `walk`, or `rest` as defaults. Normal automated playlists target 40+ minutes, so do not write `1시간` unless the rendered duration is actually close to or above one hour. Good Korean BGM patterns when they genuinely fit: `공부할 때 듣기 좋은 숲길 BGM 40분`, `산책·드라이브할 때 듣기 좋은 해변 BGM 40분`, `작업할 때 틀어놓기 좋은 카페 피아노 40분`.
 - Title and description use cases must match the actual music energy, arrangement, lyrics, and channel concept. Do not add generic `study`, `focus`, `work`, or `night walk` wording just because it is common SEO text. Use `walk` / `산책` only when walking, commuting on foot, street movement, beach/forest walks, crosswalks, or similar movement is central. If the tracklist feels high-energy, club-like, dance-pop, rooftop, bass-heavy, arcade/game-like, friend-hangout, or workout-ready, use cases should be things like gaming, arcade, friends, night out, getting ready, workout, running, party warmup, driving, confidence, weekend energy, or nightlife instead of concentration/study/walk.
 - For vocal releases, the title and description are packaging, not lyric instructions. Do not judge or rewrite lyrics based on whether they mention the title's use case. The lyrics only need to be good songs that match the melody, beat, vocal delivery, hook, and emotion.
 - Description can be multiline; write it to a temporary UTF-8 text file and pass `--description-file`.
@@ -176,7 +176,7 @@ Approve the metadata:
 ```bash
 scripts/openclaw-release approve-metadata \
   --release-id RELEASE_ID \
-  --title "[playlist] 조용한 카페 피아노 솔로 1시간 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악" \
+  --title "[playlist] 조용한 카페 피아노 솔로 40분 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악" \
   --description-file /tmp/youtube-description.txt \
   --tags "Piano,CafePiano,StudyMusic,WorkMusic,RelaxingMusic,SoloPiano"
 ```
