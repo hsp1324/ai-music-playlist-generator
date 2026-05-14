@@ -173,14 +173,55 @@ def _scheduled_publish_values_from_meta(meta: dict) -> list[datetime]:
     return values
 
 
+def _playlist_matches_youtube_channel(
+    playlist: Playlist,
+    services: ServiceRegistry,
+    *,
+    youtube_channel_id: str | None,
+    youtube_channel_title: str | None = None,
+) -> bool:
+    meta = _playlist_meta(playlist)
+    clean_channel_id = str(youtube_channel_id or "").strip()
+    clean_channel_title = _canonical_youtube_channel_title(youtube_channel_title)
+
+    if clean_channel_id:
+        playlist_channel_id = str(meta.get("youtube_channel_id") or "").strip()
+        if playlist_channel_id:
+            return playlist_channel_id == clean_channel_id
+
+        if clean_channel_title is None:
+            clean_channel_title = _canonical_youtube_channel_title(
+                _resolve_youtube_channel_title(services, clean_channel_id)
+            )
+
+    if clean_channel_title:
+        playlist_titles = {
+            _canonical_youtube_channel_title(meta.get("youtube_channel_title")),
+            _canonical_youtube_channel_title(meta.get("target_youtube_channel_title")),
+        }
+        return clean_channel_title in playlist_titles
+
+    return False
+
+
 def next_youtube_scheduled_publish_at(
     db: Session,
     services: ServiceRegistry,
     *,
+    youtube_channel_id: str | None = None,
+    youtube_channel_title: str | None = None,
     now: datetime | None = None,
 ) -> datetime | None:
     if not services.settings.youtube_schedule_public_enabled:
         return None
+
+    if not str(youtube_channel_id or "").strip() and not str(youtube_channel_title or "").strip():
+        try:
+            youtube_status = services.youtube.get_status()
+            youtube_channel_id = youtube_status.get("selected_channel_id")
+            youtube_channel_title = youtube_status.get("selected_channel_title")
+        except Exception:  # noqa: BLE001
+            pass
 
     schedule_tz = _youtube_schedule_timezone(services)
     hour = min(max(int(services.settings.youtube_schedule_hour), 0), 23)
@@ -194,6 +235,13 @@ def next_youtube_scheduled_publish_at(
 
     occupied_local_dates = set()
     for playlist in db.scalars(select(Playlist)).all():
+        if not _playlist_matches_youtube_channel(
+            playlist,
+            services,
+            youtube_channel_id=youtube_channel_id,
+            youtube_channel_title=youtube_channel_title,
+        ):
+            continue
         meta = _playlist_meta(playlist)
         for scheduled_at in _scheduled_publish_values_from_meta(meta):
             if scheduled_at >= now_utc - timedelta(days=1):

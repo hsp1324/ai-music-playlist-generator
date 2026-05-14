@@ -3345,7 +3345,7 @@ def test_youtube_upload_can_schedule_public_release(tmp_path, monkeypatch) -> No
     assert result.response["scheduled_publish_at"] == "2026-05-12T22:00:00+00:00"
 
 
-def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots(tmp_path) -> None:
+def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channel(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -3359,16 +3359,32 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots(tmp_path) 
             db.add(
                 Playlist(
                     title="Scheduled 1",
-                    metadata_json={"youtube_scheduled_publish_at": "2026-05-11T22:00:00+00:00"},
+                    metadata_json={
+                        "youtube_channel_id": "UC-A",
+                        "youtube_channel_title": "Channel A",
+                        "youtube_scheduled_publish_at": "2026-05-11T22:00:00+00:00",
+                    },
                 )
             )
             db.add(
                 Playlist(
                     title="Scheduled 2",
                     metadata_json={
+                        "youtube_channel_id": "UC-A",
+                        "youtube_channel_title": "Channel A",
                         "youtube_response": {
                             "status": {"publishAt": "2026-05-12T22:00:00Z"},
                         },
+                    },
+                )
+            )
+            db.add(
+                Playlist(
+                    title="Other Channel Scheduled",
+                    metadata_json={
+                        "youtube_channel_id": "UC-B",
+                        "youtube_channel_title": "Channel B",
+                        "youtube_scheduled_publish_at": "2026-05-13T22:00:00+00:00",
                     },
                 )
             )
@@ -3377,10 +3393,20 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots(tmp_path) 
             scheduled = next_youtube_scheduled_publish_at(
                 db,
                 services,
+                youtube_channel_id="UC-A",
+                youtube_channel_title="Channel A",
+                now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
+            )
+            other_channel_scheduled = next_youtube_scheduled_publish_at(
+                db,
+                services,
+                youtube_channel_id="UC-B",
+                youtube_channel_title="Channel B",
                 now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
             )
 
         assert scheduled == datetime(2026, 5, 13, 22, 0, tzinfo=timezone.utc)
+        assert other_channel_scheduled == datetime(2026, 5, 11, 22, 0, tzinfo=timezone.utc)
     finally:
         clear_isolated_client_env()
 

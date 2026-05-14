@@ -912,7 +912,12 @@ class BackgroundJobWorker:
                     )
 
                     thumbnail_path = str(meta.get("youtube_thumbnail_path") or "").strip() or cover_image_path
-                    scheduled_publish_at = next_youtube_scheduled_publish_at(db, self.services)
+                    scheduled_publish_at = next_youtube_scheduled_publish_at(
+                        db,
+                        self.services,
+                        youtube_channel_id=youtube_channel_id,
+                        youtube_channel_title=meta.get("youtube_channel_title"),
+                    )
                     result = self.services.youtube.upload_playlist_video(
                         playlist,
                         title=title,
