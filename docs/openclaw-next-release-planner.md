@@ -1,8 +1,8 @@
 # OpenClaw Next Release Planner Skill
 
-Use this skill when the AI Music web app asks OpenClaw to make the next 40+ minute playlist after a private YouTube publish completes.
+Use this skill when the AI Music web app asks OpenClaw to choose the next 40+ minute playlist concept for the backlog queue.
 
-This is the first step of the continuous automation loop. It chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the automatic private playlist publisher in [openclaw-skills.md](openclaw-skills.md).
+This is the channel/concept selection step inside the continuous automation loop. For queue sizing and producer/finisher behavior, read [openclaw-backlog-queue.md](openclaw-backlog-queue.md) first. This planner chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the production/publish instructions in [openclaw-skills.md](openclaw-skills.md).
 
 ## Slack Trigger Contract
 
@@ -16,11 +16,11 @@ When the OpenClaw Slack listener receives a channel message that starts with `OP
 
 For safety, ignore ordinary channel messages that do not start with `OPENCLAW_RUN:` unless the human explicitly addresses OpenClaw through the listener's normal manual command path. The prefix is what separates web-app automation from casual Slack conversation.
 
-The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS`. `0` means unlimited. If the cap is reached after a successful YouTube upload, or if the human posts a stop command in the configured OpenClaw Slack channel, the app intentionally stops sending the next `OPENCLAW_RUN:` message. Do not treat silence after a completed publish as an error unless the human asks.
+The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS`. `0` means unlimited. If the cap is reached after a successful YouTube upload, or if the human posts a stop command in the configured OpenClaw Slack channel, the app intentionally stops sending `OPENCLAW_RUN:` messages. Do not treat silence after a completed publish as an error unless the human asks.
 
 ## Goal
 
-Choose the next channel and a fresh 40+ minute playlist concept that fits that channel, avoids recent repetition, and can be privately published end-to-end.
+Choose the next channel and a fresh 40+ minute playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely.
 
 The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. `MusicSun` is manual-only and is excluded from automatic rotation. Current known active channels include:
 
@@ -77,15 +77,16 @@ curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
 
 Treat `list-releases` as the app's known YouTube upload catalog. It contains release titles, channel titles, YouTube ids, durations, and recent update times. If the human says there are relevant YouTube uploads outside this app, report that limitation before claiming a concept is non-duplicated.
 
-## Rotation Rules
+## Backlog-Aware Rotation Rules
 
 1. Inspect recent Playlist Releases from `scripts/openclaw-release list-releases`.
-2. Prefer rotating active channels instead of using the same channel repeatedly.
-3. Choose the active channel with the oldest recent published playlist unless the human explicitly asks for a channel.
-4. Do not pick the same channel twice in a row unless another channel is blocked, not connected, unavailable, or explicitly requested.
-5. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
-6. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. `MusicSun` remains excluded because it is the only manual-only channel. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
-7. Within the selected channel, choose a fresh concept with controlled randomness across the channel's concept lanes after checking recent releases. Do not cycle through a fixed template list in the same order.
+2. Apply `docs/openclaw-backlog-queue.md` first: finish ready releases, then fill channels with backlog below target.
+3. Prefer the active channel with backlog `0`; if none exist, use backlog `1`; never create a new release for a channel with backlog `2` or more.
+4. Within the eligible channels, prefer the channel with the oldest recent published playlist unless the human explicitly asks for a channel.
+5. Do not pick the same channel twice in a row unless other channels are blocked, already at backlog max, not connected, unavailable, or explicitly requested.
+6. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
+7. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. `MusicSun` remains excluded because it is the only manual-only channel. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
+8. Within the selected channel, choose a fresh concept with controlled randomness across the channel's concept lanes after checking recent releases. Do not cycle through a fixed template list in the same order.
 
 ## Channel Concept Delegation
 
@@ -154,12 +155,12 @@ For every Playlist Release plan, the main YouTube title and all localized titles
 
 If YouTube upload is blocked only because phone/account verification does not allow a 14+ minute video, keep the rendered release and metadata intact, report the deferred upload, and continue to the next release plan. Do not delete or re-render just because upload is deferred.
 
-After the plan, immediately continue into [openclaw-skills.md](openclaw-skills.md) Skill 3: `Automatic Private Playlist Publisher`, using the selected channel and concept.
+After the plan, continue according to [openclaw-backlog-queue.md](openclaw-backlog-queue.md): finish rendered releases first; otherwise create a new release, prepare assets, render audio, queue video render, and do not wait for the long video render if another channel needs backlog.
 
 ## Skill Prompt
 
 ```text
-You are the Next Release Planner for the AI Music app.
+You are the Backlog Queue Planner for the AI Music app.
 
 Work in the OpenClaw repo checkout, normally ~/repos/ai-music-playlist-generator.
 Use scripts/openclaw-release only.
@@ -177,7 +178,10 @@ curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
 
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
-Choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
+Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
+- Keep each active automated channel at 1-2 unfinished Playlist Releases.
+- Finish metadata_review/publish_ready releases before creating new ones.
+- If a video render job is queued/running, count that release as backlog and do not wait for it when another channel needs producer work.
 - Rotate active channels instead of repeating the same channel.
 - Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
@@ -189,8 +193,8 @@ Choose the next 40+ minute Playlist Release using docs/openclaw-next-release-pla
 - If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
-After choosing the channel and concept, run the Automatic Private Playlist Publisher skill from docs/openclaw-skills.md.
-Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, metadata, and publish privately to the selected YouTube channel. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
+Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, render audio, and queue video render. Do not skip the loop video unless the human explicitly approves a still-image fallback. If video render completes during this run, finish metadata and private/scheduled publish; otherwise report the queued release and move on.
 
 When done, report:
 - selected_channel

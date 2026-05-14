@@ -199,10 +199,12 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert response.json()["ok"] is True
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
-        assert "OpenClaw Next Release Planner Skill" in calls[0]["text"]
+        assert "OpenClaw Backlog Queue Planner Skill" in calls[0]["text"]
+        assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
         assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
         assert "/youtube/status의 channels 목록을 읽고" in calls[0]["text"]
-        assert "현재 활성 채널을 순서대로 번갈아 운영" in calls[0]["text"]
+        assert "현재 활성 채널별 unfinished release 수를 계산" in calls[0]["text"]
+        assert "video render job을 queue한 뒤에는 렌더 완료를 기다리지 말고" in calls[0]["text"]
         assert "https://youtu.be/yt-next-123" in calls[0]["text"]
         assert "Soft Hour Radio" in calls[0]["text"]
         with SessionLocal() as db:

@@ -1535,6 +1535,60 @@ def publish_visibility_summary(release: dict[str, Any]) -> dict[str, str]:
     }
 
 
+def publish_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    require_reupload_confirmation(args, release, action="publish-release")
+    if not release.get("output_video_path"):
+        raise RuntimeError("publish-release requires a rendered video. Queue/render video first.")
+    if not release.get("metadata_approved"):
+        raise RuntimeError("publish-release requires approved metadata. Run approve-metadata first.")
+
+    youtube_channel_title = infer_youtube_channel_title(args)
+    channel_id = resolve_youtube_channel_id(
+        client,
+        title=youtube_channel_title,
+        channel_id=args.youtube_channel_id,
+    )
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/approve-publish",
+        json={
+            "actor": args.actor,
+            "youtube_channel_id": channel_id,
+            "note": args.note or f"Publish release to {youtube_channel_title}.",
+            "force_under_target": args.force_under_target,
+        },
+    )
+    if not args.no_wait:
+        release = wait_for_release(
+            client,
+            release["id"],
+            stage="YouTube upload",
+            timeout_seconds=args.wait_timeout_seconds,
+            poll_seconds=args.poll_seconds,
+            predicate=lambda item: bool(item.get("youtube_video_id"))
+            or item.get("workflow_state") in {"ready_for_youtube_auth", "youtube_upload_deferred_verification"},
+        )
+
+    visibility = publish_visibility_summary(release)
+    return {
+        "ok": True,
+        "action": "publish-release",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "youtube_title": release.get("youtube_title"),
+            "youtube_video_id": release.get("youtube_video_id"),
+            "youtube_channel_id": channel_id,
+            "youtube_channel_title": youtube_channel_title,
+            "youtube_scheduled_publish_at": release.get("youtube_scheduled_publish_at"),
+        },
+        **visibility,
+    }
+
+
 def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
     if not audio_paths:
@@ -2757,6 +2811,23 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)
+
+    publish_parser = subparsers.add_parser(
+        "publish-release",
+        help="Publish a rendered release with already-approved metadata through the app YouTube API.",
+    )
+    publish_parser.add_argument("--release-id", default="", help="Existing release id.")
+    publish_parser.add_argument("--release-title", default="", help="Existing release title.")
+    publish_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title.")
+    publish_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id.")
+    publish_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
+    publish_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when explicitly requested.")
+    publish_parser.add_argument("--no-wait", action="store_true", help="Return immediately after queueing the YouTube upload.")
+    publish_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for YouTube upload. Default: 6 hours.")
+    publish_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for upload.")
+    publish_parser.add_argument("--actor", default="openclaw:publish-release", help="Actor name recorded in publish history.")
+    publish_parser.add_argument("--note", default="", help="Optional publish approval note.")
+    publish_parser.set_defaults(func=publish_release)
 
     return parser
 
