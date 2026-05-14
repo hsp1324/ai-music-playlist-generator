@@ -42,7 +42,7 @@ Use a vivid Latin scene plus substyle:
 - Write each song like a real standalone Spanish/Latin pop track: natural Spanish phrasing, catchy chorus, believable romance, desire, confidence, freedom, night-out, heartbreak, summer, or dance-floor emotion. Avoid over-literal lyrics that repeat the YouTube title/use case.
 - Match lyrics to the melody, rhythm, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/fiesta/workout playlist because of its groove and energy while the lyrics tell an independent Latin pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
-- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
+- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default. Never trim or fade out a generated song just to fit a target duration.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.
 
 ## Visual Direction

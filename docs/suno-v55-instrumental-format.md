@@ -47,11 +47,12 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
+Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default.
 
-- The helper rejects playlist tracks over 4 minutes by default.
+- The helper allows playlist tracks up to 4:20 by default.
 - Do not include extra duration wording in Suno fields beyond `less than 4 minutes`.
 - Do not add extra completion or outro wording to Suno fields.
+- Never trim, crop, export a preview, or fade out a generated song just to make it fit a target duration. Upload the full finished Suno output. If the song feels like it abruptly disappears around 3:00, regenerate or extend it instead of uploading a cut file.
 
 ## Good Lyrics Field Shape
 

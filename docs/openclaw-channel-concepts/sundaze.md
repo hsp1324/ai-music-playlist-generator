@@ -43,7 +43,7 @@ Use a vivid situation or emotion plus pop identity:
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
-- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper rejects playlist tracks over 4 minutes by default.
+- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default. Never trim or fade out a generated song just to fit a target duration.
 - Do not make lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly requests it.
 
 ## Visual Direction

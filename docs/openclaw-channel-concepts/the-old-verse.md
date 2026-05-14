@@ -60,6 +60,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
+- Never trim or fade out a generated song just to fit a target duration. Upload the full finished Suno output, and regenerate/extend if it sounds like it disappears around 3:00.
 - Avoid producer tags, specific artist references, protected worship brands, church names, celebrity pastors, and modern Bible translation names.
 
 ## Visual Direction
