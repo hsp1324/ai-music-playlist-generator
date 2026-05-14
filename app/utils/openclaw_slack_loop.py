@@ -308,6 +308,84 @@ def build_next_playlist_request_message(
     return _with_trigger_prefix("\n".join(previous_context), trigger_prefix)
 
 
+def build_backlog_queue_request_message(
+    *,
+    reason: str,
+    backlog_summary: dict[str, Any] | None = None,
+    trigger_prefix: str | None = "OPENCLAW_RUN:",
+    prompt_override: str | None = None,
+) -> str:
+    if prompt_override and prompt_override.strip():
+        return _with_trigger_prefix(prompt_override, trigger_prefix)
+
+    summary = backlog_summary or {}
+    channel_payload = summary.get("channels") if isinstance(summary, dict) else {}
+    lines = [
+        "OpenClaw Backlog Queue Planner Skill을 실행해줘.",
+        "목표: MusicSun을 제외한 연결 채널마다 unfinished Playlist Release queue를 1-2개 유지해줘.",
+        f"scheduler_reason: {reason}",
+        "",
+        "작업 기준:",
+        "- OpenClaw 런타임의 repo는 보통 ~/repos/ai-music-playlist-generator 입니다. 없으면 ~/repos/ai리포 또는 현재 checkout을 사용해줘.",
+        "- 최신 main을 pull 해줘.",
+        "- AIMP_LOCAL_API_BASE는 배포된 Oracle VM 앱 API 또는 그 API로 연결되는 터널이어야 합니다. OpenClaw 로컬 dev API를 사용하지 마세요.",
+        "- 먼저 docs/openclaw-backlog-queue.md를 읽고 그대로 따라줘.",
+        "- 그 다음 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-channel-concepts/README.md, docs/openclaw-channel-profiles/README.md, docs/openclaw-youtube-metadata.md를 따라줘.",
+        "- 작업 시작 시 scripts/openclaw-release openclaw-lock-start를 호출하고, 작업 중에는 scripts/openclaw-release openclaw-lock-heartbeat를 1-2분마다 호출해줘.",
+        "- 작업 완료/중단 시 scripts/openclaw-release openclaw-lock-finish를 호출해줘.",
+        "- 이미 metadata_review/publish_ready release가 있으면 새 release를 만들기 전에 먼저 metadata 작성/승인/publish를 마무리해줘.",
+        "- video_rendering 또는 video_queued 상태는 정상 backlog로 계산하고, 렌더 완료를 기다리지 말고 다른 부족한 채널을 채워줘.",
+        "- 채널별 unfinished release가 2개 이상이면 그 채널에는 새 release를 만들지 마세요.",
+        "- 완료하거나 막히면 이 Slack 채널에 release id, YouTube video id, 실패 원인을 알려줘.",
+    ]
+    if isinstance(channel_payload, dict) and channel_payload:
+        lines.extend(["", "현재 웹앱 backlog snapshot:"])
+        for title, payload in sorted(channel_payload.items()):
+            lines.append(
+                f"- {title}: {payload.get('count', 0)} unfinished"
+                f", {payload.get('finishable', 0)} finishable"
+                f", {payload.get('deferred', 0)} deferred"
+            )
+    return _with_trigger_prefix("\n".join(lines), trigger_prefix)
+
+
+async def post_backlog_queue_request(
+    db: Session,
+    services,
+    *,
+    reason: str,
+    backlog_summary: dict[str, Any] | None = None,
+    prompt_override: str | None = None,
+) -> dict[str, Any]:
+    channel_id = services.settings.openclaw_slack_channel_id.strip()
+    if not channel_id:
+        return {"ok": False, "error": "openclaw_slack_channel_id_missing"}
+
+    installation = services.slack_installations.get_active_installation(db)
+    token = installation.bot_token if installation else services.settings.slack_bot_token
+    if not token:
+        return {"ok": False, "error": "slack_bot_token_missing", "channel": channel_id}
+
+    text = build_backlog_queue_request_message(
+        reason=reason,
+        backlog_summary=backlog_summary,
+        prompt_override=prompt_override or services.settings.openclaw_next_playlist_prompt,
+        trigger_prefix=services.settings.openclaw_slack_trigger_prefix,
+    )
+    result = await services.slack.post_plain_message(
+        text=text,
+        token=token,
+        channel=channel_id,
+    )
+    return {
+        "ok": result.ok,
+        "channel": result.channel or channel_id,
+        "ts": result.ts,
+        "text": text,
+        "raw": result.raw,
+    }
+
+
 async def post_next_playlist_request(
     db: Session,
     services,

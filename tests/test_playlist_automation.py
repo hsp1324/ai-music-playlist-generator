@@ -49,6 +49,13 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX", None)
     os.environ.pop("AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT", None)
+    os.environ.pop("AIMP_OPENCLAW_SHARED_TOKEN", None)
+    os.environ.pop("AIMP_OPENCLAW_LOCK_TTL_SECONDS", None)
+    os.environ.pop("AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED", None)
+    os.environ.pop("AIMP_OPENCLAW_BACKLOG_SCHEDULER_INTERVAL_SECONDS", None)
+    os.environ.pop("AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS", None)
+    os.environ.pop("AIMP_OPENCLAW_BACKLOG_TARGET_PER_CHANNEL", None)
+    os.environ.pop("AIMP_OPENCLAW_BACKLOG_MAX_PER_CHANNEL", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_TIMEZONE", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_HOUR", None)
@@ -210,6 +217,105 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         with SessionLocal() as db:
             updated = db.get(Playlist, playlist_id)
             assert updated.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-next-123"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_lock_blocks_second_run(tmp_path) -> None:
+    client = create_isolated_client(tmp_path)
+    try:
+        first = client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-1", "operation": "backlog"},
+        )
+        second = client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-2", "operation": "backlog"},
+        )
+        finished = client.post(
+            "/api/openclaw/lock/finish",
+            json={"owner": "openclaw", "run_id": "run-1", "status": "completed"},
+        )
+
+        assert first.status_code == 200
+        assert first.json()["ok"] is True
+        assert second.status_code == 200
+        assert second.json()["ok"] is False
+        assert second.json()["reason"] == "openclaw_lock_active"
+        assert finished.status_code == 200
+        assert finished.json()["ok"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_posts_when_channel_is_underfilled(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_INTERVAL_SECONDS"] = "30"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [
+                {"id": "UC_SOFT", "title": "Soft Hour Radio"},
+                {"id": "UC_MUSIC", "title": "MusicSun"},
+            ],
+        }
+        services.slack.post_plain_message = fake_post_plain_message
+
+        services.worker._maybe_request_openclaw_backlog()
+        services.worker._maybe_request_openclaw_backlog()
+
+        assert len(calls) == 1
+        assert calls[0]["channel"] == "C0AVBUYP150"
+        assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
+        assert "OpenClaw Backlog Queue Planner Skill" in calls[0]["text"]
+        assert "Soft Hour Radio: 0 unfinished" in calls[0]["text"]
+        assert "MusicSun:" not in calls[0]["text"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_skips_when_lock_is_active(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_INTERVAL_SECONDS"] = "30"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+        services.slack.post_plain_message = fake_post_plain_message
+        client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-1", "operation": "suno"},
+        )
+
+        services.worker._maybe_request_openclaw_backlog()
+
+        assert calls == []
     finally:
         clear_isolated_client_env()
 

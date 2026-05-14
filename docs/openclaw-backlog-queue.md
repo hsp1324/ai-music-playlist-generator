@@ -30,15 +30,56 @@ Do not count archived releases, deleted releases, failed releases that require h
 On each `OPENCLAW_RUN:` backlog request:
 
 1. Update the repo and confirm `AIMP_LOCAL_API_BASE` points at the deployed VM app API.
-2. Run `scripts/openclaw-release list-releases`.
-3. Check `/youtube/status` and build the active roster from connected channels, excluding `MusicSun` and retired names.
-4. First finish existing releases that are already past video render:
+2. Acquire the app-side OpenClaw lock before opening Suno, Dreamina, or creating a release.
+3. Keep the lock alive with heartbeat while working.
+4. Run `scripts/openclaw-release list-releases`.
+5. Check `/youtube/status` and build the active roster from connected channels, excluding `MusicSun` and retired names.
+6. First finish existing releases that are already past video render:
    - `metadata_review`: write/approve final YouTube metadata, then approve publish.
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
    - `youtube_upload_failed`: retry only if the error is transient or already fixed; otherwise report the blocker.
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
-5. Then fill backlog for channels below the target.
-6. Stop making new releases for any channel that already has 2 unfinished Playlist Releases.
+7. Then fill backlog for channels below the target.
+8. Stop making new releases for any channel that already has 2 unfinished Playlist Releases.
+9. Release the app-side lock when the backlog pass is completed or blocked.
+
+## Lock And Heartbeat
+
+The web app uses this lock to avoid sending another automatic Slack request while OpenClaw is still doing browser work that may not yet be visible in the app database.
+
+At the start of every app-originated backlog pass:
+
+```bash
+RUN_ID="${RUN_ID:-$(uuidgen)}"
+scripts/openclaw-release openclaw-lock-start \
+  --run-id "$RUN_ID" \
+  --operation "backlog-pass" \
+  --message "Starting OpenClaw backlog pass"
+```
+
+If `ok=false` and `reason=openclaw_lock_active`, stop. Another OpenClaw task is already active.
+
+While doing Suno, Dreamina, uploads, metadata, or publish work, refresh the lock every 1-2 minutes:
+
+```bash
+scripts/openclaw-release openclaw-lock-heartbeat \
+  --run-id "$RUN_ID" \
+  --operation "suno-or-dreamina-or-publish" \
+  --channel-title "$CHANNEL_TITLE" \
+  --release-id "$RELEASE_ID" \
+  --message "Short current status"
+```
+
+When the pass is done or blocked:
+
+```bash
+scripts/openclaw-release openclaw-lock-finish \
+  --run-id "$RUN_ID" \
+  --status "completed" \
+  --message "Queued/finished backlog work"
+```
+
+Use `--status blocked` if captcha, credits, login, missing API, or YouTube verification prevents progress.
 
 ## Producer Mode
 
@@ -47,6 +88,8 @@ When creating a new release to fill backlog, OpenClaw should produce assets and 
 1. Choose the channel and fresh concept using `docs/openclaw-next-release-planner.md`.
 2. Read the selected channel's `concept_doc` and `profile_doc`.
 3. Create the Playlist Release before Suno generation.
+   - Pass `--youtube-channel-title "$CHANNEL_TITLE"` when using `scripts/openclaw-release create-release`.
+   - This lets the web app count the release against the correct channel backlog before publish.
 4. Generate and upload enough approved audio for at least 40 minutes.
 5. Upload final cover, YouTube thumbnail, and 8 second Dreamina/Seedance loop video.
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.

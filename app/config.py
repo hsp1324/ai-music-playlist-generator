@@ -98,6 +98,13 @@ class Settings(BaseSettings):
     openclaw_auto_request_next_max_uploads: int = 0
     openclaw_slack_trigger_prefix: str = "OPENCLAW_RUN:"
     openclaw_next_playlist_prompt: str = ""
+    openclaw_shared_token: str = ""
+    openclaw_lock_ttl_seconds: int = 1800
+    openclaw_backlog_scheduler_enabled: bool = False
+    openclaw_backlog_scheduler_interval_seconds: int = 600
+    openclaw_backlog_request_cooldown_seconds: int = 1800
+    openclaw_backlog_target_per_channel: int = 1
+    openclaw_backlog_max_per_channel: int = 2
 
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"

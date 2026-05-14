@@ -244,6 +244,7 @@ def create_workspace_playlist(
         description=payload.description,
         cover_prompt=payload.cover_prompt,
         dreamina_prompt=payload.dreamina_prompt,
+        target_youtube_channel_title=payload.target_youtube_channel_title,
     )
     return serialize_playlist_workspace(playlist)
 

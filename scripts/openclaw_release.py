@@ -679,6 +679,7 @@ def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, 
                 "youtube_video_id": release.get("youtube_video_id"),
                 "youtube_channel_id": release.get("youtube_channel_id"),
                 "youtube_channel_title": release.get("youtube_channel_title"),
+                "target_youtube_channel_title": release.get("target_youtube_channel_title"),
                 "created_at": release.get("created_at"),
                 "updated_at": release.get("updated_at"),
             }
@@ -709,6 +710,7 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
             "description": args.description,
             "cover_prompt": "",
             "dreamina_prompt": "",
+            "target_youtube_channel_title": getattr(args, "youtube_channel_title", ""),
         },
     )
     return {
@@ -720,6 +722,7 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
             "workspace_mode": release["workspace_mode"],
             "workflow_state": release["workflow_state"],
             "target_duration_seconds": release["target_duration_seconds"],
+            "target_youtube_channel_title": release.get("target_youtube_channel_title"),
         },
         "next": (
             "Use this release.id while generating Suno output, then upload every related audio file with --release-id. "
@@ -1268,6 +1271,7 @@ def create_playlist_release(
     title: str,
     target_duration_seconds: int = 2400,
     description: str = "",
+    youtube_channel_title: str = "",
 ) -> dict[str, Any]:
     return request_json(
         client,
@@ -1281,6 +1285,7 @@ def create_playlist_release(
             "description": description or "Automatic private playlist release created by OpenClaw.",
             "cover_prompt": "",
             "dreamina_prompt": "",
+            "target_youtube_channel_title": youtube_channel_title,
         },
     )
 
@@ -1589,6 +1594,69 @@ def publish_release(client: httpx.Client, args: argparse.Namespace) -> dict[str,
     }
 
 
+def openclaw_lock_start(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/lock/start",
+        json={
+            "owner": args.owner,
+            "run_id": args.run_id,
+            "operation": args.operation,
+            "channel_title": args.channel_title,
+            "release_id": args.release_id,
+            "message": args.message,
+        },
+    )
+
+
+def openclaw_lock_heartbeat(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/lock/heartbeat",
+        json={
+            "owner": args.owner,
+            "run_id": args.run_id,
+            "operation": args.operation,
+            "channel_title": args.channel_title,
+            "release_id": args.release_id,
+            "message": args.message,
+        },
+    )
+
+
+def openclaw_lock_finish(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/lock/finish",
+        json={
+            "owner": args.owner,
+            "run_id": args.run_id,
+            "status": args.status,
+            "message": args.message,
+        },
+    )
+
+
+def openclaw_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(client, "GET", "/openclaw/status")
+
+
+def openclaw_backlog_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(client, "GET", "/openclaw/backlog/status")
+
+
+def openclaw_backlog_request(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/backlog/request",
+        json={"reason": args.reason, "prompt": args.prompt},
+    )
+
+
 def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     audio_paths = [Path(value).expanduser().resolve() for value in args.audio]
     if not audio_paths:
@@ -1642,6 +1710,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
 
+    youtube_channel_title = infer_youtube_channel_title(args)
     release = (
         get_release(client, args.release_id)
         if args.release_id
@@ -1650,6 +1719,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             title=args.release_title or file_stem(audio_paths[0]),
             target_duration_seconds=args.target_seconds,
             description=args.description,
+            youtube_channel_title=youtube_channel_title,
         )
     )
     if release["workspace_mode"] != "playlist":
@@ -1859,7 +1929,6 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         )
     release = approve_generated_metadata(client, release=release, actor=args.actor)
 
-    youtube_channel_title = infer_youtube_channel_title(args)
     channel_id = resolve_youtube_channel_id(
         client,
         title=youtube_channel_title,
@@ -2672,6 +2741,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     create_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes). Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
+    create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
     create_parser.set_defaults(func=create_release)
 
     context_parser = subparsers.add_parser(
@@ -2954,6 +3024,42 @@ def build_parser() -> argparse.ArgumentParser:
     publish_parser.add_argument("--note", default="", help="Optional publish approval note.")
     publish_parser.set_defaults(func=publish_release)
 
+    lock_start_parser = subparsers.add_parser("openclaw-lock-start", help="Acquire the app-side OpenClaw work lock.")
+    lock_start_parser.add_argument("--owner", default="openclaw", help="OpenClaw worker/listener name.")
+    lock_start_parser.add_argument("--run-id", default="", help="Stable run id for this OpenClaw task. Defaults to a generated id.")
+    lock_start_parser.add_argument("--operation", default="", help="Current operation, for example backlog-producer.")
+    lock_start_parser.add_argument("--channel-title", default="", help="Current target channel title.")
+    lock_start_parser.add_argument("--release-id", default="", help="Current release id.")
+    lock_start_parser.add_argument("--message", default="", help="Short status message.")
+    lock_start_parser.set_defaults(func=openclaw_lock_start)
+
+    lock_heartbeat_parser = subparsers.add_parser("openclaw-lock-heartbeat", help="Refresh the app-side OpenClaw work lock.")
+    lock_heartbeat_parser.add_argument("--owner", default="openclaw", help="OpenClaw worker/listener name.")
+    lock_heartbeat_parser.add_argument("--run-id", required=True, help="Run id returned or chosen at lock start.")
+    lock_heartbeat_parser.add_argument("--operation", default="", help="Current operation.")
+    lock_heartbeat_parser.add_argument("--channel-title", default="", help="Current target channel title.")
+    lock_heartbeat_parser.add_argument("--release-id", default="", help="Current release id.")
+    lock_heartbeat_parser.add_argument("--message", default="", help="Short status message.")
+    lock_heartbeat_parser.set_defaults(func=openclaw_lock_heartbeat)
+
+    lock_finish_parser = subparsers.add_parser("openclaw-lock-finish", help="Release the app-side OpenClaw work lock.")
+    lock_finish_parser.add_argument("--owner", default="openclaw", help="OpenClaw worker/listener name.")
+    lock_finish_parser.add_argument("--run-id", required=True, help="Run id returned or chosen at lock start.")
+    lock_finish_parser.add_argument("--status", default="completed", help="Finish status such as completed, blocked, or failed.")
+    lock_finish_parser.add_argument("--message", default="", help="Short finish message.")
+    lock_finish_parser.set_defaults(func=openclaw_lock_finish)
+
+    openclaw_status_parser = subparsers.add_parser("openclaw-status", help="Show app-side OpenClaw lock/runtime status.")
+    openclaw_status_parser.set_defaults(func=openclaw_status)
+
+    backlog_status_parser = subparsers.add_parser("openclaw-backlog-status", help="Show app-side backlog scheduler evaluation.")
+    backlog_status_parser.set_defaults(func=openclaw_backlog_status)
+
+    backlog_request_parser = subparsers.add_parser("openclaw-backlog-request", help="Ask the app to post one OpenClaw backlog Slack request.")
+    backlog_request_parser.add_argument("--reason", default="manual", help="Reason recorded in the Slack request.")
+    backlog_request_parser.add_argument("--prompt", default="", help="Optional full prompt override.")
+    backlog_request_parser.set_defaults(func=openclaw_backlog_request)
+
     return parser
 
 
@@ -2963,6 +3069,8 @@ def main() -> int:
     headers: dict[str, str] = {}
     if os.environ.get("AIMP_API_COOKIE"):
         headers["Cookie"] = os.environ["AIMP_API_COOKIE"]
+    if os.environ.get("AIMP_OPENCLAW_SHARED_TOKEN"):
+        headers["X-OpenClaw-Token"] = os.environ["AIMP_OPENCLAW_SHARED_TOKEN"]
     try:
         with httpx.Client(base_url=api_base(args.api_base), timeout=120.0, headers=headers) as client:
             result = args.func(client, args)

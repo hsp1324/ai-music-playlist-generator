@@ -20,6 +20,7 @@ class PlaylistWorkspaceCreateRequest(BaseModel):
     description: str | None = None
     cover_prompt: str | None = None
     dreamina_prompt: str | None = None
+    target_youtube_channel_title: str | None = None
 
 
 class PlaylistPublishApproveRequest(BaseModel):
@@ -176,6 +177,7 @@ class PlaylistWorkspaceRead(BaseModel):
     youtube_video_id: str | None
     youtube_channel_id: str | None = None
     youtube_channel_title: str | None = None
+    target_youtube_channel_title: str | None = None
     youtube_scheduled_publish_at: datetime | None = None
     youtube_published_at: datetime | None = None
     note: str | None = None

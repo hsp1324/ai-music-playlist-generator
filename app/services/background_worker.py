@@ -23,8 +23,12 @@ from app.utils.youtube_localizations import (
     normalize_youtube_language,
     normalize_youtube_localizations,
 )
-from app.utils.openclaw_slack_loop import post_next_playlist_request, record_auto_loop_upload
+from app.utils.openclaw_slack_loop import post_backlog_queue_request, post_next_playlist_request, record_auto_loop_upload
 from app.utils.timeline import build_rendered_timeline_snapshot
+from app.workflows.openclaw_runtime import (
+    evaluate_openclaw_backlog_scheduler,
+    record_openclaw_backlog_scheduler_request,
+)
 
 
 def _utcnow():
@@ -115,6 +119,7 @@ class BackgroundJobWorker:
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._state = WorkerLoopState()
+        self._last_openclaw_backlog_scheduler_check = 0.0
 
     def bind_services(self, services) -> None:
         self.services = services
@@ -156,8 +161,41 @@ class BackgroundJobWorker:
                 self._state.last_error = str(exc)
                 processed = False
             if not processed:
+                self._maybe_request_openclaw_backlog()
                 self._stop_event.wait(self.settings.worker_poll_interval_seconds)
         self._state.running = False
+
+    def _maybe_request_openclaw_backlog(self) -> None:
+        if not self.settings.openclaw_backlog_scheduler_enabled or self.services is None:
+            return
+        now = time.monotonic()
+        interval = max(float(self.settings.openclaw_backlog_scheduler_interval_seconds or 0), 30.0)
+        if now - self._last_openclaw_backlog_scheduler_check < interval:
+            return
+        self._last_openclaw_backlog_scheduler_check = now
+
+        with SessionLocal() as db:
+            evaluation = evaluate_openclaw_backlog_scheduler(db, self.services)
+            if not evaluation.get("should_request"):
+                return
+            try:
+                result = asyncio.run(
+                    post_backlog_queue_request(
+                        db,
+                        self.services,
+                        reason=str(evaluation.get("reason") or "scheduler"),
+                        backlog_summary=evaluation.get("summary"),
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001
+                result = {"ok": False, "error": str(exc)}
+            record_openclaw_backlog_scheduler_request(
+                storage_root=self.settings.storage_root,
+                result={
+                    **evaluation,
+                    "slack": {key: result.get(key) for key in ("ok", "channel", "ts", "error")},
+                },
+            )
 
     def _claim_next_job_id(self) -> str | None:
         with SessionLocal() as db:
@@ -875,6 +913,18 @@ class BackgroundJobWorker:
                             meta["openclaw_next_request_at"] = _utcnow().isoformat()
                             if next_request_result.get("ok"):
                                 meta["openclaw_next_request_youtube_video_id"] = playlist.youtube_video_id
+                                record_openclaw_backlog_scheduler_request(
+                                    storage_root=self.settings.storage_root,
+                                    result={
+                                        "reason": "publish_completed",
+                                        "playlist_id": playlist.id,
+                                        "youtube_video_id": playlist.youtube_video_id,
+                                        "slack": {
+                                            key: next_request_result.get(key)
+                                            for key in ("ok", "channel", "ts")
+                                        },
+                                    },
+                                )
                 except Exception as exc:  # noqa: BLE001
                     if _is_long_video_verification_upload_error(str(exc), playlist):
                         playlist.status = PlaylistStatus.ready
@@ -906,6 +956,17 @@ class BackgroundJobWorker:
                                 meta["openclaw_next_request_at"] = _utcnow().isoformat()
                                 if next_request_result.get("ok"):
                                     meta["openclaw_next_request_deferred_playlist_id"] = playlist.id
+                                    record_openclaw_backlog_scheduler_request(
+                                        storage_root=self.settings.storage_root,
+                                        result={
+                                            "reason": "upload_deferred_verification",
+                                            "playlist_id": playlist.id,
+                                            "slack": {
+                                                key: next_request_result.get(key)
+                                                for key in ("ok", "channel", "ts")
+                                            },
+                                        },
+                                    )
                         playlist.metadata_json = meta
                         db.add(playlist)
                         return
