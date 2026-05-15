@@ -30,6 +30,7 @@ from app.utils.openclaw_slack_loop import (
     record_auto_loop_upload,
 )
 from app.utils.ops_notifications import notify_youtube_publish_completed
+from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
@@ -130,6 +131,7 @@ class BackgroundJobWorker:
         self._state = WorkerLoopState()
         self._upload_state = WorkerLoopState()
         self._last_openclaw_backlog_scheduler_check = 0.0
+        self._last_local_video_cleanup_check = 0.0
 
     def bind_services(self, services) -> None:
         self.services = services
@@ -294,11 +296,27 @@ class BackgroundJobWorker:
             except Exception as exc:  # noqa: BLE001
                 state.last_error = str(exc)
                 processed = False
+            if run_backlog_scheduler:
+                try:
+                    self._maybe_cleanup_public_uploaded_local_videos()
+                except Exception as exc:  # noqa: BLE001
+                    state.last_error = str(exc)
             if not processed and run_backlog_scheduler:
                 self._maybe_request_openclaw_backlog()
             if not processed:
                 self._stop_event.wait(self.settings.worker_poll_interval_seconds)
         state.running = False
+
+    def _maybe_cleanup_public_uploaded_local_videos(self) -> None:
+        if self.services is None or not self.settings.local_video_cleanup_enabled:
+            return
+        now = time.monotonic()
+        interval = max(float(self.settings.local_video_cleanup_interval_seconds or 0), 30.0)
+        if now - self._last_local_video_cleanup_check < interval:
+            return
+        self._last_local_video_cleanup_check = now
+        with SessionLocal() as db:
+            cleanup_public_uploaded_local_videos(db, self.settings)
 
     def _maybe_request_openclaw_backlog(self) -> None:
         if not self.settings.openclaw_backlog_scheduler_enabled or self.services is None:

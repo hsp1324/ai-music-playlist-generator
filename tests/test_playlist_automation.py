@@ -26,6 +26,7 @@ from app.routes.tracks import _extract_embedded_cover
 from app.services.background_worker import BackgroundJobWorker, _is_long_video_verification_upload_error
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
+from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
 from app.utils.openclaw_slack_loop import handle_auto_loop_control_message, record_auto_loop_upload
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import next_youtube_scheduled_publish_at
@@ -1062,6 +1063,146 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
                 select(Job).where(Job.playlist_id == workspace_id, Job.type == JobType.build_video)
             ).first()
             assert job.result_json["ops_video_queued_notification"]["ok"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        settings.local_video_cleanup_enabled = True
+        settings.local_video_cleanup_disk_threshold_percent = 80
+        settings.playlists_dir.mkdir(parents=True, exist_ok=True)
+        now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
+
+        with SessionLocal() as db:
+            public_playlist = Playlist(
+                title="Public Local Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-public",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_response": {"status": {"privacyStatus": "public"}},
+                },
+            )
+            orphan_playlist = Playlist(
+                title="Public Orphan Local Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-orphan",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_scheduled_publish_at": "2026-05-14T12:00:00+00:00",
+                },
+            )
+            future_playlist = Playlist(
+                title="Future Scheduled Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-future",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_scheduled_publish_at": "2026-05-16T12:00:00+00:00",
+                },
+            )
+            private_playlist = Playlist(
+                title="Private Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-private",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_response": {"status": {"privacyStatus": "private"}},
+                },
+            )
+            db.add_all([public_playlist, orphan_playlist, future_playlist, private_playlist])
+            db.flush()
+            public_path = settings.playlists_dir / f"{public_playlist.id}.mp4"
+            orphan_path = settings.playlists_dir / f"{orphan_playlist.id}.mp4"
+            future_path = settings.playlists_dir / f"{future_playlist.id}.mp4"
+            private_path = settings.playlists_dir / f"{private_playlist.id}.mp4"
+            for path in (public_path, orphan_path, future_path, private_path):
+                path.write_bytes(b"fake-video")
+            public_playlist.output_video_path = str(public_path)
+            future_playlist.output_video_path = str(future_path)
+            private_playlist.output_video_path = str(private_path)
+            db.commit()
+            public_id = public_playlist.id
+            orphan_id = orphan_playlist.id
+            future_id = future_playlist.id
+            private_id = private_playlist.id
+
+            result = cleanup_public_uploaded_local_videos(
+                db,
+                settings,
+                now=now,
+                usage_provider=lambda _path: SimpleNamespace(total=100, used=90, free=10),
+            )
+
+            assert result["deleted_count"] == 2
+            assert not public_path.exists()
+            assert not orphan_path.exists()
+            assert future_path.exists()
+            assert private_path.exists()
+            public_updated = db.get(Playlist, public_id)
+            orphan_updated = db.get(Playlist, orphan_id)
+            future_updated = db.get(Playlist, future_id)
+            private_updated = db.get(Playlist, private_id)
+            assert public_updated.output_video_path is None
+            assert public_updated.metadata_json["local_video_deleted_after_public_publish"] == str(public_path)
+            assert public_updated.metadata_json["local_video_cleanup_reason"] == "disk_usage_threshold_public_youtube_video"
+            assert orphan_updated.output_video_path is None
+            assert orphan_updated.metadata_json["local_video_cleanup_source"] == "canonical_playlist_mp4"
+            assert future_updated.output_video_path == str(future_path)
+            assert private_updated.output_video_path == str(private_path)
+    finally:
+        clear_isolated_client_env()
+
+
+def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        settings.local_video_cleanup_enabled = True
+        settings.local_video_cleanup_disk_threshold_percent = 80
+        settings.playlists_dir.mkdir(parents=True, exist_ok=True)
+
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Below Threshold Public Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-public",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_response": {"status": {"privacyStatus": "public"}},
+                },
+            )
+            db.add(playlist)
+            db.flush()
+            video_path = settings.playlists_dir / f"{playlist.id}.mp4"
+            video_path.write_bytes(b"fake-video")
+            playlist.output_video_path = str(video_path)
+            db.commit()
+
+            result = cleanup_public_uploaded_local_videos(
+                db,
+                settings,
+                usage_provider=lambda _path: SimpleNamespace(total=100, used=80, free=20),
+            )
+
+            assert result["skipped"] is True
+            assert result["reason"] == "below_threshold"
+            assert result["deleted_count"] == 0
+            assert video_path.exists()
+            assert db.get(Playlist, playlist.id).output_video_path == str(video_path)
     finally:
         clear_isolated_client_env()
 

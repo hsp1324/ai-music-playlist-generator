@@ -110,6 +110,9 @@ class Settings(BaseSettings):
     render_worker_shared_token: str = ""
     render_worker_claim_timeout_seconds: int = 21600
     render_worker_upload_chunk_bytes: int = 8 * 1024 * 1024
+    local_video_cleanup_enabled: bool = True
+    local_video_cleanup_disk_threshold_percent: float = 80.0
+    local_video_cleanup_interval_seconds: int = 300
 
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"
