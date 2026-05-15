@@ -6,10 +6,10 @@ The current production mode is external-render lookahead: the Oracle VM app owns
 
 ## Core Rule
 
-Maintain at most one unfinished Playlist Release per connected, automated channel:
+Maintain a bounded unfinished Playlist Release backlog per connected, automated channel:
 
 - Target backlog: at least 1 unfinished Playlist Release per channel.
-- Maximum backlog: 1 unfinished Playlist Release per channel.
+- Maximum backlog: 10 unfinished Playlist Releases per channel.
 - Excluded channel: `MusicSun` is manual-only and must not be filled by automatic backlog work.
 - Future connected channels are included automatically unless docs explicitly mark them manual-only or retired.
 
@@ -124,7 +124,7 @@ Report compactly after every backlog pass:
 
 - finished releases and YouTube ids
 - newly queued releases and release ids
-- channels currently at backlog 0 or 1
+- channels currently below target, near target, or at the maximum backlog limit
 - blockers that need human action
 
 Do not spam Slack for every small substep. Report only stage completion, retries, and blockers.

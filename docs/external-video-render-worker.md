@@ -63,7 +63,7 @@ The upload path is resumable:
 - The worker asks `/api/render-worker/jobs/JOB_ID/upload-status` before every chunk and continues from `received_bytes`.
 - If the worker process dies and restarts with the same `--worker-id`, the claim endpoint returns the existing running job instead of creating a duplicate.
 - The server records `worker_id`, hostname, capabilities, and the optional server-side nickname in the job's `external_render_worker` metadata, so operators can tell which compute resource owns each render.
-- If a claimed job has no heartbeat for `AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS`, default 86400 seconds, the main VM requeues it for any render worker.
+- If a claimed job has no heartbeat for `AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS`, default 21600 seconds, the main VM requeues it for any render worker.
 
 This handles network drops during final MP4 upload. If the local render itself is interrupted before upload, rerun the worker with the same cache directory and worker id; it can reclaim the same job if the claim has not timed out.
 

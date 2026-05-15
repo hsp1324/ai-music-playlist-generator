@@ -103,11 +103,11 @@ class Settings(BaseSettings):
     openclaw_backlog_scheduler_interval_seconds: int = 600
     openclaw_backlog_request_cooldown_seconds: int = 1800
     openclaw_backlog_target_per_channel: int = 1
-    openclaw_backlog_max_per_channel: int = 2
+    openclaw_backlog_max_per_channel: int = 10
 
     video_render_execution_mode: Literal["local", "external"] = "local"
     render_worker_shared_token: str = ""
-    render_worker_claim_timeout_seconds: int = 86400
+    render_worker_claim_timeout_seconds: int = 21600
     render_worker_upload_chunk_bytes: int = 8 * 1024 * 1024
 
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"

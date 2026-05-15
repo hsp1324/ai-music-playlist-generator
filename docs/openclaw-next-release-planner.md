@@ -91,7 +91,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 
 1. Inspect recent Playlist Releases from `scripts/openclaw-release list-releases`.
 2. Apply `docs/openclaw-backlog-queue.md` first: finish ready releases, then fill channels with backlog below target.
-3. Prefer the active channel with backlog `0`; if none exist, use backlog `1`; never create a new release for a channel with backlog `2` or more.
+3. Prefer the active channel with the lowest backlog count. Do not create a new release for a channel with backlog `10` or more.
 4. Within the eligible channels, prefer the channel with the oldest recent published playlist unless the human explicitly asks for a channel.
 5. Do not pick the same channel twice in a row unless other channels are blocked, already at backlog max, not connected, unavailable, or explicitly requested.
 6. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
