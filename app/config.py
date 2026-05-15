@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     codex_metadata_enabled: bool = False
     codex_metadata_command: str = "codex"
     codex_metadata_model: str = ""
-    codex_metadata_timeout_seconds: int = 180
+    codex_metadata_timeout_seconds: int = 420
 
     openclaw_slack_channel_id: str = ""
     openclaw_auto_request_next_on_publish: bool = False

@@ -1,6 +1,7 @@
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
+from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -22,8 +23,14 @@ def _ensure_engine() -> tuple[Engine, sessionmaker]:
     connect_args = {}
     if settings.database_url.startswith("sqlite"):
         connect_args["check_same_thread"] = False
+        connect_args["timeout"] = 60
 
     _engine = create_engine(settings.database_url, connect_args=connect_args)
+    if settings.database_url.startswith("sqlite"):
+        @event.listens_for(_engine, "connect")
+        def _set_sqlite_busy_timeout(dbapi_connection, _connection_record):  # type: ignore[no-untyped-def]
+            dbapi_connection.execute("PRAGMA busy_timeout=60000")
+
     _session_local = sessionmaker(bind=_engine, autoflush=False, autocommit=False, expire_on_commit=False)
     _database_url = settings.database_url
     return _engine, _session_local
