@@ -509,6 +509,54 @@ def _youtube_scheduled_publish_at(meta: dict) -> datetime | None:
     return max(values)
 
 
+def _workspace_display_sort_at(
+    playlist: Playlist,
+    meta: dict | None = None,
+    *,
+    youtube_published_at_override: datetime | None | object = _UNSET,
+    use_job_fallback: bool = True,
+) -> datetime:
+    metadata = meta if meta is not None else _playlist_meta(playlist)
+    scheduled_at = _youtube_scheduled_publish_at(metadata)
+    if scheduled_at:
+        return scheduled_at
+    if youtube_published_at_override is not _UNSET:
+        published_at = youtube_published_at_override
+    else:
+        published_at = _youtube_published_at(playlist, metadata, use_job_fallback=use_job_fallback)
+    return published_at or playlist.created_at or playlist.updated_at or _utcnow()
+
+
+def _timestamp(value: datetime | None) -> float:
+    if value is None:
+        return 0.0
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.timestamp()
+
+
+def _sort_playlists_for_workspace_display(
+    playlists: list[Playlist],
+    *,
+    youtube_published_at_overrides: dict[str, datetime] | None = None,
+    use_job_fallback: bool = True,
+) -> list[Playlist]:
+    overrides = youtube_published_at_overrides or {}
+
+    def sort_key(playlist: Playlist) -> tuple[float, float, str]:
+        meta = _playlist_meta(playlist)
+        override = overrides.get(playlist.id, _UNSET)
+        display_at = _workspace_display_sort_at(
+            playlist,
+            meta,
+            youtube_published_at_override=override,
+            use_job_fallback=use_job_fallback,
+        )
+        return (_timestamp(display_at), _timestamp(playlist.created_at), playlist.id)
+
+    return sorted(playlists, key=sort_key, reverse=True)
+
+
 def serialize_playlist_workspace(
     playlist: Playlist,
     *,
@@ -603,17 +651,18 @@ def serialize_playlist_workspace(
 def list_playlist_workspaces(db: Session, *, compact: bool = False) -> list[Playlist]:
     purge_expired_archived_workspaces(db)
     if compact:
-        return db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
+        playlists = db.scalars(select(Playlist)).all()
+        return _sort_playlists_for_workspace_display(playlists, use_job_fallback=False)
 
     item_loader = selectinload(Playlist.items)
-    return db.scalars(
+    playlists = db.scalars(
         select(Playlist)
         .options(
             item_loader.selectinload(PlaylistItem.track),
             selectinload(Playlist.jobs),
         )
-        .order_by(Playlist.updated_at.desc())
     ).all()
+    return _sort_playlists_for_workspace_display(playlists)
 
 
 def _playlist_item_counts(db: Session, playlist_ids: list[str]) -> dict[str, int]:
@@ -685,11 +734,17 @@ def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[st
 
 
 def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]:
-    playlists = list_playlist_workspaces(db, compact=True)
+    purge_expired_archived_workspaces(db)
+    playlists = db.scalars(select(Playlist)).all()
     playlist_ids = [playlist.id for playlist in playlists]
     item_counts = _playlist_item_counts(db, playlist_ids)
     render_jobs = _compact_render_jobs(db, playlist_ids)
     upload_finished_at = _compact_upload_finished_at(db, playlist_ids)
+    playlists = _sort_playlists_for_workspace_display(
+        playlists,
+        youtube_published_at_overrides=upload_finished_at,
+        use_job_fallback=False,
+    )
     return [
         serialize_playlist_workspace(
             playlist,
@@ -742,12 +797,8 @@ def list_workspace_channel_summaries(db: Session) -> list[dict]:
             summary["playlistCount"] += 1
         summary["totalDuration"] += int(meta.get("rendered_duration_seconds") or playlist.actual_duration_seconds or 0)
 
-        published_at = (
-            _youtube_published_at(playlist, meta, use_job_fallback=False)
-            or playlist.updated_at
-            or playlist.created_at
-        )
-        latest_sort = published_at.timestamp()
+        published_at = _workspace_display_sort_at(playlist, meta, use_job_fallback=False)
+        latest_sort = _timestamp(published_at)
         if latest_sort >= float(summary.get("_latestSort") or 0):
             summary["_latestSort"] = latest_sort
             summary["latestAt"] = published_at.isoformat()

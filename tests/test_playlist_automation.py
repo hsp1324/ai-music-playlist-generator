@@ -1207,6 +1207,84 @@ def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_
         clear_isolated_client_env()
 
 
+def test_workspace_lists_sort_by_scheduled_publish_then_published_then_created(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            created_release = Playlist(
+                title="Created Fallback Release",
+                status=PlaylistStatus.draft,
+                target_duration_seconds=60,
+                actual_duration_seconds=0,
+                created_at=datetime(2026, 5, 13, 12, 0, tzinfo=timezone.utc),
+                updated_at=datetime(2026, 5, 20, 12, 0, tzinfo=timezone.utc),
+                metadata_json={"workflow_state": "collecting"},
+            )
+            published_release = Playlist(
+                title="Published Release",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-published",
+                created_at=datetime(2026, 5, 10, 12, 0, tzinfo=timezone.utc),
+                updated_at=datetime(2026, 5, 10, 13, 0, tzinfo=timezone.utc),
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_published_at": "2026-05-14T12:00:00+00:00",
+                    "youtube_channel_id": "UC_A",
+                    "youtube_channel_title": "Channel A",
+                },
+            )
+            scheduled_release = Playlist(
+                title="Scheduled Release",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-scheduled",
+                created_at=datetime(2026, 5, 9, 12, 0, tzinfo=timezone.utc),
+                updated_at=datetime(2026, 5, 9, 13, 0, tzinfo=timezone.utc),
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_scheduled_publish_at": "2026-05-15T12:00:00+00:00",
+                    "youtube_channel_id": "UC_A",
+                    "youtube_channel_title": "Channel A",
+                },
+            )
+            future_scheduled_release = Playlist(
+                title="Future Scheduled Release",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-future-scheduled",
+                created_at=datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc),
+                updated_at=datetime(2026, 5, 8, 13, 0, tzinfo=timezone.utc),
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_scheduled_publish_at": "2026-05-16T12:00:00+00:00",
+                    "youtube_channel_id": "UC_A",
+                    "youtube_channel_title": "Channel A",
+                },
+            )
+            db.add_all([created_release, published_release, scheduled_release, future_scheduled_release])
+            db.commit()
+            expected_order = [
+                future_scheduled_release.id,
+                scheduled_release.id,
+                published_release.id,
+                created_release.id,
+            ]
+
+        full_response = client.get("/api/playlists/workspaces")
+        compact_response = client.get("/api/playlists/workspaces?compact=true")
+
+        assert full_response.status_code == 200
+        assert compact_response.status_code == 200
+        assert [item["id"] for item in full_response.json()] == expected_order
+        assert [item["id"] for item in compact_response.json()] == expected_order
+    finally:
+        clear_isolated_client_env()
+
+
 def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

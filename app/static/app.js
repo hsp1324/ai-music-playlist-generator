@@ -310,6 +310,12 @@ function releasePublishedAtLabel(workspace) {
   return formatPublishedDate(workspace.youtube_scheduled_publish_at || workspace.youtube_published_at);
 }
 
+function releaseDisplaySortTimestamp(workspace) {
+  const value = workspace?.youtube_scheduled_publish_at || workspace?.youtube_published_at || workspace?.created_at || 0;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
 function releaseIsScheduled(workspace) {
   return Boolean(workspace?.youtube_scheduled_publish_at);
 }
@@ -1977,8 +1983,7 @@ function channelUploadSummaries() {
     if (!releasePublishedChannelLabel(workspace)) return;
     const key = releaseChannelKey(workspace);
     const connectedChannel = connectedYouTubeChannel(workspace.youtube_channel_id, workspace.youtube_channel_title);
-    const updatedAt = new Date(workspace.updated_at || workspace.created_at || 0);
-    const updatedTime = Number.isNaN(updatedAt.getTime()) ? 0 : updatedAt.getTime();
+    const releaseSortTime = releaseDisplaySortTimestamp(workspace);
     const existing = channels.get(key) || {
       key,
       label: releaseChannelDisplayLabel(workspace),
@@ -2001,9 +2006,11 @@ function channelUploadSummaries() {
     } else {
       existing.playlistCount += 1;
     }
-    if (updatedTime >= existing.latestAt) {
-      existing.latestAt = updatedTime;
-      existing.latestAtLabel = formatArchiveDate(workspace.updated_at || workspace.created_at);
+    if (releaseSortTime >= existing.latestAt) {
+      existing.latestAt = releaseSortTime;
+      existing.latestAtLabel = formatArchiveDate(
+        workspace.youtube_scheduled_publish_at || workspace.youtube_published_at || workspace.created_at
+      );
       existing.latestTitle = displayTitle(workspace.youtube_title || workspace.title, "Untitled Release");
     }
     channels.set(key, existing);
