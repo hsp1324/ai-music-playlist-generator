@@ -110,7 +110,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - Do not use `MusicSun` unless the human explicitly requests it. MusicSun is the only manual-only channel and must be excluded from continuous automatic rotation.
 - For continuous next-release automation, newly connected YouTube channels are active by default unless these docs explicitly mark them inactive/excluded. MusicSun remains excluded by default. If a selected connected channel has no dedicated profile/concept docs yet, `scripts/openclaw-release channel-profile` returns the `custom-channel` docs; read those and infer the channel identity from the channel title, local release history, and human instructions.
 - For `The Old Verse` and `The New Verse`, read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md), reserve the next canonical passage with `scripts/openclaw-scripture-sequence start` before Suno generation, include the selected passage range in the main and localized YouTube titles, and mark it scheduled/published with `scripts/openclaw-scripture-sequence complete` after successful upload/scheduling. Never duplicate or skip a passage unless the human explicitly says so.
-- In continuous lookahead automation, do not use `auto-publish-playlist` for new playlist production. Use the step commands below so VM video rendering can run in parallel with OpenClaw preparing the next release.
+- In continuous lookahead automation, do not use `auto-publish-playlist` for new playlist production. Use the step commands below so external video rendering can run in parallel with OpenClaw preparing the next release.
 - YouTube visibility is app-managed. With `AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED=true`, the app uploads as a scheduled public release at the next free daily 07:00 slot for the selected YouTube channel; schedules on other channels do not block that channel. Otherwise it falls back to `AIMP_YOUTUBE_PRIVACY_STATUS`. Do not manually change visibility from OpenClaw.
 - Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release publish-release` or the app's local `/approve-publish` API for playlist finish passes. Use `scripts/openclaw-release auto-publish-single` only for explicit single-release automation. The app uploads through the YouTube Data API and stores the resulting `youtube_video_id`/channel metadata.
 - Do not run `auto-publish-playlist` or `auto-publish-single` against a release that already has `youtube_video_id` unless the human explicitly asks for a re-upload. Create a fresh release for a new video. The helper rejects accidental re-uploads unless `--allow-reupload` is passed.
@@ -509,7 +509,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 스페인어 가
 
 ### Run The Lookahead Producer Pass
 
-After all generated audio files and visual assets are ready, use step commands and stop after VM video render is queued:
+After all generated audio files and visual assets are ready, use step commands and stop after video render is queued:
 
 ```bash
 scripts/openclaw-release upload-audio --release-id RELEASE_ID --audio ABSOLUTE_AUDIO_PATH_01 --title "INDEPENDENT_TRACK_TITLE_01" --lyrics-file ABSOLUTE_LYRICS_PATH_01 --style "SUNO_STYLE_OR_SETTINGS_01" --prompt "PROMPT_USED_TO_GENERATE_AUDIO" --tags "comma, separated, tags"
@@ -520,10 +520,10 @@ scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video 
 scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order
 scripts/openclaw-release approve-cover --release-id RELEASE_ID
 scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET
-scripts/openclaw-release openclaw-lock-finish --run-id "$RUN_ID" --status completed --message "Queued VM video render for RELEASE_ID"
+scripts/openclaw-release openclaw-lock-finish --run-id "$RUN_ID" --status completed --message "Queued video render for RELEASE_ID"
 ```
 
-Do not pass `--wait` to `render-video` during continuous automation. Do not approve metadata or publish a newly queued release in the same producer pass. The VM app will render the long MP4 and ask OpenClaw again when the release is ready for metadata/publish.
+Do not pass `--wait` to `render-video` during continuous automation. Do not approve metadata or publish a newly queued release in the same producer pass. An external render worker will render/upload the long MP4 and the app will ask OpenClaw again when the release is ready for metadata/publish.
 
 Do not omit `--cover`, `--thumbnail`, or `--loop-video` for normal playlist production. If any asset is not ready, stop and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
@@ -533,7 +533,7 @@ If the release is mainstream J-pop/Japanese pop/Tokyo pop, set the release chann
 
 ### Run The Finisher Pass
 
-When the app asks again after VM video render completion, finish the rendered release:
+When the app asks again after external video render completion, finish the rendered release:
 
 ```bash
 scripts/openclaw-release metadata-context --release-id RELEASE_ID
@@ -557,7 +557,7 @@ uploaded tracks:
 youtube_video_id: ... if published
 youtube_channel: SELECTED_CHANNEL_TITLE
 privacy: scheduled public at ... if published and scheduling is enabled, otherwise private
-Next: VM rendering is queued, or human can review the scheduled/private YouTube upload before it goes public.
+Next: video rendering is queued, or human can review the scheduled/private YouTube upload before it goes public.
 ```
 
 ### Safety Checks

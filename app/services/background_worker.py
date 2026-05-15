@@ -141,10 +141,13 @@ class BackgroundJobWorker:
 
         self.recover_interrupted_jobs()
         self._stop_event.clear()
+        render_job_types = [JobType.build_playlist, JobType.sync_slack]
+        if self.settings.video_render_execution_mode != "external":
+            render_job_types.insert(1, JobType.build_video)
         self._thread = threading.Thread(
             target=self._run_loop,
             kwargs={
-                "job_types": (JobType.build_playlist, JobType.build_video, JobType.sync_slack),
+                "job_types": tuple(render_job_types),
                 "state": self._state,
                 "run_backlog_scheduler": True,
             },
@@ -227,6 +230,14 @@ class BackgroundJobWorker:
                             meta["publish_approved"] = False
                             playlist.metadata_json = meta
                             db.add(playlist)
+                elif (
+                    job.type == JobType.build_video
+                    and self.settings.video_render_execution_mode == "external"
+                    and isinstance(result.get("external_render_worker"), dict)
+                ):
+                    result["interrupted_worker_resolution"] = "kept_external_render_claim"
+                    db.add(job)
+                    continue
                 else:
                     job.status = JobStatus.queued
                     job.started_at = None
@@ -328,6 +339,12 @@ class BackgroundJobWorker:
                 JobType.upload_youtube,
                 JobType.sync_slack,
             )
+            if self.settings.video_render_execution_mode == "external":
+                claimable_job_types = tuple(
+                    job_type for job_type in claimable_job_types if job_type != JobType.build_video
+                )
+                if not claimable_job_types:
+                    return None
             candidate_ids = db.scalars(
                 select(Job.id)
                 .where(

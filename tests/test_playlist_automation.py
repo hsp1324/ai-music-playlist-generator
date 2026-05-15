@@ -1,6 +1,7 @@
 import json
 import os
 import io
+import hashlib
 import time
 import wave
 from datetime import datetime, timedelta, timezone
@@ -15,9 +16,9 @@ from PIL import Image
 from app.config import Settings, get_settings
 from app.db import SessionLocal
 from app.main import create_app
-from app.models.enums import JobStatus, JobType, PlaylistStatus
+from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
-from app.models.playlist import Playlist
+from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
 from app.routes import playlists as playlist_routes
 from app.routes.tracks import _extract_embedded_cover
@@ -58,6 +59,10 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS", None)
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_TARGET_PER_CHANNEL", None)
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_MAX_PER_CHANNEL", None)
+    os.environ.pop("AIMP_VIDEO_RENDER_EXECUTION_MODE", None)
+    os.environ.pop("AIMP_RENDER_WORKER_SHARED_TOKEN", None)
+    os.environ.pop("AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS", None)
+    os.environ.pop("AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_TIMEZONE", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_HOUR", None)
@@ -603,6 +608,117 @@ def upload_test_loop_video(client: TestClient, workspace_id: str) -> dict:
     payload = loop_response.json()
     assert payload["loop_video_path"].endswith(".mp4")
     return payload
+
+
+def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        storage = tmp_path / "storage"
+        playlist_dir = storage / "playlists"
+        track_dir = storage / "tracks"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "release-audio.mp3"
+        cover_path = playlist_dir / "cover.png"
+        loop_path = playlist_dir / "loop.mp4"
+        track_path = track_dir / "track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "navy").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="External Worker Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "test"},
+            )
+            playlist = Playlist(
+                title="External Worker Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "loop_video_smooth": True,
+                    "video_spectrum_overlay_style": "bars",
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={"video_spectrum_overlay_style": "bars"},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+            playlist_id = playlist.id
+
+        headers = {"X-Render-Worker-Token": "test-render-token"}
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={"worker_id": "test-worker", "hostname": "test-host"},
+        )
+        assert claim.status_code == 200
+        claim_payload = claim.json()
+        assert claim_payload["job"]["id"] == job_id
+        assert claim_payload["job"]["render"]["mode"] == "loop_video"
+
+        payload = b"fake-rendered-video"
+        first = client.put(
+            f"/api/render-worker/jobs/{job_id}/upload",
+            headers={**headers, "Content-Range": f"bytes 0-7/{len(payload)}"},
+            content=payload[:8],
+        )
+        assert first.status_code == 200
+        status_response = client.get(f"/api/render-worker/jobs/{job_id}/upload-status", headers=headers)
+        assert status_response.status_code == 200
+        assert status_response.json()["received_bytes"] == 8
+        second = client.put(
+            f"/api/render-worker/jobs/{job_id}/upload",
+            headers={**headers, "Content-Range": f"bytes 8-{len(payload) - 1}/{len(payload)}"},
+            content=payload[8:],
+        )
+        assert second.status_code == 200
+        complete = client.post(
+            f"/api/render-worker/jobs/{job_id}/complete",
+            headers=headers,
+            json={
+                "worker_id": "test-worker",
+                "size_bytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            },
+        )
+        assert complete.status_code == 200
+
+        with SessionLocal() as db:
+            job = db.get(Job, job_id)
+            playlist = db.get(Playlist, playlist_id)
+            assert job.status == JobStatus.succeeded
+            assert playlist.status == PlaylistStatus.ready
+            assert playlist.output_video_path
+            assert Path(playlist.output_video_path).read_bytes() == payload
+            assert playlist.metadata_json["workflow_state"] == "metadata_review"
+            assert playlist.metadata_json["video_render_progress"]["status"] == "end"
+    finally:
+        clear_isolated_client_env()
 
 
 def prepare_release_for_final_publish(client: TestClient, workspace_id: str, *, use_still_fallback: bool = True) -> dict:

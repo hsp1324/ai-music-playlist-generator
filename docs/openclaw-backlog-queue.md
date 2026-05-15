@@ -2,7 +2,7 @@
 
 Use this skill when the AI Music app asks OpenClaw to produce the next release through the deployed Oracle VM app.
 
-The current production mode is VM-render lookahead: the Oracle VM app background worker renders video, while OpenClaw prepares the next release's audio, cover, thumbnail, and 8 second loop video.
+The current production mode is external-render lookahead: the Oracle VM app owns state, Slack, and YouTube publish, while OpenClaw prepares the next release's audio, cover, thumbnail, and 8 second loop video. A separate render worker machine claims queued video jobs and uploads the finished MP4 back to the app.
 
 ## Core Rule
 
@@ -40,9 +40,9 @@ On each `OPENCLAW_RUN:` backlog request:
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
    - `youtube_upload_failed`: retry only if the error is transient or already fixed; otherwise report the blocker.
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
-7. If a release is currently `video_rendering`, treat the VM as busy but productive. Do not wait idle. You may prepare one release for a different channel that is below target.
+7. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. You may prepare one release for a different channel that is below target.
 8. Stop making new releases for any channel that already has an unfinished Playlist Release.
-9. When creating a new release, stop after queuing VM video render. Release the app-side lock so the VM can ask for the next finish/prepare step later.
+9. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
 
 `AIMP_LOCAL_API_BASE` should point at the deployed VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
 
@@ -99,14 +99,14 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
 8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
 9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset.
-10. Do not pass `--wait` in normal automation. Do not approve metadata or publish until the app later asks again after VM render completion.
+10. Do not pass `--wait` in normal automation. Do not approve metadata or publish until the app later asks again after external render completion.
 11. Release the OpenClaw lock and report the queued release id.
 
-The Oracle VM app background worker owns all production video rendering.
+The render worker pool owns production video rendering. The Oracle VM app only queues the job and finalizes the uploaded MP4.
 
 ## Finisher Mode
 
-When a release has completed video render, OpenClaw should finish it before starting more producer work:
+When a release has completed video render and the external worker has uploaded the MP4, OpenClaw should finish it before starting more producer work:
 
 1. Run `scripts/openclaw-release metadata-context --release-id RELEASE_ID`.
 2. Write final metadata using `docs/openclaw-youtube-metadata.md`.
@@ -136,4 +136,4 @@ Do not spam Slack for every small substep. Report only stage completion, retries
 - Do not create more than 1 unfinished Playlist Release for the same channel.
 - Do not use MusicSun for automatic backlog.
 - If a release is stuck because rendering failed, leave the evidence in the release and report it instead of creating duplicates.
-- Production rendering happens inside the VM app worker.
+- Production rendering happens through `scripts/render-worker` on external compute. See `docs/external-video-render-worker.md`.

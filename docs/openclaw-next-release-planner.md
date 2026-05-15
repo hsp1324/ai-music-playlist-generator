@@ -165,7 +165,7 @@ For every Playlist Release plan, the main YouTube title and all localized titles
 
 If YouTube upload is blocked only because phone/account verification does not allow a 14+ minute video, keep the rendered release and metadata intact, report the deferred upload, and continue to the next release plan. Do not delete or re-render just because upload is deferred.
 
-After the plan, continue according to [openclaw-backlog-queue.md](openclaw-backlog-queue.md): finish rendered releases first; otherwise create a new release, prepare assets, render audio, queue video render on the VM app without waiting, then release the lock. The app will ask again when the VM render is ready for metadata/publish.
+After the plan, continue according to [openclaw-backlog-queue.md](openclaw-backlog-queue.md): finish rendered releases first; otherwise create a new release, prepare assets, render audio, queue video render without waiting, then release the lock. An external render worker will render/upload the MP4, and the app will ask again when it is ready for metadata/publish.
 
 ## Skill Prompt
 
@@ -204,7 +204,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, render audio, queue VM video render, then stop and release the lock. When the app later asks after VM render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, render audio, queue video render, then stop and release the lock. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

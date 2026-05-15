@@ -301,6 +301,10 @@ AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=false
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=0
 AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX=OPENCLAW_RUN:
 AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT=
+AIMP_VIDEO_RENDER_EXECUTION_MODE=local
+AIMP_RENDER_WORKER_SHARED_TOKEN=
+AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS=86400
+AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES=8388608
 ```
 
 Runtime behavior:
@@ -313,10 +317,10 @@ Runtime behavior:
   - uploads the separate text-based YouTube thumbnail as the custom thumbnail
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
-- Normal automation renders video only on the Oracle VM app background worker.
+- Normal automation can offload video rendering to external render workers. Set `AIMP_VIDEO_RENDER_EXECUTION_MODE=external` and `AIMP_RENDER_WORKER_SHARED_TOKEN`, then run `scripts/render-worker` on another machine. The main VM keeps DB/UI/YouTube ownership; the render worker claims queued video jobs, renders locally, and uploads the final MP4 back with resumable chunks. See `docs/external-video-render-worker.md`.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
 - Playlist Release YouTube titles are normalized with a `[playlist]` prefix across the default title and localized `ko`/`ja`/`en`/`es` titles. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles are not prefixed.
-- OpenClaw continuous playlist automation uses step commands so VM video rendering can overlap with the next release's asset production. It can still run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a standalone single to be privately uploaded end-to-end.
+- OpenClaw continuous playlist automation uses step commands so external video rendering can overlap with the next release's asset production. It can still run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a standalone single to be privately uploaded end-to-end.
 - OpenClaw auto-publish helpers refuse to re-upload a release that already has a `youtube_video_id` unless `--allow-reupload` is passed, preventing accidental duplicate private uploads.
 - Published releases show `Request Next Playlist`, which posts a Slack command into the configured OpenClaw channel with the `AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX` prefix. Set `AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=true` for the production lookahead loop: when the VM starts rendering a release, the app asks OpenClaw to prepare the next release; when the VM finishes rendering, the app asks OpenClaw to finish metadata/publish. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` only for the older publish-completion trigger mode. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=N` to stop after N successful YouTube uploads in the older auto loop; `0` means no upload cap. A human Slack message in the configured OpenClaw channel such as `OpenClaw 자동화 멈춰`, `OpenClaw stop`, or `OPENCLAW_LOOP_STOP` stores a stop state and prevents the app from sending the next automatic request. `OpenClaw 자동화 다시 시작` or `OPENCLAW_LOOP_START` clears that stop state. Slack event routing and mention-only behavior should be configured in the Slack App/OpenClaw listener, not in the release-production skill docs.
 - The next-release loop is planned by `docs/openclaw-next-release-planner.md`: it reads `/youtube/status`, rotates every connected non-excluded YouTube channel, reads the selected channel's concept planner/profile in `docs/openclaw-channel-concepts/` and `docs/openclaw-channel-profiles/`, avoids recent concept repetition, and then hands off to the automatic private playlist publisher. New connected channels enter rotation automatically by default; if no dedicated docs exist, the planner uses the `custom-channel` fallback docs.
