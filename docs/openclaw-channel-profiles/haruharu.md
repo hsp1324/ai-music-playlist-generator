@@ -64,7 +64,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Main upload metadata should be Korean. Use `--default-language ko` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--ko-title` / `--ko-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial K-pop playlists, not raw workspace names.
 - Use a title shape with a broad mainstream K-pop listening promise first, then a clear use case or emotion. Good example: `[playlist] 신나는 K-POP 믹스 | 운동, 러닝, 외출 준비, 파티 웜업`.

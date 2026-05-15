@@ -53,6 +53,7 @@ REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "fil",
     "id",
     "pt-BR",
+    "pt-PT",
     "fr",
     "de",
     "ar",

@@ -95,6 +95,7 @@ const METADATA_LANGUAGES = [
   { code: "fil", label: "Filipino", shortLabel: "FIL" },
   { code: "id", label: "Indonesian", shortLabel: "ID" },
   { code: "pt-BR", label: "Portuguese (Brazil)", shortLabel: "PT" },
+  { code: "pt-PT", label: "Portuguese (Portugal)", shortLabel: "PT-PT" },
   { code: "fr", label: "French", shortLabel: "FR" },
   { code: "de", label: "German", shortLabel: "DE" },
   { code: "ar", label: "Arabic", shortLabel: "AR" },

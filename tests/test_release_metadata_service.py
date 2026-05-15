@@ -71,6 +71,7 @@ def test_playlist_metadata_ready_requires_all_languages_and_timeline() -> None:
             "fil",
             "id",
             "pt-BR",
+            "pt-PT",
             "fr",
             "de",
             "ar",

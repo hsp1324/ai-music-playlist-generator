@@ -42,6 +42,7 @@ TARGET_LANGUAGES = (
     "fil",
     "id",
     "pt-BR",
+    "pt-PT",
     "fr",
     "de",
     "ar",
@@ -59,9 +60,10 @@ LANGUAGE_NAMES = {
     "fil": "Filipino",
     "id": "Indonesian",
     "pt-BR": "Brazilian Portuguese",
+    "pt-PT": "Portuguese (Portugal)",
     "fr": "French",
     "de": "German",
-    "ar": "Arabic",
+    "ar": "Arabic for Arabic/Egyptian audiences",
     "zh-CN": "Simplified Chinese",
     "zh-TW": "Traditional Chinese",
 }
@@ -69,7 +71,7 @@ LANGUAGE_NAMES = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate missing ko/ja/en/es/vi/th/hi/fil/id/pt-BR/fr/de/ar/zh-CN/zh-TW YouTube localizations and push them to YouTube."
+        description="Generate missing configured YouTube localizations and push them to YouTube."
     )
     parser.add_argument("--release-id", action="append", default=[], help="Limit to a release id. Repeatable.")
     parser.add_argument("--target-language", action="append", default=[], help="Limit backfill to one supported language code. Repeatable.")
@@ -208,7 +210,7 @@ def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
             "- Do not invent upload status, URLs, channel claims, or extra metadata fields.",
             "- Use natural localized copy for listeners in each requested language. For zh-CN, use Simplified Chinese. For zh-TW, use Traditional Chinese suitable for Taiwan.",
             "- For fil, write natural Filipino/Tagalog metadata for Filipino listeners. Keep timestamps unchanged.",
-            "- For id, write natural Indonesian metadata. For pt-BR, write Brazilian Portuguese. For fr, de, and ar, write natural French, German, and Arabic metadata.",
+            "- For id, write natural Indonesian metadata. For pt-BR, write Brazilian Portuguese. For pt-PT, write European Portuguese for Portugal. For fr and de, write natural French and German. For ar, write natural Arabic that is also understandable to Egyptian Arabic listeners; YouTube does not expose a separate ar-EG localization code.",
             "",
             "Source metadata JSON:",
             source_json,
@@ -297,14 +299,30 @@ def update_youtube_item(
         body_snippet["defaultAudioLanguage"] = snippet["defaultAudioLanguage"]
 
     api_localizations = localizations_for_youtube_api(localizations, default_language=default_language)
-    youtube.videos().update(
-        part="snippet,localizations",
-        body={
-            "id": item["id"],
-            "snippet": body_snippet,
-            "localizations": api_localizations,
-        },
-    ).execute()
+    body = {
+        "id": item["id"],
+        "snippet": body_snippet,
+        "localizations": api_localizations,
+    }
+    try:
+        youtube.videos().update(
+            part="snippet,localizations",
+            body=body,
+        ).execute()
+    except HttpError as exc:
+        detail = getattr(exc, "content", b"")
+        detail_text = detail.decode("utf-8", errors="ignore") if isinstance(detail, bytes) else str(detail)
+        if getattr(getattr(exc, "resp", None), "status", None) != 400 or "invalidVideoMetadata" not in detail_text:
+            raise
+        # Some imported Shorts have existing titles/tags that YouTube accepts as-is but rejects
+        # when the full snippet is re-sent. Preserve snippet and update only localizations.
+        youtube.videos().update(
+            part="localizations",
+            body={
+                "id": item["id"],
+                "localizations": api_localizations,
+            },
+        ).execute()
 
 
 def channel_id_for_playlist(playlist: Playlist, service: YouTubeService) -> str | None:
