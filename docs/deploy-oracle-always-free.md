@@ -102,6 +102,10 @@ Important:
 
 - use an absolute SQLite path with four slashes after `sqlite:`
 - keep `AIMP_STORAGE_ROOT` outside ephemeral temp locations
+- keep Slack operational notices separate from OpenClaw command routing:
+  - `AIMP_SLACK_OPS_CHANNEL_ID=C0ATYMCMLLE` for `#all-ai-music-playlist-generator`
+  - `AIMP_OPENCLAW_SLACK_CHANNEL_ID=C0AVBUYP150` for `#openclaw`
+  - never set `AIMP_SLACK_OPS_CHANNEL_ID` to `C0AVBUYP150`; render-worker claim/complete and publish-complete reports must not be posted into the OpenClaw command channel
 
 ## 6. Install the systemd service
 

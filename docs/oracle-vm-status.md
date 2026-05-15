@@ -1,6 +1,6 @@
 # Oracle VM Status
 
-Last updated: 2026-04-24
+Last updated: 2026-05-15
 
 ## Purpose
 
@@ -80,6 +80,17 @@ Nginx site:
 ```
 
 The app service is installed and enabled through systemd.
+
+## Slack Channel Routing
+
+The production VM intentionally separates operational status messages from OpenClaw command messages:
+
+| Channel | Slack ID | Use | Env var |
+| --- | --- | --- | --- |
+| `#all-ai-music-playlist-generator` | `C0ATYMCMLLE` | Operator/status notices: video-render queued, external render-worker claim/complete, heartbeat timeout requeue, YouTube publish complete | `AIMP_SLACK_OPS_CHANNEL_ID` |
+| `#openclaw` | `C0AVBUYP150` | OpenClaw command-loop messages only, such as `OPENCLAW_RUN:` and human start/stop commands | `AIMP_OPENCLAW_SLACK_CHANNEL_ID` |
+
+Do not set `AIMP_SLACK_OPS_CHANNEL_ID` to `C0AVBUYP150`. Render-worker status reports are not OpenClaw commands and must not be posted into `#openclaw`.
 
 ## Current Runtime State
 

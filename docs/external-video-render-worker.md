@@ -54,6 +54,12 @@ Keep `--worker-id` stable. If the worker disconnects during upload, restarting w
 
 After a worker claims a job, the web app shows that `worker_id` in the release render status card. Click `Set Nickname` there to assign a human-readable name such as `Oracle Render 1`, `Home Desktop`, or `Laptop GPU`. The nickname is stored on the main VM in `storage/render-workers.json`, so the external machine does not need its own nickname configuration.
 
+## Slack Notifications
+
+External render-worker lifecycle notices are operational messages. They must go to `#all-ai-music-playlist-generator`, currently Slack channel ID `C0ATYMCMLLE`, through `AIMP_SLACK_OPS_CHANNEL_ID`.
+
+Do not route render-worker claim/complete/upload/timeout notices to `#openclaw` / `C0AVBUYP150`. That channel is reserved for OpenClaw command-loop traffic configured through `AIMP_OPENCLAW_SLACK_CHANNEL_ID`.
+
 ## Resume Behavior
 
 The upload path is resumable:

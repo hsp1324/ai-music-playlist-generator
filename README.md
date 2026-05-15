@@ -140,6 +140,15 @@ Important variables:
 - `AIMP_SUNO_DEFAULT_MODEL`
 - `AIMP_SUNO_WEBHOOK_SECRET`
 
+Production Slack channel routing:
+
+| Purpose | Channel | Current Slack ID | Environment variable |
+| --- | --- | --- | --- |
+| Operator/status notices, including video-render queued, external worker claim/complete, timeout requeue, and YouTube publish-complete reports | `#all-ai-music-playlist-generator` | `C0ATYMCMLLE` | `AIMP_SLACK_OPS_CHANNEL_ID` |
+| OpenClaw command loop only, including `OPENCLAW_RUN:` requests and human start/stop commands | `#openclaw` | `C0AVBUYP150` | `AIMP_OPENCLAW_SLACK_CHANNEL_ID` |
+
+Do not point `AIMP_SLACK_OPS_CHANNEL_ID` at `#openclaw` / `C0AVBUYP150`. Render-worker claim/complete and upload reports are operational notices, not OpenClaw commands.
+
 ## Local Run
 
 Create an environment and install dependencies:
@@ -296,8 +305,10 @@ AIMP_YOUTUBE_AUTO_UPLOAD_ON_PUBLISH=true
 AIMP_CODEX_METADATA_ENABLED=false
 AIMP_CODEX_METADATA_COMMAND=codex
 AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
+# #openclaw: OpenClaw command loop only.
 AIMP_OPENCLAW_SLACK_CHANNEL_ID=C0AVBUYP150
-AIMP_SLACK_OPS_CHANNEL_ID=#all-ai-music-playlist-generator
+# #all-ai-music-playlist-generator: render/publish operational notices.
+AIMP_SLACK_OPS_CHANNEL_ID=C0ATYMCMLLE
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=false
 AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=false
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=0
@@ -323,7 +334,7 @@ Runtime behavior:
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 - Normal automation can offload video rendering to external render workers. Set `AIMP_VIDEO_RENDER_EXECUTION_MODE=external` and `AIMP_RENDER_WORKER_SHARED_TOKEN`, then run `scripts/render-worker` on another machine. The main VM keeps DB/UI/YouTube ownership; the render worker claims queued video jobs, renders locally, and uploads the final MP4 back with resumable chunks. See `docs/external-video-render-worker.md`.
-- Operational Slack notices use `AIMP_SLACK_OPS_CHANNEL_ID`; production should set it to `#all-ai-music-playlist-generator`. The app posts video-render queued, render-worker claim, render-worker complete, render-worker heartbeat-timeout requeue, and YouTube publish-complete notices there. It does not post a Slack notice merely because a playlist reached its target duration.
+- Operational Slack notices use `AIMP_SLACK_OPS_CHANNEL_ID`; production must set it to `#all-ai-music-playlist-generator` / `C0ATYMCMLLE`, not the OpenClaw command channel. The app posts video-render queued, render-worker claim, render-worker complete, render-worker heartbeat-timeout requeue, and YouTube publish-complete notices there. It does not post a Slack notice merely because a playlist reached its target duration.
 - Local rendered MP4 cleanup is enabled by default. When disk usage for `AIMP_STORAGE_ROOT` rises above `AIMP_LOCAL_VIDEO_CLEANUP_DISK_THRESHOLD_PERCENT` (default `80`), the background worker deletes only local rendered MP4 files for releases that are already uploaded to YouTube and public, then records the deletion in the release metadata and clears `output_video_path`. Future scheduled-public videos are kept until their scheduled public time has passed.
 - Release cards are returned from the workspace API in stable newest-first display order: scheduled publish time, then actual publish/upload time, then creation time. Channel filters preserve that same API order by default, and the web UI can toggle Published, Updated, or Created sorting in either direction for the current view.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
