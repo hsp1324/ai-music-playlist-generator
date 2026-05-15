@@ -152,11 +152,11 @@ Use this for `Club Bloom`, no-vocal EDM, house, techno, trance, festival EDM, wo
 
 - No fixed recurring visual signature yet.
 - Let the selected club style lane decide the neon/dance/nightlife scene, subject, palette, and loop-video motion. Prefer visuals that clearly read as club, dance floor, DJ/performance, festival, rooftop party, nightlife, or movement energy rather than generic abstract neon.
-- A stylish adult female DJ or dancer can be used when it fits the release, but treat it as one possible direction, not a fixed template. Vary subject, pose, camera angle, venue, lighting, wardrobe color, and crowd/solo composition across releases.
+- A stylish adult female DJ or dancer can be used when it fits the release, including bold club fashion, confident poses, and sexy nightlife energy, but treat it as one possible direction, not a fixed template. Vary subject, pose, camera angle, venue, lighting, wardrobe color, and crowd/solo composition across releases.
 - The cover must contain only the large lower-left `Club Bloom` brand label.
 - The thumbnail should use short style-specific dance click text such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`, plus `CLUB BLOOM`.
 - The loop video should animate the selected cover concept with rhythmic neon motion: light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
-- Tasteful adult nightlife subjects are allowed when the concept fits, but do not use explicit nudity, unsafe minors, fetish framing, objectifying close-ups, protected brands, photorealistic club footage, or UI overlays.
+- Bold adult nightlife subjects are allowed when the concept fits, but do not use full nudity, sexual acts, unsafe minors, fetish framing, protected brands, photorealistic club footage, or UI overlays.
 
 ## The Old Verse Visual Skill
 

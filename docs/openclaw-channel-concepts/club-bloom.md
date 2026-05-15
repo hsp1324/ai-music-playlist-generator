@@ -63,8 +63,8 @@ Good style lanes:
 
 - Illustrated/anime/stylized neon visuals. Avoid photorealistic/live-action club footage.
 - Visuals should usually communicate club/dance energy quickly: nightlife venues, DJ/performance moments, dance-floor movement, festival lights, rooftop parties, city nightlife, athletic workout energy, beach clubs, or cyber arcade lighting.
-- Human figures are allowed when they fit the concept. A stylish adult woman DJing or dancing is a valid Club Bloom direction, but it must not become a repeated formula. Vary the subject, setting, camera, composition, crowd presence, outfit palette, and action so each release feels fresh.
-- Keep adult nightlife imagery tasteful and YouTube-safe. Avoid explicit nudity, minors, fetish framing, objectifying close-ups, protected brands, or anything that looks unsafe or policy-risky.
+- Human figures are allowed when they fit the concept. A stylish adult woman DJing or dancing is a valid Club Bloom direction, including bold club fashion, confident poses, and sexy nightlife energy, but it must not become a repeated formula. Vary the subject, setting, camera, composition, crowd presence, outfit palette, and action so each release feels fresh.
+- Keep adult nightlife imagery bold but YouTube-safe. Avoid full nudity, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
 - Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`.
 
 ## Good Fresh Concept Shapes
