@@ -203,13 +203,14 @@ Cover / first frame:
 
 - 16:9 illustrated/anime/stylized neon image for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, or party-energy releases.
 - No fixed recurring visual signature yet. The selected club style lane decides the scene, subject, color, and camera.
+- Prefer visuals that immediately read as club/dance music: DJ/performance moments, dance floors, nightlife, festival lights, rooftop parties, or movement energy. A stylish adult female DJ or dancer can fit, but it is not required and should not repeat as the same template every time.
 - Only text allowed is the large lower-left `Club Bloom` brand label.
 
 Loop video:
 
 - Animate the cover/first-frame with visible rhythmic motion such as light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
 - Preserve the large lower-left `Club Bloom` brand label exactly for the whole clip.
-- Do not add subtitles, lyrics, title text, duration text, UI, logos, explicit nudity, unsafe minors, protected brands, or unrelated words.
+- Do not add subtitles, lyrics, title text, duration text, UI, logos, explicit nudity, unsafe minors, fetish framing, protected brands, or unrelated words.
 
 YouTube thumbnail:
 

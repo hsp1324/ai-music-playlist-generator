@@ -14,6 +14,8 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Mood: energetic, neon, glossy, rhythmic, nightlife, movement, dance.
 - Style must be animated, anime, illustrated, stylized, or graphic poster-art. Avoid photorealistic/live-action looks.
 - Let the playlist concept decide the scene and subject. No fixed recurring mascot or required person count.
+- Prefer imagery that immediately reads as a club/dance-music channel, not generic abstract neon. Stylish adult DJs, dancers, performers, club crowds, rooftop parties, festival stages, dance floors, and nightlife silhouettes are all valid directions when they match the selected style lane.
+- A female DJ or dancer can be a strong subject when the concept fits, but this is a direction, not a template. Vary the subject, pose, camera angle, venue, lighting, outfit color, and scene across releases so Club Bloom does not keep generating the same woman-at-DJ-booth image.
 - Visuals should feel clean and premium, not cluttered with random neon objects.
 
 ## Cover
@@ -23,7 +25,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - The cover must include only a large lower-left `Club Bloom` channel brand label.
 - Make `Club Bloom` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
-- Match the scene to the selected club style lane: deep house lounge, tech-house club floor, progressive house skyline, melodic-techno warehouse, trance highway/night sky, big-room festival stage, bass-house basement, UK-garage city night, DnB running/gaming energy, tropical beach club, Afro-house sunset deck, synthwave night drive, or cyber dance floor.
+- Match the scene to the selected club style lane. The image should feel like a real dance/club context through venue, lighting, performers, movement, crowd energy, fashion, or nightlife atmosphere, while still staying original and varied.
 
 ## YouTube Thumbnail
 
