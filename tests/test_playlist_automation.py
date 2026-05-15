@@ -1,6 +1,7 @@
 import json
 import os
 import io
+import time
 import wave
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -214,6 +215,103 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         with SessionLocal() as db:
             updated = db.get(Playlist, playlist_id)
             assert updated.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-next-123"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_publish_completion_requests_next_even_with_video_event_requests_enabled(tmp_path) -> None:
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.slack.post_plain_message = fake_post_plain_message
+        services.settings.openclaw_slack_channel_id = "C0AVBUYP150"
+        services.settings.slack_bot_token = "xoxb-test"
+        services.settings.openclaw_auto_request_next_on_publish = True
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_video(audio_path, cover_image_path, output_path, **_kwargs):
+            output_path.write_bytes(b"fake-mp4")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_video = fake_build_video
+        services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
+        services.youtube.upload_playlist_video = lambda *args, **kwargs: SimpleNamespace(
+            video_id="yt-published-next",
+            response={
+                "id": "yt-published-next",
+                "upload_channel": {"id": kwargs.get("youtube_channel_id"), "title": "Soft Hour Radio"},
+            },
+        )
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Published Next Request Workspace",
+                "target_duration_seconds": 60,
+                "description": "Publish should request next.",
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+        local_audio = tmp_path / "single.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Single Track",
+                "prompt": "minimal electronic",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        render_workspace_audio(client, workspace_id)
+        prepare_release_for_final_publish(client, workspace_id)
+
+        services.settings.openclaw_request_next_on_video_render_events = True
+        publish_response = client.post(
+            f"/api/playlists/{workspace_id}/approve-publish",
+            json={
+                "actor": "test-suite",
+                "note": "publish should request next",
+                "youtube_channel_id": "UC_SOFT",
+            },
+        )
+        assert publish_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        deadline = time.monotonic() + 3
+        while not calls and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert len(calls) == 1
+        assert calls[0]["channel"] == "C0AVBUYP150"
+        assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
+        assert "scheduler_reason: publish_completed" in calls[0]["text"]
+        assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            assert playlist.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-published-next"
+            assert playlist.metadata_json["openclaw_auto_loop"]["should_request_next"] is True
     finally:
         clear_isolated_client_env()
 
@@ -3035,6 +3133,32 @@ def test_youtube_status_ignores_invalid_token_file(tmp_path) -> None:
         assert payload["ready"] is False
         assert payload["redirect_uri"].endswith("/api/youtube/oauth/callback")
         assert "could not be read" in payload["error"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_youtube_status_browser_request_gets_human_page(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+
+        browser_response = client.get("/api/youtube/status", headers={"accept": "text/html"})
+        assert browser_response.status_code == 200
+        assert "text/html" in browser_response.headers["content-type"]
+        assert "YouTube API Status" in browser_response.text
+        assert "Soft Hour Radio" in browser_response.text
+        assert "not by opening it in the browser" in browser_response.text
+
+        api_response = client.get("/api/youtube/status", headers={"accept": "application/json"})
+        assert api_response.status_code == 200
+        assert api_response.headers["content-type"].startswith("application/json")
+        assert api_response.json()["channels"][0]["title"] == "Soft Hour Radio"
     finally:
         clear_isolated_client_env()
 

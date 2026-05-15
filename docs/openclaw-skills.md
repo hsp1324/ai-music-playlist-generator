@@ -19,7 +19,7 @@ Recommended API target:
 - The public `https://ai-music.168.107.34.175.sslip.io/api` URL is behind Google login. It requires `AIMP_API_COOKIE` from a logged-in browser session before `scripts/openclaw-release` can upload tracks, create releases, or publish.
 - `AIMP_OPENCLAW_SHARED_TOKEN` only covers OpenClaw coordination endpoints such as lock/backlog when the backend is reachable. It is not a replacement for Google-login cookie or direct/tunneled backend access.
 
-Never open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio from an automation run. YouTube connection is a human setup task. Automation must only read `/youtube/status` and pass the selected connected channel title/id to the helper scripts.
+Never open `/youtube/status`, `/api/youtube/status`, `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio in a browser from an automation run. YouTube connection is a human setup task. Automation must only read status through CLI/API calls such as `scripts/openclaw-release youtube-status` or `curl -fsS "$AIMP_LOCAL_API_BASE/youtube/status"` and pass the selected connected channel title/id to the helper scripts.
 
 ## Continuous Next Release Planning
 

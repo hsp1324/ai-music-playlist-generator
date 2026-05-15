@@ -59,7 +59,7 @@ OpenClaw usually runs outside the Oracle VM. In that runtime, the repo checkout 
 
 If that path is missing, try `~/repos/ai리포` or the current checkout before failing. Do not require `/opt/ai-music-playlist-generator`; that path is the deployed VM service path, not the OpenClaw runtime path.
 
-`AIMP_LOCAL_API_BASE` must point to the deployed VM app API or to a tunnel that forwards to the deployed VM app. Do not use OpenClaw's own local dev API. If `curl "$AIMP_LOCAL_API_BASE/youtube/status"` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, assume you are pointed at the wrong API and stop before generation/publish.
+`AIMP_LOCAL_API_BASE` must point to the deployed VM app API or to a tunnel that forwards to the deployed VM app. Do not use OpenClaw's own local dev API. If `scripts/openclaw-release youtube-status` returns `configured=false`, `authenticated=false`, `ready=false`, or `channels=[]`, assume you are pointed at the wrong API and stop before generation/publish.
 
 Use one of these API access patterns:
 
@@ -69,7 +69,7 @@ Use one of these API access patterns:
 
 Do not assume `AIMP_OPENCLAW_SHARED_TOKEN` can upload tracks or publish releases by itself. That token is for OpenClaw coordination endpoints, not the release-production API surface.
 
-Do not open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio during automation. Channel tokens are managed by the human through the web app. OpenClaw should only read `/youtube/status`, choose a connected channel, and pass the explicit channel title/id into the helper publish command.
+Do not open `/youtube/status`, `/api/youtube/status`, `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio in a browser during automation. Channel tokens are managed by the human through the web app. OpenClaw should only read status through `scripts/openclaw-release youtube-status` or `curl -fsS "$AIMP_LOCAL_API_BASE/youtube/status"`, choose a connected channel, and pass the explicit channel title/id into the helper publish command.
 
 Required first commands:
 
@@ -82,7 +82,7 @@ cd "$REPO_DIR"
 git pull origin main
 : "${AIMP_LOCAL_API_BASE:?Set AIMP_LOCAL_API_BASE to the deployed VM API or VM API tunnel before running OpenClaw automation.}"
 scripts/openclaw-release list-releases
-curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
+scripts/openclaw-release youtube-status
 ```
 
 Treat `list-releases` as the app's known YouTube upload catalog. It contains release titles, channel titles, YouTube ids, durations, and recent update times. If the human says there are relevant YouTube uploads outside this app, report that limitation before claiming a concept is non-duplicated.
@@ -184,7 +184,7 @@ cd "$REPO_DIR"
 git pull origin main
 : "${AIMP_LOCAL_API_BASE:?Set AIMP_LOCAL_API_BASE to the deployed VM API or VM API tunnel. Do not use the OpenClaw local dev API.}"
 scripts/openclaw-release list-releases
-curl -sS "$AIMP_LOCAL_API_BASE/youtube/status"
+scripts/openclaw-release youtube-status
 
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 

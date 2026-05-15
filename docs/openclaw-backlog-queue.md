@@ -33,8 +33,8 @@ On each `OPENCLAW_RUN:` backlog request:
 2. Acquire the app-side OpenClaw lock before opening Suno, Dreamina, or creating a release.
 3. Keep the lock alive with heartbeat while working.
 4. Run `scripts/openclaw-release list-releases`.
-5. Check `/youtube/status` and build the active roster from connected channels, excluding `MusicSun` and retired names.
-   Do not open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio. If `/youtube/status` is not ready, report the blocker instead of trying to authenticate.
+5. Check YouTube status with `scripts/openclaw-release youtube-status` and build the active roster from connected channels, excluding `MusicSun` and retired names.
+   Do not open `/youtube/status`, `/api/youtube/status`, `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio in a browser. If YouTube status is not ready, report the blocker instead of trying to authenticate.
 6. First finish existing releases that are already past video render:
    - `metadata_review`: write/approve final YouTube metadata, then approve publish.
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
@@ -115,6 +115,8 @@ When a release has completed video render, OpenClaw should finish it before star
 5. Approve metadata through `scripts/openclaw-release approve-metadata`.
 6. Publish through `scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title CHANNEL_TITLE`.
 7. If phone/account verification blocks a 14+ minute upload, keep the release intact, report the deferred upload, and continue with backlog work.
+
+After a successful publish, finish the current OpenClaw lock normally. The app will wait for that lock to clear and may send a compact `publish_completed` backlog request if the pipeline still has unfinished work, such as a release waiting at `audio_ready`, or a channel below target backlog. Treat that request like any other backlog pass.
 
 ## Slack Reporting
 

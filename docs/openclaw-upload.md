@@ -17,7 +17,7 @@ Recommended API target:
 - The public `https://ai-music.168.107.34.175.sslip.io/api` route is protected by Google login. It only works for `scripts/openclaw-release` when `AIMP_API_COOKIE` contains a valid logged-in browser cookie.
 - `AIMP_OPENCLAW_SHARED_TOKEN` is for app-side OpenClaw lock/backlog endpoints only. It does not authenticate track upload, playlist, YouTube status, or publish helper calls.
 
-Do not open `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio as part of automation. If YouTube is not ready, report the blocker. If it is ready, use the connected channel list from `/youtube/status` and publish through `scripts/openclaw-release` with an explicit channel title/id.
+Do not open `/youtube/status`, `/api/youtube/status`, `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio in a browser as part of automation. If YouTube is not ready, report the blocker. If it is ready, use the connected channel list from `scripts/openclaw-release youtube-status` and publish through `scripts/openclaw-release` with an explicit channel title/id.
 
 ## Upload A New Single Candidate Set
 

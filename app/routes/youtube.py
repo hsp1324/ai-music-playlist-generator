@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -36,9 +36,34 @@ def get_services(request: Request) -> ServiceRegistry:
 
 
 @router.get("/status")
-def youtube_status(request: Request) -> dict:
+def youtube_status(request: Request):
     services = get_services(request)
-    return services.youtube.get_status()
+    status = services.youtube.get_status()
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept and "application/json" not in accept:
+        channels = status.get("channels") if isinstance(status, dict) else []
+        channel_titles = [
+            str(channel.get("title") or channel.get("id") or "").strip()
+            for channel in channels or []
+            if isinstance(channel, dict) and str(channel.get("title") or channel.get("id") or "").strip()
+        ]
+        channel_list = ", ".join(channel_titles) if channel_titles else "No connected channels found."
+        ready_text = "ready" if status.get("ready") else "not ready"
+        return HTMLResponse(
+            "<!doctype html>"
+            "<meta charset='utf-8'>"
+            "<title>YouTube API Status</title>"
+            "<body style='font-family:sans-serif;max-width:760px;margin:48px auto;line-height:1.5'>"
+            "<h1>YouTube API Status</h1>"
+            f"<p>Status: <strong>{ready_text}</strong></p>"
+            f"<p>Channels: {channel_list}</p>"
+            "<p>This is an automation API endpoint. OpenClaw should read it with "
+            "<code>curl -fsS \"$AIMP_LOCAL_API_BASE/youtube/status\"</code> or "
+            "<code>scripts/openclaw-release</code>, not by opening it in the browser.</p>"
+            "<p><a href='/'>Back to dashboard</a></p>"
+            "</body>"
+        )
+    return status
 
 
 @router.get("/connect")

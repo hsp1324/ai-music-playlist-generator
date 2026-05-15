@@ -1648,6 +1648,10 @@ def openclaw_backlog_status(client: httpx.Client, _args: argparse.Namespace) -> 
     return request_json(client, "GET", "/openclaw/backlog/status")
 
 
+def youtube_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(client, "GET", "/youtube/status", headers={"Accept": "application/json"})
+
+
 def openclaw_backlog_request(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     return request_json(
         client,
@@ -3054,6 +3058,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     backlog_status_parser = subparsers.add_parser("openclaw-backlog-status", help="Show app-side backlog scheduler evaluation.")
     backlog_status_parser.set_defaults(func=openclaw_backlog_status)
+
+    youtube_status_parser = subparsers.add_parser("youtube-status", help="Show connected YouTube status/channels as JSON.")
+    youtube_status_parser.set_defaults(func=youtube_status)
 
     backlog_request_parser = subparsers.add_parser("openclaw-backlog-request", help="Ask the app to post one OpenClaw backlog Slack request.")
     backlog_request_parser.add_argument("--reason", default="manual", help="Reason recorded in the Slack request.")
