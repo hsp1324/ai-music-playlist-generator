@@ -201,6 +201,14 @@ class FFMpegPlaylistBuilder:
                         emit()
                     elif name == "progress":
                         emit(force=value == "end")
+        except BaseException:
+            if process.poll() is None:
+                process.kill()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
+            raise
         finally:
             selector.close()
 

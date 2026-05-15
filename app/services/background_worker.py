@@ -750,54 +750,60 @@ class BackgroundJobWorker:
     @staticmethod
     def _build_audio_progress_callback(db: Session, job: Job, playlist: Playlist):
         def callback(progress: dict) -> None:
-            payload = {
-                **progress,
-                "message": BackgroundJobWorker._format_audio_progress_message(progress),
-                "updated_at": _utcnow().isoformat(),
-            }
-            job.result_json = {
-                **(job.result_json or {}),
-                "playlist_id": playlist.id,
-                "progress": payload,
-            }
-            meta = BackgroundJobWorker._current_playlist_meta(
-                db,
-                playlist.id,
-                fallback=dict(playlist.metadata_json or {}),
-            )
-            meta["audio_render_progress"] = payload
-            meta["note"] = payload["message"]
-            playlist.metadata_json = meta
-            db.add(job)
-            db.add(playlist)
-            db.commit()
+            try:
+                payload = {
+                    **progress,
+                    "message": BackgroundJobWorker._format_audio_progress_message(progress),
+                    "updated_at": _utcnow().isoformat(),
+                }
+                job.result_json = {
+                    **(job.result_json or {}),
+                    "playlist_id": playlist.id,
+                    "progress": payload,
+                }
+                meta = BackgroundJobWorker._current_playlist_meta(
+                    db,
+                    playlist.id,
+                    fallback=dict(playlist.metadata_json or {}),
+                )
+                meta["audio_render_progress"] = payload
+                meta["note"] = payload["message"]
+                playlist.metadata_json = meta
+                db.add(job)
+                db.add(playlist)
+                db.commit()
+            except Exception:  # noqa: BLE001
+                db.rollback()
 
         return callback
 
     @staticmethod
     def _build_video_progress_callback(db: Session, job: Job, playlist: Playlist):
         def callback(progress: dict) -> None:
-            payload = {
-                **progress,
-                "message": BackgroundJobWorker._format_video_progress_message(progress),
-                "updated_at": _utcnow().isoformat(),
-            }
-            job.result_json = {
-                **(job.result_json or {}),
-                "playlist_id": playlist.id,
-                "progress": payload,
-            }
-            meta = BackgroundJobWorker._current_playlist_meta(
-                db,
-                playlist.id,
-                fallback=dict(playlist.metadata_json or {}),
-            )
-            meta["video_render_progress"] = payload
-            meta["note"] = payload["message"]
-            playlist.metadata_json = meta
-            db.add(job)
-            db.add(playlist)
-            db.commit()
+            try:
+                payload = {
+                    **progress,
+                    "message": BackgroundJobWorker._format_video_progress_message(progress),
+                    "updated_at": _utcnow().isoformat(),
+                }
+                job.result_json = {
+                    **(job.result_json or {}),
+                    "playlist_id": playlist.id,
+                    "progress": payload,
+                }
+                meta = BackgroundJobWorker._current_playlist_meta(
+                    db,
+                    playlist.id,
+                    fallback=dict(playlist.metadata_json or {}),
+                )
+                meta["video_render_progress"] = payload
+                meta["note"] = payload["message"]
+                playlist.metadata_json = meta
+                db.add(job)
+                db.add(playlist)
+                db.commit()
+            except Exception:  # noqa: BLE001
+                db.rollback()
 
         return callback
 
