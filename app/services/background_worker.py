@@ -124,15 +124,17 @@ class BackgroundJobWorker:
         self.settings = settings
         self.services = None
         self._thread: threading.Thread | None = None
+        self._upload_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._state = WorkerLoopState()
+        self._upload_state = WorkerLoopState()
         self._last_openclaw_backlog_scheduler_check = 0.0
 
     def bind_services(self, services) -> None:
         self.services = services
 
     def start(self) -> None:
-        if not self.settings.worker_autostart or self._thread is not None:
+        if not self.settings.worker_autostart or self._thread is not None or self._upload_thread is not None:
             return
         if self.services is None:
             raise RuntimeError("Background worker is not bound to services.")
@@ -141,19 +143,38 @@ class BackgroundJobWorker:
         self._stop_event.clear()
         self._thread = threading.Thread(
             target=self._run_loop,
+            kwargs={
+                "job_types": (JobType.build_playlist, JobType.build_video, JobType.sync_slack),
+                "state": self._state,
+                "run_backlog_scheduler": True,
+            },
             name="aimp-background-worker",
             daemon=True,
         )
+        self._upload_thread = threading.Thread(
+            target=self._run_loop,
+            kwargs={
+                "job_types": (JobType.upload_youtube,),
+                "state": self._upload_state,
+                "run_backlog_scheduler": False,
+            },
+            name="aimp-upload-worker",
+            daemon=True,
+        )
         self._thread.start()
+        self._upload_thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()
         if self._thread is not None:
             self._thread.join(timeout=5)
             self._thread = None
+        if self._upload_thread is not None:
+            self._upload_thread.join(timeout=5)
+            self._upload_thread = None
 
-    def process_pending_once(self) -> bool:
-        job_id = self._claim_next_job_id()
+    def process_pending_once(self, job_types: tuple[JobType, ...] | None = None) -> bool:
+        job_id = self._claim_next_job_id(job_types)
         if not job_id:
             return False
         self._process_job(job_id)
@@ -246,19 +267,26 @@ class BackgroundJobWorker:
                 db.commit()
         return counts
 
-    def _run_loop(self) -> None:
-        self._state.running = True
+    def _run_loop(
+        self,
+        *,
+        job_types: tuple[JobType, ...],
+        state: WorkerLoopState,
+        run_backlog_scheduler: bool,
+    ) -> None:
+        state.running = True
         while not self._stop_event.is_set():
             try:
-                processed = self.process_pending_once()
-                self._state.last_error = None
+                processed = self.process_pending_once(job_types)
+                state.last_error = None
             except Exception as exc:  # noqa: BLE001
-                self._state.last_error = str(exc)
+                state.last_error = str(exc)
                 processed = False
-            if not processed:
+            if not processed and run_backlog_scheduler:
                 self._maybe_request_openclaw_backlog()
+            if not processed:
                 self._stop_event.wait(self.settings.worker_poll_interval_seconds)
-        self._state.running = False
+        state.running = False
 
     def _maybe_request_openclaw_backlog(self) -> None:
         if not self.settings.openclaw_backlog_scheduler_enabled or self.services is None:
@@ -292,9 +320,14 @@ class BackgroundJobWorker:
                 },
             )
 
-    def _claim_next_job_id(self) -> str | None:
+    def _claim_next_job_id(self, job_types: tuple[JobType, ...] | None = None) -> str | None:
         with SessionLocal() as db:
-            claimable_job_types = [JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]
+            claimable_job_types = job_types or (
+                JobType.build_playlist,
+                JobType.build_video,
+                JobType.upload_youtube,
+                JobType.sync_slack,
+            )
             candidate_ids = db.scalars(
                 select(Job.id)
                 .where(
