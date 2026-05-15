@@ -132,6 +132,7 @@ class PlaylistJobRead(BaseModel):
     output_audio_path: str | None = None
     output_video_path: str | None = None
     progress: dict[str, Any] | None = None
+    external_render_worker: dict[str, Any] | None = None
 
 
 class PlaylistWorkspaceRead(BaseModel):

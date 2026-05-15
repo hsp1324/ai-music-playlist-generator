@@ -681,6 +681,17 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         assert claim_payload["job"]["id"] == job_id
         assert claim_payload["job"]["render"]["mode"] == "loop_video"
 
+        nickname = client.post(
+            "/api/playlists/render-workers/test-worker/nickname",
+            json={"nickname": "Test Render Box", "actor": "test-suite"},
+        )
+        assert nickname.status_code == 200
+        assert nickname.json()["updated_jobs"] == 1
+
+        workspace_response = client.get(f"/api/playlists/workspaces/{playlist_id}")
+        assert workspace_response.status_code == 200
+        assert workspace_response.json()["render_job"]["external_render_worker"]["nickname"] == "Test Render Box"
+
         payload = b"fake-rendered-video"
         first = client.put(
             f"/api/render-worker/jobs/{job_id}/upload",
@@ -712,6 +723,7 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             job = db.get(Job, job_id)
             playlist = db.get(Playlist, playlist_id)
             assert job.status == JobStatus.succeeded
+            assert job.result_json["external_render_worker"]["nickname"] == "Test Render Box"
             assert playlist.status == PlaylistStatus.ready
             assert playlist.output_video_path
             assert Path(playlist.output_video_path).read_bytes() == payload

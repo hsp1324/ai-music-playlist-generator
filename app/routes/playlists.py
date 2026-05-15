@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -57,6 +58,7 @@ from app.workflows.playlist_automation import (
     set_playlist_workspace_archive_state,
 )
 from app.utils.openclaw_slack_loop import post_next_playlist_request
+from app.utils.render_worker_registry import set_render_worker_nickname
 from app.utils.youtube_localizations import (
     normalize_youtube_language,
     normalize_youtube_localizations,
@@ -67,6 +69,11 @@ router = APIRouter(prefix="/playlists", tags=["playlists"])
 
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_LOOP_VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".webm"}
+
+
+class RenderWorkerNicknameRequest(BaseModel):
+    nickname: str = Field(default="", max_length=128)
+    actor: str = Field(default="web-ui", max_length=128)
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -219,6 +226,46 @@ def list_workspace_playlists(
 @router.get("/workspaces/summary")
 def list_workspace_summary(db: Session = Depends(get_db)) -> dict:
     return {"channels": list_workspace_channel_summaries(db)}
+
+
+@router.post("/render-workers/{worker_id}/nickname")
+def set_render_worker_nickname_endpoint(
+    worker_id: str,
+    payload: RenderWorkerNicknameRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict:
+    services = get_services(request)
+    nickname = payload.nickname.strip()
+    entry = set_render_worker_nickname(
+        services.settings.storage_root,
+        worker_id=worker_id,
+        nickname=nickname,
+        actor=payload.actor or "web-ui",
+    )
+
+    updated_jobs = 0
+    jobs = db.scalars(select(Job).where(Job.type == JobType.build_video)).all()
+    for job in jobs:
+        result = dict(job.result_json or {})
+        worker = result.get("external_render_worker")
+        if not isinstance(worker, dict) or worker.get("worker_id") != worker_id:
+            continue
+        worker = dict(worker)
+        if nickname:
+            worker["nickname"] = nickname
+        else:
+            worker.pop("nickname", None)
+        worker["nickname_updated_by"] = payload.actor or "web-ui"
+        worker["nickname_updated_at"] = _utcnow().isoformat()
+        result["external_render_worker"] = worker
+        job.result_json = result
+        db.add(job)
+        updated_jobs += 1
+    if updated_jobs:
+        db.commit()
+
+    return {"ok": True, "worker": entry, "updated_jobs": updated_jobs}
 
 
 @router.get("/workspaces/{playlist_id}", response_model=PlaylistWorkspaceRead)

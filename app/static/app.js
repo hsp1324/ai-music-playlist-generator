@@ -1279,6 +1279,11 @@ function clearDropPlacement(card) {
   card.classList.remove("drop-before", "drop-after");
 }
 
+function renderWorkerLabel(job) {
+  const worker = job?.external_render_worker || {};
+  return worker.nickname || worker.hostname || worker.worker_id || "";
+}
+
 function renderJobStatusText(workspace) {
   const job = workspace.render_job;
   if (!job) {
@@ -1297,7 +1302,9 @@ function renderJobStatusText(workspace) {
     const total = Number(progress.total_seconds);
     const eta = Number(progress.eta_seconds);
     const parts = [];
+    const workerLabel = job.type === "build_video" ? renderWorkerLabel(job) : "";
     if (message) parts.push(message);
+    if (workerLabel) parts.push(`Worker: ${workerLabel}`);
     if (!message && Number.isFinite(percent)) parts.push(`${job.type === "build_video" ? "Video" : "Audio"} rendering ${percent.toFixed(1)}%.`);
     if (Number.isFinite(processed) && Number.isFinite(total) && total > 0) {
       parts.push(`${formatLongDuration(processed)} / ${formatLongDuration(total)}`);
@@ -1393,6 +1400,39 @@ function appendRenderStatus(workspace) {
 
   card.appendChild(title);
   card.appendChild(message);
+
+  const worker = job?.external_render_worker || null;
+  if (worker?.worker_id) {
+    const workerRow = document.createElement("div");
+    workerRow.className = "render-worker-row";
+
+    const workerCopy = document.createElement("span");
+    const label = renderWorkerLabel(job) || "Unnamed worker";
+    workerCopy.textContent = `${label} · ${worker.worker_id}`;
+    workerRow.appendChild(workerCopy);
+
+    const nicknameButton = document.createElement("button");
+    nicknameButton.type = "button";
+    nicknameButton.className = "render-worker-nickname";
+    nicknameButton.textContent = worker.nickname ? "Rename" : "Set Nickname";
+    nicknameButton.addEventListener("click", async () => {
+      const nickname = window.prompt("렌더 worker 닉네임을 입력하세요. 빈 값이면 닉네임을 지웁니다.", worker.nickname || worker.hostname || "");
+      if (nickname === null) return;
+      nicknameButton.disabled = true;
+      try {
+        await api(`/api/playlists/render-workers/${encodeURIComponent(worker.worker_id)}/nickname`, {
+          method: "POST",
+          body: JSON.stringify({ nickname, actor: "web-ui" }),
+        });
+        await refreshBoard();
+      } catch (error) {
+        alert(error.message);
+        nicknameButton.disabled = false;
+      }
+    });
+    workerRow.appendChild(nicknameButton);
+    card.appendChild(workerRow);
+  }
   appendDetailGroupItem("production", card);
 }
 

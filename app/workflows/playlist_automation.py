@@ -420,6 +420,7 @@ def _latest_render_job(playlist: Playlist) -> PlaylistJobRead | None:
         output_audio_path=result.get("output_audio_path"),
         output_video_path=result.get("output_video_path"),
         progress=result.get("progress"),
+        external_render_worker=result.get("external_render_worker"),
     )
 
 
@@ -657,6 +658,7 @@ def _compact_render_jobs(db: Session, playlist_ids: list[str]) -> dict[str, Play
             output_audio_path=payload.get("output_audio_path"),
             output_video_path=payload.get("output_video_path"),
             progress=payload.get("progress"),
+            external_render_worker=payload.get("external_render_worker"),
         )
     return result
 

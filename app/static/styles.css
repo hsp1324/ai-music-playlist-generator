@@ -1512,6 +1512,41 @@ label .channel-avatar-select span {
   -webkit-line-clamp: 1;
 }
 
+.render-worker-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.render-worker-row span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-line-clamp: unset;
+}
+
+.render-worker-nickname {
+  flex: 0 0 auto;
+  min-height: 24px;
+  padding: 0 9px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff8ea;
+  color: var(--ink);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
 .render-queued,
 .render-running {
   background: var(--hold-soft);

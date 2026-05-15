@@ -19,6 +19,7 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
+from app.utils.render_worker_registry import record_render_worker_seen, render_worker_display_name
 from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 from app.utils.youtube_localizations import ensure_playlist_title_prefix
 
@@ -304,6 +305,14 @@ def claim_render_job(
     _require_external_mode(services)
     recovered = _recover_stale_external_render_jobs(db, services)
     now = _utcnow()
+    registry_worker = record_render_worker_seen(
+        services.settings.storage_root,
+        worker_id=payload.worker_id,
+        hostname=payload.hostname,
+        capabilities=payload.capabilities,
+        claimed_at=now.isoformat(),
+    )
+    server_nickname = str(registry_worker.get("nickname") or "").strip()
 
     existing = db.scalars(
         select(Job)
@@ -315,6 +324,17 @@ def claim_render_job(
         worker = result.get("external_render_worker")
         if isinstance(worker, dict) and worker.get("worker_id") == payload.worker_id:
             job, playlist = _load_render_job(db, job.id)
+            worker = dict(worker)
+            worker["hostname"] = payload.hostname or worker.get("hostname") or ""
+            worker["capabilities"] = payload.capabilities or worker.get("capabilities") or {}
+            if server_nickname:
+                worker["nickname"] = server_nickname
+            else:
+                worker.pop("nickname", None)
+            result["external_render_worker"] = worker
+            job.result_json = result
+            db.add(job)
+            db.commit()
             _update_video_progress(
                 db,
                 job,
@@ -352,7 +372,7 @@ def claim_render_job(
     job, playlist = _load_render_job(db, claimed_id)
     track_ids = _playlist_track_ids(playlist)
     result = dict(job.result_json or {})
-    result["external_render_worker"] = {
+    worker_meta = {
         "worker_id": payload.worker_id,
         "hostname": payload.hostname,
         "capabilities": payload.capabilities,
@@ -360,10 +380,14 @@ def claim_render_job(
         "heartbeat_at": now.isoformat(),
         "rendered_track_ids": track_ids,
     }
+    if server_nickname:
+        worker_meta["nickname"] = server_nickname
+    result["external_render_worker"] = worker_meta
     job.result_json = result
     meta = dict(playlist.metadata_json or {})
     meta["workflow_state"] = "video_rendering"
-    meta["note"] = f"External render worker claimed the video job: {payload.worker_id}."
+    worker_label = render_worker_display_name(worker_meta)
+    meta["note"] = f"External render worker claimed the video job: {worker_label}."
     meta["video_render_progress"] = {
         "stage": "video_render",
         "progress_ratio": 0.0,
