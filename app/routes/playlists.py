@@ -46,6 +46,8 @@ from app.workflows.playlist_automation import (
     create_playlist_workspace,
     generate_playlist_cover,
     generate_playlist_metadata,
+    list_compact_playlist_workspaces,
+    list_workspace_channel_summaries,
     list_available_approved_tracks,
     list_playlist_workspaces,
     queue_workspace_video_render,
@@ -206,10 +208,17 @@ def list_workspace_playlists(
     compact: bool = Query(default=False),
     db: Session = Depends(get_db),
 ) -> list[PlaylistWorkspaceRead]:
+    if compact:
+        return list_compact_playlist_workspaces(db)
     return [
         serialize_playlist_workspace(playlist, compact=compact)
         for playlist in list_playlist_workspaces(db, compact=compact)
     ]
+
+
+@router.get("/workspaces/summary")
+def list_workspace_summary(db: Session = Depends(get_db)) -> dict:
+    return {"channels": list_workspace_channel_summaries(db)}
 
 
 @router.get("/workspaces/{playlist_id}", response_model=PlaylistWorkspaceRead)

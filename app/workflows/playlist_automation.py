@@ -463,7 +463,16 @@ def _loop_video_source(meta: dict) -> str | None:
     return None
 
 
-def _youtube_published_at(playlist: Playlist, meta: dict) -> datetime | None:
+_UNSET = object()
+
+
+def _youtube_published_at(
+    playlist: Playlist,
+    meta: dict,
+    *,
+    fallback_uploaded_at: datetime | None = None,
+    use_job_fallback: bool = True,
+) -> datetime | None:
     youtube_response = meta.get("youtube_response") if isinstance(meta.get("youtube_response"), dict) else {}
     snippet = youtube_response.get("snippet") if isinstance(youtube_response.get("snippet"), dict) else {}
     for value in (
@@ -475,7 +484,10 @@ def _youtube_published_at(playlist: Playlist, meta: dict) -> datetime | None:
         if parsed:
             return parsed
 
-    if not playlist.youtube_video_id:
+    if fallback_uploaded_at:
+        return fallback_uploaded_at
+
+    if not playlist.youtube_video_id or not use_job_fallback:
         return None
     upload_jobs = [
         job
@@ -496,9 +508,16 @@ def _youtube_scheduled_publish_at(meta: dict) -> datetime | None:
     return max(values)
 
 
-def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -> PlaylistWorkspaceRead:
+def serialize_playlist_workspace(
+    playlist: Playlist,
+    *,
+    compact: bool = False,
+    track_count_override: int | None = None,
+    render_job_override: PlaylistJobRead | None | object = _UNSET,
+    youtube_published_at_override: datetime | None | object = _UNSET,
+) -> PlaylistWorkspaceRead:
     meta = _playlist_meta(playlist)
-    track_count = len(playlist.items)
+    track_count = track_count_override if track_count_override is not None else len(playlist.items)
     tracks = []
     if not compact:
         tracks = [
@@ -562,9 +581,17 @@ def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -
         youtube_channel_title=_canonical_youtube_channel_title(meta.get("youtube_channel_title")),
         target_youtube_channel_title=meta.get("target_youtube_channel_title"),
         youtube_scheduled_publish_at=_youtube_scheduled_publish_at(meta),
-        youtube_published_at=_youtube_published_at(playlist, meta),
+        youtube_published_at=(
+            youtube_published_at_override
+            if youtube_published_at_override is not _UNSET
+            else _youtube_published_at(playlist, meta, use_job_fallback=not compact)
+        ),
         note=meta.get("note"),
-        render_job=_latest_render_job(playlist),
+        render_job=(
+            render_job_override
+            if render_job_override is not _UNSET
+            else None if compact else _latest_render_job(playlist)
+        ),
         created_at=playlist.created_at,
         updated_at=playlist.updated_at,
         track_count=track_count,
@@ -574,17 +601,161 @@ def serialize_playlist_workspace(playlist: Playlist, *, compact: bool = False) -
 
 def list_playlist_workspaces(db: Session, *, compact: bool = False) -> list[Playlist]:
     purge_expired_archived_workspaces(db)
+    if compact:
+        return db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
+
     item_loader = selectinload(Playlist.items)
-    if not compact:
-        item_loader = item_loader.selectinload(PlaylistItem.track)
     return db.scalars(
         select(Playlist)
         .options(
-            item_loader,
+            item_loader.selectinload(PlaylistItem.track),
             selectinload(Playlist.jobs),
         )
         .order_by(Playlist.updated_at.desc())
     ).all()
+
+
+def _playlist_item_counts(db: Session, playlist_ids: list[str]) -> dict[str, int]:
+    if not playlist_ids:
+        return {}
+    return {
+        playlist_id: int(count)
+        for playlist_id, count in db.execute(
+            select(PlaylistItem.playlist_id, func.count(PlaylistItem.id))
+            .where(PlaylistItem.playlist_id.in_(playlist_ids))
+            .group_by(PlaylistItem.playlist_id)
+        )
+    }
+
+
+def _compact_render_jobs(db: Session, playlist_ids: list[str]) -> dict[str, PlaylistJobRead]:
+    if not playlist_ids:
+        return {}
+    jobs = db.scalars(
+        select(Job)
+        .where(
+            Job.playlist_id.in_(playlist_ids),
+            Job.type.in_([JobType.build_playlist, JobType.build_video]),
+            Job.status.in_([JobStatus.queued, JobStatus.running]),
+        )
+        .order_by(Job.playlist_id, Job.created_at.desc())
+    ).all()
+    result: dict[str, PlaylistJobRead] = {}
+    for job in jobs:
+        if not job.playlist_id or job.playlist_id in result:
+            continue
+        payload = job.result_json or {}
+        result[job.playlist_id] = PlaylistJobRead(
+            id=job.id,
+            type=job.type.value,
+            status=job.status.value,
+            source=job.source,
+            created_at=job.created_at,
+            started_at=job.started_at,
+            finished_at=job.finished_at,
+            error_text=job.error_text,
+            output_audio_path=payload.get("output_audio_path"),
+            output_video_path=payload.get("output_video_path"),
+            progress=payload.get("progress"),
+        )
+    return result
+
+
+def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[str, datetime]:
+    if not playlist_ids:
+        return {}
+    return {
+        playlist_id: finished_at
+        for playlist_id, finished_at in db.execute(
+            select(
+                Job.playlist_id,
+                func.max(func.coalesce(Job.finished_at, Job.updated_at, Job.created_at)),
+            )
+            .where(
+                Job.playlist_id.in_(playlist_ids),
+                Job.type == JobType.upload_youtube,
+                Job.status == JobStatus.succeeded,
+            )
+            .group_by(Job.playlist_id)
+        )
+        if playlist_id and finished_at
+    }
+
+
+def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]:
+    playlists = list_playlist_workspaces(db, compact=True)
+    playlist_ids = [playlist.id for playlist in playlists]
+    item_counts = _playlist_item_counts(db, playlist_ids)
+    render_jobs = _compact_render_jobs(db, playlist_ids)
+    upload_finished_at = _compact_upload_finished_at(db, playlist_ids)
+    return [
+        serialize_playlist_workspace(
+            playlist,
+            compact=True,
+            track_count_override=item_counts.get(playlist.id, 0),
+            render_job_override=render_jobs.get(playlist.id),
+            youtube_published_at_override=upload_finished_at.get(playlist.id),
+        )
+        for playlist in playlists
+    ]
+
+
+def list_workspace_channel_summaries(db: Session) -> list[dict]:
+    purge_expired_archived_workspaces(db)
+    channels: dict[str, dict] = {}
+    playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
+    for playlist in playlists:
+        meta = _playlist_meta(playlist)
+        if meta.get("hidden"):
+            continue
+        if not playlist.youtube_video_id and meta.get("workflow_state") != "uploaded":
+            continue
+
+        channel_id = str(meta.get("youtube_channel_id") or "").strip()
+        channel_title = _canonical_youtube_channel_title(meta.get("youtube_channel_title")) or ""
+        if channel_id:
+            key = f"id:{channel_id}"
+        elif channel_title:
+            key = f"title:{channel_title}"
+        else:
+            key = "title:YouTube"
+        summary = channels.setdefault(
+            key,
+            {
+                "key": key,
+                "label": channel_title or channel_id or "YouTube",
+                "count": 0,
+                "playlistCount": 0,
+                "singleCount": 0,
+                "totalDuration": 0,
+                "latestTitle": "",
+                "latestAt": "",
+                "_latestSort": 0.0,
+            },
+        )
+        summary["count"] += 1
+        if _workspace_mode(playlist) == "single_track_video":
+            summary["singleCount"] += 1
+        else:
+            summary["playlistCount"] += 1
+        summary["totalDuration"] += int(meta.get("rendered_duration_seconds") or playlist.actual_duration_seconds or 0)
+
+        published_at = (
+            _youtube_published_at(playlist, meta, use_job_fallback=False)
+            or playlist.updated_at
+            or playlist.created_at
+        )
+        latest_sort = published_at.timestamp()
+        if latest_sort >= float(summary.get("_latestSort") or 0):
+            summary["_latestSort"] = latest_sort
+            summary["latestAt"] = published_at.isoformat()
+            summary["latestTitle"] = str(meta.get("youtube_title") or playlist.title or "")
+
+    result = []
+    for summary in channels.values():
+        summary.pop("_latestSort", None)
+        result.append(summary)
+    return sorted(result, key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
 
 
 def _metadata_path_values(value: object, *, key: str | None = None) -> list[str]:

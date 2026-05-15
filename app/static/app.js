@@ -9,6 +9,8 @@ const state = {
   autoRefreshDeferred: false,
   autoRefreshInFlight: false,
   youtubeStatus: null,
+  channelSummaries: [],
+  workspacesLoading: false,
   editingMetadataReleaseId: "",
   metadataExpandedByRelease: {},
   metadataLanguageByRelease: {},
@@ -1883,6 +1885,11 @@ async function fetchWorkspaceList() {
   return markCompactWorkspaces(await api("/api/playlists/workspaces?compact=true"));
 }
 
+async function fetchWorkspaceSummary() {
+  const summary = await api("/api/playlists/workspaces/summary");
+  return summary?.channels || [];
+}
+
 async function ensureWorkspaceDetailLoaded(workspaceId) {
   const workspace = state.workspaces.find((item) => item.id === workspaceId);
   if (!workspace || !workspace.__compact) return workspace || null;
@@ -1904,6 +1911,10 @@ function channelFilterOptions() {
 }
 
 function channelUploadSummaries() {
+  if (!state.workspaces.length && state.channelSummaries.length) {
+    return channelUploadSummariesFromServer();
+  }
+
   const channels = new Map();
   (state.youtubeStatus?.channels || []).forEach((channel) => {
     const key = channel?.id ? `id:${channel.id}` : `title:${canonicalYouTubeChannelTitle(channel?.title)}`;
@@ -1962,6 +1973,56 @@ function channelUploadSummaries() {
     if (right.count !== left.count) return right.count - left.count;
     return left.label.localeCompare(right.label);
   });
+}
+
+function channelUploadSummariesFromServer() {
+  const channels = new Map();
+  (state.youtubeStatus?.channels || []).forEach((channel) => {
+    const key = channel?.id ? `id:${channel.id}` : `title:${canonicalYouTubeChannelTitle(channel?.title)}`;
+    if (!key || key === "title:") return;
+    channels.set(key, {
+      key,
+      label: canonicalYouTubeChannelTitle(channel?.title) || channel?.id || "Unknown Channel",
+      thumbnailUrl: channel?.thumbnail_url || "",
+      count: 0,
+      playlistCount: 0,
+      singleCount: 0,
+      totalDuration: 0,
+      latestTitle: "",
+      latestAt: 0,
+      latestAtLabel: "",
+    });
+  });
+
+  state.channelSummaries.forEach((summary) => {
+    const key = summary.key || "";
+    if (!key) return;
+    const channelId = key.startsWith("id:") ? key.slice(3) : "";
+    const connectedChannel = connectedYouTubeChannel(channelId, summary.label);
+    const latestAt = new Date(summary.latestAt || 0);
+    channels.set(key, {
+      key,
+      label: canonicalYouTubeChannelTitle(summary.label) || connectedChannel?.title || channelId || "Unknown Channel",
+      thumbnailUrl: connectedChannel?.thumbnail_url || "",
+      count: Number(summary.count || 0),
+      playlistCount: Number(summary.playlistCount || 0),
+      singleCount: Number(summary.singleCount || 0),
+      totalDuration: Number(summary.totalDuration || 0),
+      latestTitle: summary.latestTitle || "",
+      latestAt: Number.isNaN(latestAt.getTime()) ? 0 : latestAt.getTime(),
+      latestAtLabel: summary.latestAt ? formatArchiveDate(summary.latestAt) : "",
+    });
+  });
+
+  return [...channels.values()].sort((left, right) => {
+    if (right.count !== left.count) return right.count - left.count;
+    return left.label.localeCompare(right.label);
+  });
+}
+
+function activeWorkspaceCount() {
+  if (state.workspaces.length) return activeWorkspaces().length;
+  return channelUploadSummaries().reduce((sum, channel) => sum + Number(channel.count || 0), 0);
 }
 
 function ensureChannelFilter() {
@@ -2040,7 +2101,7 @@ function renderChannelFilter() {
   channelFilterSelect.innerHTML = "";
   const allOption = document.createElement("option");
   allOption.value = CHANNEL_FILTER_ALL;
-  allOption.textContent = `All Channels (${activeWorkspaces().length})`;
+  allOption.textContent = `All Channels (${activeWorkspaceCount()})`;
   channelFilterSelect.appendChild(allOption);
 
   options.forEach((channel) => {
@@ -2057,7 +2118,7 @@ function renderChannelFilter() {
     {
       key: CHANNEL_FILTER_ALL,
       label: "All Channels",
-      count: activeWorkspaces().length,
+      count: activeWorkspaceCount(),
     },
     ...options,
   ]);
@@ -2467,7 +2528,9 @@ function renderWorkspaceTiles() {
   if (!visible.length) {
     const empty = document.createElement("div");
     empty.className = "empty-state";
-    empty.textContent = state.channelFilter === CHANNEL_FILTER_ALL
+    empty.textContent = state.workspacesLoading
+      ? "Release list loading..."
+      : state.channelFilter === CHANNEL_FILTER_ALL
       ? "먼저 workspace를 하나 만들어 주세요."
       : "선택한 채널에 올라간 release가 없습니다.";
     workspaceGrid.appendChild(empty);
@@ -3386,6 +3449,7 @@ function renderYouTubeStatus(youtubeStatus) {
 function applyBoardData(tracks, workspaces) {
   state.tracks = tracks;
   state.workspaces = workspaces;
+  state.workspacesLoading = false;
   ensureChannelFilter();
   ensureSelectedWorkspace();
   renderLayoutMode();
@@ -3412,16 +3476,27 @@ async function refreshBoard() {
 }
 
 async function refresh() {
-  const [tracks, workspaces, sessionStatus, youtubeStatus] = await Promise.all([
-    fetchReviewTracks(),
-    fetchWorkspaceList(),
+  state.workspacesLoading = true;
+  const [sessionStatus, youtubeStatus, channelSummaries] = await Promise.all([
     api("/api/suno/session-status"),
     api("/api/youtube/status"),
+    fetchWorkspaceSummary(),
   ]);
   state.youtubeStatus = youtubeStatus;
-  applyBoardData(tracks, workspaces);
+  state.channelSummaries = channelSummaries;
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
+  ensureChannelFilter();
+  renderLayoutMode();
+  updateToolbarSummary();
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
+
+  const [tracks, workspaces] = await Promise.all([
+    fetchReviewTracks(),
+    fetchWorkspaceList(),
+  ]);
+  applyBoardData(tracks, workspaces);
   if (state.releaseFocus && state.selectedWorkspaceId) {
     ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
       .then(() => {
