@@ -641,6 +641,51 @@ button:disabled {
   gap: 10px;
 }
 
+.workspace-sort-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.workspace-sort-label {
+  color: var(--muted);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workspace-sort-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 11px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.workspace-sort-button.active {
+  background: var(--ink);
+  color: #fff8ea;
+}
+
+.sort-direction {
+  display: inline-grid;
+  min-width: 12px;
+  place-items: center;
+}
+
 .channel-filter {
   display: inline-flex;
   align-items: center;

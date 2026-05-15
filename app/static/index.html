@@ -236,6 +236,18 @@
                   <option value="__all_channels__">All Channels</option>
                 </select>
               </label>
+              <div class="workspace-sort-controls" role="group" aria-label="Sort releases">
+                <span class="workspace-sort-label">Sort</span>
+                <button class="workspace-sort-button active" type="button" data-release-sort="published" aria-pressed="true">
+                  Published <span class="sort-direction" aria-hidden="true">↓</span>
+                </button>
+                <button class="workspace-sort-button" type="button" data-release-sort="updated" aria-pressed="false">
+                  Updated <span class="sort-direction" aria-hidden="true"></span>
+                </button>
+                <button class="workspace-sort-button" type="button" data-release-sort="created" aria-pressed="false">
+                  Created <span class="sort-direction" aria-hidden="true"></span>
+                </button>
+              </div>
               <div class="workspace-tabs" role="tablist" aria-label="Release views">
                 <button class="workspace-tab active" type="button" data-workspace-tab="active">Active</button>
                 <button class="workspace-tab" type="button" data-workspace-tab="archive">

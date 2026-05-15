@@ -17,6 +17,8 @@ const state = {
   orderEditingByRelease: {},
   workspaceTab: "active",
   channelFilter: "__all_channels__",
+  releaseSortKey: "published",
+  releaseSortDirection: "desc",
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -29,6 +31,7 @@ const workspaceSection = document.querySelector(".workspace-section");
 const archivedWorkspaceSection = document.querySelector("#archived-workspace-section");
 const archivedWorkspaceGrid = document.querySelector("#archived-workspace-grid");
 const workspaceTabButtons = [...document.querySelectorAll("[data-workspace-tab]")];
+const workspaceSortButtons = [...document.querySelectorAll("[data-release-sort]")];
 const archiveCountBadge = document.querySelector("#archive-count-badge");
 const channelFilterSelect = document.querySelector("#channel-filter-select");
 const detailPanel = document.querySelector("#workspace-detail-panel");
@@ -82,6 +85,11 @@ const textModalCloseButton = document.querySelector("#text-modal-close-button");
 const CHANNEL_FILTER_ALL = "__all_channels__";
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
+const RELEASE_SORT_OPTIONS = [
+  { key: "published", label: "Published" },
+  { key: "updated", label: "Updated" },
+  { key: "created", label: "Created" },
+];
 const LEGACY_YOUTUBE_CHANNEL_TITLES = {
   "ai썰전": "Club Bloom",
   "ai sseoljeon": "Club Bloom",
@@ -310,10 +318,21 @@ function releasePublishedAtLabel(workspace) {
   return formatPublishedDate(workspace.youtube_scheduled_publish_at || workspace.youtube_published_at);
 }
 
-function releaseDisplaySortTimestamp(workspace) {
-  const value = workspace?.youtube_scheduled_publish_at || workspace?.youtube_published_at || workspace?.created_at || 0;
+function dateSortTimestamp(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+function releaseDisplaySortTimestamp(workspace) {
+  return dateSortTimestamp(
+    workspace?.youtube_scheduled_publish_at || workspace?.youtube_published_at || workspace?.created_at || 0
+  );
+}
+
+function workspaceSortTimestamp(workspace, sortKey) {
+  if (sortKey === "updated") return dateSortTimestamp(workspace?.updated_at || workspace?.created_at || 0);
+  if (sortKey === "created") return dateSortTimestamp(workspace?.created_at || 0);
+  return releaseDisplaySortTimestamp(workspace);
 }
 
 function releaseIsScheduled(workspace) {
@@ -1947,6 +1966,25 @@ function activeWorkspaces() {
   return state.workspaces.filter((workspace) => !workspace.hidden);
 }
 
+function activeReleaseSortOption() {
+  return RELEASE_SORT_OPTIONS.find((option) => option.key === state.releaseSortKey) || RELEASE_SORT_OPTIONS[0];
+}
+
+function sortedReleaseWorkspaces(workspaces) {
+  const sortOption = activeReleaseSortOption();
+  if (sortOption.key === "published" && state.releaseSortDirection === "desc") {
+    return workspaces;
+  }
+
+  const direction = state.releaseSortDirection === "asc" ? 1 : -1;
+  return [...workspaces].sort((left, right) => {
+    const leftTime = workspaceSortTimestamp(left, sortOption.key);
+    const rightTime = workspaceSortTimestamp(right, sortOption.key);
+    if (leftTime !== rightTime) return (leftTime - rightTime) * direction;
+    return 0;
+  });
+}
+
 function channelFilterOptions() {
   return channelUploadSummaries().map((channel) => ({
     key: channel.key,
@@ -2086,11 +2124,11 @@ function workspaceMatchesChannelFilter(workspace) {
 }
 
 function visibleWorkspaces() {
-  return activeWorkspaces().filter((workspace) => workspaceMatchesChannelFilter(workspace));
+  return sortedReleaseWorkspaces(activeWorkspaces().filter((workspace) => workspaceMatchesChannelFilter(workspace)));
 }
 
 function archivedWorkspaces() {
-  return state.workspaces.filter((workspace) => workspace.hidden);
+  return sortedReleaseWorkspaces(state.workspaces.filter((workspace) => workspace.hidden));
 }
 
 function ensureSelectedWorkspace() {
@@ -2130,6 +2168,7 @@ function renderWorkspaceTabs() {
   const archivedCount = archivedWorkspaces().length;
   if (archiveCountBadge) archiveCountBadge.textContent = String(archivedCount);
   renderChannelFilter();
+  renderWorkspaceSortControls();
   workspaceTabButtons.forEach((button) => {
     const selected = button.dataset.workspaceTab === state.workspaceTab;
     button.classList.toggle("active", selected);
@@ -2139,6 +2178,23 @@ function renderWorkspaceTabs() {
   if (archivedWorkspaceSection) {
     archivedWorkspaceSection.hidden = state.workspaceTab !== "archive";
   }
+}
+
+function renderWorkspaceSortControls() {
+  workspaceSortButtons.forEach((button) => {
+    const sortKey = button.dataset.releaseSort || "published";
+    const active = sortKey === activeReleaseSortOption().key;
+    const direction = button.querySelector(".sort-direction");
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    button.dataset.sortDirection = active ? state.releaseSortDirection : "";
+    if (direction) {
+      direction.textContent = active ? (state.releaseSortDirection === "desc" ? "↓" : "↑") : "";
+    }
+    const label = RELEASE_SORT_OPTIONS.find((option) => option.key === sortKey)?.label || "Published";
+    const directionLabel = state.releaseSortDirection === "desc" ? "newest first" : "oldest first";
+    button.title = active ? `${label}: ${directionLabel}` : `Sort by ${label}`;
+  });
 }
 
 function renderChannelFilter() {
@@ -2181,6 +2237,18 @@ function setChannelFilter(channelKey, scrollToList = false) {
   if (scrollToList) {
     workspaceSection?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+}
+
+function setReleaseSort(sortKey) {
+  const nextKey = RELEASE_SORT_OPTIONS.some((option) => option.key === sortKey) ? sortKey : "published";
+  if (state.releaseSortKey === nextKey) {
+    state.releaseSortDirection = state.releaseSortDirection === "desc" ? "asc" : "desc";
+  } else {
+    state.releaseSortKey = nextKey;
+    state.releaseSortDirection = "desc";
+  }
+  renderWorkspaceTiles();
+  renderWorkspaceDetail();
 }
 
 function renderChannelSummary() {
@@ -3615,6 +3683,9 @@ workspaceForm.addEventListener("submit", async (event) => {
 menuToggleButton.addEventListener("click", () => toggleDrawer());
 workspaceTabButtons.forEach((button) => {
   button.addEventListener("click", () => setWorkspaceTab(button.dataset.workspaceTab));
+});
+workspaceSortButtons.forEach((button) => {
+  button.addEventListener("click", () => setReleaseSort(button.dataset.releaseSort));
 });
 channelFilterSelect?.addEventListener("change", () => {
   setChannelFilter(channelFilterSelect.value || CHANNEL_FILTER_ALL);
