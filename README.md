@@ -129,6 +129,7 @@ Important variables:
 - `AIMP_SLACK_REDIRECT_URI`
 - `AIMP_SLACK_BOT_TOKEN`
 - `AIMP_SLACK_REVIEW_CHANNEL_ID`
+- `AIMP_SLACK_OPS_CHANNEL_ID`
 - `AIMP_AUTO_APPROVAL_MODE`
 - `AIMP_MCP_AGENT_NAME`
 - `AIMP_MCP_REVIEW_URL`
@@ -296,6 +297,7 @@ AIMP_CODEX_METADATA_ENABLED=false
 AIMP_CODEX_METADATA_COMMAND=codex
 AIMP_CODEX_METADATA_TIMEOUT_SECONDS=180
 AIMP_OPENCLAW_SLACK_CHANNEL_ID=C0AVBUYP150
+AIMP_SLACK_OPS_CHANNEL_ID=#all-ai-music-playlist-generator
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=false
 AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=false
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=0
@@ -318,6 +320,7 @@ Runtime behavior:
 - If YouTube is not connected yet, the playlist stays in a YouTube-ready state until you connect it.
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 - Normal automation can offload video rendering to external render workers. Set `AIMP_VIDEO_RENDER_EXECUTION_MODE=external` and `AIMP_RENDER_WORKER_SHARED_TOKEN`, then run `scripts/render-worker` on another machine. The main VM keeps DB/UI/YouTube ownership; the render worker claims queued video jobs, renders locally, and uploads the final MP4 back with resumable chunks. See `docs/external-video-render-worker.md`.
+- Operational Slack notices use `AIMP_SLACK_OPS_CHANNEL_ID`; production should set it to `#all-ai-music-playlist-generator`. The app posts video-render queued, render-worker claim, render-worker complete, render-worker heartbeat-timeout requeue, and YouTube publish-complete notices there. It does not post a Slack notice merely because a playlist reached its target duration.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
 - Playlist Release YouTube titles are normalized with a `[playlist]` prefix across the default title and localized `ko`/`ja`/`en`/`es` titles. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles are not prefixed.
 - OpenClaw continuous playlist automation uses step commands so external video rendering can overlap with the next release's asset production. It can still run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a standalone single to be privately uploaded end-to-end.

@@ -29,6 +29,7 @@ from app.utils.openclaw_slack_loop import (
     post_next_playlist_request,
     record_auto_loop_upload,
 )
+from app.utils.ops_notifications import notify_youtube_publish_completed
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
@@ -1042,6 +1043,14 @@ class BackgroundJobWorker:
                     for item in playlist.items:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)
+                    notify_youtube_publish_completed(
+                        db,
+                        self.services,
+                        playlist=playlist,
+                        youtube_video_id=playlist.youtube_video_id or "",
+                        channel_title=meta.get("youtube_channel_title"),
+                        scheduled_publish_at=meta.get("youtube_scheduled_publish_at"),
+                    )
                     if self.settings.openclaw_auto_request_next_on_publish:
                         job.result_json = {
                             **(job.result_json or {}),

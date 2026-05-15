@@ -58,6 +58,7 @@ from app.workflows.playlist_automation import (
     set_playlist_workspace_archive_state,
 )
 from app.utils.openclaw_slack_loop import post_next_playlist_request
+from app.utils.ops_notifications import notify_video_render_queued
 from app.utils.render_worker_registry import set_render_worker_nickname
 from app.utils.youtube_localizations import (
     normalize_youtube_language,
@@ -491,8 +492,10 @@ def approve_workspace_cover(
 def render_workspace_video(
     playlist_id: str,
     payload: PlaylistVideoRenderRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> PlaylistWorkspaceRead:
+    services = get_services(request)
     try:
         playlist = queue_workspace_video_render(
             db,
@@ -503,6 +506,16 @@ def render_workspace_video(
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    job = db.scalars(
+        select(Job)
+        .where(
+            Job.playlist_id == playlist.id,
+            Job.type == JobType.build_video,
+            Job.status == JobStatus.queued,
+        )
+        .order_by(Job.created_at.desc())
+    ).first()
+    notify_video_render_queued(db, services, playlist=playlist, job=job)
     return serialize_playlist_workspace(playlist)
 
 

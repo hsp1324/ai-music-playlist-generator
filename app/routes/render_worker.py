@@ -19,6 +19,11 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
+from app.utils.ops_notifications import (
+    notify_render_worker_claimed,
+    notify_render_worker_completed,
+    notify_render_worker_timeout_requeued,
+)
 from app.utils.render_worker_registry import record_render_worker_seen, render_worker_display_name
 from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 from app.utils.youtube_localizations import ensure_playlist_title_prefix
@@ -147,6 +152,7 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
     timeout_seconds = max(int(services.settings.render_worker_claim_timeout_seconds or 0), 60)
     cutoff = _utcnow() - timedelta(seconds=timeout_seconds)
     recovered = 0
+    notifications: list[dict[str, Any]] = []
     jobs = db.scalars(
         select(Job)
         .options(selectinload(Job.playlist))
@@ -168,6 +174,7 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
             continue
 
         now = _utcnow()
+        heartbeat_for_notification = heartbeat or job.started_at or job.created_at
         worker["stale_detected_at"] = now.isoformat()
         worker["stale_reason"] = f"No heartbeat for {timeout_seconds} seconds."
         result["external_render_worker"] = worker
@@ -190,10 +197,22 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
             job.playlist.status = PlaylistStatus.building
             job.playlist.metadata_json = meta
             db.add(job.playlist)
+            notifications.append(
+                {
+                    "playlist_title": job.playlist.title,
+                    "job_id": job.id,
+                    "worker": dict(worker),
+                    "timeout_seconds": timeout_seconds,
+                    "heartbeat_at": heartbeat_for_notification,
+                    "now": now,
+                }
+            )
         db.add(job)
         recovered += 1
     if recovered:
         db.commit()
+        for notification in notifications:
+            notify_render_worker_timeout_requeued(db, services, **notification)
     return recovered
 
 
@@ -404,6 +423,7 @@ def claim_render_job(
     db.add(job)
     db.add(playlist)
     db.commit()
+    notify_render_worker_claimed(db, services, playlist=playlist, job=job, worker=worker_meta, now=now)
 
     services.worker._request_openclaw_for_video_event(
         playlist_id=playlist.id,
@@ -673,6 +693,7 @@ def complete_render_job(
     db.add(playlist)
     db.add(job)
     db.commit()
+    notify_render_worker_completed(db, services, playlist=playlist, job=job, worker=worker, now=now)
 
     services.worker._request_openclaw_for_video_event(
         playlist_id=playlist.id,

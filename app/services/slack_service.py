@@ -790,11 +790,16 @@ class SlackService:
         channel: str | None = None,
     ) -> SlackPostResult:
         auth_token = token or self.settings.slack_bot_token
-        target_channel = channel or self.settings.slack_review_channel_id
+        target_channel = channel or self.settings.slack_ops_channel_id or self.settings.slack_review_channel_id
         if not auth_token or not target_channel:
             return SlackPostResult(ok=False, raw={"error": "missing_bot_token_or_channel"})
 
         async with httpx.AsyncClient(timeout=10.0) as client:
+            resolved_channel = await self._resolve_channel_reference(
+                client,
+                auth_token=auth_token,
+                channel=target_channel,
+            )
             response = await client.post(
                 "https://slack.com/api/chat.postMessage",
                 headers={
@@ -802,7 +807,7 @@ class SlackService:
                     "Content-Type": "application/json; charset=utf-8",
                 },
                 json={
-                    "channel": target_channel,
+                    "channel": resolved_channel,
                     "text": text,
                 },
             )
@@ -813,6 +818,38 @@ class SlackService:
                 ts=data.get("ts"),
                 raw=data,
             )
+
+    @staticmethod
+    async def _resolve_channel_reference(client: httpx.AsyncClient, *, auth_token: str, channel: str) -> str:
+        target = channel.strip()
+        if not target.startswith("#"):
+            return target
+
+        target_name = target.lstrip("#").strip()
+        if not target_name:
+            return target
+
+        cursor = ""
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        for _ in range(20):
+            params = {
+                "exclude_archived": "true",
+                "limit": "1000",
+                "types": "public_channel",
+            }
+            if cursor:
+                params["cursor"] = cursor
+            response = await client.get("https://slack.com/api/conversations.list", headers=headers, params=params)
+            data = response.json()
+            if not data.get("ok"):
+                return target
+            for item in data.get("channels") or []:
+                if str(item.get("name") or "") == target_name and item.get("id"):
+                    return str(item["id"])
+            cursor = str((data.get("response_metadata") or {}).get("next_cursor") or "")
+            if not cursor:
+                break
+        return target
 
     @staticmethod
     def installation_from_oauth(payload: dict[str, Any]) -> SlackInstallation | None:

@@ -2020,17 +2020,6 @@ async def _update_publish_state(
     db.commit()
     db.refresh(playlist)
 
-    if meta.get("publish_ready"):
-        installation = services.slack_installations.get_active_installation(db)
-        token = installation.bot_token if installation else services.settings.slack_bot_token
-        await services.slack.post_ops_message(
-            token=token,
-            text=(
-                f"Playlist `{playlist.title}` reached target duration. "
-                "Open the web dashboard and approve publishing when ready."
-            ),
-        )
-
 
 async def assign_track_to_playlist(
     db: Session,

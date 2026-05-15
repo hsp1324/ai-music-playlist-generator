@@ -12,6 +12,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from google.oauth2.credentials import Credentials
 from PIL import Image
+from sqlalchemy import select
 
 from app.config import Settings, get_settings
 from app.db import SessionLocal
@@ -46,6 +47,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
+    os.environ.pop("AIMP_SLACK_OPS_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH", None)
     os.environ.pop("AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS", None)
@@ -615,6 +617,16 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
         os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
         client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.slack_bot_token = "xoxb-test"
+        services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
+        ops_calls = []
+
+        async def fake_post_ops_message(**kwargs):
+            ops_calls.append(kwargs)
+            return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
+
+        services.slack.post_ops_message = fake_post_ops_message
         storage = tmp_path / "storage"
         playlist_dir = storage / "playlists"
         track_dir = storage / "tracks"
@@ -680,6 +692,10 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         claim_payload = claim.json()
         assert claim_payload["job"]["id"] == job_id
         assert claim_payload["job"]["render"]["mode"] == "loop_video"
+        assert "Render worker claimed video job" in ops_calls[-1]["text"]
+        assert "External Worker Release" in ops_calls[-1]["text"]
+        assert "worker: `test-worker`" in ops_calls[-1]["text"]
+        assert "queued_for:" in ops_calls[-1]["text"]
 
         nickname = client.post(
             "/api/playlists/render-workers/test-worker/nickname",
@@ -718,6 +734,10 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             },
         )
         assert complete.status_code == 200
+        assert "Render worker completed video job" in ops_calls[-1]["text"]
+        assert "External Worker Release" in ops_calls[-1]["text"]
+        assert "Test Render Box (test-worker)" in ops_calls[-1]["text"]
+        assert "elapsed:" in ops_calls[-1]["text"]
 
         with SessionLocal() as db:
             job = db.get(Job, job_id)
@@ -729,6 +749,102 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             assert Path(playlist.output_video_path).read_bytes() == payload
             assert playlist.metadata_json["workflow_state"] == "metadata_review"
             assert playlist.metadata_json["video_render_progress"]["status"] == "end"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        os.environ["AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS"] = "21600"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.slack_bot_token = "xoxb-test"
+        services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
+        ops_calls = []
+
+        async def fake_post_ops_message(**kwargs):
+            ops_calls.append(kwargs)
+            return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
+
+        services.slack.post_ops_message = fake_post_ops_message
+        storage = tmp_path / "storage"
+        playlist_dir = storage / "playlists"
+        track_dir = storage / "tracks"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+        audio_path = playlist_dir / "stale-audio.mp3"
+        cover_path = playlist_dir / "stale-cover.png"
+        loop_path = playlist_dir / "stale-loop.mp4"
+        track_path = track_dir / "stale-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "purple").save(cover_path)
+        stale_heartbeat = (datetime.now(timezone.utc) - timedelta(seconds=21630)).isoformat()
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Stale Worker Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+            )
+            playlist = Playlist(
+                title="Stale Worker Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_rendering",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "loop_video_smooth": True,
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.running,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={"video_spectrum_overlay_style": "bars"},
+                result_json={
+                    "external_render_worker": {
+                        "worker_id": "stale-worker",
+                        "hostname": "old-host",
+                        "claimed_at": stale_heartbeat,
+                        "heartbeat_at": stale_heartbeat,
+                        "rendered_track_ids": [track.id],
+                    }
+                },
+                started_at=datetime.now(timezone.utc) - timedelta(seconds=21630),
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={"worker_id": "fresh-worker", "hostname": "fresh-host"},
+        )
+
+        assert claim.status_code == 200
+        assert claim.json()["job"]["id"] == job_id
+        assert len(ops_calls) == 2
+        assert "heartbeat timed out" in ops_calls[0]["text"]
+        assert "Stale Worker Release" in ops_calls[0]["text"]
+        assert "worker: `stale-worker`" in ops_calls[0]["text"]
+        assert "timeout: `6h 0m 0s`" in ops_calls[0]["text"]
+        assert "Render worker claimed video job" in ops_calls[1]["text"]
+        assert "worker: `fresh-worker`" in ops_calls[1]["text"]
     finally:
         clear_isolated_client_env()
 
@@ -809,6 +925,145 @@ def render_workspace_audio(client: TestClient, workspace_id: str) -> dict:
     workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
     assert workspace["output_audio_path"]
     return workspace
+
+
+def test_reaching_target_duration_does_not_post_ops_slack(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.slack_bot_token = "xoxb-test"
+        services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
+        ops_calls = []
+
+        async def fake_post_ops_message(**kwargs):
+            ops_calls.append(kwargs)
+            return SimpleNamespace(ok=True, channel="COPS", ts="123.456", raw={"ok": True})
+
+        services.slack.post_ops_message = fake_post_ops_message
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "No Target Alert Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+        local_audio = tmp_path / "target-alert.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Target Alert Track",
+                "prompt": "quiet piano",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+            },
+        )
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+
+        assert approve_response.status_code == 200
+        workspace_after_response = client.get(f"/api/playlists/workspaces/{workspace_id}")
+        assert workspace_after_response.status_code == 200
+        assert workspace_after_response.json()["publish_ready"] is True
+        assert ops_calls == []
+    finally:
+        clear_isolated_client_env()
+
+
+def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.slack_bot_token = "xoxb-test"
+        services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
+        ops_calls = []
+
+        async def fake_post_ops_message(**kwargs):
+            ops_calls.append(kwargs)
+            return SimpleNamespace(ok=True, channel="COPS", ts="123.456", raw={"ok": True})
+
+        def fake_build_audio(_tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        services.slack.post_ops_message = fake_post_ops_message
+        services.playlist_builder.build_audio = fake_build_audio
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Queued Video Alert Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+        local_audio = tmp_path / "queued-video.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Queued Video Track",
+                "prompt": "soft synth",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+            },
+        )
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        render_workspace_audio(client, workspace_id)
+
+        cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/generate",
+            json={"actor": "test-suite"},
+        )
+        assert cover_response.status_code == 200
+        upload_test_loop_video(client, workspace_id)
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+
+        render_video_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={
+                "actor": "test-suite",
+                "video_spectrum_overlay_style": "thinwave",
+            },
+        )
+
+        assert render_video_response.status_code == 200
+        assert render_video_response.json()["workflow_state"] == "video_queued"
+        assert len(ops_calls) == 1
+        assert "Video render queued" in ops_calls[0]["text"]
+        assert "Queued Video Alert Workspace" in ops_calls[0]["text"]
+        assert "mode: `external`" in ops_calls[0]["text"]
+        assert "visualizer: `thinwave`" in ops_calls[0]["text"]
+        with SessionLocal() as db:
+            job = db.scalars(
+                select(Job).where(Job.playlist_id == workspace_id, Job.type == JobType.build_video)
+            ).first()
+            assert job.result_json["ops_video_queued_notification"]["ok"] is True
+    finally:
+        clear_isolated_client_env()
 
 
 def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
@@ -3044,6 +3299,15 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
 
         first_video_path = localized_metadata_response.json()["output_video_path"] or prepared_release["output_video_path"]
         assert os.path.exists(first_video_path)
+        ops_calls = []
+
+        async def fake_post_ops_message(**kwargs):
+            ops_calls.append(kwargs)
+            return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
+
+        services.settings.slack_bot_token = "xoxb-test"
+        services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
+        services.slack.post_ops_message = fake_post_ops_message
 
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
@@ -3063,6 +3327,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert published["youtube_video_id"] == "yt-auto-123"
         assert published["output_video_path"] is None
         assert not os.path.exists(first_video_path)
+        assert any("YouTube publish completed" in call["text"] for call in ops_calls)
+        assert any("https://youtu.be/yt-auto-123" in call["text"] for call in ops_calls)
         assert upload_channel_ids[-1] == "UC123"
         assert upload_localizations[-1]["default_language"] == "ko"
         assert upload_localizations[-1]["localizations"]["en"]["title"] == "[playlist] English Title"
