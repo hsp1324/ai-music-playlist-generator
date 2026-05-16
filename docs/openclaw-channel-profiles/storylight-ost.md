@@ -18,7 +18,7 @@ Use this profile only after channel selection returns `Storylight OST`.
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and Dreamina/Seedance first frame.
+- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
 - The cover must include only a large lower-left `Storylight OST` channel brand label.
 - Make `Storylight OST` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
@@ -34,9 +34,9 @@ Use this profile only after channel selection returns `Storylight OST`.
 
 ## Loop Video
 
-- Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
-- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance or Gemini only for the moving clip.
+- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
+- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - The loop video should animate the selected cover concept with visible playful game/anime motion: cabinet light pulses, pixel sparkle, floating item icons, UI-like magical glows, bouncing props, lantern shimmer, shop lights, flag movement, toy-like particles, confetti, leaves, water shimmer, or soft character/mascot idle motion when appropriate.
 - Preserve the large, readable lower-left `Storylight OST` text exactly for the full clip.
 - Keep the final moment close to the opening crop, framing, camera distance, lighting, palette, and subject placement so the app can repeat it smoothly.

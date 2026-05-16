@@ -16,16 +16,19 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Let the playlist concept decide the scene and subject. No fixed recurring mascot or required person count.
 - Prefer imagery that immediately reads as a club/dance-music channel, not generic abstract neon. Stylish adult DJs, dancers, performers, club crowds, rooftop parties, festival stages, dance floors, and nightlife silhouettes are all valid directions when they match the selected style lane.
 - A female DJ or dancer can be a strong subject when the concept fits, but this is a direction, not a template. Bold adult club glamour, revealing club fashion, confident dance poses, and sexy nightlife energy are allowed when they match the release. Vary the subject, pose, camera angle, venue, lighting, outfit color, and scene across releases so Club Bloom does not keep generating the same woman-at-DJ-booth image.
+- Club Bloom visuals must be more click-stopping than calm BGM channels. Avoid timid, soft, polite, empty, or wallpaper-like covers and thumbnails. If the image would not grab attention in a mobile YouTube feed, reject it and regenerate before upload.
+- Use high-contrast crops, dramatic stage lighting, saturated neon, glossy skin/fabric highlights, expressive movement, strong silhouettes, crowd heat, DJ/performance action, rooftop/night-drive velocity, or festival-scale lighting when they fit the lane.
 - Visuals should feel clean and premium, not cluttered with random neon objects.
 
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and Dreamina/Seedance first frame.
+- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
 - The cover must include only a large lower-left `Club Bloom` channel brand label.
 - Make `Club Bloom` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the selected club style lane. The image should feel like a real dance/club context through venue, lighting, performers, movement, crowd energy, fashion, or nightlife atmosphere, while still staying original and varied.
+- Do not accept a cover that reads as generic ambient neon, quiet lounge art, abstract wallpaper, or a low-energy background image. The cover should already feel energetic enough to justify a strong thumbnail.
 
 ## YouTube Thumbnail
 
@@ -34,16 +37,23 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Add short readable click text that matches the selected style lane, for example `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
 - Add `CLUB BLOOM` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
+- The thumbnail should be bolder than the cover: larger subject/action, stronger contrast, clearer facial/body silhouette when a person is present, and text that feels like a club mix hook rather than a neutral label.
 
 ## Loop Video
 
-- Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
-- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance or Gemini only for the moving clip.
+- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
+- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the selected cover concept with visible rhythmic motion: light sweeps, neon reflections, LED pulses, laser haze, city light motion, stage particles, equalizer-like environmental lighting, road light streaks, or dance-floor glow.
 - Preserve the large, readable lower-left `Club Bloom` text exactly for the full clip.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, sexual acts, unsafe minors, protected brands, or real club footage.
+- The loop video must visibly move. Reject weak clips where only tiny background particles move, the scene feels static, or the club energy drops below the still cover.
+
+## Visual Rework Note
+
+- The human flagged the currently uploaded Club Bloom release on 2026-05-15 as visually too mild. When video-generation capacity is available, keep the music/audio and remake only the visual assets: final cover, text YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance if Gemini is on cooldown, unavailable, or blocked after retries. Then upload/replace those assets, approve the cover, queue a fresh video render, and publish/update from the new render.
+- Do not regenerate the songs for this rework unless the human explicitly asks.
 
 Prompt shape:
 

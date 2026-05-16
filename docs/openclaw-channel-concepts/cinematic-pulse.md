@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Cinematic Pulse
 
-Use this after the selected channel is `Cinematic Pulse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/cinematic-pulse.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `Cinematic Pulse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/cinematic-pulse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 
@@ -12,14 +12,16 @@ The audience should immediately understand: instrumental cinematic orchestra mus
 
 Titles should be broad cinematic orchestra / film-score packaging first. The music can be epic, quiet, emotional, mysterious, dark, hopeful, heroic, or tense; it does not always need to be huge battle music.
 
+For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, `Mystery Tension Score`, or `Orchestral Battle Music` when accurate. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Cinematic Pulse` releases and avoid repeating:
 
 - The same movie scene type, such as final battle, dark castle, space journey, knight army, desert chase, quiet aftermath, mystery reveal, or emotional farewell.
-- The same energy type, such as heroic, dark, sci-fi, boss battle, chase, war drums, emotional trailer, quiet tension, or hopeful rise.
+- The same energy type, such as heroic, dark, sci-fi, final confrontation, chase, war drums, emotional trailer, quiet tension, or hopeful rise.
 - The same instrument palette, such as taiko drums, brass, choir pads, hybrid synth, strings ostinato, piano-and-strings, impacts, or distorted pulses.
-- The same thumbnail phrase, such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, or `HEROIC MUSIC`.
+- The same thumbnail phrase, such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `TRAILER MUSIC`, or `FILM SCORE`.
 - The same poster-like visual scene if used recently.
 
 If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi journey, emotional film score, mystery tension, heroic rise, chase, or quiet aftermath next.
@@ -27,7 +29,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 ## Concept Lanes
 
 - Epic battle: orchestral percussion, brass, strings, choir-like pads without lyrics, battlefield, banners, storm light.
-- Final boss: dark fantasy, heavy drums, low brass, distorted pulses, towering enemy silhouette.
+- Dark fantasy confrontation: heavy drums, low brass, distorted pulses, towering mythic silhouette, ominous ritual light.
 - Heroic trailer: rising strings, brass, impacts, cinematic builds, sunrise, army or hero path.
 - Sci-fi action: hybrid synth, pulses, metallic drums, neon hangar, spaceship, city chase.
 - Dark fantasy: castle, dragon silhouette, ruins, red sky, heavy orchestral low end.
@@ -51,11 +53,11 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Poster-like, cinematic, high contrast, illustrated/anime/stylized, not live-action.
 - Visuals may include castles, dragons, knights, armies, spacecraft, robots, storm skies, cities, portals, lonely roads, vast oceans, mountain horizons, ruins, or emotional movie-poster silhouettes when conceptually relevant.
 - Avoid gore, graphic violence, real war footage, real flags, political symbols, protected IP, and exact franchise references.
-- Thumbnail text should be bold and clickable: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, or `TRAILER MUSIC`.
+- Thumbnail text should be bold and clickable: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`. Use `FINAL BOSS` only if the human explicitly asks for game-combat packaging; do not use it as the default Cinematic Pulse hook.
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Final Boss Music | Dark Fantasy Battle OST for Gaming and Focus`
+- `[playlist] Epic Dark Fantasy Orchestra | Cinematic Film Score for Focus and Epic Scenes`
 - `[playlist] Sci-Fi Action Trailer Music | Cyber Chase, Combat and Workout Energy`
 - `[playlist] Cinematic Orchestra Music | Movie OST for Focus and Epic Scenes`
 - `[playlist] Emotional Film Score | Piano, Strings and Hopeful Cinematic Music`

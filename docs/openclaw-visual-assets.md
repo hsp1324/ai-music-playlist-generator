@@ -1,6 +1,6 @@
 # OpenClaw Visual Asset Skills
 
-Use this when OpenClaw creates cover images, YouTube thumbnails, or Dreamina/Seedance loop videos for this repo.
+Use this when OpenClaw creates cover images, YouTube thumbnails, or short loop videos for this repo.
 
 The visual rules are channel-specific. Do not apply one channel's visual signature to every release. The source of truth for production work is now [openclaw-channel-profiles](openclaw-channel-profiles/README.md). OpenClaw should run `scripts/openclaw-release channel-profile` first, then read the returned `profile_doc`.
 
@@ -8,23 +8,27 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 
 - Create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina.
 - Prefer `gpt-image-2` when available; otherwise use the best available GPT Image model in the current environment.
-- Use Dreamina/Seedance only for the moving loop video.
+- Use Gemini first for the moving loop video, then fall back to Dreamina/Seedance when Gemini is unavailable or on cooldown. Gemini can be used through the human's quota for up to 3 successful video generations per 24 hour quota window.
 - Always create a final clean 16:9 cover first.
 - Create the YouTube thumbnail from that final cover as an image-to-image edit/reference derivative, not as a fresh unrelated scene.
 - Keep cover, thumbnail, and loop video visually continuous: same subject count, subject placement, silhouettes, clothing colors, props, background landmarks, lighting, palette, and camera angle.
 - The thumbnail is the click image and should contain short readable text plus channel branding.
-- The cover is the playback visual and Dreamina/Seedance first-frame reference. It must include only a large, readable lower-left selected-channel-name brand label. Match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
-- Do not use the text thumbnail as the Dreamina first-frame reference.
+- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini. It must include only a large, readable lower-left selected-channel-name brand label. Match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
+- Do not use the text thumbnail as the video-generation first-frame reference.
 - The cover/first-frame channel brand label is mandatory for every channel. Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words.
-- The Dreamina/Seedance loop video must preserve the exact lower-left channel label for the full clip. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
+- The Dreamina/Seedance/Gemini loop video must preserve the exact lower-left channel label for the full clip. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
 - The thumbnail should use larger click text plus a channel-brand line whose size/style matches the cover channel label.
 - Do not include spectrum bars, waveform graphics, equalizers, or other audio-reactive overlays in generated assets. The app adds an audio-reactive visualizer during final video render, chooses colors from the cover/loop-video palette, and positions it away from channel text when possible.
 - Available app-rendered visualizer presets are `bars`, `multiwave`, `thinwave`, `dots`, `mirror-bars`, `radial`, `pulse`, and `none`. Do not blindly use the default. Choose the preset for the release art: `bars` / `mirror-bars` for clean pop, EDM, and dance energy; `radial` for centered cinematic, scripture, or dramatic cover layouts; `pulse` for punchy pop/club motion; `thinwave` for calm BGM where the overlay should stay minimal; `dots` for magical, game, cute, or soft ambient scenes. Avoid `multiwave` unless it remains clean with the image. Use `none` only when the human wants faster render or no audio-reactive overlay.
 - Human visual requests override the channel default. If the human asks for a specific scene, subject, action, camera angle, animal, object, or character type, apply that concept consistently to the cover, thumbnail, and loop video.
 - All generated visuals should look animated, anime, illustrated, or stylized. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage unless the human explicitly asks and the YouTube synthetic-media policy is handled.
-- If Dreamina/Seedance blocks a loop-video generation for inappropriate content, copyright, moderation, or policy reasons, OpenClaw should rewrite the prompt and retry up to 10 total attempts. Each failure must be reported to Slack before retrying with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
-- Dreamina retry prompts must become more original and generic: remove named artists, studios, franchises, copyrighted characters, brands, celebrity names, exact song/video titles, `in the style of` wording, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Preserve only the broad mood, channel label, first-frame continuity, and motion intent.
-- If all 10 Dreamina attempts fail, send `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback. If that fallback is approved, pass `--allow-still-image-video`; otherwise the app rejects video render without an uploaded 8 second loop video.
+- Try Gemini before Dreamina/Seedance for each loop video unless Gemini is in its 24 hour cooldown window. The cooldown starts when the 3rd successful Gemini video generation is made, not at midnight.
+- Count only successful Gemini generations where Gemini actually creates a video result. Copyright/policy/moderation blocks that stop generation before a video is made do not count against the 3-video quota. A generated but visually rejected video still counts because the quota was spent.
+- If Gemini says the daily video limit is reached or the 3rd successful Gemini video was made less than 24 hours ago, switch to Dreamina/Seedance for that release.
+- If Dreamina/Seedance/Gemini blocks a loop-video generation for inappropriate content, copyright, moderation, or policy reasons, OpenClaw should rewrite the prompt and retry safely. Each failure must be reported to Slack before retrying with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
+- Retry prompts must become more original and generic: remove named artists, studios, franchises, copyrighted characters, brands, celebrity names, exact song/video titles, `in the style of` wording, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Preserve only the broad mood, channel label, first-frame continuity, and motion intent.
+- Do not spend more than 3 successful Gemini video generations in one 24 hour quota window. If Gemini copyright/policy retries fail 10 times without creating a video, stop Gemini attempts for that release and move on to Dreamina/Seedance.
+- If all 10 total video-generation attempts fail, send `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"` and stop before render/publish unless the human explicitly approves a still-image fallback. If that fallback is approved, pass `--allow-still-image-video`; otherwise the app rejects video render without an uploaded loop video.
 
 ## Tokyo Daydream Radio Visual Skill
 
@@ -137,12 +141,13 @@ Use this for `Storylight OST`, playful no-vocal Japanese-style game/anime OST, a
 
 ## Cinematic Pulse Visual Skill
 
-Use this for `Cinematic Pulse`, no-vocal large-scale cinematic orchestra, movie OST, film score, trailer music, battle OST, final boss music, heroic music, emotional film score, mystery tension, sci-fi action, dark fantasy, or game-combat instrumental releases.
+Use this for `Cinematic Pulse`, no-vocal large-scale cinematic orchestra, movie OST, film score, trailer music, orchestral battle music, dark fantasy confrontation, heroic music, emotional film score, mystery tension, sci-fi action, or grand cinematic instrumental releases.
 
 - No fixed recurring visual signature yet.
 - Let the playlist concept decide the cinematic orchestra, movie-OST, trailer, battle, emotional film-score, mystery-tension, or sci-fi scene, object, palette, and loop-video motion.
 - The cover must contain only the large lower-left `Cinematic Pulse` brand label.
-- The thumbnail should use short cinematic click text such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, or `TRAILER MUSIC`, plus `CINEMATIC PULSE`.
+- The thumbnail should use short cinematic click text such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`, plus `CINEMATIC PULSE`.
+- Avoid juvenile game-menu wording such as `BOSS BGM`, `FINAL BOSS`, `보스`, or `보스전` unless the human explicitly asks for that packaging. Cinematic Pulse should read as grand film-score / cinematic orchestra first.
 - The loop video should animate the selected cover concept with controlled cinematic motion: storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, or atmospheric light movement.
 - Do not use gore, real war footage, political symbols, protected IP, franchise names, copyrighted characters, or celebrity likenesses.
 
@@ -153,9 +158,11 @@ Use this for `Club Bloom`, no-vocal EDM, house, techno, trance, festival EDM, wo
 - No fixed recurring visual signature yet.
 - Let the selected club style lane decide the neon/dance/nightlife scene, subject, palette, and loop-video motion. Prefer visuals that clearly read as club, dance floor, DJ/performance, festival, rooftop party, nightlife, or movement energy rather than generic abstract neon.
 - A stylish adult female DJ or dancer can be used when it fits the release, including bold club fashion, confident poses, and sexy nightlife energy, but treat it as one possible direction, not a fixed template. Vary subject, pose, camera angle, venue, lighting, wardrobe color, and crowd/solo composition across releases.
+- Club Bloom visuals must be click-stopping, not polite. Reject calm, soft, empty, low-contrast, generic abstract neon, quiet lounge, or wallpaper-like images before upload. Use stronger crops, saturated neon, dramatic club lighting, confident adult performance energy, crowd heat, festival scale, night-drive velocity, or rooftop party motion when the lane supports it.
 - The cover must contain only the large lower-left `Club Bloom` brand label.
 - The thumbnail should use short style-specific dance click text such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`, plus `CLUB BLOOM`.
 - The loop video should animate the selected cover concept with rhythmic neon motion: light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
+- Reject weak loop videos where only tiny particles move or the result feels static. The clip should look like an active club visual, not a still cover with minor shimmer.
 - Bold adult nightlife subjects are allowed when the concept fits, but do not use full nudity, sexual acts, unsafe minors, fetish framing, protected brands, photorealistic club footage, or UI overlays.
 
 ## The Old Verse Visual Skill

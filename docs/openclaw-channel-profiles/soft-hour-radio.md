@@ -18,7 +18,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and Dreamina/Seedance first frame.
+- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
 - The cover must include only a large lower-left `Soft Hour Radio` channel brand label.
 - Make `Soft Hour Radio` clearly readable on mobile playback. Match the visual scale of the `SOFT HOUR RADIO` brand line used on the YouTube thumbnail.
 - Size target: roughly 18-24% of image width, or 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
@@ -35,9 +35,9 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 ## Loop Video
 
-- Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
-- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance or Gemini only for the moving clip.
+- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
+- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - The loop video should use calm but clearly visible motion derived from the cover itself. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
 - Keep the camera locked. Do not ask for zoom, push-in, pull-back, dolly, camera breathing, camera drift, camera follow, or parallax camera movement unless the human explicitly requests camera movement.
 - Animate several environmental layers already present or naturally implied by the first frame, such as leaf clusters swaying, grass moving in a breeze, curtain movement, water or rain reflections, warm light shimmer, drifting dust motes, smoke, steam, fireflies, or soft air movement.

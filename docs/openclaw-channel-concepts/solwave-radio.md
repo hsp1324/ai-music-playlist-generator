@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Solwave Radio
 
-Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 

@@ -5,7 +5,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 ## Routing Contract
 
 - Explicit channel request wins.
-- Cinematic Pulse is for no-vocal large-scale cinematic orchestra and film-score music: movie OST, trailer music, emotional film score, battle, boss fight, sci-fi journey, heroic, dark fantasy, mystery tension, and orchestral scene music.
+- Cinematic Pulse is for no-vocal large-scale cinematic orchestra and film-score music: movie OST, trailer music, emotional film score, orchestral battle, dark fantasy confrontation, sci-fi journey, heroic, mystery tension, and orchestral scene music.
 - Do not use this profile for cozy fantasy, cafe/study BGM, EDM/house, or vocal pop.
 
 ## Visual Identity
@@ -18,7 +18,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and Dreamina/Seedance first frame.
+- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
 - The cover must include only a large lower-left `Cinematic Pulse` channel brand label.
 - Make `Cinematic Pulse` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
@@ -28,15 +28,16 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Add short readable click text, for example `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, or `TRAILER MUSIC`.
+- Add short readable click text, for example `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`.
+- Avoid juvenile game-menu wording such as `BOSS BGM`, `FINAL BOSS`, `보스`, or `보스전` unless the human explicitly asks for game-combat packaging. Cinematic Pulse should read as grand film-score / cinematic orchestra first.
 - Add `CINEMATIC PULSE` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Loop Video
 
-- Use Dreamina/Seedance only for the moving clip.
-- Use Dreamina/Seedance `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `8 seconds`.
-- Do not put `8 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the Dreamina prompt. Set those in the UI controls.
+- Use Dreamina/Seedance or Gemini only for the moving clip.
+- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
+- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the selected cover concept with visible cinematic motion: storm clouds, banners, sparks, energy pulses, engine glow, portal light, dust, rain, embers, distant silhouettes, or weapon/armor light when appropriate.
 - Preserve the large, readable lower-left `Cinematic Pulse` text exactly for the full clip.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
@@ -59,6 +60,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no gore, no r
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
-- Titles should be bold and search-friendly. Include cinematic orchestra, movie OST, film score, trailer, battle, emotional, tension, focus, or gaming use cases when accurate.
+- Titles should be bold and search-friendly. Include cinematic orchestra, movie OST, film score, trailer, orchestral battle, emotional, tension, focus, writing, or epic scene use cases when accurate.
 - Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.
+- Do not use `Boss BGM`, `Final Boss Music`, `보스`, `보스전`, or bare `BGM` in public YouTube titles. Prefer grand wording such as `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, or `Mystery Tension Score`. Reusing a strong channel-fit title shape is better than inventing a weak off-brand one.
 - Avoid naming existing films, games, franchises, composers, studios, or characters.

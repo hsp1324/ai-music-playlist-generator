@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Tokyo Daydream Radio
 
-Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 

@@ -2,7 +2,7 @@
 
 Use this skill when the AI Music app asks OpenClaw to produce the next release through the deployed Oracle VM app.
 
-The current production mode is external-render lookahead: the Oracle VM app owns state, Slack, and YouTube publish, while OpenClaw prepares the next release's audio, cover, thumbnail, and 8 second loop video. A separate render worker machine claims queued video jobs and uploads the finished MP4 back to the app.
+The current production mode is external-render lookahead: the Oracle VM app owns state, Slack, and YouTube publish, while OpenClaw prepares the next release's audio, cover, thumbnail, and short loop video. A separate render worker machine claims queued video jobs and uploads the finished MP4 back to the app.
 
 ## Core Rule
 
@@ -94,7 +94,7 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
    - Pass `--youtube-channel-title "$CHANNEL_TITLE"` when using `scripts/openclaw-release create-release`.
    - This lets the web app count the release against the correct channel backlog before publish.
 4. Generate and upload enough approved audio for at least 40 minutes.
-5. Upload final cover, YouTube thumbnail, and 8 second Dreamina/Seedance loop video.
+5. Upload final cover, YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries.
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
 8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
@@ -103,6 +103,13 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
 11. Release the OpenClaw lock and report the queued release id.
 
 The render worker pool owns production video rendering. The Oracle VM app only queues the job and finalizes the uploaded MP4.
+
+## Visual Rework Requests
+
+- If the human flags a published release's cover, thumbnail, or loop video as weak, treat it as a visual repair task, not a new music release. Keep the existing songs/audio unless the human explicitly asks for new tracks.
+- For visual-only repair, replace the final cover, text YouTube thumbnail, and short loop video together, then approve the cover and queue a fresh video render. Try Gemini first for the loop video, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. After render completion, update or re-publish through the app's normal YouTube flow.
+- Do not spend image/video-generation credits while the human says credits are unavailable. Keep the repair note and resume only after the human says credits or generation capacity are available again.
+- Current human repair note from 2026-05-15: the currently uploaded `Club Bloom` release has cover/thumbnail visuals that are too mild. Later, remake only its Club Bloom visual assets with a stronger, more click-stopping club look, then re-render from the existing music.
 
 ## Finisher Mode
 

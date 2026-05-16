@@ -29,11 +29,11 @@ Global branding rule for every channel:
 
 - Every final cover/first-frame image must include the selected channel name as a large, readable lower-left brand label. It should match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
 - The cover/first-frame should contain only that channel name. Do not add title text, genre text, duration text, lyrics, UI, logos, or unrelated words to the cover/first-frame.
-- The Dreamina/Seedance loop video must preserve the exact lower-left channel name for the full clip. Reject/regenerate clips where the channel name disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
-- For normal OpenClaw work, Dreamina/Seedance duration must be set to `8 seconds` before the Generate click. Do not create a `5 seconds` draft/test clip first; the helper rejects short loop clips unless `--allow-short-loop-video` is used after explicit human approval.
+- The Gemini/Dreamina/Seedance loop video must preserve the exact lower-left channel name for the full clip. Reject/regenerate clips where the channel name disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
+- For normal OpenClaw work, try Gemini first for loop video generation. Count only successful Gemini video generations where a video is actually made; copyright/policy blocks before video output do not count. After the 3rd successful Gemini video, use Dreamina/Seedance until 24 hours have passed from that 3rd generation. For Dreamina/Seedance, duration must be set to `6 seconds` before the Generate click. Do not create a draft/test clip first.
 - The YouTube thumbnail still needs large click text above or near a channel-brand line. Keep the channel-brand line size/style consistent with the large cover channel label.
 - Metadata titles should be broad and public-facing across all channels. Use the visual scene to guide cover/video mood, but do not let a niche scene name become the main title unless it is truly the most searchable hook.
-- If Dreamina/Seedance blocks generation for inappropriate content, copyright, moderation, or policy reasons, retry up to 10 total attempts with a safer rewritten prompt. Send Slack before every retry with `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`. If 10 attempts fail, send a final Slack failure message and stop before render/publish unless the human explicitly approves a still-image fallback.
+- If Gemini blocks generation for copyright, protected IP, policy, moderation, or similar issues, retry Gemini up to 10 blocked attempts with safer prompts; blocked attempts do not count against the 3 successful Gemini videos. If Gemini still cannot create a video after 10 blocked attempts, move on to Dreamina/Seedance. If Dreamina/Seedance also fails after safe retries, send a final Slack failure message and stop before render/publish unless the human explicitly approves a still-image fallback.
 
 ## Quick Asset Summary
 
@@ -194,7 +194,7 @@ YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable cinematic text such as `EPIC BATTLE`, `FINAL BOSS`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `BATTLE OST`.
+- Add large readable cinematic text such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`.
 - Add `CINEMATIC PULSE` brand line, visually consistent with the large cover channel label.
 
 ### Club Bloom
@@ -204,12 +204,14 @@ Cover / first frame:
 - 16:9 illustrated/anime/stylized neon image for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, or party-energy releases.
 - No fixed recurring visual signature yet. The selected club style lane decides the scene, subject, color, and camera.
 - Prefer visuals that immediately read as club/dance music: DJ/performance moments, dance floors, nightlife, festival lights, rooftop parties, or movement energy. A stylish adult female DJ or dancer can fit, including bold club fashion, confident poses, and sexy nightlife energy, but it is not required and should not repeat as the same template every time.
+- Reject mild or wallpaper-like visuals. Club Bloom should be click-stopping in a mobile feed, with strong neon contrast, active nightlife/performance energy, and a more provocative club feel than calm BGM channels.
 - Only text allowed is the large lower-left `Club Bloom` brand label.
 
 Loop video:
 
 - Animate the cover/first-frame with visible rhythmic motion such as light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
 - Preserve the large lower-left `Club Bloom` brand label exactly for the whole clip.
+- Reject loop videos that look static or only add tiny particle motion.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, sexual acts, unsafe minors, fetish framing, protected brands, or unrelated words.
 
 YouTube thumbnail:

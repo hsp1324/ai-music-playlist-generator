@@ -137,17 +137,16 @@ def test_release_has_uploaded_loop_video_requires_manual_upload_source() -> None
     assert not release_has_uploaded_loop_video({"loop_video_path": "/tmp/loop.mp4"})
 
 
-def test_require_normal_loop_video_duration_rejects_dreamina_default(monkeypatch, tmp_path) -> None:
-    loop_video = tmp_path / "dreamina-default.mp4"
+def test_require_normal_loop_video_duration_allows_short_gemini_clip(monkeypatch, tmp_path) -> None:
+    loop_video = tmp_path / "gemini-short.mp4"
     loop_video.write_bytes(b"fake mp4")
     monkeypatch.setattr(openclaw_release, "probe_media_duration_seconds", lambda _path: 5.0)
 
-    with pytest.raises(RuntimeError, match="Dreamina's 5 second default"):
-        openclaw_release.require_normal_loop_video_duration(
-            loop_video,
-            SimpleNamespace(allow_short_loop_video=False),
-            context="auto-publish-playlist",
-        )
+    openclaw_release.require_normal_loop_video_duration(
+        loop_video,
+        SimpleNamespace(allow_short_loop_video=False),
+        context="auto-publish-playlist",
+    )
 
 
 def test_require_normal_loop_video_duration_allows_explicit_short_override(monkeypatch, tmp_path) -> None:

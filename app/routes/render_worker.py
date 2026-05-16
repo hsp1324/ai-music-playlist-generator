@@ -204,6 +204,7 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
                     "worker": dict(worker),
                     "timeout_seconds": timeout_seconds,
                     "heartbeat_at": heartbeat_for_notification,
+                    "cover_image_path": str(meta.get("cover_image_path") or ""),
                     "now": now,
                 }
             )

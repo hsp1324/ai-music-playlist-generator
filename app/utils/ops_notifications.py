@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable
 
 from sqlalchemy.orm import Session
@@ -63,9 +64,33 @@ def _worker_label(worker: dict[str, Any] | None) -> str:
     nickname = str(payload.get("nickname") or "").strip()
     worker_id = str(payload.get("worker_id") or "").strip()
     hostname = str(payload.get("hostname") or "").strip()
-    if nickname and worker_id and nickname != worker_id:
-        return f"{nickname} ({worker_id})"
     return nickname or worker_id or hostname or "unknown-worker"
+
+
+def _ops_blocks(text: str, *, image_url: str | None = None, alt_text: str = "Cover") -> list[dict[str, Any]]:
+    section: dict[str, Any] = {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": text[:2900],
+        },
+    }
+    if image_url:
+        section["accessory"] = {
+            "type": "image",
+            "image_url": image_url,
+            "alt_text": alt_text[:200] or "Cover",
+        }
+    return [section]
+
+
+def _playlist_cover_path(playlist: Playlist) -> str | None:
+    meta = dict(playlist.metadata_json or {})
+    for key in ("cover_image_path", "youtube_thumbnail_path"):
+        value = str(meta.get(key) or "").strip()
+        if value:
+            return value
+    return None
 
 
 def _run_async(factory: Callable[[], Any]) -> Any:
@@ -92,11 +117,44 @@ def _run_async(factory: Callable[[], Any]) -> Any:
     return result.get("value")
 
 
-def post_ops_message(db: Session, services, *, text: str) -> dict[str, Any]:
+def post_ops_message(
+    db: Session,
+    services,
+    *,
+    text: str,
+    blocks: list[dict[str, Any]] | None = None,
+    cover_image_path: str | None = None,
+    cover_title: str | None = None,
+) -> dict[str, Any]:
     try:
         installation = services.slack_installations.get_active_installation(db)
         token = installation.bot_token if installation else services.settings.slack_bot_token
-        result = _run_async(lambda: services.slack.post_ops_message(token=token, text=text))
+        target_channel = services.settings.slack_ops_channel_id or services.settings.slack_review_channel_id
+        rendered_blocks = blocks or _ops_blocks(text)
+        cover_path = str(cover_image_path or "").strip()
+        if cover_path.startswith(("http://", "https://")):
+            rendered_blocks = _ops_blocks(text, image_url=cover_path, alt_text=cover_title or "Cover")
+        elif cover_path and Path(cover_path).exists() and token and target_channel:
+            upload_result = _run_async(
+                lambda: services.slack.upload_local_file(
+                    file_path=cover_path,
+                    title=f"{cover_title or 'Release'} cover",
+                    token=token,
+                    channel=target_channel,
+                    blocks=rendered_blocks,
+                )
+            )
+            if bool(getattr(upload_result, "ok", False)):
+                return {
+                    "ok": True,
+                    "channel": getattr(upload_result, "channel", None),
+                    "ts": getattr(upload_result, "ts", None),
+                    "file_id": getattr(upload_result, "file_id", None),
+                    "raw": getattr(upload_result, "raw", None),
+                    "mode": "file_with_blocks",
+                }
+
+        result = _run_async(lambda: services.slack.post_ops_message(token=token, text=text, blocks=rendered_blocks))
         return {
             "ok": bool(getattr(result, "ok", False)),
             "channel": getattr(result, "channel", None),
@@ -119,10 +177,16 @@ def notify_video_render_queued(db: Session, services, *, playlist: Playlist, job
     actor = str(payload.get("actor") or "unknown")
     mode = services.settings.video_render_execution_mode
     text = (
-        f"Video render queued: {_inline(playlist.title)}. "
-        f"job_id: `{job.id}`; mode: `{mode}`; visualizer: `{visualizer}`; queued_by: `{actor}`."
+        f"Video render queued: {_inline(playlist.title)}.\n"
+        f"mode: `{mode}`; visualizer: `{visualizer}`; queued_by: `{actor}`."
     )
-    result = post_ops_message(db, services, text=text)
+    result = post_ops_message(
+        db,
+        services,
+        text=text,
+        cover_image_path=_playlist_cover_path(playlist),
+        cover_title=playlist.title,
+    )
     result_json["ops_video_queued_notification"] = {
         **result,
         "sent_at": _utcnow().isoformat(),
@@ -145,10 +209,16 @@ def notify_render_worker_claimed(
     current = now or _utcnow()
     queue_elapsed = _elapsed_since(job.created_at, now=current)
     text = (
-        f"Render worker claimed video job: {_inline(playlist.title)}. "
-        f"worker: `{_worker_label(worker)}`; job_id: `{job.id}`; queued_for: `{queue_elapsed}`."
+        f"Render worker claimed video: {_inline(playlist.title)}.\n"
+        f"worker: `{_worker_label(worker)}`; queued_for: `{queue_elapsed}`."
     )
-    return post_ops_message(db, services, text=text)
+    return post_ops_message(
+        db,
+        services,
+        text=text,
+        cover_image_path=_playlist_cover_path(playlist),
+        cover_title=playlist.title,
+    )
 
 
 def notify_render_worker_completed(
@@ -162,15 +232,17 @@ def notify_render_worker_completed(
 ) -> dict[str, Any]:
     current = now or _utcnow()
     elapsed = _elapsed_since(worker.get("claimed_at") or job.started_at, now=current)
-    size = ""
-    output_path = str(playlist.output_video_path or "").strip()
-    if output_path:
-        size = f"; output: `{output_path}`"
     text = (
-        f"Render worker completed video job: {_inline(playlist.title)}. "
-        f"worker: `{_worker_label(worker)}`; job_id: `{job.id}`; elapsed: `{elapsed}`{size}."
+        f"Render worker completed video: {_inline(playlist.title)}.\n"
+        f"worker: `{_worker_label(worker)}`; elapsed: `{elapsed}`."
     )
-    return post_ops_message(db, services, text=text)
+    return post_ops_message(
+        db,
+        services,
+        text=text,
+        cover_image_path=_playlist_cover_path(playlist),
+        cover_title=playlist.title,
+    )
 
 
 def notify_render_worker_timeout_requeued(
@@ -182,16 +254,23 @@ def notify_render_worker_timeout_requeued(
     worker: dict[str, Any],
     timeout_seconds: int,
     heartbeat_at: Any,
+    cover_image_path: str | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     current = now or _utcnow()
     elapsed = _elapsed_since(heartbeat_at, now=current)
     text = (
-        f"Render worker heartbeat timed out; video job requeued: {_inline(playlist_title)}. "
-        f"worker: `{_worker_label(worker)}`; job_id: `{job_id}`; "
-        f"timeout: `{_format_duration(timeout_seconds)}`; no_heartbeat_for: `{elapsed}`."
+        f"Render worker heartbeat timed out; video requeued: {_inline(playlist_title)}.\n"
+        f"worker: `{_worker_label(worker)}`; timeout: `{_format_duration(timeout_seconds)}`; "
+        f"no_heartbeat_for: `{elapsed}`."
     )
-    return post_ops_message(db, services, text=text)
+    return post_ops_message(
+        db,
+        services,
+        text=text,
+        cover_image_path=cover_image_path,
+        cover_title=playlist_title,
+    )
 
 
 def notify_youtube_publish_completed(
@@ -207,7 +286,13 @@ def notify_youtube_publish_completed(
     youtube_link = f"https://youtu.be/{youtube_video_id}" if youtube_video_id else "missing video id"
     schedule = f"; scheduled: `{scheduled_publish_at}`" if scheduled_publish_at else ""
     text = (
-        f"YouTube publish completed: {_inline(playlist.title)}. "
+        f"YouTube publish completed: {_inline(playlist.title)}.\n"
         f"channel: `{channel}`; video: {youtube_link}{schedule}."
     )
-    return post_ops_message(db, services, text=text)
+    return post_ops_message(
+        db,
+        services,
+        text=text,
+        cover_image_path=_playlist_cover_path(playlist),
+        cover_title=playlist.title,
+    )

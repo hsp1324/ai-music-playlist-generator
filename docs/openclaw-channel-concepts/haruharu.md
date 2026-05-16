@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: HaruHaru
 
-Use this after the selected channel is `HaruHaru`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/haruharu.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `HaruHaru`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/haruharu.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 

@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: The New Verse
 
-Use this after the selected channel is `The New Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-new-verse.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `The New Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-new-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 

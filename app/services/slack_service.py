@@ -531,6 +531,32 @@ class SlackService:
             blocks=blocks,
         )
 
+    async def upload_local_file(
+        self,
+        *,
+        file_path: str,
+        title: str,
+        token: str,
+        channel: str,
+        thread_ts: str | None = None,
+        initial_comment: str | None = None,
+        blocks: list[dict[str, Any]] | None = None,
+    ) -> SlackFileUploadResult:
+        path = Path(file_path)
+        if not path.exists() or not path.is_file():
+            return SlackFileUploadResult(ok=False, raw={"error": "file_not_found", "path": file_path})
+
+        return await self._upload_audio_bytes(
+            file_bytes=path.read_bytes(),
+            filename=path.name,
+            title=title,
+            token=token,
+            channel=channel,
+            thread_ts=thread_ts,
+            initial_comment=initial_comment,
+            blocks=blocks,
+        )
+
     async def upload_remote_audio_file(
         self,
         *,
@@ -619,6 +645,11 @@ class SlackService:
     ) -> SlackFileUploadResult:
         file_size = len(file_bytes)
         async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            resolved_channel = await self._resolve_channel_reference(
+                client,
+                auth_token=token,
+                channel=channel,
+            )
             upload_ticket_response = await client.post(
                 "https://slack.com/api/files.getUploadURLExternal",
                 headers={
@@ -654,7 +685,7 @@ class SlackService:
             completion_payload = self._build_complete_upload_payload(
                 file_id=file_id,
                 title=title,
-                channel=channel,
+                channel=resolved_channel,
                 thread_ts=thread_ts,
                 initial_comment=initial_comment,
                 blocks=blocks,
@@ -669,7 +700,10 @@ class SlackService:
                 json=completion_payload,
             )
             completion_data = completion_response.json()
-            shared_channel, shared_ts = self._extract_file_share_location(completion_data, fallback_channel=channel)
+            shared_channel, shared_ts = self._extract_file_share_location(
+                completion_data,
+                fallback_channel=resolved_channel,
+            )
             return SlackFileUploadResult(
                 ok=bool(completion_data.get("ok")),
                 file_id=file_id,
@@ -786,6 +820,7 @@ class SlackService:
         self,
         *,
         text: str,
+        blocks: list[dict[str, Any]] | None = None,
         token: str | None = None,
         channel: str | None = None,
     ) -> SlackPostResult:
@@ -809,6 +844,7 @@ class SlackService:
                 json={
                     "channel": resolved_channel,
                     "text": text,
+                    **({"blocks": blocks} if blocks else {}),
                 },
             )
             data = response.json()

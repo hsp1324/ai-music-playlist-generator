@@ -21,10 +21,10 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 ## Loop Video
 
 - Use the uploaded cover/first-frame image as the exact starting frame.
-- Generate an 8 second 16:9 720p loop video unless the human explicitly requested another length.
+- Generate a short loop video. Use Gemini first as-is; for Dreamina/Seedance set `16:9`, `720p`, and exactly `6 seconds` unless the human explicitly requests another setup.
 - Animate only visual elements that already fit the first frame and playlist concept.
 - Preserve the lower-left channel label for the full clip. Regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
-- The final frame should return close to the opening composition so the app's 1.5 second crossfade loop feels natural.
+- The final frame should return close to the opening composition so the app's 1 second crossfade loop feels natural.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 
 ## Metadata

@@ -5,7 +5,7 @@ Use this when the main Oracle VM should only manage the web app, database, YouTu
 ## Roles
 
 - Main VM: FastAPI app, SQLite state, media storage, YouTube publish, Slack/OpenClaw coordination.
-- OpenClaw machine: creates workspaces, generates/uploads audio, cover, thumbnail, and 8 second Dreamina loop video.
+- OpenClaw machine: creates workspaces, generates/uploads audio, cover, thumbnail, and short loop video.
 - Render worker machine: polls the main VM for queued video-render jobs, downloads audio/cover/loop-video assets, renders the final MP4 locally, and uploads the MP4 back to the main VM.
 
 The main VM must run with:
@@ -87,7 +87,7 @@ Endpoints:
 - `POST /api/render-worker/jobs/claim`: claim or resume a video render job.
 - `GET /api/render-worker/jobs/{job_id}/assets/audio`: download rendered release audio.
 - `GET /api/render-worker/jobs/{job_id}/assets/cover`: download approved cover image.
-- `GET /api/render-worker/jobs/{job_id}/assets/loop-video`: download 8 second loop video.
+- `GET /api/render-worker/jobs/{job_id}/assets/loop-video`: download short loop video.
 - `POST /api/render-worker/jobs/{job_id}/progress`: update web progress.
 - `GET /api/render-worker/jobs/{job_id}/upload-status`: get current resumable upload offset.
 - `PUT /api/render-worker/jobs/{job_id}/upload`: upload a `Content-Range` chunk.

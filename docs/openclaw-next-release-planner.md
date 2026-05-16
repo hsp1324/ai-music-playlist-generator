@@ -103,7 +103,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. If the selected channel is `The Old Verse` or `The New Verse`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md), inspect `scripts/openclaw-scripture-sequence status --init`, and reserve the next canonical passage before generating audio. Read both returned docs:
 
 - `concept_doc`: choose the next playlist concept and avoid recent repetition.
-- `profile_doc`: generate cover, thumbnail, and 8 second loop video without mixing channel visual signatures.
+- `profile_doc`: generate cover, thumbnail, and short loop video without mixing channel visual signatures.
 
 Example:
 
@@ -204,7 +204,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, an 8 second loop video, render audio, queue video render, then stop and release the lock. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

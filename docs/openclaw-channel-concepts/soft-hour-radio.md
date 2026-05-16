@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Soft Hour Radio
 
-Use this after the selected channel is `Soft Hour Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/soft-hour-radio.md` afterward for cover, thumbnail, and 8 second loop-video production rules.
+Use this after the selected channel is `Soft Hour Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/soft-hour-radio.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 
@@ -46,7 +46,7 @@ Combine one use case, one setting, and one instrument palette:
 
 - No fixed mascot, fixed character count, or required walking composition.
 - The scene should be restrained and useful for long listening.
-- Use calm but clearly visible environmental motion in the 8 second loop.
+- Use calm but clearly visible environmental motion in the short loop.
 - Thumbnail text should name the use case or mood, not a vague poetic title.
 
 ## Good Fresh Concept Shapes
