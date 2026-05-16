@@ -567,6 +567,71 @@ def test_video_render_started_event_does_not_post_openclaw_request(tmp_path) -> 
         clear_isolated_client_env()
 
 
+def test_video_render_completed_event_does_not_wait_when_openclaw_lock_is_active(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS"] = "true"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.slack.post_plain_message = fake_post_plain_message
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Rendered While OpenClaw Busy",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=2400,
+                actual_duration_seconds=2400,
+                metadata_json={
+                    "workflow_state": "metadata_review",
+                    "youtube_channel_title": "Soft Hour Radio",
+                },
+            )
+            db.add(playlist)
+            db.flush()
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.succeeded,
+                source="web:render-video",
+                playlist=playlist,
+                playlist_id=playlist.id,
+                payload_json={"playlist_id": playlist.id},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            playlist_id = playlist.id
+            job_id = job.id
+
+        lock_response = client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-1", "operation": "producer"},
+        )
+        assert lock_response.status_code == 200
+
+        services.worker._post_openclaw_video_event_request_when_unlocked(
+            playlist_id=playlist_id,
+            job_id=job_id,
+            event="video_render_completed",
+            reason="video_render_completed",
+        )
+
+        assert calls == []
+        with SessionLocal() as db:
+            updated = db.get(Playlist, playlist_id)
+            result = updated.metadata_json["openclaw_video_render_completed_request"]
+            assert result["skipped"] is True
+            assert result["reason"] == "openclaw_lock_active"
+            assert updated.metadata_json["openclaw_video_render_completed_request_job_id"] == job_id
+    finally:
+        clear_isolated_client_env()
+
+
 def test_openclaw_auto_loop_upload_limit_stops_after_n_uploads(tmp_path) -> None:
     common = {
         "storage_root": tmp_path,

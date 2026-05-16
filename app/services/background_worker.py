@@ -1362,18 +1362,18 @@ class BackgroundJobWorker:
         if event != "video_render_completed":
             return
 
-        lock_wait_deadline = time.monotonic() + max(float(self.settings.openclaw_lock_ttl_seconds or 0), 60.0) + 300.0
-        while time.monotonic() < lock_wait_deadline:
-            lock_status = get_openclaw_lock_status(self.settings.storage_root)
-            if not lock_status.get("active"):
-                break
-            time.sleep(10.0)
-        else:
+        lock_status = get_openclaw_lock_status(self.settings.storage_root)
+        if lock_status.get("active"):
             self._record_openclaw_video_event_request(
                 playlist_id=playlist_id,
                 job_id=job_id,
                 event=event,
-                result={"ok": False, "skipped": True, "reason": "openclaw_lock_still_active"},
+                result={
+                    "ok": False,
+                    "skipped": True,
+                    "reason": "openclaw_lock_active",
+                    "lock": lock_status.get("lock"),
+                },
             )
             return
 
