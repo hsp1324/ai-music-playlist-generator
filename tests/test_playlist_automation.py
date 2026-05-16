@@ -1229,7 +1229,7 @@ def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_
         clear_isolated_client_env()
 
 
-def test_workspace_lists_sort_by_scheduled_publish_then_published_then_created(tmp_path) -> None:
+def test_workspace_lists_sort_unpublished_before_scheduled_publish_then_published(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         with SessionLocal() as db:
@@ -1290,10 +1290,10 @@ def test_workspace_lists_sort_by_scheduled_publish_then_published_then_created(t
             db.add_all([created_release, published_release, scheduled_release, future_scheduled_release])
             db.commit()
             expected_order = [
+                created_release.id,
                 future_scheduled_release.id,
                 scheduled_release.id,
                 published_release.id,
-                created_release.id,
             ]
 
         full_response = client.get("/api/playlists/workspaces")

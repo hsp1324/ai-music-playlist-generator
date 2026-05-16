@@ -309,7 +309,7 @@ function releaseOptionLabel(workspace) {
 }
 
 function releasePublishedChannelLabel(workspace) {
-  if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
+  if (!releaseIsPublished(workspace)) return "";
   return canonicalYouTubeChannelTitle(workspace.youtube_channel_title) || workspace.youtube_channel_id || "YouTube";
 }
 
@@ -327,6 +327,10 @@ function releaseDisplaySortTimestamp(workspace) {
   return dateSortTimestamp(
     workspace?.youtube_scheduled_publish_at || workspace?.youtube_published_at || workspace?.created_at || 0
   );
+}
+
+function releaseIsPublished(workspace) {
+  return Boolean(workspace?.youtube_video_id || workspace?.workflow_state === "uploaded");
 }
 
 function workspaceSortTimestamp(workspace, sortKey) {
@@ -1978,6 +1982,11 @@ function sortedReleaseWorkspaces(workspaces) {
 
   const direction = state.releaseSortDirection === "asc" ? 1 : -1;
   return [...workspaces].sort((left, right) => {
+    if (sortOption.key === "published") {
+      const leftPublished = releaseIsPublished(left) ? 1 : 0;
+      const rightPublished = releaseIsPublished(right) ? 1 : 0;
+      if (leftPublished !== rightPublished) return leftPublished - rightPublished;
+    }
     const leftTime = workspaceSortTimestamp(left, sortOption.key);
     const rightTime = workspaceSortTimestamp(right, sortOption.key);
     if (leftTime !== rightTime) return (leftTime - rightTime) * direction;

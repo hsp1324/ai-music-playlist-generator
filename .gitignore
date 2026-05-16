@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 secrets/
+.render-worker/
 
 storage/*
 !storage/.gitkeep

@@ -528,6 +528,11 @@ def _workspace_display_sort_at(
     return published_at or playlist.created_at or playlist.updated_at or _utcnow()
 
 
+def _workspace_is_published_for_sort(playlist: Playlist, meta: dict | None = None) -> bool:
+    metadata = meta if meta is not None else _playlist_meta(playlist)
+    return bool(playlist.youtube_video_id or metadata.get("workflow_state") == "uploaded")
+
+
 def _timestamp(value: datetime | None) -> float:
     if value is None:
         return 0.0
@@ -547,13 +552,14 @@ def _sort_playlists_for_workspace_display(
     def sort_key(playlist: Playlist) -> tuple[float, float, str]:
         meta = _playlist_meta(playlist)
         override = overrides.get(playlist.id, _UNSET)
+        unpublished_rank = 0.0 if _workspace_is_published_for_sort(playlist, meta) else 1.0
         display_at = _workspace_display_sort_at(
             playlist,
             meta,
             youtube_published_at_override=override,
             use_job_fallback=use_job_fallback,
         )
-        return (_timestamp(display_at), _timestamp(playlist.created_at), playlist.id)
+        return (unpublished_rank, _timestamp(display_at), _timestamp(playlist.created_at), playlist.id)
 
     return sorted(playlists, key=sort_key, reverse=True)
 
