@@ -44,6 +44,7 @@ from app.workflows.playlist_automation import (
     attach_uploaded_loop_video,
     attach_uploaded_playlist_thumbnail,
     build_playlist_from_tracks,
+    clear_uploaded_loop_video,
     create_playlist_workspace,
     generate_playlist_cover,
     generate_playlist_metadata,
@@ -465,6 +466,23 @@ def upload_workspace_loop_video(
         raise
     except ValueError as exc:
         Path(loop_video_path).unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return serialize_playlist_workspace(playlist)
+
+
+@router.delete("/{playlist_id}/loop-video", response_model=PlaylistWorkspaceRead)
+def delete_workspace_loop_video(
+    playlist_id: str,
+    actor: str = Query("web-ui"),
+    db: Session = Depends(get_db),
+) -> PlaylistWorkspaceRead:
+    try:
+        playlist = clear_uploaded_loop_video(
+            db,
+            playlist_id=playlist_id,
+            actor=actor,
+        )
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return serialize_playlist_workspace(playlist)
 

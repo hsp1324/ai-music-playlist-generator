@@ -2383,6 +2383,30 @@ def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
     }
 
 
+def delete_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release = request_json(
+        client,
+        "DELETE",
+        f"/playlists/{release['id']}/loop-video",
+        params={"actor": args.actor},
+    )
+    return {
+        "ok": True,
+        "action": "delete-loop-video",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "loop_video_path": release.get("loop_video_path"),
+            "loop_video_source": release.get("loop_video_source"),
+            "output_video_path": release.get("output_video_path"),
+            "youtube_video_id": release.get("youtube_video_id"),
+        },
+        "next": "Generate and upload the correct Gemini/Dreamina/Seedance loop video, then render video again.",
+    }
+
+
 def render_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
     release = request_json(
@@ -2916,6 +2940,12 @@ def build_parser() -> argparse.ArgumentParser:
     loop_video_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     loop_video_parser.set_defaults(func=upload_loop_video)
+
+    delete_loop_video_parser = subparsers.add_parser("delete-loop-video", help="Remove the uploaded loop video from a release.")
+    delete_loop_video_parser.add_argument("--release-id", default="", help="Existing release id.")
+    delete_loop_video_parser.add_argument("--release-title", default="", help="Existing release title.")
+    delete_loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
+    delete_loop_video_parser.set_defaults(func=delete_loop_video)
 
     render_audio_parser = subparsers.add_parser("render-audio", help="Render playlist audio for an existing release.")
     render_audio_parser.add_argument("--release-id", default="", help="Existing release id.")

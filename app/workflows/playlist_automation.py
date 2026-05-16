@@ -1566,6 +1566,54 @@ def attach_uploaded_loop_video(
     return _load_playlist_with_tracks(db, playlist.id)
 
 
+def clear_uploaded_loop_video(
+    db: Session,
+    *,
+    playlist_id: str,
+    actor: str,
+) -> Playlist:
+    playlist = _load_playlist_with_tracks(db, playlist_id)
+    if not playlist:
+        raise ValueError("Playlist not found")
+
+    meta = _playlist_meta(playlist)
+    loop_video_path = str(meta.get("loop_video_path") or "").strip()
+    existed_before_delete = bool(loop_video_path and Path(loop_video_path).is_file())
+    _delete_local_path(loop_video_path)
+    deleted = bool(existed_before_delete and not Path(loop_video_path).exists())
+
+    history = list(meta.get("loop_video_clear_history") or [])
+    history.append(
+        {
+            "actor": actor,
+            "loop_video_path": loop_video_path or None,
+            "cleared_at": _utcnow().isoformat(),
+            "source": meta.get("loop_video_source"),
+            "smooth_loop": bool(meta.get("loop_video_smooth", True)),
+            "deleted_local_file": deleted,
+        }
+    )
+    meta["loop_video_clear_history"] = history
+    meta.pop("loop_video_path", None)
+    meta.pop("loop_video_source", None)
+    meta.pop("loop_video_smooth", None)
+    meta.pop("loop_video_render_mode", None)
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    if playlist.output_video_path:
+        playlist.output_video_path = None
+        playlist.youtube_video_id = None
+    if playlist.output_audio_path and meta.get("cover_approved"):
+        meta["workflow_state"] = "video_required"
+    elif playlist.output_audio_path:
+        meta["workflow_state"] = "cover_review" if meta.get("cover_image_path") else "audio_ready"
+    meta["note"] = "Loop video removed. Upload a replacement loop video before rendering."
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    return _load_playlist_with_tracks(db, playlist.id)
+
+
 def approve_playlist_cover(
     db: Session,
     *,

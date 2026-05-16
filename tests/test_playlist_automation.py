@@ -2886,6 +2886,110 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_uploaded_loop_video_can_be_deleted_and_requires_replacement(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_looped_video(clip_path, audio_path, output_path, *, smooth_loop=True, **_kwargs):
+            assert clip_path.exists()
+            assert audio_path.exists()
+            output_path.write_bytes(b"fake-looped-mp4")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_looped_video = fake_build_looped_video
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Delete Loop Video Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "source.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Delete Loop Track",
+                "prompt": "ambient loop visual",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        render_workspace_audio(client, workspace_id)
+
+        cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/upload",
+            data={"actor": "test-suite"},
+            files={"cover_file": ("cover.png", b"fake-png", "image/png")},
+        )
+        assert cover_response.status_code == 200
+        loop_payload = upload_test_loop_video(client, workspace_id)
+        loop_video_path = loop_payload["loop_video_path"]
+        assert Path(loop_video_path).exists()
+
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+        render_video_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert render_video_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+
+        delete_response = client.delete(
+            f"/api/playlists/{workspace_id}/loop-video",
+            params={"actor": "test-suite"},
+        )
+        assert delete_response.status_code == 200
+        deleted = delete_response.json()
+        assert deleted["loop_video_path"] is None
+        assert deleted["loop_video_source"] is None
+        assert deleted["output_video_path"] is None
+        assert deleted["youtube_video_id"] is None
+        assert deleted["workflow_state"] == "video_required"
+        assert "replacement loop video" in deleted["note"]
+        assert not Path(loop_video_path).exists()
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            clear_history = playlist.metadata_json["loop_video_clear_history"]
+            assert clear_history[-1]["loop_video_path"] == loop_video_path
+            assert clear_history[-1]["deleted_local_file"] is True
+
+        rerender_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+        assert rerender_response.status_code == 400
+        assert "loop video is required" in rerender_response.json()["detail"]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_background_worker_marks_interrupted_upload_for_retry(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
