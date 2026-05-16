@@ -22,7 +22,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - The cover must include only a large lower-left `Cinematic Pulse` channel brand label.
 - Make `Cinematic Pulse` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
 - Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
-- Match the scene to the playlist concept: movie-poster landscape, battle, final boss, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, or trailer-poster scene.
+- Match the scene to the playlist concept: movie-poster landscape, final battle, dark fantasy confrontation, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, or trailer-poster scene.
 
 ## YouTube Thumbnail
 
@@ -60,7 +60,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no gore, no r
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
-- Titles should be bold and search-friendly. Include cinematic orchestra, movie OST, film score, trailer, orchestral battle, emotional, tension, focus, writing, or epic scene use cases when accurate.
+- Titles should be bold, search-friendly, and immediately understandable to a broad YouTube audience. Include cinematic music, cinematic orchestra, movie OST, film score, trailer music, final battle scene, orchestral battle, emotional film score, mystery tension, fantasy writing, or epic scene use cases when accurate.
 - Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.
-- Do not use `Boss BGM`, `Final Boss Music`, `보스`, `보스전`, or bare `BGM` in public YouTube titles. Prefer grand wording such as `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, or `Mystery Tension Score`. Reusing a strong channel-fit title shape is better than inventing a weak off-brand one.
+- Do not use `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM` in public YouTube titles. Avoid wording that sounds like a niche game menu rather than a cinematic music video. Prefer grand wording such as `Final Battle Scene Cinematic Music`, `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, `Mystery Tension Score`, or `Orchestral Battle Music`. Reusing a strong channel-fit title shape is better than inventing a weak off-brand one.
 - Avoid naming existing films, games, franchises, composers, studios, or characters.

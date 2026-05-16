@@ -12,7 +12,7 @@ The audience should immediately understand: instrumental cinematic orchestra mus
 
 Titles should be broad cinematic orchestra / film-score packaging first. The music can be epic, quiet, emotional, mysterious, dark, hopeful, heroic, or tense; it does not always need to be huge battle music.
 
-For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, `Mystery Tension Score`, or `Orchestral Battle Music` when accurate. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand.
+For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer broad titles a normal viewer would search or understand quickly, such as `Final Battle Scene Cinematic Music`, `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, `Mystery Tension Score`, or `Orchestral Battle Music` when accurate. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand.
 
 ## Recent Release Check
 
@@ -57,7 +57,8 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Epic Dark Fantasy Orchestra | Cinematic Film Score for Focus and Epic Scenes`
+- `[playlist] Final Battle Scene Cinematic Music | Dark Fantasy Orchestra`
+- `[playlist] Epic Dark Fantasy Orchestra | Cinematic Film Score for Epic Scenes`
 - `[playlist] Sci-Fi Action Trailer Music | Cyber Chase, Combat and Workout Energy`
 - `[playlist] Cinematic Orchestra Music | Movie OST for Focus and Epic Scenes`
 - `[playlist] Emotional Film Score | Piano, Strings and Hopeful Cinematic Music`
