@@ -129,6 +129,7 @@ class StubSunoGateway:
         metadata = payload.get("metadata") or {}
         metadata.setdefault("lyrics", payload.get("lyrics") or payload.get("lyric") or "")
         metadata.setdefault("style", payload.get("style") or "")
+        metadata.setdefault("exclude_style", payload.get("exclude_style") or payload.get("negativeTags") or "")
         duration_seconds = payload.get("duration_seconds") or metadata.get("duration_seconds") or 0
         track = SunoWebhookTrack(
             source_track_id=payload.get("source_track_id"),
@@ -189,6 +190,7 @@ class StubSunoGateway:
                 "tags": item.get("tags"),
                 "lyrics": item.get("lyrics") or item.get("lyric") or "",
                 "style": item.get("style") or item.get("tags") or "",
+                "exclude_style": item.get("exclude_style") or item.get("negativeTags") or "",
                 "create_time": item.get("createTime"),
             }
             audio_url = item.get("audio_url") or item.get("source_audio_url")

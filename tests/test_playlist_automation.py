@@ -1333,6 +1333,7 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
                 "prompt": "manual suno intake candidate",
                 "lyrics": "달빛 아래 조용한 후렴",
                 "style": "bright Korean pop ballad, clean vocal, 92 BPM",
+                "exclude_style": "muddy vocals, heavy reverb, concert hall echo",
                 "duration_seconds": "123",
                 "model_score": "0.87",
             },
@@ -1348,8 +1349,10 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         assert track["metadata_json"]["model_score"] == 0.87
         assert track["metadata_json"]["lyrics"] == "달빛 아래 조용한 후렴"
         assert track["metadata_json"]["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
+        assert track["metadata_json"]["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
         assert track["lyrics"] == "달빛 아래 조용한 후렴"
         assert track["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
+        assert track["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
     finally:
         clear_isolated_client_env()
 

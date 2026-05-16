@@ -26,6 +26,7 @@ from scripts.openclaw_release import (
     release_has_uploaded_thumbnail,
     resolve_youtube_channel_id,
     resolve_lyrics_items,
+    resolve_exclude_style_items,
     resolve_style_items,
     slack_notify_command,
     upload_audio_file_to_release,
@@ -43,6 +44,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "description": "",
         "prompt": "",
         "style": [],
+        "exclude_style": [],
         "tags": "",
         "lyrics": [],
         "lyrics_file": [],
@@ -481,6 +483,20 @@ def test_resolve_style_items_allows_shared_and_per_track() -> None:
         resolve_style_items(2, styles=["one", "two", "three"])
 
 
+def test_resolve_exclude_style_items_allows_shared_and_per_track() -> None:
+    assert resolve_exclude_style_items(2, exclude_styles=[]) == ["", ""]
+    assert resolve_exclude_style_items(2, exclude_styles=["shared exclude"]) == [
+        "shared exclude",
+        "shared exclude",
+    ]
+    assert resolve_exclude_style_items(2, exclude_styles=["exclude one", "exclude two"]) == [
+        "exclude one",
+        "exclude two",
+    ]
+    with pytest.raises(RuntimeError, match="exactly one per --audio"):
+        resolve_exclude_style_items(2, exclude_styles=["one", "two", "three"])
+
+
 def test_upload_audio_file_retries_and_returns_probed_duration(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(openclaw_release.time, "sleep", lambda _seconds: None)
     audio_path = tmp_path / "retry.mp3"
@@ -490,6 +506,9 @@ def test_upload_audio_file_retries_and_returns_probed_duration(tmp_path, monkeyp
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal attempts
         assert request.url.path.endswith("/tracks/manual-upload")
+        body = request.read()
+        assert b'name="exclude_style"' in body
+        assert b"muddy vocals, heavy reverb" in body
         attempts += 1
         if attempts < 3:
             return httpx.Response(400, json={"detail": "Uploaded audio file is empty."})
@@ -512,6 +531,7 @@ def test_upload_audio_file_retries_and_returns_probed_duration(tmp_path, monkeyp
         title="Retry Track",
         prompt="",
         tags="",
+        exclude_style="muddy vocals, heavy reverb",
     )
 
     assert attempts == 3

@@ -2549,6 +2549,7 @@ async function submitQuickUpload() {
         form.append("title", fileStem(file.name));
         form.append("prompt", "manual quick upload");
         form.append("lyrics", "");
+        form.append("exclude_style", "");
         form.append("duration_seconds", "0");
         form.append("pending_workspace_id", workspaceId);
         form.append("audio_file", file, file.name);
@@ -3279,6 +3280,7 @@ function renderWorkspaceDetail() {
       const imageUrl = trackCoverUrl(track);
       const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
       const styleText = track.style || track.metadata_json?.style || "";
+      const excludeStyleText = track.exclude_style || track.metadata_json?.exclude_style || "";
 
       image.src = imageUrl;
       image.alt = displayTitle(track.title, "Track");
@@ -3290,6 +3292,9 @@ function renderWorkspaceDetail() {
       prompt.textContent = shortText(track.prompt || "Prompt not provided.", 160);
       if (styleText) {
         prompt.textContent = `${prompt.textContent}\nStyle: ${shortText(styleText, 220)}`;
+      }
+      if (excludeStyleText) {
+        prompt.textContent = `${prompt.textContent}\nExclude Style: ${shortText(excludeStyleText, 220)}`;
       }
       if (track.lyrics || track.metadata_json?.lyrics) {
         prompt.textContent = `${prompt.textContent}\nLyrics: ${shortText(track.lyrics || track.metadata_json.lyrics, 220)}`;
@@ -3386,6 +3391,7 @@ function renderWorkspaceDetail() {
     const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
     const imageUrl = trackCoverUrl(track);
     const styleText = track.style || track.metadata_json?.style || "";
+    const excludeStyleText = track.exclude_style || track.metadata_json?.exclude_style || "";
     const lyricsText = track.lyrics || track.metadata_json?.lyrics || "";
 
     card.dataset.trackId = track.id;
@@ -3433,6 +3439,7 @@ function renderWorkspaceDetail() {
         [
           track.tags || "",
           styleText ? "style saved" : "",
+          excludeStyleText ? "exclude saved" : "",
           lyricsText ? "lyrics saved" : "",
         ].filter(Boolean).join(" · ") || "approved track",
         90
@@ -3468,6 +3475,14 @@ function renderWorkspaceDetail() {
       styleButton.disabled = !styleText;
       styleButton.title = styleText ? "Show saved style" : "No style saved";
       actions.appendChild(styleButton);
+    }
+    {
+      const excludeStyleButton = localActionButton("Exclude", "pill-action reorder", () => {
+        openTextModal(`${displayTitle(track.title, "Track")} Exclude Style`, excludeStyleText);
+      });
+      excludeStyleButton.disabled = !excludeStyleText;
+      excludeStyleButton.title = excludeStyleText ? "Show saved exclude style" : "No exclude style saved";
+      actions.appendChild(excludeStyleButton);
     }
     if (orderEditable && workspace.tracks.length > 1) {
       const upButton = localActionButton("Up", "pill-action reorder", async () => {

@@ -392,6 +392,7 @@ def _track_payload(track: Track) -> PlaylistTrackRead:
         tags=metadata.get("tags"),
         lyrics=str(metadata.get("lyrics") or ""),
         style=str(metadata.get("style") or ""),
+        exclude_style=str(metadata.get("exclude_style") or ""),
         user_rating=str(metadata.get("user_rating") or ""),
     )
 

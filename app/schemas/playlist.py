@@ -117,6 +117,7 @@ class PlaylistTrackRead(BaseModel):
     tags: str | None = None
     lyrics: str = ""
     style: str = ""
+    exclude_style: str = ""
     user_rating: str = ""
 
 

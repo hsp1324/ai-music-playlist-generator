@@ -147,6 +147,7 @@ class ReleaseMetadataService:
                     "tags": meta.get("tags"),
                     "lyrics": str(meta.get("lyrics") or ""),
                     "style": str(meta.get("style") or ""),
+                    "exclude_style": str(meta.get("exclude_style") or ""),
                 }
             )
         return values

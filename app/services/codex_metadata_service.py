@@ -240,7 +240,7 @@ class CodexMetadataService(ReleaseMetadataService):
                 "  6. One final hashtag line with 5-8 relevant hashtags.",
                 "- For single-track releases, write as one standalone song/release.",
                 "- For single-track releases, do not present the release as a playlist and do not include a timestamp tracklist unless the release title explicitly asks for it.",
-                "- Use prompt, style, tags, and lyrics as private creative context; do not paste raw generation settings into the public description.",
+                "- Use prompt, style, excluded styles, tags, and lyrics as private creative context; do not paste raw generation settings into the public description.",
                 "- For timestamped tracklists, use each timeline item's start exactly and keep the same row order.",
                 "- If release.timeline_timestamp_format is HH:MM:SS, keep every timestamp in that exact three-part form, including 00:00:00 at the first row and 01:00:00+ for rows past one hour.",
                 "- For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows this way: Korean description = Japanese title plus Korean translation in parentheses, Japanese description = Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions = translated title text only.",
@@ -400,6 +400,7 @@ class CodexMetadataService(ReleaseMetadataService):
                     "tags": meta.get("tags"),
                     "lyrics": str(meta.get("lyrics") or ""),
                     "style": str(meta.get("style") or ""),
+                    "exclude_style": str(meta.get("exclude_style") or ""),
                 }
             )
         return values

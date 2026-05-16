@@ -49,6 +49,9 @@ def _create_track_record(
     metadata = dict(payload.metadata or {})
     metadata["lyrics"] = str(payload.lyrics if payload.lyrics is not None else metadata.get("lyrics") or "")
     metadata["style"] = str(payload.style if payload.style is not None else metadata.get("style") or "")
+    metadata["exclude_style"] = str(
+        payload.exclude_style if payload.exclude_style is not None else metadata.get("exclude_style") or ""
+    )
     pending_workspace_id = metadata.get("pending_workspace_id")
     if pending_workspace_id and not metadata.get("pending_workspace_title"):
         playlist = db.get(Playlist, pending_workspace_id)
@@ -333,6 +336,7 @@ async def manual_upload_track(
     prompt: str = Form(""),
     lyrics: str = Form(""),
     style: str = Form(""),
+    exclude_style: str = Form(""),
     duration_seconds: int = Form(0),
     preview_url: str | None = Form(None),
     audio_url: str | None = Form(None),
@@ -375,6 +379,7 @@ async def manual_upload_track(
         prompt=prompt,
         lyrics=lyrics,
         style=style,
+        exclude_style=exclude_style,
         duration_seconds=inferred_duration_seconds,
         audio_path=audio_path,
         preview_url=preview_url,

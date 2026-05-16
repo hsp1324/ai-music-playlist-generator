@@ -10,6 +10,7 @@ class SunoGenerationCreateRequest(BaseModel):
     instrumental: bool = False
     model: str | None = None
     style: str | None = None
+    exclude_style: str | None = None
     callback_url: str | None = None
     persona_id: str | None = None
     persona_model: str | None = None

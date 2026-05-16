@@ -61,10 +61,22 @@ def create_suno_generation(
             },
         )
 
+    exclude_style = payload.exclude_style or payload.negative_tags
+    generation_metadata = dict(payload.metadata or {})
+    if payload.style and not generation_metadata.get("style"):
+        generation_metadata["style"] = payload.style
+    if exclude_style and not generation_metadata.get("exclude_style"):
+        generation_metadata["exclude_style"] = exclude_style
+
+    job_payload = payload.model_dump()
+    job_payload["metadata"] = generation_metadata
+    job_payload["negative_tags"] = payload.negative_tags or payload.exclude_style
+    job_payload["exclude_style"] = exclude_style
+
     generation_request = SunoGenerationRequest(
         title=payload.title,
         prompt=payload.prompt,
-        metadata=payload.metadata,
+        metadata=generation_metadata,
         custom_mode=payload.custom_mode,
         instrumental=payload.instrumental,
         model=payload.model,
@@ -72,7 +84,7 @@ def create_suno_generation(
         callback_url=payload.callback_url,
         persona_id=payload.persona_id,
         persona_model=payload.persona_model,
-        negative_tags=payload.negative_tags,
+        negative_tags=payload.negative_tags or payload.exclude_style,
         vocal_gender=payload.vocal_gender,
         style_weight=payload.style_weight,
         weirdness_constraint=payload.weirdness_constraint,
@@ -84,7 +96,7 @@ def create_suno_generation(
         type=JobType.generate_track,
         status=JobStatus.queued if result.ok else JobStatus.failed,
         source=f"suno:{services.settings.suno_provider_mode}",
-        payload_json=payload.model_dump(),
+        payload_json=job_payload,
         result_json=result.raw,
         error_text=None if result.ok else str(result.raw),
         external_id=result.provider_job_id,
@@ -197,6 +209,15 @@ async def suno_webhook(
             "track_ids": [],
         }
 
+    source_metadata = dict((job.payload_json or {}).get("metadata") or {}) if job else {}
+    source_style = str(source_metadata.get("style") or "") if source_metadata else ""
+    source_exclude_style = str(
+        source_metadata.get("exclude_style")
+        or ((job.payload_json or {}).get("exclude_style") if job else "")
+        or ((job.payload_json or {}).get("negative_tags") if job else "")
+        or ""
+    )
+
     tracks: list[Track] = []
     for item in normalized.tracks:
         track = None
@@ -211,7 +232,12 @@ async def suno_webhook(
         track.duration_seconds = item.duration_seconds
         track.audio_path = item.audio_path
         track.preview_url = item.preview_url
-        track.metadata_json = item.metadata
+        metadata = dict(item.metadata or {})
+        if source_style and not metadata.get("style"):
+            metadata["style"] = source_style
+        if source_exclude_style and not metadata.get("exclude_style"):
+            metadata["exclude_style"] = source_exclude_style
+        track.metadata_json = metadata
         db.add(track)
         db.flush()
         tracks.append(track)

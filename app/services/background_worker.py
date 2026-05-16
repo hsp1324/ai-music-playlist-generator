@@ -62,6 +62,7 @@ def _track_timeline_dict(track: Track) -> dict:
         "duration_seconds": track.duration_seconds,
         "lyrics": str(meta.get("lyrics") or ""),
         "style": str(meta.get("style") or ""),
+        "exclude_style": str(meta.get("exclude_style") or ""),
         "prompt": track.prompt or "",
         "tags": meta.get("tags") or "",
     }
@@ -1549,13 +1550,16 @@ class BackgroundJobWorker:
             tags = str(track_meta.get("tags") or "").strip()
             lyrics = str(track_meta.get("lyrics") or "").strip()
             style = str(track_meta.get("style") or "").strip()
+            exclude_style = str(track_meta.get("exclude_style") or "").strip()
             lyrics_context = f" Lyrics/content context: {lyrics[:800]}." if lyrics else ""
             style_context = f" Suno style/settings: {style[:500]}." if style else ""
+            exclude_style_context = f" Suno excluded styles: {exclude_style[:500]}." if exclude_style else ""
             return (
                 f"Cinematic music visualizer shot for '{track.title}'. "
                 f"Prompt mood: {track.prompt}. "
                 f"{lyrics_context}"
                 f"{style_context}"
+                f"{exclude_style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
                 "Use animated, anime, illustrated, or stylized visual language. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
                 f"{signature_prompt if is_tokyo_visual else soft_hour_prompt}"

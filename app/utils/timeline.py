@@ -45,6 +45,7 @@ def timeline_from_track_dicts(
                 "duration": format_timestamp(duration_seconds),
                 "lyrics": str(track.get("lyrics") or ""),
                 "style": str(track.get("style") or ""),
+                "exclude_style": str(track.get("exclude_style") or ""),
                 "prompt": track.get("prompt") or "",
                 "tags": track.get("tags") or "",
                 "duration_source": row.get("duration_source") or "track_duration",

@@ -64,6 +64,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - BGM/background/lofi/study/sleep/cafe music defaults to instrumental/no vocals unless the human explicitly asks for vocals. For Soft Hour Radio or other instrumental BGM, follow [suno-v55-instrumental-format.md](suno-v55-instrumental-format.md) before pressing Create in Suno.
 - For Soft Hour Radio instrumental work, do not put plain prose in Suno's lyrics/custom-lyrics field. Every non-empty line in that field must start with `[` and end with `]`. Bare arrangement sentences can be interpreted as sung lyrics.
 - For Soft Hour Radio instrumental work, open Suno Advanced Options and fill the excluded styles/negative style field with vocal-related exclusions: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
+- For lyric/vocal songs, open Suno Advanced Options and fill the excluded styles/negative style field with vocal clarity blockers so the lead voice does not sound like a distant live concert recording: `muddy vocals, muffled vocals, washed-out vocals, distant vocals, buried vocals, unclear lyrics, heavy reverb, excessive reverb, long reverb tail, large echo, echoey vocals, concert hall echo, arena reverb, stadium reverb, live concert vocals, crowd ambience, room boom`.
 - For every Suno generation on every channel, add artificial noise blockers to Advanced Options excluded styles unless the human explicitly asks for vinyl/LP/noise texture: `white noise, static noise, vinyl crackle, record crackle, LP crackle, turntable noise, tape hiss, cassette hiss, analog hiss, noise floor, lo-fi noise, old record noise, dust noise, crackle, hiss`.
 - Instrumental metatags must be concrete enough to steer Suno toward the intended arrangement. Include an instrumental guardrail, tempo/feel, instrument palette, section-by-section musical flow, dynamics, and transitions inside bracketed lines. Do not write singable lyric lines. Example shape:
   `[Instrumental only: no sung words, no humming, no spoken words]`
@@ -77,7 +78,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
   `[End]`
 - J-pop/K-pop/pop/Japanese pop/anime-pop/Latin pop/Spanish pop/English pop releases default to vocal songs with lyrics. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, Spanish lyrics for Solwave Radio/Latin/Spanish pop, and English lyrics for sundaze/English/American pop. Do not make these instrumental, no-vocal, lyricless, or hum-only unless the human explicitly asks for instrumental/BGM/lofi/no vocals. For every pop-family track, create or capture the final lyrics and upload them with `--lyrics` or `--lyrics-file`. The helper rejects pop-family uploads with empty lyrics before publish unless the concept explicitly says BGM/instrumental/no-vocal.
 - For every vocal Suno generation, decide the intended lead vocal gender before pressing Create. In Suno `More options` / `Vocal gender`, select `male` when the song should have a male lead vocal and select `female` when it should have a female lead vocal. If the song is mixed-gender, duet, group/choir, alternating male/female, or the lead gender is intentionally unspecified, leave Vocal gender unselected. Do not change this setting between retries for the same track unless you intentionally change the vocal concept; otherwise Suno may swap vocal timbre mid-song or across variants.
-- When uploading audio, include the Suno style/settings with `--style` whenever available. This is stored with the track for future cover, thumbnail, loop-video, metadata, and remake work.
+- When uploading audio, include the Suno style/settings with `--style` and Suno excluded styles/negative tags with `--exclude-style` whenever available. These are stored with the track for future cover, thumbnail, loop-video, metadata, and remake work.
 - Within one release, intentionally vary every generated track. Do not reuse the exact same Suno prompt, lyrics theme, chorus hook, title pattern, or style string across multiple tracks unless the human explicitly asks for a uniform album. Keep the release coherent by genre/mood, but vary tempo, energy, instruments, rhythm feel, vocal tone, season/time/place imagery, lyrical story, and hook.
 - For every channel, YouTube titles are public packaging and discovery copy. Make titles broad, searchable, and easy for normal viewers to understand: genre/channel identity plus a real listening reason such as workout, running, getting ready, party warmup, drive, study, sleep, reading, focus, gaming, battle, fantasy writing, heartbreak, confidence, or feel-good energy. Do not lead with narrow visual-scene names, props, exact locations, or workspace concepts unless that niche phrase is already broadly searchable.
 - For every vocal channel, separate the playlist packaging from the song lyrics. The YouTube playlist title/use case can be `dance practice room`, `night walk`, `drive`, `study`, `getting ready`, `workout`, `beach`, or similar, but the lyrics should not literally explain that setting unless it naturally makes a good song. Match the melody, beat, tempo, energy, and vocal attitude to the playlist use case; write lyrics as standalone original songs that real listeners would enjoy even outside the playlist context.
@@ -212,7 +213,7 @@ Goal:
 - If two candidates come from one Suno prompt, they can share the original prompt/style, but give them independent editorial titles and preserve any candidate-specific lyrics, style notes, or differences.
 - If candidate cover images exist, upload them with the audio candidates.
 - If candidate lyrics or instrumental metatag files exist, upload them with the audio candidates using `--lyrics` or `--lyrics-file`. For instrumental/BGM candidates, use the exact bracket-only Suno metatag file from `docs/suno-v55-instrumental-format.md` rather than an empty field when possible. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop candidates, lyrics are expected by default unless the human explicitly asked for instrumental/no-vocal.
-- If the Suno style/settings are known, upload them with `--style`. Use one shared `--style` or one per candidate.
+- If the Suno style/settings are known, upload them with `--style`. If excluded styles/negative tags are known, upload them with `--exclude-style`. Use one shared value or one per candidate.
 - Clean awkward trailing A/B or 1/2 labels from uploaded candidate titles. If titles become duplicated, make them naturally unique without using pair labels.
 - When the human approves one candidate, its uploaded cover is automatically registered as the release cover. If the human approves both candidates, the second approved candidate becomes a separate Single Release.
 - The human still reviews/approves the cover before video rendering.
@@ -240,6 +241,7 @@ scripts/openclaw-release upload-single-candidates \
   --lyrics-file ABSOLUTE_LYRICS_PATH_A \
   --lyrics-file ABSOLUTE_LYRICS_PATH_B \
   --style "SUNO_STYLE_OR_SETTINGS" \
+  --exclude-style "SUNO_EXCLUDED_STYLES_OR_NEGATIVE_TAGS" \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
@@ -250,10 +252,11 @@ scripts/openclaw-release upload-single-candidates \
   --cover ABSOLUTE_COVER_PATH \
   --lyrics-file ABSOLUTE_LYRICS_PATH \
   --style "SUNO_STYLE_OR_SETTINGS" \
+  --exclude-style "SUNO_EXCLUDED_STYLES_OR_NEGATIVE_TAGS" \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --tags "comma, separated, tags"
 
-If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics/content are truly unavailable, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field. For instrumental/BGM candidates, prefer the exact bracket-only Suno metatag file instead of omitting lyrics. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop candidates, do not treat missing lyrics as normal; generate or capture original lyrics unless the human explicitly requested instrumental/no-vocal. If style/settings are not available, omit `--style`; otherwise always provide it.
+If no cover image is ready, omit every `--cover` argument. If one shared cover should be used for both candidates, provide one `--cover`; if each candidate has a different cover, provide one `--cover` per `--audio` in the same order. If lyrics/content are truly unavailable, omit `--lyrics`/`--lyrics-file`; the app stores an empty lyrics field. For instrumental/BGM candidates, prefer the exact bracket-only Suno metatag file instead of omitting lyrics. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop candidates, do not treat missing lyrics as normal; generate or capture original lyrics unless the human explicitly requested instrumental/no-vocal. If style/settings are not available, omit `--style`; otherwise always provide it. If excluded styles/negative tags are not available, omit `--exclude-style`; otherwise always provide it.
 
 Report the command output JSON. The human will approve one candidate, approve both candidates as separate singles, or reject both in Slack or the web UI.
 ```
@@ -310,7 +313,7 @@ Goal:
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
 - Preserve lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available. For BGM/background/instrumental tracks, write and upload the exact bracket-only Suno instrumental metatag file when possible; J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop songs should not have empty lyrics unless the human explicitly requested an instrumental/no-vocal track.
 - If this is a J-pop/K-pop/English pop/Latin pop/Spanish pop/anime-pop single and there is no final lyric text, stop and generate/capture original lyrics before calling `auto-publish-single`.
-- Preserve Suno style/settings during upload. Pass `--style "SUNO_STYLE_OR_SETTINGS"` for each song.
+- Preserve Suno style/settings and excluded styles during upload. Pass `--style "SUNO_STYLE_OR_SETTINGS"` and `--exclude-style "SUNO_EXCLUDED_STYLES"` for each song.
 - A final 16:9 cover image is required. For moving-video releases, this cover also acts as the Gemini/Dreamina/Seedance first-frame reference. It must include only the selected channel name as a large lower-left brand label readable on mobile.
 - A separate YouTube thumbnail image with readable text is required. For J-pop/Japan singles, use the approved Tokyo Daydream Radio pattern: large `J-POP` with smaller `TOKYO DAYDREAM RADIO` beneath it. For HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, The New Verse, sundaze, and Solwave Radio, use the selected channel profile and song concept for thumbnail wording; there is no fixed recurring visual signature yet. Do not add duration text or badges such as `1 HOUR`, `60 MIN`, or `1時間`.
 - Apply the selected channel profile to both static images. For J-pop/Japan/Tokyo Daydream Radio singles, use the Tokyo profile. For Soft Hour/default BGM singles, use the Soft Hour profile. For HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, The New Verse, sundaze, or Solwave Radio, use that channel's profile and let the song concept drive the scene. The cover should contain only the large lower-left channel brand label; the thumbnail must be generated from that final cover as a reference/edit derivative, using the same composition plus readable click text and channel branding. In the thumbnail, keep the main channel/requested subject centered; text must fit around the composition rather than moving the subject sideways.
@@ -350,14 +353,15 @@ scripts/openclaw-release auto-publish-single \
   --lyrics-file ABSOLUTE_LYRICS_PATH \
   --cover ABSOLUTE_FINAL_CLEAN_COVER_IMAGE_PATH \
   --thumbnail ABSOLUTE_YOUTUBE_TEXT_THUMBNAIL_IMAGE_PATH \
-  --loop-video ABSOLUTE_DREAMINA_SEEDANCE_8_SECOND_MP4 \
+  --loop-video ABSOLUTE_GEMINI_DREAMINA_SEEDANCE_LOOP_MP4 \
   --prompt "PROMPT_USED_TO_GENERATE_AUDIO" \
   --style "SUNO_STYLE_OR_SETTINGS" \
+  --exclude-style "SUNO_EXCLUDED_STYLES_OR_NEGATIVE_TAGS" \
   --tags "comma, separated, tags" \
   --youtube-channel-title "Tokyo Daydream Radio"
 ```
 
-Pass exactly one `--audio`, one `--title`, one optional `--lyrics-file`, and one `--style`. If Suno produced two good songs, prepare separate cover/thumbnail/loop-video assets and run `auto-publish-single` twice with different release titles.
+Pass exactly one `--audio`, one `--title`, one optional `--lyrics-file`, one `--style`, and one optional `--exclude-style` if excluded styles/negative tags were used. If Suno produced two good songs, prepare separate cover/thumbnail/loop-video assets and run `auto-publish-single` twice with different release titles.
 
 Do not omit `--cover` or `--thumbnail` for a full private single publish run. If either asset is not ready, stop after audio creation and report the missing asset. The app's local draft cover is only a placeholder for manual review, not acceptable for automatic YouTube upload.
 
@@ -428,6 +432,7 @@ Goal:
 - Generate songs in batches until the usable duration is at least 2400 seconds, preferably around 2700 seconds.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
+- For lyric/vocal playlist requests, add vocal clarity exclusions in Suno Advanced Options so the lead voice stays close, intelligible, and dry enough for streaming: `muddy vocals, muffled vocals, washed-out vocals, distant vocals, buried vocals, unclear lyrics, heavy reverb, excessive reverb, long reverb tail, large echo, echoey vocals, concert hall echo, arena reverb, stadium reverb, live concert vocals, crowd ambience, room boom`.
 - For every Suno generation on every channel, add artificial noise blockers to Advanced Options excluded styles unless the human explicitly asks for vinyl/LP/noise texture: `white noise, static noise, vinyl crackle, record crackle, LP crackle, turntable noise, tape hiss, cassette hiss, analog hiss, noise floor, lo-fi noise, old record noise, dust noise, crackle, hiss`.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default.
 - For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop, The Old Verse, and The New Verse playlist requests, generate vocal songs by default with original lyrics for each track. Use Japanese lyrics for J-pop/Japanese pop/anime-pop, Korean lyrics for K-pop, English lyrics for sundaze/English/American pop, Spanish lyrics for Solwave/Latin/Spanish pop, and English lyrics for The Old Verse/The New Verse unless the human explicitly asks for another lyric language. Do not make the batch instrumental/no-vocal unless the human explicitly asks for instrumental/BGM/lofi/no vocals.
@@ -437,7 +442,7 @@ Goal:
 - Before upload, replace awkward trailing A/B, 1/2, or pair-style labels with independent song titles.
 - Preserve each track's lyrics or content notes during upload. Pass one `--lyrics` or `--lyrics-file` per `--audio` when available, because good playlist tracks may later be republished as standalone singles and OpenClaw needs this context for thumbnail/loop-video generation. For J-pop/K-pop/English pop/Latin pop/Spanish pop/Japanese pop/anime-pop/The Old Verse/The New Verse playlist tracks, lyrics are expected and should be uploaded for every track. For BGM/background/instrumental tracks, upload the exact bracket-only Suno instrumental metatag file used for generation instead of leaving the content blank whenever possible.
 - If this is a J-pop/K-pop/English pop/Latin pop/Spanish pop/anime-pop/The Old Verse/The New Verse playlist and any track lacks final lyric text, stop and generate/capture original lyrics before queuing audio/video render. Do not publish a lyricless vocal-channel playlist unless the human explicitly says it is BGM/instrumental/no-vocal.
-- Preserve the Suno style/settings for each track. Pass one shared `--style` if the whole batch used the same style, or one `--style` per `--audio` when styles differ.
+- Preserve the Suno style/settings and excluded styles for each track. Pass one shared `--style` / `--exclude-style` if the whole batch used the same settings, or one value per `--audio` when they differ.
 - Prefer track-specific `--style` values for playlist tracks. If a shared style is used, add track-specific prompt/title/lyrics variation so the playlist does not sound like one song repeated with minor edits.
 - If Suno gives two outputs from the same prompt, do not name them like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`.
 - Give each output a standalone title that fits the mood, for example `Saffron Motion` and `Open Road Cadence` instead of `Highway Saffron A` and `Highway Saffron B`.
@@ -519,8 +524,8 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 스페인어 가
 After all generated audio files and visual assets are ready, use step commands and stop after video render is queued:
 
 ```bash
-scripts/openclaw-release upload-audio --release-id RELEASE_ID --audio ABSOLUTE_AUDIO_PATH_01 --title "INDEPENDENT_TRACK_TITLE_01" --lyrics-file ABSOLUTE_LYRICS_PATH_01 --style "SUNO_STYLE_OR_SETTINGS_01" --prompt "PROMPT_USED_TO_GENERATE_AUDIO" --tags "comma, separated, tags"
-scripts/openclaw-release upload-audio --release-id RELEASE_ID --audio ABSOLUTE_AUDIO_PATH_02 --title "INDEPENDENT_TRACK_TITLE_02" --lyrics-file ABSOLUTE_LYRICS_PATH_02 --style "SUNO_STYLE_OR_SETTINGS_02" --prompt "PROMPT_USED_TO_GENERATE_AUDIO" --tags "comma, separated, tags"
+scripts/openclaw-release upload-audio --release-id RELEASE_ID --audio ABSOLUTE_AUDIO_PATH_01 --title "INDEPENDENT_TRACK_TITLE_01" --lyrics-file ABSOLUTE_LYRICS_PATH_01 --style "SUNO_STYLE_OR_SETTINGS_01" --exclude-style "SUNO_EXCLUDED_STYLES_OR_NEGATIVE_TAGS_01" --prompt "PROMPT_USED_TO_GENERATE_AUDIO" --tags "comma, separated, tags"
+scripts/openclaw-release upload-audio --release-id RELEASE_ID --audio ABSOLUTE_AUDIO_PATH_02 --title "INDEPENDENT_TRACK_TITLE_02" --lyrics-file ABSOLUTE_LYRICS_PATH_02 --style "SUNO_STYLE_OR_SETTINGS_02" --exclude-style "SUNO_EXCLUDED_STYLES_OR_NEGATIVE_TAGS_02" --prompt "PROMPT_USED_TO_GENERATE_AUDIO" --tags "comma, separated, tags"
 scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH
 scripts/openclaw-release upload-thumbnail --release-id RELEASE_ID --thumbnail ABSOLUTE_YOUTUBE_THUMBNAIL_IMAGE_PATH
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video ABSOLUTE_DREAMINA_SEEDANCE_LOOP_MP4

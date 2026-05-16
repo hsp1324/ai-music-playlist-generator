@@ -262,7 +262,7 @@ def test_codex_metadata_service_uses_codex_json(monkeypatch) -> None:
         assert "Do not show A/B, 1/2, or artificial pair labels" in input
         assert "display_title_hint" in input
         assert "write as one standalone song/release" in input
-        assert "Use prompt, style, tags, and lyrics as private creative context" in input
+        assert "Use prompt, style, excluded styles, tags, and lyrics as private creative context" in input
         assert "timeline_timestamp_format" in input
         assert "Japanese title plus Korean translation in parentheses" in input
         assert "never use the transliterated words" in input

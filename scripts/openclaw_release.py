@@ -810,6 +810,17 @@ def resolve_style_items(audio_count: int, *, styles: list[str]) -> list[str]:
     return values
 
 
+def resolve_exclude_style_items(audio_count: int, *, exclude_styles: list[str]) -> list[str]:
+    values = list(exclude_styles or [])
+    if not values:
+        return [""] * audio_count
+    if len(values) == 1:
+        return [values[0]] * audio_count
+    if len(values) != audio_count:
+        raise RuntimeError("When using per-track exclude styles, provide either one shared value or exactly one per --audio.")
+    return values
+
+
 def _flatten_text_values(*values: Any) -> str:
     parts: list[str] = []
     for value in values:
@@ -919,6 +930,7 @@ def upload_audio_file_to_release(
     tags: str,
     lyrics: str = "",
     style: str = "",
+    exclude_style: str = "",
     cover_path: Path | None = None,
     dispatch_review: bool = True,
     attempts: int = MAX_AUDIO_UPLOAD_ATTEMPTS,
@@ -948,6 +960,7 @@ def upload_audio_file_to_release(
                         "tags": tags or "",
                         "lyrics": lyrics or "",
                         "style": style or "",
+                        "exclude_style": exclude_style or "",
                         "dispatch_review": str(dispatch_review).lower(),
                     },
                     files=files,
@@ -1094,6 +1107,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             tags=args.tags,
             lyrics=lyrics,
             style=args.style,
+            exclude_style=getattr(args, "exclude_style", ""),
             cover_path=cover_path,
             dispatch_review=not auto_approve_playlist,
         )
@@ -1170,6 +1184,10 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
     style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
+    exclude_style_items = resolve_exclude_style_items(
+        len(audio_paths),
+        exclude_styles=getattr(args, "exclude_style", []) or [],
+    )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
         context="upload-single-candidates",
@@ -1209,6 +1227,7 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
                 tags=args.tags,
                 lyrics=lyrics_items[index - 1],
                 style=style_items[index - 1],
+                exclude_style=exclude_style_items[index - 1],
                 cover_path=cover_path,
             )
         except Exception as exc:  # noqa: BLE001
@@ -1681,6 +1700,10 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
     style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
+    exclude_style_items = resolve_exclude_style_items(
+        len(audio_paths),
+        exclude_styles=getattr(args, "exclude_style", []) or [],
+    )
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-playlist requires --cover when creating a new Playlist Release. "
@@ -1778,7 +1801,13 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
 
     uploaded_tracks = []
     failed_uploads: list[dict[str, str]] = []
-    for audio_path, track_title, lyrics, style in zip(audio_paths, display_titles, lyrics_items, style_items):
+    for audio_path, track_title, lyrics, style, exclude_style in zip(
+        audio_paths,
+        display_titles,
+        lyrics_items,
+        style_items,
+        exclude_style_items,
+    ):
         try:
             track = upload_audio_file_to_release(
                 client,
@@ -1789,6 +1818,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 tags=args.tags,
                 lyrics=lyrics,
                 style=style,
+                exclude_style=exclude_style,
                 cover_path=None,
                 dispatch_review=False,
             )
@@ -2002,6 +2032,10 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     )
     lyrics_items = resolve_lyrics_items(len(audio_paths), lyrics=args.lyrics or [], lyrics_files=args.lyrics_file or [])
     style_items = resolve_style_items(len(audio_paths), styles=args.style or [])
+    exclude_style_items = resolve_exclude_style_items(
+        len(audio_paths),
+        exclude_styles=getattr(args, "exclude_style", []) or [],
+    )
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-single requires --cover when creating a new Single Release. "
@@ -2096,7 +2130,13 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             )
 
     uploaded_tracks = []
-    for audio_path, track_title, lyrics, style in zip(audio_paths, track_titles, lyrics_items, style_items):
+    for audio_path, track_title, lyrics, style, exclude_style in zip(
+        audio_paths,
+        track_titles,
+        lyrics_items,
+        style_items,
+        exclude_style_items,
+    ):
         try:
             track = upload_audio_file_to_release(
                 client,
@@ -2107,6 +2147,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 tags=args.tags,
                 lyrics=lyrics,
                 style=style,
+                exclude_style=exclude_style,
                 cover_path=None,
                 dispatch_review=False,
             )
@@ -2537,7 +2578,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
             "For Cinematic Pulse releases, write English default metadata and position it as no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, orchestral battle, emotional film score, mystery-tension, dark fantasy, sci-fi, heroic, or game-focus music. Do not use juvenile game-menu title wording such as Boss BGM, Final Boss Music, 보스, 보스전, or bare BGM; prefer grand film-score wording such as Epic Cinematic Orchestra, Dark Fantasy Film Score, Heroic Trailer Music, Emotional Film Score, Sci-Fi Cinematic Music, or Mystery Tension Score. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. "
             "For The Old Verse releases, write English default metadata and position it as Old Testament scripture-inspired music that follows the biblical sequence from Genesis onward. Include the selected passage range in the main title, every localized title, and the description. For The New Verse releases, write English default metadata and position it as New Testament scripture-inspired worship music that follows the sequence from Matthew onward. Include the selected passage range in the main title, every localized title, and the description. "
-            "Use each track's style field as Suno generation context for later thumbnails, loop video, and metadata. "
+            "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
             "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, The Old Verse/Old Testament, The New Verse/New Testament, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
             "Use --default-language ko for HaruHaru, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse."
@@ -2808,6 +2849,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--title", default="", help="Track title. Defaults to audio filename stem.")
     audio_parser.add_argument("--prompt", default="", help="Prompt or generation note.")
     audio_parser.add_argument("--style", default="", help="Suno style/settings used to generate this audio.")
+    audio_parser.add_argument("--exclude-style", default="", help="Suno excluded style/negative tags used to generate this audio.")
     audio_parser.add_argument("--tags", default="", help="Comma-separated tags.")
     audio_parser.add_argument("--lyrics", default="", help="Optional lyrics or content notes for this audio. Empty is allowed.")
     audio_parser.add_argument("--lyrics-file", default="", help="Optional UTF-8 text file containing lyrics or content notes.")
@@ -2834,6 +2876,7 @@ def build_parser() -> argparse.ArgumentParser:
     candidates_parser.add_argument("--release-title", default="", help="Single release title. Defaults to first audio filename stem.")
     candidates_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by the candidates.")
     candidates_parser.add_argument("--style", action="append", default=[], help="Suno style/settings. Repeat once per --audio, or provide one shared value.")
+    candidates_parser.add_argument("--exclude-style", action="append", default=[], help="Suno excluded style/negative tags. Repeat once per --audio, or provide one shared value.")
     candidates_parser.add_argument("--tags", default="", help="Comma-separated tags shared by the candidates.")
     candidates_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     candidates_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
@@ -2858,6 +2901,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
     auto_playlist_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--style", action="append", default=[], help="Suno style/settings. Repeat once per --audio, or provide one shared value.")
+    auto_playlist_parser.add_argument("--exclude-style", action="append", default=[], help="Suno excluded style/negative tags. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
@@ -2901,6 +2945,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
     auto_single_parser.add_argument("--prompt", default="", help="Prompt or generation note shared by uploaded tracks.")
     auto_single_parser.add_argument("--style", action="append", default=[], help="Suno style/settings for this final song. Provide one value.")
+    auto_single_parser.add_argument("--exclude-style", action="append", default=[], help="Suno excluded style/negative tags for this final song. Provide one value.")
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")

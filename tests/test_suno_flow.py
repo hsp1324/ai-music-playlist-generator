@@ -86,6 +86,56 @@ def test_sunoapi_complete_callback_creates_two_tracks_idempotently() -> None:
     assert all(track["audio_path"].startswith("storage/tracks/") for track in tracks)
 
 
+def test_suno_generation_exclude_style_is_carried_to_callback_tracks() -> None:
+    client = TestClient(create_app())
+    client.app.state.services.suno.download_audio_to_storage = lambda source_url, source_track_id=None: (
+        f"storage/tracks/{source_track_id}.mp3"
+    )
+
+    generation_response = client.post(
+        "/api/suno/generations",
+        json={
+            "prompt": "K-pop night drive with a clean lead vocal",
+            "style": "Korean pop, clean vocal, bright chorus",
+            "exclude_style": "muddy vocals, heavy reverb, concert hall echo",
+        },
+    )
+
+    assert generation_response.status_code == 202
+    provider_job_id = generation_response.json()["provider_job_id"]
+
+    callback_response = client.post(
+        "/api/suno/webhook",
+        json={
+            "code": 200,
+            "msg": "All generated successfully.",
+            "data": {
+                "callbackType": "complete",
+                "task_id": provider_job_id,
+                "data": [
+                    {
+                        "id": "clean-vocal-1",
+                        "audio_url": "https://cdn.example.com/clean-vocal-1.mp3",
+                        "stream_audio_url": "https://cdn.example.com/clean-vocal-1-stream",
+                        "title": "Clean Vocal",
+                        "prompt": "K-pop night drive with a clean lead vocal",
+                        "duration": 192.0,
+                    }
+                ],
+            },
+        },
+    )
+
+    assert callback_response.status_code == 200
+    track_id = callback_response.json()["track_ids"][0]
+    track_response = client.get(f"/api/tracks/{track_id}")
+    assert track_response.status_code == 200
+    track = track_response.json()
+    assert track["style"] == "Korean pop, clean vocal, bright chorus"
+    assert track["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
+    assert track["metadata_json"]["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
+
+
 def test_sunoapi_progress_callback_only_acknowledges_without_creating_tracks() -> None:
     client = TestClient(create_app())
 
