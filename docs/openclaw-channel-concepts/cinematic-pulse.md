@@ -12,7 +12,7 @@ The audience should immediately understand: instrumental cinematic orchestra mus
 
 Titles should be broad cinematic orchestra / film-score packaging first. The music can be epic, quiet, emotional, mysterious, dark, hopeful, heroic, or tense; it does not always need to be huge battle music.
 
-For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer broad titles a normal viewer would search or understand quickly, such as `Final Battle Scene Cinematic Music`, `Epic Cinematic Orchestra`, `Dark Fantasy Film Score`, `Heroic Trailer Music`, `Emotional Film Score`, `Sci-Fi Cinematic Music`, `Mystery Tension Score`, or `Orchestral Battle Music` when accurate. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand.
+For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer broad titles a normal viewer would search or understand quickly, spanning varied title families such as final battle scene, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, epic writing music, and movie OST focus. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand. The examples below are style references, not fixed templates to repeat mechanically.
 
 ## Recent Release Check
 
@@ -63,6 +63,8 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - `[playlist] Cinematic Orchestra Music | Movie OST for Focus and Epic Scenes`
 - `[playlist] Emotional Film Score | Piano, Strings and Hopeful Cinematic Music`
 - `[playlist] Dark Mystery Orchestra | Tension Music for Writing and Focus`
+- `[playlist] Heroic Trailer Music | Epic Orchestra for Motivation and Focus`
+- `[playlist] Grand Journey Film Score | Cinematic Orchestra for Writing`
 
 ## Bad Directions
 
