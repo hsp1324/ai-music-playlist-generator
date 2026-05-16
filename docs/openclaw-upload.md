@@ -202,7 +202,7 @@ Required moving visual:
 - OpenClaw should generate/download only the short clip. Do not export a long MP4 from OpenClaw.
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
-- Normal auto-publish must include `--loop-video`. Do not use the thumbnail image or any text-heavy image as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`.
+- Normal auto-publish must include a provider-generated `--loop-video` from Gemini, Dreamina, or Seedance. Do not use the thumbnail image, a text-heavy image, an app-rendered still image, or a locally synthesized motion loop as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`.
 - The app validates uploaded loop videos only for technical readability. It does not reject low-motion clips or alternate clip lengths. OpenClaw still rejects unreadable/tiny files, but it should not reject a valid Gemini MP4 because of duration. If Seedance/Dreamina was generated with the wrong duration setting, regenerate it at 6 seconds before upload.
 
 Gemini-first website workflow for OpenClaw:
@@ -252,7 +252,7 @@ Dreamina website workflow for OpenClaw:
 - Generate exactly one `6 second` MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
-- If login, CAPTCHA, subscription limits, or manual approval blocks generation/download, stop and report the blocked step. Do not continue without `--loop-video` unless the human explicitly accepts a still-image video and OpenClaw passes `--allow-still-image-video`.
+- If login, CAPTCHA, subscription limits, face detection, moderation, or manual approval blocks Dreamina/Seedance generation/download, do not create a local motion-loop substitute. Try Gemini if quota is available. If Gemini has already created 3 videos in the active 24 hour window, defer this release and move on to another eligible release.
 
 Dreamina/Seedance fallback rejection recovery:
 
@@ -263,9 +263,10 @@ Dreamina/Seedance fallback rejection recovery:
 - Remove or generalize anything that can look like protected IP or policy-risk text: named artists, studios, franchises, characters, brands, celebrity names, song titles, exact style imitation phrases such as `in the style of`, logos, weapons, gore, sexualized wording, minors, and real-person likeness references.
 - Replace risky references with generic descriptors. Examples: `Ghibli-like` becomes `soft hand-painted anime-inspired background`; `Disney style` becomes `warm family-friendly illustrated animation`; `YOASOBI music video style` becomes `bright mainstream Japanese pop visual mood`; a named character becomes `original youthful traveler silhouette`.
 - If the first-frame image itself appears to trigger rejection, regenerate a safer cover/first-frame image first, keeping only the large lower-left channel brand label and the same broad mood.
-- If all 10 attempts fail, send a final Slack message:
-  `scripts/openclaw-release slack-notify --text "영상 생성이 10회 실패해서 중단했습니다. RELEASE_TITLE: ERROR_SUMMARY"`
-- After 10 failures, stop the automation before render/publish. Do not continue with a still-image video unless the human explicitly approves that fallback and OpenClaw passes `--allow-still-image-video`.
+- If all 10 Dreamina/Seedance attempts fail, try Gemini if quota is available.
+- If Gemini quota is exhausted, send a deferral Slack message:
+  `scripts/openclaw-release slack-notify --text "Gemini 3개 영상 쿼터가 끝났고 Dreamina/Seedance도 실패해서 이 릴리즈의 loop video를 보류합니다. 24시간 쿨다운 후 Gemini로 먼저 다시 만들겠습니다. RELEASE_TITLE"`
+- After deferral, stop work on this release before render/publish and continue with the next eligible release. Do not continue with a local motion loop or still-image video unless the human explicitly approves that fallback and OpenClaw passes `--allow-still-image-video`.
 
 Dreamina/Seedance/Gemini motion prompt guidance:
 
