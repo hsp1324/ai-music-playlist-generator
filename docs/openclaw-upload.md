@@ -199,6 +199,7 @@ Static image creation rules:
 - Keep the channel-brand line size/style consistent between the thumbnail and the cover channel label when possible.
 - Use the cover or a separate first-frame image with only the lower-left channel brand label for Dreamina/Seedance/Gemini video generation. Do not use the final text thumbnail as the first-frame reference; generated video often makes large thumbnail text flicker, disappear, or reappear.
 - The large lower-left channel label is the only allowed baked-in moving-visual text unless the human explicitly asks for more. Do not add titles, lyrics, subtitles, UI, logos, duration badges, genre text, or unrelated words inside the moving visual.
+- If Gemini/Veo adds its own provider logo or watermark, usually in the bottom-right corner, accept it as an unavoidable provider artifact. Do not regenerate a valid loop video only because that Gemini/Veo logo or watermark is visible. Do not add any other logos, brand marks, UI, or unrelated text yourself.
 
 Required moving visual:
 
@@ -224,6 +225,7 @@ Gemini-first website workflow for OpenClaw:
 - Attach the final cover or dedicated first-frame image as the first image. This image must contain only the lower-left channel brand label and no thumbnail click text.
 - Paste the same motion prompt shape used for Dreamina/Seedance, adapted only if Gemini needs shorter wording.
 - Ask Gemini to preserve the first-frame composition, stylized/animated look, and exact lower-left channel label, and to animate the surrounding scene naturally. Do not ask it to add subtitles, title text, UI, logos, spectrum bars, or audio-reactive graphics.
+- A Gemini/Veo provider logo or watermark in the corner is allowed and should not be treated as a failed generation.
 - Choose `16:9` when the Gemini UI exposes that control. Do not ask Gemini for a duration and do not mention clip length in the prompt. Download the generated MP4 as-is, inspect it, and upload it if text, framing, and motion are acceptable.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Inspect the MP4 before upload. Reject it if the channel label disappears, flickers, is misspelled, changes position/style drastically, becomes unreadable, or if the motion is too static.
@@ -279,6 +281,7 @@ Dreamina/Seedance/Gemini motion prompt guidance:
 - Do not include `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. Do not mention duration in Gemini prompts. These words can make Seedance/Dreamina/Gemini create a shorter repeated segment inside the clip.
 - Ask Dreamina/Seedance/Gemini to preserve the first-frame image's composition, lighting, palette, illustrated/anime style, channel/requested subject/action, and large lower-left channel label in the first shot.
 - Use the selected channel profile for subject/action/motion. Always require stable composition, no hard cuts, no other text overlays, no subtitles, no logos, no UI, and no photorealism.
+- Provider-added Gemini/Veo corner logos or watermarks are allowed; the "no logos" requirement means OpenClaw must not request or create additional logos, brand marks, UI, or unrelated text.
 - Ask Dreamina/Seedance/Gemini to preserve the exact lower-left channel text, spelling, font/lettering, placement, color, and readability for the full clip. Ask it not to rewrite, translate, blur, morph, move, hide, flicker, or change the text. Keep the text area stable and animate only the surrounding scene subtly.
 - After generation, inspect the downloaded MP4. Reject and regenerate if the large lower-left channel label is missing, unreadable, misspelled, flickering, morphing, moving drastically, shrinking, or changing style.
 - Ask for the final moment to be close to the opening composition, but not perfectly identical or static.
@@ -597,6 +600,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Do not publish without a separate YouTube thumbnail image. OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`.
 - OpenClaw must create a Gemini/Dreamina/Seedance clip and pass the short MP4 as `--loop-video` before normal video render/publish. Try Gemini first unless its 24 hour cooldown is active; otherwise use Dreamina/Seedance. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if all 3 Gemini videos are already spent, defer this release until the 24 hour Gemini cooldown clears and process it before new loop-video work. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Gemini/Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
+- A Gemini/Veo provider logo or watermark in the corner is allowed and is not a reason to regenerate the loop video.
 - For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, and count only successful video generations toward the 3 videos per 24 hour quota. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls. Do not put those settings in the prompt.
 - For normal OpenClaw auto-publish work, verify the MP4 after download. If Seedance/Dreamina did not produce the requested 6 second clip, discard/regenerate unless the human explicitly accepts it and OpenClaw passes `--allow-short-loop-video`. For Gemini, inspect the generated MP4 and upload it as-is when text, framing, and motion are acceptable.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
