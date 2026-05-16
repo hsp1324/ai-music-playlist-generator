@@ -470,7 +470,7 @@ def test_openclaw_backlog_scheduler_skips_when_lock_is_active(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_video_render_event_posts_openclaw_request_after_lock_is_free(tmp_path) -> None:
+def test_video_render_completed_event_posts_openclaw_request_after_lock_is_free(tmp_path) -> None:
     os.environ["AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS"] = "true"
     os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
     os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
@@ -495,12 +495,12 @@ def test_video_render_event_posts_openclaw_request_after_lock_is_free(tmp_path) 
         services.slack.post_plain_message = fake_post_plain_message
         with SessionLocal() as db:
             playlist = Playlist(
-                title="Rendering Cafe Playlist",
-                status=PlaylistStatus.building,
+                title="Rendered Cafe Playlist",
+                status=PlaylistStatus.ready,
                 target_duration_seconds=2400,
                 actual_duration_seconds=2400,
                 metadata_json={
-                    "workflow_state": "video_rendering",
+                    "workflow_state": "metadata_review",
                     "youtube_channel_title": "Soft Hour Radio",
                 },
             )
@@ -523,20 +523,46 @@ def test_video_render_event_posts_openclaw_request_after_lock_is_free(tmp_path) 
         services.worker._post_openclaw_video_event_request_when_unlocked(
             playlist_id=playlist_id,
             job_id=job_id,
-            event="video_render_started",
-            reason="video_render_started",
+            event="video_render_completed",
+            reason="video_render_completed",
         )
 
         assert len(calls) == 1
         assert calls[0]["channel"] == "C0AVBUYP150"
-        assert "scheduler_reason: video_render_started" in calls[0]["text"]
+        assert "scheduler_reason: video_render_completed" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
         assert "Soft Hour Radio: 1 unfinished" in calls[0]["text"]
         assert "Tokyo Daydream Radio: 0 unfinished" in calls[0]["text"]
         with SessionLocal() as db:
             updated = db.get(Playlist, playlist_id)
-            assert updated.metadata_json["openclaw_video_render_started_request_job_id"] == job_id
-            assert updated.metadata_json["openclaw_video_render_started_request"]["ok"] is True
+            assert updated.metadata_json["openclaw_video_render_completed_request_job_id"] == job_id
+            assert updated.metadata_json["openclaw_video_render_completed_request"]["ok"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_video_render_started_event_does_not_post_openclaw_request(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS"] = "true"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.slack.post_plain_message = fake_post_plain_message
+        services.worker._post_openclaw_video_event_request_when_unlocked(
+            playlist_id=str(uuid4()),
+            job_id=str(uuid4()),
+            event="video_render_started",
+            reason="video_render_started",
+        )
+
+        assert calls == []
     finally:
         clear_isolated_client_env()
 

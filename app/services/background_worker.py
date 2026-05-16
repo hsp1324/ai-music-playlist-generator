@@ -1188,6 +1188,8 @@ class BackgroundJobWorker:
     def _request_openclaw_for_video_event(self, *, playlist_id: str, job_id: str, event: str, reason: str) -> None:
         if not self.settings.openclaw_request_next_on_video_render_events:
             return
+        if event != "video_render_completed":
+            return
         if not self.settings.openclaw_slack_channel_id.strip():
             return
         if self.services is None:
@@ -1356,6 +1358,8 @@ class BackgroundJobWorker:
         reason: str,
     ) -> None:
         if self.services is None:
+            return
+        if event != "video_render_completed":
             return
 
         lock_wait_deadline = time.monotonic() + max(float(self.settings.openclaw_lock_ttl_seconds or 0), 60.0) + 300.0

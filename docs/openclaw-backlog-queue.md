@@ -42,8 +42,9 @@ On each `OPENCLAW_RUN:` backlog request:
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
    - loop-video deferred because Dreamina/Seedance failed and Gemini quota was exhausted: if the Gemini 24 hour cooldown has cleared, make/upload the Gemini loop video first and queue render before starting any new release. Do not replace the missing provider video with a local motion-loop workaround.
 7. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. Prepare another eligible release for any channel that is still below target, including the same channel when it has not reached the maximum.
-8. Stop making new releases only for channels that have reached the configured maximum backlog.
-9. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
+8. OpenClaw requests should not be triggered by render-worker claim/start alone. The app may ask for more backlog work after the OpenClaw lock is released, and it asks OpenClaw to finish metadata/publish after the external worker completes and uploads the rendered MP4.
+9. Stop making new releases only for channels that have reached the configured maximum backlog.
+10. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
 
 `AIMP_LOCAL_API_BASE` should point at the deployed VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
 
