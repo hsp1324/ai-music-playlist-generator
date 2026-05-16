@@ -53,10 +53,22 @@ def _elapsed_since(value: Any, *, now: datetime | None = None) -> str:
     return _format_duration((current - started_at).total_seconds())
 
 
-def _inline(value: Any) -> str:
-    text = str(value or "").strip() or "Untitled"
-    sanitized = text.replace("`", "'")
-    return f"`{sanitized}`"
+def _mrkdwn(value: Any) -> str:
+    return (
+        str(value or "")
+        .strip()
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        or "Untitled"
+    )
+
+
+def _short(value: Any, limit: int = 240) -> str:
+    text = " ".join(str(value or "").split()).strip()
+    if len(text) <= limit:
+        return text
+    return f"{text[: limit - 1].rstrip()}..."
 
 
 def _worker_label(worker: dict[str, Any] | None) -> str:
@@ -64,33 +76,78 @@ def _worker_label(worker: dict[str, Any] | None) -> str:
     nickname = str(payload.get("nickname") or "").strip()
     worker_id = str(payload.get("worker_id") or "").strip()
     hostname = str(payload.get("hostname") or "").strip()
+    if nickname and worker_id and nickname != worker_id:
+        return f"{nickname} ({worker_id})"
     return nickname or worker_id or hostname or "unknown-worker"
 
 
-def _ops_blocks(text: str, *, image_url: str | None = None, alt_text: str = "Cover") -> list[dict[str, Any]]:
+def _local_asset_path(services, path_value: Any) -> str:
+    raw = str(path_value or "").strip()
+    if not raw or raw.startswith(("http://", "https://")):
+        return ""
+
+    storage_root = Path(services.settings.storage_root).resolve()
+    candidate = Path(raw)
+    path: Path | None = None
+    try:
+        if candidate.is_absolute():
+            resolved = candidate.resolve()
+            resolved.relative_to(storage_root)
+            path = resolved
+        elif candidate.parts and candidate.parts[0] == "storage":
+            path = storage_root / Path(*candidate.parts[1:])
+        elif candidate.parts and candidate.parts[0] in {"playlists", "tracks", "covers", "tmp", "browser"}:
+            path = storage_root / candidate
+    except (OSError, ValueError):
+        path = None
+    if path is None or not path.exists() or not path.is_file():
+        return ""
+    return str(path)
+
+
+def _playlist_image_path(services, playlist: Playlist) -> str:
+    meta = dict(playlist.metadata_json or {})
+    for value in (meta.get("youtube_thumbnail_path"), meta.get("cover_image_path")):
+        path = _local_asset_path(services, value)
+        if path:
+            return path
+    return ""
+
+
+def _ops_text(*, title: str, release_title: str, fields: list[tuple[str, Any]]) -> str:
+    lines = [f"*{title}*", _short(release_title, 260)]
+    details = [f"{label}: {_short(value, 180)}" for label, value in fields if str(value or "").strip()]
+    if details:
+        lines.append(" | ".join(details))
+    return "\n".join(lines)
+
+
+def _ops_blocks(
+    *,
+    title: str,
+    release_title: str,
+    fields: list[tuple[str, Any]],
+) -> list[dict[str, Any]]:
     section: dict[str, Any] = {
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": text[:2900],
+            "text": f"*{_mrkdwn(title)}*\n{_mrkdwn(_short(release_title, 260))}",
         },
     }
-    if image_url:
-        section["accessory"] = {
-            "type": "image",
-            "image_url": image_url,
-            "alt_text": alt_text[:200] or "Cover",
+
+    blocks = [section]
+    field_blocks = [
+        {
+            "type": "mrkdwn",
+            "text": f"*{_mrkdwn(label)}*\n{_mrkdwn(_short(value, 180))}",
         }
-    return [section]
-
-
-def _playlist_cover_path(playlist: Playlist) -> str | None:
-    meta = dict(playlist.metadata_json or {})
-    for key in ("cover_image_path", "youtube_thumbnail_path"):
-        value = str(meta.get(key) or "").strip()
-        if value:
-            return value
-    return None
+        for label, value in fields
+        if str(value or "").strip()
+    ]
+    if field_blocks:
+        blocks.append({"type": "section", "fields": field_blocks[:10]})
+    return blocks
 
 
 def _run_async(factory: Callable[[], Any]) -> Any:
@@ -123,25 +180,21 @@ def post_ops_message(
     *,
     text: str,
     blocks: list[dict[str, Any]] | None = None,
-    cover_image_path: str | None = None,
-    cover_title: str | None = None,
+    image_path: str = "",
+    image_title: str = "",
 ) -> dict[str, Any]:
     try:
         installation = services.slack_installations.get_active_installation(db)
         token = installation.bot_token if installation else services.settings.slack_bot_token
         target_channel = services.settings.slack_ops_channel_id or services.settings.slack_review_channel_id
-        rendered_blocks = blocks or _ops_blocks(text)
-        cover_path = str(cover_image_path or "").strip()
-        if cover_path.startswith(("http://", "https://")):
-            rendered_blocks = _ops_blocks(text, image_url=cover_path, alt_text=cover_title or "Cover")
-        elif cover_path and Path(cover_path).exists() and token and target_channel:
+        if image_path and token and target_channel:
             upload_result = _run_async(
                 lambda: services.slack.upload_local_file(
-                    file_path=cover_path,
-                    title=f"{cover_title or 'Release'} cover",
+                    file_path=image_path,
+                    title=image_title or "Release artwork",
                     token=token,
                     channel=target_channel,
-                    blocks=rendered_blocks,
+                    initial_comment=text,
                 )
             )
             if bool(getattr(upload_result, "ok", False)):
@@ -151,10 +204,9 @@ def post_ops_message(
                     "ts": getattr(upload_result, "ts", None),
                     "file_id": getattr(upload_result, "file_id", None),
                     "raw": getattr(upload_result, "raw", None),
-                    "mode": "file_with_blocks",
+                    "mode": "file_upload",
                 }
-
-        result = _run_async(lambda: services.slack.post_ops_message(token=token, text=text, blocks=rendered_blocks))
+        result = _run_async(lambda: services.slack.post_ops_message(token=token, text=text, blocks=blocks))
         return {
             "ok": bool(getattr(result, "ok", False)),
             "channel": getattr(result, "channel", None),
@@ -176,16 +228,25 @@ def notify_video_render_queued(db: Session, services, *, playlist: Playlist, job
     visualizer = str(payload.get("video_spectrum_overlay_style") or "bars")
     actor = str(payload.get("actor") or "unknown")
     mode = services.settings.video_render_execution_mode
-    text = (
-        f"Video render queued: {_inline(playlist.title)}.\n"
-        f"mode: `{mode}`; visualizer: `{visualizer}`; queued_by: `{actor}`."
+    title = "Video render queued"
+    fields = [
+        ("Mode", mode),
+        ("Visualizer", visualizer),
+        ("Queued by", actor),
+    ]
+    text = _ops_text(title=title, release_title=playlist.title, fields=fields)
+    blocks = _ops_blocks(
+        title=title,
+        release_title=playlist.title,
+        fields=fields,
     )
     result = post_ops_message(
         db,
         services,
         text=text,
-        cover_image_path=_playlist_cover_path(playlist),
-        cover_title=playlist.title,
+        blocks=blocks,
+        image_path=_playlist_image_path(services, playlist),
+        image_title=f"{_short(playlist.title, 80)} artwork",
     )
     result_json["ops_video_queued_notification"] = {
         **result,
@@ -208,16 +269,25 @@ def notify_render_worker_claimed(
 ) -> dict[str, Any]:
     current = now or _utcnow()
     queue_elapsed = _elapsed_since(job.created_at, now=current)
-    text = (
-        f"Render worker claimed video: {_inline(playlist.title)}.\n"
-        f"worker: `{_worker_label(worker)}`; queued_for: `{queue_elapsed}`."
+    worker_label = _worker_label(worker)
+    title = "Render worker claimed"
+    fields = [
+        ("Worker", worker_label),
+        ("Queued for", queue_elapsed),
+    ]
+    text = _ops_text(title=title, release_title=playlist.title, fields=fields)
+    blocks = _ops_blocks(
+        title=title,
+        release_title=playlist.title,
+        fields=fields,
     )
     return post_ops_message(
         db,
         services,
         text=text,
-        cover_image_path=_playlist_cover_path(playlist),
-        cover_title=playlist.title,
+        blocks=blocks,
+        image_path=_playlist_image_path(services, playlist),
+        image_title=f"{_short(playlist.title, 80)} artwork",
     )
 
 
@@ -232,16 +302,26 @@ def notify_render_worker_completed(
 ) -> dict[str, Any]:
     current = now or _utcnow()
     elapsed = _elapsed_since(worker.get("claimed_at") or job.started_at, now=current)
-    text = (
-        f"Render worker completed video: {_inline(playlist.title)}.\n"
-        f"worker: `{_worker_label(worker)}`; elapsed: `{elapsed}`."
+    worker_label = _worker_label(worker)
+    title = "Render worker completed"
+    fields = [
+        ("Worker", worker_label),
+        ("Elapsed", elapsed),
+        ("Result", "MP4 uploaded to main VM"),
+    ]
+    text = _ops_text(title=title, release_title=playlist.title, fields=fields)
+    blocks = _ops_blocks(
+        title=title,
+        release_title=playlist.title,
+        fields=fields,
     )
     return post_ops_message(
         db,
         services,
         text=text,
-        cover_image_path=_playlist_cover_path(playlist),
-        cover_title=playlist.title,
+        blocks=blocks,
+        image_path=_playlist_image_path(services, playlist),
+        image_title=f"{_short(playlist.title, 80)} artwork",
     )
 
 
@@ -259,17 +339,26 @@ def notify_render_worker_timeout_requeued(
 ) -> dict[str, Any]:
     current = now or _utcnow()
     elapsed = _elapsed_since(heartbeat_at, now=current)
-    text = (
-        f"Render worker heartbeat timed out; video requeued: {_inline(playlist_title)}.\n"
-        f"worker: `{_worker_label(worker)}`; timeout: `{_format_duration(timeout_seconds)}`; "
-        f"no_heartbeat_for: `{elapsed}`."
+    worker_label = _worker_label(worker)
+    title = "Render worker timed out; job requeued"
+    fields = [
+        ("Worker", worker_label),
+        ("Timeout", _format_duration(timeout_seconds)),
+        ("No heartbeat for", elapsed),
+    ]
+    text = _ops_text(title=title, release_title=playlist_title, fields=fields)
+    blocks = _ops_blocks(
+        title=title,
+        release_title=playlist_title,
+        fields=fields,
     )
     return post_ops_message(
         db,
         services,
         text=text,
-        cover_image_path=cover_image_path,
-        cover_title=playlist_title,
+        blocks=blocks,
+        image_path=_local_asset_path(services, cover_image_path),
+        image_title=f"{_short(playlist_title, 80)} artwork",
     )
 
 
@@ -284,15 +373,24 @@ def notify_youtube_publish_completed(
 ) -> dict[str, Any]:
     channel = str(channel_title or "").strip() or "unknown channel"
     youtube_link = f"https://youtu.be/{youtube_video_id}" if youtube_video_id else "missing video id"
-    schedule = f"; scheduled: `{scheduled_publish_at}`" if scheduled_publish_at else ""
-    text = (
-        f"YouTube publish completed: {_inline(playlist.title)}.\n"
-        f"channel: `{channel}`; video: {youtube_link}{schedule}."
+    title = "YouTube publish completed"
+    fields = [
+        ("Channel", channel),
+        ("Video", youtube_link),
+    ]
+    if scheduled_publish_at:
+        fields.append(("Scheduled", scheduled_publish_at))
+    text = _ops_text(title=title, release_title=playlist.title, fields=fields)
+    blocks = _ops_blocks(
+        title=title,
+        release_title=playlist.title,
+        fields=fields,
     )
     return post_ops_message(
         db,
         services,
         text=text,
-        cover_image_path=_playlist_cover_path(playlist),
-        cover_title=playlist.title,
+        blocks=blocks,
+        image_path=_playlist_image_path(services, playlist),
+        image_title=f"{_short(playlist.title, 80)} artwork",
     )

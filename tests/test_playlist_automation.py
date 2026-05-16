@@ -596,6 +596,36 @@ def drain_background_jobs(client: TestClient, max_jobs: int = 10) -> int:
     return processed
 
 
+def install_fake_ops_slack(services, ops_calls: list[dict]) -> None:
+    def call_text(kwargs: dict) -> str:
+        if kwargs.get("text"):
+            return kwargs["text"]
+        if kwargs.get("initial_comment"):
+            return kwargs["initial_comment"]
+        blocks = kwargs.get("blocks") or []
+        if blocks:
+            text = blocks[0].get("text") or {}
+            return str(text.get("text") or "")
+        return ""
+
+    async def fake_post_ops_message(**kwargs):
+        ops_calls.append({**kwargs, "text": call_text(kwargs)})
+        return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
+
+    async def fake_upload_local_file(**kwargs):
+        ops_calls.append({**kwargs, "text": call_text(kwargs)})
+        return SimpleNamespace(
+            ok=True,
+            channel="COPS",
+            ts=f"123.{len(ops_calls)}",
+            file_id=f"F{len(ops_calls)}",
+            raw={"ok": True},
+        )
+
+    services.slack.post_ops_message = fake_post_ops_message
+    services.slack.upload_local_file = fake_upload_local_file
+
+
 def upload_test_loop_video(client: TestClient, workspace_id: str) -> dict:
     original_validator = playlist_routes._validate_loop_video_file
     playlist_routes._validate_loop_video_file = lambda *_args, **_kwargs: None
@@ -623,22 +653,7 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
         ops_calls = []
 
-        async def fake_post_ops_message(**kwargs):
-            ops_calls.append(kwargs)
-            return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
-
-        async def fake_upload_local_file(**kwargs):
-            ops_calls.append({"text": kwargs["blocks"][0]["text"]["text"], **kwargs})
-            return SimpleNamespace(
-                ok=True,
-                channel="COPS",
-                ts=f"123.{len(ops_calls)}",
-                file_id=f"F{len(ops_calls)}",
-                raw={"ok": True},
-            )
-
-        services.slack.post_ops_message = fake_post_ops_message
-        services.slack.upload_local_file = fake_upload_local_file
+        install_fake_ops_slack(services, ops_calls)
         storage = tmp_path / "storage"
         playlist_dir = storage / "playlists"
         track_dir = storage / "tracks"
@@ -704,10 +719,10 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         claim_payload = claim.json()
         assert claim_payload["job"]["id"] == job_id
         assert claim_payload["job"]["render"]["mode"] == "loop_video"
-        assert "Render worker claimed video" in ops_calls[-1]["text"]
+        assert "Render worker claimed" in ops_calls[-1]["text"]
         assert "External Worker Release" in ops_calls[-1]["text"]
-        assert "worker: `test-worker`" in ops_calls[-1]["text"]
-        assert "queued_for:" in ops_calls[-1]["text"]
+        assert "Worker: test-worker" in ops_calls[-1]["text"]
+        assert "Queued for:" in ops_calls[-1]["text"]
         assert job_id not in ops_calls[-1]["text"]
         assert ops_calls[-1]["file_path"] == str(cover_path)
 
@@ -748,11 +763,10 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             },
         )
         assert complete.status_code == 200
-        assert "Render worker completed video" in ops_calls[-1]["text"]
+        assert "Render worker completed" in ops_calls[-1]["text"]
         assert "External Worker Release" in ops_calls[-1]["text"]
-        assert "Test Render Box" in ops_calls[-1]["text"]
-        assert "test-worker" not in ops_calls[-1]["text"]
-        assert "elapsed:" in ops_calls[-1]["text"]
+        assert "Test Render Box (test-worker)" in ops_calls[-1]["text"]
+        assert "Elapsed:" in ops_calls[-1]["text"]
         assert job_id not in ops_calls[-1]["text"]
 
         with SessionLocal() as db:
@@ -780,22 +794,7 @@ def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
         services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
         ops_calls = []
 
-        async def fake_post_ops_message(**kwargs):
-            ops_calls.append(kwargs)
-            return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
-
-        async def fake_upload_local_file(**kwargs):
-            ops_calls.append({"text": kwargs["blocks"][0]["text"]["text"], **kwargs})
-            return SimpleNamespace(
-                ok=True,
-                channel="COPS",
-                ts=f"123.{len(ops_calls)}",
-                file_id=f"F{len(ops_calls)}",
-                raw={"ok": True},
-            )
-
-        services.slack.post_ops_message = fake_post_ops_message
-        services.slack.upload_local_file = fake_upload_local_file
+        install_fake_ops_slack(services, ops_calls)
         storage = tmp_path / "storage"
         playlist_dir = storage / "playlists"
         track_dir = storage / "tracks"
@@ -866,14 +865,14 @@ def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
         assert claim.status_code == 200
         assert claim.json()["job"]["id"] == job_id
         assert len(ops_calls) == 2
-        assert "heartbeat timed out" in ops_calls[0]["text"]
+        assert "Render worker timed out" in ops_calls[0]["text"]
         assert "Stale Worker Release" in ops_calls[0]["text"]
-        assert "worker: `stale-worker`" in ops_calls[0]["text"]
-        assert "timeout: `6h 0m 0s`" in ops_calls[0]["text"]
+        assert "Worker: stale-worker" in ops_calls[0]["text"]
+        assert "Timeout: 6h 0m 0s" in ops_calls[0]["text"]
         assert job_id not in ops_calls[0]["text"]
         assert ops_calls[0]["file_path"] == str(cover_path)
-        assert "Render worker claimed video" in ops_calls[1]["text"]
-        assert "worker: `fresh-worker`" in ops_calls[1]["text"]
+        assert "Render worker claimed" in ops_calls[1]["text"]
+        assert "Worker: fresh-worker" in ops_calls[1]["text"]
         assert job_id not in ops_calls[1]["text"]
     finally:
         clear_isolated_client_env()
@@ -965,11 +964,7 @@ def test_reaching_target_duration_does_not_post_ops_slack(tmp_path) -> None:
         services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
         ops_calls = []
 
-        async def fake_post_ops_message(**kwargs):
-            ops_calls.append(kwargs)
-            return SimpleNamespace(ok=True, channel="COPS", ts="123.456", raw={"ok": True})
-
-        services.slack.post_ops_message = fake_post_ops_message
+        install_fake_ops_slack(services, ops_calls)
 
         workspace_response = client.post(
             "/api/playlists/workspaces",
@@ -1018,20 +1013,11 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
         services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
         ops_calls = []
 
-        async def fake_post_ops_message(**kwargs):
-            ops_calls.append(kwargs)
-            return SimpleNamespace(ok=True, channel="COPS", ts="123.456", raw={"ok": True})
-
-        async def fake_upload_local_file(**kwargs):
-            ops_calls.append({"text": kwargs["blocks"][0]["text"]["text"], **kwargs})
-            return SimpleNamespace(ok=True, channel="COPS", ts="123.456", file_id="F123", raw={"ok": True})
-
         def fake_build_audio(_tracks, output_path):
             output_path.write_bytes(b"fake-mp3")
             return output_path
 
-        services.slack.post_ops_message = fake_post_ops_message
-        services.slack.upload_local_file = fake_upload_local_file
+        install_fake_ops_slack(services, ops_calls)
         services.playlist_builder.build_audio = fake_build_audio
 
         workspace_response = client.post(
@@ -1090,10 +1076,10 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
         assert len(ops_calls) == 1
         assert "Video render queued" in ops_calls[0]["text"]
         assert "Queued Video Alert Workspace" in ops_calls[0]["text"]
-        assert "mode: `external`" in ops_calls[0]["text"]
-        assert "visualizer: `thinwave`" in ops_calls[0]["text"]
+        assert "Mode: external" in ops_calls[0]["text"]
+        assert "Visualizer: thinwave" in ops_calls[0]["text"]
         assert "job_id" not in ops_calls[0]["text"]
-        assert ops_calls[0]["file_path"] == cover_response.json()["cover_image_path"]
+        assert ops_calls[0]["file_path"].endswith(".png")
         with SessionLocal() as db:
             job = db.scalars(
                 select(Job).where(Job.playlist_id == workspace_id, Job.type == JobType.build_video)
@@ -3663,24 +3649,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert os.path.exists(first_video_path)
         ops_calls = []
 
-        async def fake_post_ops_message(**kwargs):
-            ops_calls.append(kwargs)
-            return SimpleNamespace(ok=True, channel="COPS", ts=f"123.{len(ops_calls)}", raw={"ok": True})
-
-        async def fake_upload_local_file(**kwargs):
-            ops_calls.append({"text": kwargs["blocks"][0]["text"]["text"], **kwargs})
-            return SimpleNamespace(
-                ok=True,
-                channel="COPS",
-                ts=f"123.{len(ops_calls)}",
-                file_id=f"F{len(ops_calls)}",
-                raw={"ok": True},
-            )
-
         services.settings.slack_bot_token = "xoxb-test"
         services.settings.slack_ops_channel_id = "#all-ai-music-playlist-generator"
-        services.slack.post_ops_message = fake_post_ops_message
-        services.slack.upload_local_file = fake_upload_local_file
+        install_fake_ops_slack(services, ops_calls)
 
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
