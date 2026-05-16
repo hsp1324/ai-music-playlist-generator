@@ -12,9 +12,11 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import socket
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +26,7 @@ from app.config import Settings
 from app.services.playlist_builder import FFMpegPlaylistBuilder
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
+COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
 
 
 def normalize_api_base(value: str | None) -> str:
@@ -39,6 +42,50 @@ def auth_headers(token: str) -> dict[str, str]:
 
 def print_json(payload: Any) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2), flush=True)
+
+
+def utcnow_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def parse_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, str) and value.strip():
+        try:
+            parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    else:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def disk_usage_target(path: Path) -> Path:
+    candidate = path
+    while not candidate.exists() and candidate != candidate.parent:
+        candidate = candidate.parent
+    return candidate
+
+
+def disk_usage_percent(path: Path) -> float:
+    usage = shutil.disk_usage(disk_usage_target(path))
+    if usage.total <= 0:
+        return 0.0
+    return usage.used / usage.total * 100.0
+
+
+def directory_size_bytes(path: Path) -> int:
+    total = 0
+    for item in path.rglob("*"):
+        if item.is_file():
+            try:
+                total += item.stat().st_size
+            except OSError:
+                continue
+    return total
 
 
 def request_json(client: httpx.Client, method: str, url: str, *, token: str, **kwargs) -> Any:
@@ -83,6 +130,111 @@ def download_asset(client: httpx.Client, *, token: str, asset: dict[str, Any], d
         )
     temp_path.replace(destination)
     return destination
+
+
+def mark_job_uploaded(job: dict[str, Any], video_path: Path) -> None:
+    marker_path = video_path.parent / COMPLETED_JOB_MARKER
+    payload = {
+        "job_id": job.get("id"),
+        "playlist_id": job.get("playlist_id"),
+        "title": job.get("title"),
+        "video_path": str(video_path),
+        "size_bytes": video_path.stat().st_size if video_path.exists() else None,
+        "uploaded_to_webapp_at": utcnow_iso(),
+    }
+    marker_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def uploaded_job_cache_candidates(cache_dir: Path) -> list[dict[str, Any]]:
+    jobs_dir = cache_dir / "jobs"
+    if not jobs_dir.exists():
+        return []
+
+    candidates: list[dict[str, Any]] = []
+    for marker_path in jobs_dir.glob(f"*/{COMPLETED_JOB_MARKER}"):
+        job_dir = marker_path.parent
+        try:
+            marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            marker = {}
+        try:
+            marker_mtime = marker_path.stat().st_mtime
+        except OSError:
+            marker_mtime = time.time()
+        completed_at = parse_datetime(marker.get("uploaded_to_webapp_at")) or datetime.fromtimestamp(
+            marker_mtime,
+            tz=timezone.utc,
+        )
+        candidates.append(
+            {
+                "job_id": marker.get("job_id") or job_dir.name,
+                "playlist_id": marker.get("playlist_id"),
+                "title": marker.get("title"),
+                "path": job_dir,
+                "completed_at": completed_at,
+                "size_bytes": directory_size_bytes(job_dir),
+            }
+        )
+    return sorted(candidates, key=lambda item: item["completed_at"])
+
+
+def cleanup_uploaded_job_cache(cache_dir: Path, threshold_percent: float) -> dict[str, Any]:
+    threshold = max(0.0, min(float(threshold_percent), 100.0))
+    before_percent = disk_usage_percent(cache_dir)
+    result: dict[str, Any] = {
+        "ok": True,
+        "threshold_percent": threshold,
+        "disk_usage_before_percent": round(before_percent, 2),
+        "disk_usage_after_percent": round(before_percent, 2),
+        "deleted_count": 0,
+        "deleted_bytes": 0,
+        "deleted": [],
+        "errors": [],
+        "skipped": False,
+    }
+    if before_percent <= threshold:
+        result["skipped"] = True
+        result["reason"] = "below_threshold"
+        return result
+
+    for candidate in uploaded_job_cache_candidates(cache_dir):
+        current_percent = disk_usage_percent(cache_dir)
+        if current_percent <= threshold:
+            break
+        try:
+            shutil.rmtree(candidate["path"])
+        except OSError as exc:
+            result["errors"].append(
+                {
+                    "job_id": candidate["job_id"],
+                    "path": str(candidate["path"]),
+                    "error": str(exc),
+                }
+            )
+            continue
+        result["deleted_count"] += 1
+        result["deleted_bytes"] += int(candidate["size_bytes"] or 0)
+        result["deleted"].append(
+            {
+                "job_id": candidate["job_id"],
+                "playlist_id": candidate["playlist_id"],
+                "title": candidate["title"],
+                "path": str(candidate["path"]),
+                "size_bytes": candidate["size_bytes"],
+                "uploaded_to_webapp_at": candidate["completed_at"].isoformat(),
+            }
+        )
+
+    after_percent = disk_usage_percent(cache_dir)
+    result["disk_usage_after_percent"] = round(after_percent, 2)
+    return result
+
+
+def maybe_cleanup_uploaded_job_cache(args: argparse.Namespace) -> dict[str, Any] | None:
+    cleanup = cleanup_uploaded_job_cache(args.cache_dir, args.cache_cleanup_threshold_percent)
+    if cleanup["deleted_count"] or cleanup["errors"]:
+        print_json({"ok": cleanup["ok"], "cache_cleanup": cleanup})
+    return cleanup
 
 
 def post_progress(
@@ -298,7 +450,16 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         video_path=rendered,
         chunk_size=args.chunk_size_bytes,
     )
-    print_json({"ok": True, "completed_job_id": job["id"], "output": str(rendered)})
+    mark_job_uploaded(job, rendered)
+    cache_cleanup = cleanup_uploaded_job_cache(args.cache_dir, args.cache_cleanup_threshold_percent)
+    print_json(
+        {
+            "ok": True,
+            "completed_job_id": job["id"],
+            "output": str(rendered),
+            "cache_cleanup": cache_cleanup,
+        }
+    )
     return True
 
 
@@ -310,6 +471,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cache-dir", type=Path, default=Path(".render-worker"), help="Local cache/work directory.")
     parser.add_argument("--ffmpeg", default=os.environ.get("AIMP_FFMPEG_BINARY", "ffmpeg"), help="ffmpeg executable.")
     parser.add_argument("--chunk-size-bytes", type=int, default=int(os.environ.get("AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES", 8 * 1024 * 1024)))
+    parser.add_argument(
+        "--cache-cleanup-threshold-percent",
+        type=float,
+        default=float(os.environ.get("AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT", 50)),
+        help="Delete successfully uploaded job cache directories, oldest first, when cache disk usage is above this percent.",
+    )
     parser.add_argument("--poll-seconds", type=float, default=20.0, help="Seconds to wait between polls.")
     parser.add_argument("--once", action="store_true", help="Process at most one job and exit.")
     return parser.parse_args()
@@ -324,6 +491,7 @@ def main() -> int:
     with httpx.Client(base_url=args.api_base, timeout=timeout, follow_redirects=True) as client:
         while True:
             try:
+                maybe_cleanup_uploaded_job_cache(args)
                 worked = run_once(client, args)
             except KeyboardInterrupt:
                 raise

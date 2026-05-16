@@ -1261,12 +1261,12 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(tmp_path) -> None:
+def test_local_video_cleanup_deletes_uploaded_youtube_videos_above_threshold_oldest_first(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         settings = client.app.state.settings
         settings.local_video_cleanup_enabled = True
-        settings.local_video_cleanup_disk_threshold_percent = 80
+        settings.local_video_cleanup_disk_threshold_percent = 50
         settings.playlists_dir.mkdir(parents=True, exist_ok=True)
         now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
 
@@ -1279,6 +1279,7 @@ def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(
                 youtube_video_id="yt-public",
                 metadata_json={
                     "workflow_state": "uploaded",
+                    "youtube_uploaded_at": "2026-05-10T12:00:00+00:00",
                     "youtube_response": {"status": {"privacyStatus": "public"}},
                 },
             )
@@ -1290,6 +1291,7 @@ def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(
                 youtube_video_id="yt-orphan",
                 metadata_json={
                     "workflow_state": "uploaded",
+                    "youtube_uploaded_at": "2026-05-11T12:00:00+00:00",
                     "youtube_scheduled_publish_at": "2026-05-14T12:00:00+00:00",
                 },
             )
@@ -1301,6 +1303,7 @@ def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(
                 youtube_video_id="yt-future",
                 metadata_json={
                     "workflow_state": "uploaded",
+                    "youtube_uploaded_at": "2026-05-12T12:00:00+00:00",
                     "youtube_scheduled_publish_at": "2026-05-16T12:00:00+00:00",
                 },
             )
@@ -1312,25 +1315,36 @@ def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(
                 youtube_video_id="yt-private",
                 metadata_json={
                     "workflow_state": "uploaded",
+                    "youtube_uploaded_at": "2026-05-13T12:00:00+00:00",
                     "youtube_response": {"status": {"privacyStatus": "private"}},
                 },
             )
-            db.add_all([public_playlist, orphan_playlist, future_playlist, private_playlist])
+            not_uploaded_playlist = Playlist(
+                title="Not Uploaded Local Video",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                metadata_json={"workflow_state": "metadata_review"},
+            )
+            db.add_all([public_playlist, orphan_playlist, future_playlist, private_playlist, not_uploaded_playlist])
             db.flush()
             public_path = settings.playlists_dir / f"{public_playlist.id}.mp4"
             orphan_path = settings.playlists_dir / f"{orphan_playlist.id}.mp4"
             future_path = settings.playlists_dir / f"{future_playlist.id}.mp4"
             private_path = settings.playlists_dir / f"{private_playlist.id}.mp4"
-            for path in (public_path, orphan_path, future_path, private_path):
+            not_uploaded_path = settings.playlists_dir / f"{not_uploaded_playlist.id}.mp4"
+            for path in (public_path, orphan_path, future_path, private_path, not_uploaded_path):
                 path.write_bytes(b"fake-video")
             public_playlist.output_video_path = str(public_path)
             future_playlist.output_video_path = str(future_path)
             private_playlist.output_video_path = str(private_path)
+            not_uploaded_playlist.output_video_path = str(not_uploaded_path)
             db.commit()
             public_id = public_playlist.id
             orphan_id = orphan_playlist.id
             future_id = future_playlist.id
             private_id = private_playlist.id
+            not_uploaded_id = not_uploaded_playlist.id
 
             result = cleanup_public_uploaded_local_videos(
                 db,
@@ -1339,22 +1353,31 @@ def test_local_video_cleanup_deletes_only_public_youtube_videos_above_threshold(
                 usage_provider=lambda _path: SimpleNamespace(total=100, used=90, free=10),
             )
 
-            assert result["deleted_count"] == 2
+            assert result["deleted_count"] == 4
+            assert [item["playlist_id"] for item in result["deleted"]] == [
+                public_id,
+                orphan_id,
+                future_id,
+                private_id,
+            ]
             assert not public_path.exists()
             assert not orphan_path.exists()
-            assert future_path.exists()
-            assert private_path.exists()
+            assert not future_path.exists()
+            assert not private_path.exists()
+            assert not_uploaded_path.exists()
             public_updated = db.get(Playlist, public_id)
             orphan_updated = db.get(Playlist, orphan_id)
             future_updated = db.get(Playlist, future_id)
             private_updated = db.get(Playlist, private_id)
+            not_uploaded_updated = db.get(Playlist, not_uploaded_id)
             assert public_updated.output_video_path is None
-            assert public_updated.metadata_json["local_video_deleted_after_public_publish"] == str(public_path)
-            assert public_updated.metadata_json["local_video_cleanup_reason"] == "disk_usage_threshold_public_youtube_video"
+            assert public_updated.metadata_json["local_video_deleted_after_youtube_upload"] == str(public_path)
+            assert public_updated.metadata_json["local_video_cleanup_reason"] == "disk_usage_threshold_uploaded_youtube_video"
             assert orphan_updated.output_video_path is None
             assert orphan_updated.metadata_json["local_video_cleanup_source"] == "canonical_playlist_mp4"
-            assert future_updated.output_video_path == str(future_path)
-            assert private_updated.output_video_path == str(private_path)
+            assert future_updated.output_video_path is None
+            assert private_updated.output_video_path is None
+            assert not_uploaded_updated.output_video_path == str(not_uploaded_path)
     finally:
         clear_isolated_client_env()
 
@@ -1364,7 +1387,7 @@ def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_
         client = create_isolated_client(tmp_path)
         settings = client.app.state.settings
         settings.local_video_cleanup_enabled = True
-        settings.local_video_cleanup_disk_threshold_percent = 80
+        settings.local_video_cleanup_disk_threshold_percent = 50
         settings.playlists_dir.mkdir(parents=True, exist_ok=True)
 
         with SessionLocal() as db:
@@ -1389,7 +1412,7 @@ def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_
             result = cleanup_public_uploaded_local_videos(
                 db,
                 settings,
-                usage_provider=lambda _path: SimpleNamespace(total=100, used=80, free=20),
+                usage_provider=lambda _path: SimpleNamespace(total=100, used=50, free=50),
             )
 
             assert result["skipped"] is True

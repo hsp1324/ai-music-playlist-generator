@@ -94,11 +94,31 @@ def youtube_public_at(playlist: Playlist, *, now: datetime | None = None) -> dat
     return None
 
 
+def youtube_uploaded_at(playlist: Playlist, *, now: datetime | None = None) -> datetime | None:
+    if playlist.status != PlaylistStatus.uploaded or not playlist.youtube_video_id:
+        return None
+
+    meta = dict(playlist.metadata_json or {})
+    status = _youtube_response_status(meta)
+    uploaded_at = (
+        _parse_datetime(meta.get("youtube_uploaded_at"))
+        or _parse_datetime(meta.get("youtube_upload_completed_at"))
+        or _parse_datetime(meta.get("youtube_published_at"))
+        or _parse_datetime(meta.get("uploaded_at"))
+        or _parse_datetime(meta.get("youtube_scheduled_publish_at"))
+        or _parse_datetime(meta.get("youtube_publish_at"))
+        or _parse_datetime(status.get("publishAt"))
+        or _parse_datetime(playlist.updated_at)
+        or _parse_datetime(playlist.created_at)
+    )
+    return uploaded_at or now or _utcnow()
+
+
 @dataclass
 class LocalVideoCandidate:
     playlist: Playlist
     path: Path
-    public_at: datetime
+    uploaded_at: datetime
     source: str
     size_bytes: int
 
@@ -131,8 +151,8 @@ def collect_public_uploaded_local_video_candidates(
     ).all()
     seen_paths: set[Path] = set()
     for playlist in playlists:
-        public_at = youtube_public_at(playlist, now=current)
-        if public_at is None:
+        uploaded_at = youtube_uploaded_at(playlist, now=current)
+        if uploaded_at is None:
             continue
         for path, source in _candidate_paths(playlist, settings):
             try:
@@ -146,12 +166,12 @@ def collect_public_uploaded_local_video_candidates(
                 LocalVideoCandidate(
                     playlist=playlist,
                     path=path,
-                    public_at=public_at,
+                    uploaded_at=uploaded_at,
                     source=source,
                     size_bytes=path.stat().st_size,
                 )
             )
-    return sorted(candidates, key=lambda item: (item.public_at, item.playlist.updated_at or item.public_at))
+    return sorted(candidates, key=lambda item: (item.uploaded_at, item.playlist.updated_at or item.uploaded_at))
 
 
 def cleanup_public_uploaded_local_videos(
@@ -216,18 +236,17 @@ def cleanup_public_uploaded_local_videos(
         entry = {
             "path": str(path),
             "deleted_at": current.isoformat(),
-            "reason": "disk_usage_threshold_public_youtube_video",
+            "reason": "disk_usage_threshold_uploaded_youtube_video",
             "source": candidate.source,
             "size_bytes": candidate.size_bytes,
             "youtube_video_id": candidate.playlist.youtube_video_id,
-            "youtube_public_at": candidate.public_at.isoformat(),
+            "youtube_uploaded_at": candidate.uploaded_at.isoformat(),
             "disk_usage_before_percent": round(before_percent, 2),
             "threshold_percent": threshold,
         }
         history.append(entry)
         meta["local_video_cleanup_history"] = history
         meta["local_video_deleted_after_youtube_upload"] = str(path)
-        meta["local_video_deleted_after_public_publish"] = str(path)
         meta["local_video_deleted_at"] = current.isoformat()
         meta["local_video_cleanup_reason"] = entry["reason"]
         meta["local_video_cleanup_source"] = candidate.source
@@ -247,7 +266,7 @@ def cleanup_public_uploaded_local_videos(
                 "size_bytes": candidate.size_bytes,
                 "source": candidate.source,
                 "youtube_video_id": candidate.playlist.youtube_video_id,
-                "youtube_public_at": candidate.public_at.isoformat(),
+                "youtube_uploaded_at": candidate.uploaded_at.isoformat(),
             }
         )
 
