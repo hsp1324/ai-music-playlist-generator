@@ -40,6 +40,7 @@ On each `OPENCLAW_RUN:` backlog request:
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
    - `youtube_upload_failed`: retry only if the error is transient or already fixed; otherwise report the blocker.
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
+   - loop-video deferred because Dreamina/Seedance failed and Gemini quota was exhausted: if the Gemini 24 hour cooldown has cleared, make/upload the Gemini loop video first and queue render before starting any new release.
 7. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. You may prepare one release for a different channel that is below target.
 8. Stop making new releases for any channel that already has an unfinished Playlist Release.
 9. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
@@ -94,7 +95,7 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
    - Pass `--youtube-channel-title "$CHANNEL_TITLE"` when using `scripts/openclaw-release create-release`.
    - This lets the web app count the release against the correct channel backlog before publish.
 4. Generate and upload enough approved audio for at least 40 minutes.
-5. Upload final cover, YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries.
+5. Upload final cover, YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if Gemini has already used all 3 successful videos in the current 24 hour window, defer this release and resume it first after cooldown.
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
 8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
@@ -107,10 +108,10 @@ The render worker pool owns production video rendering. The Oracle VM app only q
 ## Visual Rework Requests
 
 - If the human flags a published release's cover, thumbnail, or loop video as weak, treat it as a visual repair task, not a new music release. Keep the existing songs/audio unless the human explicitly asks for new tracks.
-- For visual-only repair, replace the final cover, text YouTube thumbnail, and short loop video together, then approve the cover and queue a fresh video render. Try Gemini first for the loop video, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. After render completion, update or re-publish through the app's normal YouTube flow.
+- For visual-only repair, replace the final cover, text YouTube thumbnail, and short loop video together, then approve the cover and queue a fresh video render. Try Gemini first for the loop video, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. If Dreamina/Seedance cannot create the repair clip and Gemini quota is exhausted, defer the repair until Gemini can create videos again; when cooldown clears, finish the deferred repair before new loop-video work. After render completion, update or re-publish through the app's normal YouTube flow.
 - Do not spend image/video-generation credits while the human says credits are unavailable. Keep the repair note and resume only after the human says credits or generation capacity are available again.
 - Current human repair note from 2026-05-15: the currently uploaded `Club Bloom` release has cover/thumbnail visuals that are too mild. Later, remake only its Club Bloom visual assets with a stronger, more click-stopping club look, then re-render from the existing music.
-- Current human repair note from 2026-05-16: `[playlist] 비 오는 서울 K-POP 드라이브 | 밤공기, 자신감, 반짝이는 보컬` has the wrong uploaded 8-second loop video attached. Treat this as a loop-video-only repair: keep the existing songs, audio render, cover, and thumbnail unless the human says otherwise. First clear the bad uploaded loop video with `scripts/openclaw-release delete-loop-video --release-title "[playlist] 비 오는 서울 K-POP 드라이브 | 밤공기, 자신감, 반짝이는 보컬"`, then create the correct replacement loop video from the existing cover/first-frame. Try Gemini first with no duration wording; if Gemini is unavailable/on cooldown/blocked after retries, use Dreamina/Seedance with duration set to exactly `6 seconds`. Upload the replacement with `upload-loop-video`, render video again, then continue metadata/publish through the normal app flow.
+- Current human repair note from 2026-05-16: `[playlist] 비 오는 서울 K-POP 드라이브 | 밤공기, 자신감, 반짝이는 보컬` has the wrong uploaded 8-second loop video attached. Treat this as a loop-video-only repair: keep the existing songs, audio render, cover, and thumbnail unless the human says otherwise. First clear the bad uploaded loop video with `scripts/openclaw-release delete-loop-video --release-title "[playlist] 비 오는 서울 K-POP 드라이브 | 밤공기, 자신감, 반짝이는 보컬"`, then create the correct replacement loop video from the existing cover/first-frame. Try Gemini first with no duration wording; if Gemini is unavailable/on cooldown/blocked after retries, use Dreamina/Seedance with duration set to exactly `6 seconds`. If Dreamina/Seedance also cannot create it and Gemini quota is exhausted, defer this repair until Gemini cooldown clears, then make/upload the Gemini loop video first. Upload the replacement with `upload-loop-video`, render video again, then continue metadata/publish through the normal app flow.
 
 ## Finisher Mode
 
