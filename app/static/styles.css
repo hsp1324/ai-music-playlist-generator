@@ -887,6 +887,61 @@ label .channel-avatar-select span {
   gap: 10px;
 }
 
+.workspace-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 40px;
+  margin-top: 12px;
+}
+
+.workspace-pager:empty {
+  display: none;
+}
+
+.workspace-pager-summary {
+  margin-right: 6px;
+  color: var(--muted);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.workspace-page-button {
+  display: inline-grid;
+  min-width: 36px;
+  min-height: 36px;
+  place-items: center;
+  padding: 0 10px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.workspace-page-button.active {
+  background: var(--ink);
+  color: #fff8ea;
+}
+
+.workspace-page-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.workspace-page-gap {
+  min-width: 18px;
+  color: var(--muted);
+  font-weight: 900;
+  text-align: center;
+}
+
 .archived-workspace-section {
   margin-top: 0;
 }

@@ -19,6 +19,10 @@ const state = {
   channelFilter: "__all_channels__",
   releaseSortKey: "published",
   releaseSortDirection: "desc",
+  workspacePages: {
+    active: 1,
+    archive: 1,
+  },
 };
 
 const appHeader = document.querySelector(".app-header");
@@ -27,9 +31,11 @@ const boardShell = document.querySelector(".board-shell");
 const channelOverviewSection = document.querySelector(".channel-overview-section");
 const channelSummaryGrid = document.querySelector("#channel-summary-grid");
 const workspaceGrid = document.querySelector("#workspace-grid");
+const workspacePager = document.querySelector("#workspace-pager");
 const workspaceSection = document.querySelector(".workspace-section");
 const archivedWorkspaceSection = document.querySelector("#archived-workspace-section");
 const archivedWorkspaceGrid = document.querySelector("#archived-workspace-grid");
+const archivedWorkspacePager = document.querySelector("#archived-workspace-pager");
 const workspaceTabButtons = [...document.querySelectorAll("[data-workspace-tab]")];
 const workspaceSortButtons = [...document.querySelectorAll("[data-release-sort]")];
 const archiveCountBadge = document.querySelector("#archive-count-badge");
@@ -85,6 +91,7 @@ const textModalCloseButton = document.querySelector("#text-modal-close-button");
 const CHANNEL_FILTER_ALL = "__all_channels__";
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
+const WORKSPACE_PAGE_SIZE = 20;
 const RELEASE_SORT_OPTIONS = [
   { key: "published", label: "Published" },
   { key: "updated", label: "Updated" },
@@ -2140,6 +2147,81 @@ function archivedWorkspaces() {
   return sortedReleaseWorkspaces(state.workspaces.filter((workspace) => workspace.hidden));
 }
 
+function workspacePageCount(items) {
+  return Math.max(1, Math.ceil(items.length / WORKSPACE_PAGE_SIZE));
+}
+
+function clampWorkspacePage(tab, items) {
+  const key = tab === "archive" ? "archive" : "active";
+  const maxPage = workspacePageCount(items);
+  const current = Number(state.workspacePages[key] || 1);
+  const next = Math.min(Math.max(current, 1), maxPage);
+  state.workspacePages[key] = next;
+  return next;
+}
+
+function pagedWorkspaces(items, tab) {
+  const page = clampWorkspacePage(tab, items);
+  const start = (page - 1) * WORKSPACE_PAGE_SIZE;
+  return items.slice(start, start + WORKSPACE_PAGE_SIZE);
+}
+
+function workspacePageNumbers(current, total) {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  const pages = new Set([1, total]);
+  for (let page = current - 2; page <= current + 2; page += 1) {
+    if (page > 1 && page < total) pages.add(page);
+  }
+  return [...pages].sort((left, right) => left - right);
+}
+
+function renderWorkspacePager(container, items, tab) {
+  if (!container) return;
+  container.innerHTML = "";
+  if (items.length <= WORKSPACE_PAGE_SIZE) return;
+
+  const key = tab === "archive" ? "archive" : "active";
+  const current = clampWorkspacePage(key, items);
+  const total = workspacePageCount(items);
+
+  const summary = document.createElement("span");
+  summary.className = "workspace-pager-summary";
+  const first = (current - 1) * WORKSPACE_PAGE_SIZE + 1;
+  const last = Math.min(current * WORKSPACE_PAGE_SIZE, items.length);
+  summary.textContent = `${first}-${last} / ${items.length}`;
+  container.appendChild(summary);
+
+  const addButton = (label, page, { active = false, disabled = false } = {}) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `workspace-page-button${active ? " active" : ""}`;
+    button.textContent = label;
+    button.disabled = disabled;
+    button.setAttribute("aria-current", active ? "page" : "false");
+    button.addEventListener("click", () => {
+      state.workspacePages[key] = page;
+      renderWorkspaceTiles();
+      const target = key === "archive" ? archivedWorkspaceSection : workspaceSection;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    container.appendChild(button);
+  };
+
+  addButton("Prev", Math.max(current - 1, 1), { disabled: current === 1 });
+  let previous = 0;
+  workspacePageNumbers(current, total).forEach((page) => {
+    if (previous && page > previous + 1) {
+      const gap = document.createElement("span");
+      gap.className = "workspace-page-gap";
+      gap.textContent = "...";
+      container.appendChild(gap);
+    }
+    addButton(String(page), page, { active: page === current });
+    previous = page;
+  });
+  addButton("Next", Math.min(current + 1, total), { disabled: current === total });
+}
+
 function ensureSelectedWorkspace() {
   const visible = visibleWorkspaces();
   if (visible.some((workspace) => workspace.id === state.selectedWorkspaceId)) return;
@@ -2239,6 +2321,7 @@ function renderChannelFilter() {
 function setChannelFilter(channelKey, scrollToList = false) {
   state.channelFilter = channelKey || CHANNEL_FILTER_ALL;
   state.workspaceTab = "active";
+  state.workspacePages.active = 1;
   state.selectedWorkspaceId = "";
   renderWorkspaceTiles();
   renderWorkspaceDetail();
@@ -2256,6 +2339,8 @@ function setReleaseSort(sortKey) {
     state.releaseSortKey = nextKey;
     state.releaseSortDirection = "desc";
   }
+  state.workspacePages.active = 1;
+  state.workspacePages.archive = 1;
   renderWorkspaceTiles();
   renderWorkspaceDetail();
 }
@@ -2645,10 +2730,13 @@ function renderWorkspaceTiles() {
   renderChannelSummary();
   workspaceGrid.innerHTML = "";
   renderArchivedWorkspaceTiles();
+  renderWorkspacePager(workspacePager, [], "active");
 
   if (state.workspaceTab !== "active") return;
 
   const visible = visibleWorkspaces();
+  const pageItems = pagedWorkspaces(visible, "active");
+  renderWorkspacePager(workspacePager, visible, "active");
 
   if (!visible.length) {
     const empty = document.createElement("div");
@@ -2662,7 +2750,7 @@ function renderWorkspaceTiles() {
     return;
   }
 
-  visible.forEach((workspace) => {
+  pageItems.forEach((workspace) => {
     const fragment = workspaceTileTemplate.content.cloneNode(true);
     const tile = fragment.querySelector(".workspace-tile");
     const mode = fragment.querySelector(".workspace-mode");
@@ -2725,9 +2813,12 @@ function renderArchivedWorkspaceTiles() {
   if (!archivedWorkspaceSection || !archivedWorkspaceGrid) return;
   if (state.workspaceTab !== "archive") {
     archivedWorkspaceGrid.innerHTML = "";
+    renderWorkspacePager(archivedWorkspacePager, [], "archive");
     return;
   }
   const archived = archivedWorkspaces();
+  const pageItems = pagedWorkspaces(archived, "archive");
+  renderWorkspacePager(archivedWorkspacePager, archived, "archive");
   archivedWorkspaceGrid.innerHTML = "";
   if (!archived.length) {
     const empty = document.createElement("div");
@@ -2736,7 +2827,7 @@ function renderArchivedWorkspaceTiles() {
     archivedWorkspaceGrid.appendChild(empty);
     return;
   }
-  archived.forEach((workspace) => {
+  pageItems.forEach((workspace) => {
     const fragment = workspaceTileTemplate.content.cloneNode(true);
     const tile = fragment.querySelector(".workspace-tile");
     const mode = fragment.querySelector(".workspace-mode");
