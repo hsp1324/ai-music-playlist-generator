@@ -292,6 +292,12 @@ def _active_youtube_channel_titles(services) -> list[str]:
 
 def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
     channel_titles = _active_youtube_channel_titles(services)
+    target = max(1, int(services.settings.openclaw_backlog_target_per_channel or 1))
+    maximum = max(target, int(services.settings.openclaw_backlog_max_per_channel or target))
+    lock_status = get_openclaw_lock_status(services.settings.storage_root)
+    active_lock = dict(lock_status.get("lock") or {}) if lock_status.get("active") else {}
+    lock_release_id = str(active_lock.get("release_id") or "").strip()
+    lock_channel_title = str(active_lock.get("channel_title") or "").strip()
     channels = {
         title: {
             "count": 0,
@@ -309,6 +315,8 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             continue
         meta = dict(playlist.metadata_json or {})
         channel_title = _playlist_channel_title(playlist)
+        if not channel_title and playlist.id == lock_release_id:
+            channel_title = lock_channel_title
         workflow_state = str(meta.get("workflow_state") or "collecting").strip() or "collecting"
         release_payload = {
             "id": playlist.id,
@@ -330,6 +338,8 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
         "channels": channels,
         "unknown_channel_releases": unknown_channel_releases,
         "active_channel_titles": channel_titles,
+        "target_per_channel": target,
+        "max_per_channel": maximum,
     }
 
 

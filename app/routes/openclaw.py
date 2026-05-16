@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.models.playlist import Playlist
 from app.services.registry import ServiceRegistry
 from app.utils.openclaw_slack_loop import post_backlog_queue_request
 from app.workflows.openclaw_runtime import (
@@ -65,6 +66,33 @@ def _require_openclaw_token(services: ServiceRegistry, token: str) -> None:
         raise HTTPException(status_code=403, detail="Invalid OpenClaw token.")
 
 
+def _record_release_channel_hint(db: Session, *, release_id: str, channel_title: str) -> bool:
+    normalized_release_id = release_id.strip()
+    normalized_channel_title = channel_title.strip()
+    if not normalized_release_id or not normalized_channel_title:
+        return False
+
+    playlist = db.get(Playlist, normalized_release_id)
+    if playlist is None:
+        return False
+
+    meta = dict(playlist.metadata_json or {})
+    changed = False
+    if not str(meta.get("target_youtube_channel_title") or "").strip():
+        meta["target_youtube_channel_title"] = normalized_channel_title
+        changed = True
+    if meta.get("openclaw_lock_channel_title") != normalized_channel_title:
+        meta["openclaw_lock_channel_title"] = normalized_channel_title
+        changed = True
+    if not changed:
+        return False
+
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    return True
+
+
 @router.get("/status")
 def openclaw_status(
     services: ServiceRegistry = Depends(get_services),
@@ -81,11 +109,12 @@ def openclaw_status(
 @router.post("/lock/start")
 def start_lock(
     payload: OpenClawLockRequest,
+    db: Session = Depends(get_db),
     services: ServiceRegistry = Depends(get_services),
     token: str = Depends(_request_token),
 ) -> dict:
     _require_openclaw_token(services, token)
-    return acquire_openclaw_lock(
+    result = acquire_openclaw_lock(
         storage_root=services.settings.storage_root,
         ttl_seconds=services.settings.openclaw_lock_ttl_seconds,
         owner=payload.owner,
@@ -95,16 +124,24 @@ def start_lock(
         release_id=payload.release_id,
         message=payload.message,
     )
+    if result.get("ok"):
+        result["release_channel_hint_recorded"] = _record_release_channel_hint(
+            db,
+            release_id=payload.release_id,
+            channel_title=payload.channel_title,
+        )
+    return result
 
 
 @router.post("/lock/heartbeat")
 def heartbeat_lock(
     payload: OpenClawLockRequest,
+    db: Session = Depends(get_db),
     services: ServiceRegistry = Depends(get_services),
     token: str = Depends(_request_token),
 ) -> dict:
     _require_openclaw_token(services, token)
-    return heartbeat_openclaw_lock(
+    result = heartbeat_openclaw_lock(
         storage_root=services.settings.storage_root,
         ttl_seconds=services.settings.openclaw_lock_ttl_seconds,
         owner=payload.owner,
@@ -114,6 +151,13 @@ def heartbeat_lock(
         release_id=payload.release_id,
         message=payload.message,
     )
+    if result.get("ok"):
+        result["release_channel_hint_recorded"] = _record_release_channel_hint(
+            db,
+            release_id=payload.release_id,
+            channel_title=payload.channel_title,
+        )
+    return result
 
 
 @router.post("/lock/finish")

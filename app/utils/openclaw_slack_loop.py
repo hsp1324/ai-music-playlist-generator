@@ -312,12 +312,17 @@ def build_backlog_queue_request_message(
 
     summary = backlog_summary or {}
     channel_payload = summary.get("channels") if isinstance(summary, dict) else {}
+    target_per_channel = int(summary.get("target_per_channel") or 10) if isinstance(summary, dict) else 10
+    max_per_channel = int(summary.get("max_per_channel") or target_per_channel) if isinstance(summary, dict) else target_per_channel
     lines = [
         "OpenClaw Next Release Publisher Skill을 실행해줘.",
         f"scheduler_reason: {reason}",
+        f"backlog_target_per_channel: {target_per_channel}",
+        f"backlog_max_per_channel: {max_per_channel}",
         "",
         "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
         "필요하면 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-youtube-metadata.md도 참고해줘.",
+        "채널별 unfinished Playlist Release가 target에 도달할 때까지 계속 만들되 max를 넘기지 말아줘.",
         "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
     ]
     if isinstance(channel_payload, dict) and channel_payload:

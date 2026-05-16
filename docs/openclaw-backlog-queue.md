@@ -8,7 +8,7 @@ The current production mode is external-render lookahead: the Oracle VM app owns
 
 Maintain a bounded unfinished Playlist Release backlog per connected, automated channel:
 
-- Target backlog: at least 1 unfinished Playlist Release per channel.
+- Target backlog: 10 unfinished Playlist Releases per channel.
 - Maximum backlog: 10 unfinished Playlist Releases per channel.
 - Excluded channel: `MusicSun` is manual-only and must not be filled by automatic backlog work.
 - Future connected channels are included automatically unless docs explicitly mark them manual-only or retired.
@@ -41,8 +41,8 @@ On each `OPENCLAW_RUN:` backlog request:
    - `youtube_upload_failed`: retry only if the error is transient or already fixed; otherwise report the blocker.
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
    - loop-video deferred because Dreamina/Seedance failed and Gemini quota was exhausted: if the Gemini 24 hour cooldown has cleared, make/upload the Gemini loop video first and queue render before starting any new release. Do not replace the missing provider video with a local motion-loop workaround.
-7. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. You may prepare one release for a different channel that is below target.
-8. Stop making new releases for any channel that already has an unfinished Playlist Release.
+7. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. Prepare another eligible release for any channel that is still below target, including the same channel when it has not reached the maximum.
+8. Stop making new releases only for channels that have reached the configured maximum backlog.
 9. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
 
 `AIMP_LOCAL_API_BASE` should point at the deployed VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
@@ -143,7 +143,7 @@ Do not spam Slack for every small substep. Report only stage completion, retries
 
 - Never use a local dev app API when automation should affect the deployed service.
 - Never upload directly in YouTube Studio. YouTube upload must go through the app API.
-- Do not create more than 1 unfinished Playlist Release for the same channel.
+- Do not create more than the configured maximum unfinished Playlist Releases for the same channel.
 - Do not use MusicSun for automatic backlog.
 - If a release is stuck because rendering failed, leave the evidence in the release and report it instead of creating duplicates.
 - Production rendering happens through `scripts/render-worker` on external compute. See `docs/external-video-render-worker.md`.

@@ -316,9 +316,19 @@ def test_publish_completion_requests_next_even_with_video_event_requests_enabled
         assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
         assert "scheduler_reason: publish_completed" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
+        metadata_deadline = time.monotonic() + 3
+        while time.monotonic() < metadata_deadline:
+            with SessionLocal() as db:
+                playlist = db.get(Playlist, workspace_id)
+                if playlist.metadata_json.get("openclaw_next_request_youtube_video_id") == "yt-published-next":
+                    break
+            time.sleep(0.05)
+        else:
+            with SessionLocal() as db:
+                playlist = db.get(Playlist, workspace_id)
+                assert playlist.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-published-next"
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
-            assert playlist.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-published-next"
             assert playlist.metadata_json["openclaw_auto_loop"]["should_request_next"] is True
     finally:
         clear_isolated_client_env()
@@ -347,6 +357,43 @@ def test_openclaw_lock_blocks_second_run(tmp_path) -> None:
         assert second.json()["reason"] == "openclaw_lock_active"
         assert finished.status_code == 200
         assert finished.json()["ok"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_lock_records_release_channel_hint(tmp_path) -> None:
+    client = create_isolated_client(tmp_path)
+    try:
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Tech House",
+                status=PlaylistStatus.building,
+                target_duration_seconds=2400,
+                actual_duration_seconds=2400,
+                metadata_json={"workflow_state": "video_rendering"},
+            )
+            db.add(playlist)
+            db.commit()
+            playlist_id = playlist.id
+
+        response = client.post(
+            "/api/openclaw/lock/start",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-1",
+                "operation": "video",
+                "channel_title": "Club Bloom",
+                "release_id": playlist_id,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["ok"] is True
+        assert response.json()["release_channel_hint_recorded"] is True
+        with SessionLocal() as db:
+            updated = db.get(Playlist, playlist_id)
+            assert updated.metadata_json["target_youtube_channel_title"] == "Club Bloom"
+            assert updated.metadata_json["openclaw_lock_channel_title"] == "Club Bloom"
     finally:
         clear_isolated_client_env()
 

@@ -189,9 +189,9 @@ scripts/openclaw-release youtube-status
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
 Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
-- Keep each active automated channel at no more than 1 unfinished Playlist Release.
+- Keep each active automated channel filled toward the configured unfinished Playlist Release target, currently 10 per channel.
 - Finish metadata_review/publish_ready releases before creating new ones.
-- If a video render job is queued/running, VM is handling it. If another channel is below target, prepare that next channel's release up to queued video render; do not wait idle.
+- If a video render job is queued/running, VM is handling it. If any channel is below target, prepare the next eligible release up to queued video render; do not wait idle.
 - Rotate active channels instead of repeating the same channel.
 - Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
