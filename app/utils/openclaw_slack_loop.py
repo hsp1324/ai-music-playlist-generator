@@ -312,6 +312,7 @@ def build_backlog_queue_request_message(
 
     summary = backlog_summary or {}
     channel_payload = summary.get("channels") if isinstance(summary, dict) else {}
+    unknown_releases = summary.get("unknown_channel_releases") if isinstance(summary, dict) else []
     target_per_channel = int(summary.get("target_per_channel") or 10) if isinstance(summary, dict) else 10
     max_per_channel = int(summary.get("max_per_channel") or target_per_channel) if isinstance(summary, dict) else target_per_channel
     lines = [
@@ -322,6 +323,7 @@ def build_backlog_queue_request_message(
         "",
         "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
         "필요하면 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-youtube-metadata.md도 참고해줘.",
+        "새 workspace를 만들기 전에 기존 미완성 workspace와 로컬 OpenClaw 산출물을 먼저 확인하고 이어서 복구/업로드해줘.",
         "채널별 unfinished Playlist Release가 target에 도달할 때까지 계속 만들되 max를 넘기지 말아줘.",
         "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
     ]
@@ -333,6 +335,19 @@ def build_backlog_queue_request_message(
                 f", {payload.get('finishable', 0)} finishable"
                 f", {payload.get('deferred', 0)} deferred"
             )
+    if isinstance(unknown_releases, list) and unknown_releases:
+        lines.extend(["", "먼저 확인할 채널 미지정/미완성 workspace:"])
+        for release in unknown_releases[:10]:
+            if not isinstance(release, dict):
+                continue
+            lines.append(
+                f"- {release.get('title') or release.get('id')}:"
+                f" {release.get('workflow_state') or 'unknown'}"
+                f", id {release.get('id') or 'unknown'}"
+                f", channel {release.get('channel_title') or 'unknown'}"
+            )
+        if len(unknown_releases) > 10:
+            lines.append(f"- ...and {len(unknown_releases) - 10} more")
     return _with_trigger_prefix("\n".join(lines), trigger_prefix)
 
 

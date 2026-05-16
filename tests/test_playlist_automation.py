@@ -27,7 +27,11 @@ from app.services.background_worker import BackgroundJobWorker, _is_long_video_v
 from app.services import youtube_service as youtube_service_module
 from app.services.youtube_service import YOUTUBE_THUMBNAIL_MAX_BYTES, YouTubeService
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
-from app.utils.openclaw_slack_loop import handle_auto_loop_control_message, record_auto_loop_upload
+from app.utils.openclaw_slack_loop import (
+    build_backlog_queue_request_message,
+    handle_auto_loop_control_message,
+    record_auto_loop_upload,
+)
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import next_youtube_scheduled_publish_at
 
@@ -396,6 +400,36 @@ def test_openclaw_lock_records_release_channel_hint(tmp_path) -> None:
             assert updated.metadata_json["openclaw_lock_channel_title"] == "Club Bloom"
     finally:
         clear_isolated_client_env()
+
+
+def test_backlog_request_message_prioritizes_incomplete_unknown_workspaces() -> None:
+    message = build_backlog_queue_request_message(
+        reason="underfilled_backlog",
+        backlog_summary={
+            "target_per_channel": 10,
+            "max_per_channel": 10,
+            "channels": {
+                "Soft Hour Radio": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "releases": [],
+                }
+            },
+            "unknown_channel_releases": [
+                {
+                    "id": "workspace-1",
+                    "title": "[playlist] Backyard Pool Party Pop",
+                    "workflow_state": "collecting",
+                    "channel_title": None,
+                }
+            ],
+        },
+    )
+
+    assert "새 workspace를 만들기 전에 기존 미완성 workspace" in message
+    assert "먼저 확인할 채널 미지정/미완성 workspace" in message
+    assert "[playlist] Backyard Pool Party Pop: collecting, id workspace-1, channel unknown" in message
 
 
 def test_openclaw_backlog_scheduler_posts_when_channel_is_underfilled(tmp_path) -> None:
