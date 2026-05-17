@@ -72,7 +72,8 @@ Stable composition, no hard cuts, no photorealism, no live action, no full nudit
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
-- Titles should include the selected club style lane plus clear dance-listening situations such as night drive, workout, party warmup, gaming, club, running, festival, or rooftop.
+- Titles must put the selected club style lane or genre fusion near the front, immediately after `[playlist]`. Prefer direct YouTube mix wording such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Club Mix`, or `Festival EDM Mix`.
+- After the separator, add one or two clear dance-listening situations such as night drive, workout, party warmup, gaming, club, running, festival, or rooftop. Avoid awkward three-part use-case lists such as `for Night Roads, Gaming Focus and Club Drive`.
 - Make titles broad and public-facing first. Use the exact visual scene as atmosphere unless it is the strongest searchable hook.
 - Metadata should describe the release as no-vocal/instrumental club music. Do not imply vocals, singers, lyrics, or pop songs.
 - Avoid AI/process/tool hashtags and avoid overstating `hits` if the music is original.

@@ -10,7 +10,7 @@ It fills the high-energy instrumental dance lane that is currently separate from
 
 The audience should immediately understand: modern no-vocal dance music for movement, nightlife, gaming, workout, driving, and party warmup.
 
-Titles should be broad dance/EDM packaging first. Use the specific club, rooftop, city, or visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
+Titles should be broad dance/EDM packaging first, with the exact genre or subgenre visible immediately after `[playlist]`. Use clear YouTube mix language such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, or `Bass House Club Mix`. Add one or two public listening hooks after the separator, such as night drive, gaming, workout, running, club, festival, or party warmup. Do not list three awkward use cases as the main title, and do not make narrow scene names the title hook unless the scene is also a strong public search phrase.
 
 ## Recent Release Check
 
@@ -69,10 +69,11 @@ Good style lanes:
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Night Drive EDM Mix | Neon House Music for Driving and Focus`
-- `[playlist] Workout EDM Mix | Festival Energy, Running Beats and Club Bass`
-- `[playlist] Rooftop House Music | Party Warmup, Dance Floor and Night City`
-- `[playlist] Gaming Dance Mix | Future House, Neon Energy and Fast Focus`
+- `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`
+- `[playlist] Hype Trap x EDM Mix | Workout, Gaming and Club Energy`
+- `[playlist] Tech House Workout Mix | Running Beats and Club Bass`
+- `[playlist] Melodic Techno Night Drive | Dark Club Mix for Gaming`
+- `[playlist] Festival EDM Mix | Big Room Drops for Party Warmup`
 
 ## Bad Directions
 
@@ -80,3 +81,4 @@ Good style lanes:
 - Latin pop/reggaeton that belongs on Solwave Radio.
 - K-pop/J-pop vocal releases.
 - Cozy BGM, cinematic battle music, or fantasy OST music.
+- Titles that read like keyword-stuffed use-case lists, such as `[playlist] Progressive Trance for Night Roads, Gaming Focus and Club Drive`.
