@@ -5,15 +5,19 @@ import re
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from urllib.parse import quote, unquote, urlencode, urlparse
 from typing import Any
 
 import httpx
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.config import Settings
 from app.models.slack_installation import SlackInstallation
 from app.models.track import Track
+
+SLACK_PREVIEW_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 @dataclass
@@ -546,9 +550,10 @@ class SlackService:
         if not path.exists() or not path.is_file():
             return SlackFileUploadResult(ok=False, raw={"error": "file_not_found", "path": file_path})
 
+        file_bytes, filename = self._prepare_local_file_upload(path)
         return await self._upload_audio_bytes(
-            file_bytes=path.read_bytes(),
-            filename=path.name,
+            file_bytes=file_bytes,
+            filename=filename,
             title=title,
             token=token,
             channel=channel,
@@ -786,6 +791,41 @@ class SlackService:
                 data={"file": file_id},
             )
             return response.json()
+
+    def _prepare_local_file_upload(self, path: Path) -> tuple[bytes, str]:
+        file_bytes = path.read_bytes()
+        image_preview = self._prepare_slack_image_preview(path=path, file_bytes=file_bytes)
+        return image_preview or (file_bytes, path.name)
+
+    def _prepare_slack_image_preview(self, *, path: Path, file_bytes: bytes) -> tuple[bytes, str] | None:
+        max_edge = int(self.settings.slack_image_upload_max_edge or 0)
+        if max_edge <= 0 or path.suffix.lower() not in SLACK_PREVIEW_IMAGE_EXTENSIONS:
+            return None
+
+        quality = min(max(int(self.settings.slack_image_upload_jpeg_quality or 82), 1), 95)
+        try:
+            with Image.open(BytesIO(file_bytes)) as source:
+                source.load()
+                original_size = source.size
+                image = ImageOps.exif_transpose(source)
+                image.thumbnail((max_edge, max_edge), Image.Resampling.LANCZOS)
+                if image.mode in {"RGBA", "LA"} or "transparency" in image.info:
+                    rgba_image = image.convert("RGBA")
+                    flattened = Image.new("RGB", image.size, "#ffffff")
+                    flattened.paste(rgba_image, mask=rgba_image.getchannel("A"))
+                    image = flattened
+                elif image.mode != "RGB":
+                    image = image.convert("RGB")
+
+                output = BytesIO()
+                image.save(output, format="JPEG", quality=quality, optimize=True, progressive=True)
+        except (OSError, UnidentifiedImageError):
+            return None
+
+        preview_bytes = output.getvalue()
+        if max(original_size) <= max_edge and len(preview_bytes) >= len(file_bytes):
+            return None
+        return preview_bytes, f"{path.stem}-slack.jpg"
 
     async def publish_app_home(
         self,

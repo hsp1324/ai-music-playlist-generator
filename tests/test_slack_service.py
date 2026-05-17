@@ -1,4 +1,8 @@
 import asyncio
+import os
+from io import BytesIO
+
+from PIL import Image
 
 from app.config import Settings
 from app.models.enums import TrackStatus
@@ -340,6 +344,68 @@ def test_post_review_message_with_local_audio_defaults_to_separate_review_messag
     assert result.ts == "1777000000.000400"
     assert upload_call["initial_comment"] == "Audio preview: Two Message"
     assert "blocks" not in upload_call
+
+
+def test_upload_local_file_downscales_image_for_slack_preview(tmp_path) -> None:
+    image_path = tmp_path / "large-cover.png"
+    Image.frombytes("RGB", (2000, 1000), os.urandom(2000 * 1000 * 3)).save(image_path)
+    service = SlackService(
+        Settings(
+            slack_bot_token="xoxb-test",
+            slack_ops_channel_id="C123",
+            slack_image_upload_max_edge=640,
+            slack_image_upload_jpeg_quality=70,
+        )
+    )
+    upload_call = {}
+
+    async def fake_upload_audio_bytes(**kwargs):
+        upload_call.update(kwargs)
+        return SlackFileUploadResult(ok=True, file_id="F123", channel="C123", ts="1777000000.000300")
+
+    service._upload_audio_bytes = fake_upload_audio_bytes
+
+    result = asyncio.run(
+        service.upload_local_file(
+            file_path=str(image_path),
+            title="Release cover",
+            token="xoxb-test",
+            channel="C123",
+            initial_comment="Render complete",
+        )
+    )
+
+    assert result.ok is True
+    assert upload_call["filename"] == "large-cover-slack.jpg"
+    uploaded_image = Image.open(BytesIO(upload_call["file_bytes"]))
+    assert uploaded_image.size == (640, 320)
+    assert len(upload_call["file_bytes"]) < image_path.stat().st_size
+
+
+def test_upload_local_file_keeps_non_image_bytes(tmp_path) -> None:
+    payload_path = tmp_path / "render.txt"
+    payload_path.write_bytes(b"plain text payload")
+    service = SlackService(Settings(slack_bot_token="xoxb-test", slack_ops_channel_id="C123"))
+    upload_call = {}
+
+    async def fake_upload_audio_bytes(**kwargs):
+        upload_call.update(kwargs)
+        return SlackFileUploadResult(ok=True, file_id="F123", channel="C123", ts="1777000000.000300")
+
+    service._upload_audio_bytes = fake_upload_audio_bytes
+
+    result = asyncio.run(
+        service.upload_local_file(
+            file_path=str(payload_path),
+            title="Render note",
+            token="xoxb-test",
+            channel="C123",
+        )
+    )
+
+    assert result.ok is True
+    assert upload_call["filename"] == "render.txt"
+    assert upload_call["file_bytes"] == b"plain text payload"
 
 
 def test_remote_audio_filename_uses_url_name_or_safe_title() -> None:
