@@ -58,6 +58,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 - Do not make instrumental/no-vocal New Verse releases unless the human explicitly asks for BGM or instrumental prayer music.
 - Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The New Verse unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and worshipful. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
+- Choose one primary style family for each release and write it in the private plan before creating songs. Good lanes include modern worship pop, warm gospel ballads, acoustic prayer songs, cinematic worship, or intimate piano worship. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- Metadata must tell viewers both the selected passage/theme and the broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - For worship pop, use natural modern song structure: verse, pre-chorus, chorus, bridge, final chorus when appropriate.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.

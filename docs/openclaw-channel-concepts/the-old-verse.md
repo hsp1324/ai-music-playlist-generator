@@ -58,6 +58,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 - Do not make instrumental/no-vocal Old Verse releases unless the human explicitly asks for BGM or instrumental meditation.
 - Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The Old Verse unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
+- Choose one primary style family for each release and write it in the private plan before creating songs. Good lanes include cinematic scripture worship, acoustic folk prayer songs, ancient-worship ballads, psalm-like piano worship, or gentle desert-road story songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- Metadata must tell viewers both the selected passage/theme and the broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
 - Avoid producer tags, specific artist references, protected worship brands, church names, celebrity pastors, and modern Bible translation names.

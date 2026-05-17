@@ -211,6 +211,8 @@ Reference set:
 
 - Shane & Shane: scripture-based worship, Psalms, acoustic congregational song model.
 - Poor Bishop Hooper / EveryPsalm: direct Psalm sequence concept; highly relevant even if smaller than megachurch worship channels.
+- Christian Worship & Scripture Songs (Esther Mui): passage-first scripture song channel; vidIQ shows 166K subscribers and 110M+ total views, with top videos titled by exact passage plus song hook.
+- DappyTKeys Piano Worship: Christian instrumental/prayer audience signal; the channel positions piano instrumentals for prayer, meditation, and relaxation at 1M+ subscribers / 300M+ views.
 - Sovereign Grace Music: doctrinal/scripture worship packaging.
 - Hillsong Worship: global worship channel; 10M+ subscribers and 5B+ views in 2026 stats.
 - Worship Together: worship song discovery and lyric/session format.
@@ -220,11 +222,14 @@ What gets views:
 
 - Worship audiences need trust: passage clarity, theological seriousness, singable chorus, prayer/reflection use case.
 - Old Testament titles should not be generic `Bible Music`; the passage reference and theme must be explicit.
+- Successful scripture-song packaging usually says exactly what text inspired the song, then gives a simple listening purpose such as worship, prayer, meditation, reflection, sleep, healing, or study.
+- Style should be named in the description, not hidden. Keep each release in one coherent style family, then vary track dynamics inside that lane.
 
 Our direction:
 
 - Title shape: `[playlist] Genesis 1:1-5 Creation Songs | Old Testament Music for Worship and Reflection`.
-- Song direction: original English lyric songs grounded in the selected Old Testament passage, with paraphrase instead of long copied scripture text.
+- Song direction: original English lyric songs grounded in the selected Old Testament passage, with paraphrase instead of long copied scripture text. Choose one style family per release, such as cinematic scripture worship, acoustic folk prayer songs, ancient-worship ballads, or psalm-like piano worship.
+- Description direction: first paragraph states the passage and theme; second paragraph or style line names the music style family in natural language.
 - Thumbnail text: `GENESIS SONGS`, `PSALMS WORSHIP`, `OLD TESTAMENT`, `SCRIPTURE SONGS`.
 - Avoid: skipping canonical sequence, vague worship titles without passage reference, or copying long Bible text.
 
@@ -238,16 +243,21 @@ Reference set:
 - Maverick City Music: modern Gospel/worship collaboration model.
 - Worship Together: worship discovery and lyric/session model.
 - Housefires or Phil Wickham: singable modern worship and prayer-focused titles.
+- Dandelion Praise: Bible-centered worship packaging that explicitly states the source passage, theme, use case, and style family in the song description.
+- Christian Worship & Scripture Songs (Esther Mui): scripture-song title pattern built around exact reference plus memorable hook.
 
 What gets views:
 
 - New Testament worship works best when the title promises Jesus, grace, Gospel, prayer, hope, worship, and the exact passage.
 - Live/session reference channels get views from known worship leaders; our substitute is passage clarity plus singable original worship.
+- New Testament descriptions should not make viewers guess what passage was used. Say the passage, the Gospel theme, and the broad music style.
+- One coherent worship style family per release is better than random genre switching. Rotate the style lane between releases, not within one release.
 
 Our direction:
 
 - Title shape: `[playlist] Matthew 5:1-12 Beatitudes Worship | New Testament Music for Hope and Prayer`.
-- Song direction: original English worship songs with clear chorus, congregational melody, grace/Gospel/prayer language, and New Testament passage sequence.
+- Song direction: original English worship songs with clear chorus, congregational melody, grace/Gospel/prayer language, and New Testament passage sequence. Choose one style family per release, such as modern worship pop, warm gospel ballads, acoustic prayer songs, cinematic worship, or intimate piano worship.
+- Description direction: first paragraph states the passage and Gospel theme; second paragraph or style line names the music style family in natural language.
 - Thumbnail text: `GOSPEL SONGS`, `GRACE WORSHIP`, `NEW TESTAMENT`, `SCRIPTURE WORSHIP`.
 - Avoid: generic `Christian music`, Old Testament passage confusion, or worship titles without the passage reference.
 
@@ -284,3 +294,7 @@ Our direction:
 - Worship Together stats: https://www.speakrj.com/audit/report/UCsTOvGh6rj41bHRkq2ZpIiQ/youtube/summary
 - Sovereign Grace Music stats: https://socialcounts.org/youtube-live-subscriber-count/UCYOuiDQ9vmBa5k-nLZ_HDwg
 - Poor Bishop Hooper EveryPsalm video signal: https://www.viberate.com/artist/songs/poor-bishop-hooper-top-songs/
+- EveryPsalm project: https://www.everypsalm.com/
+- Christian Worship & Scripture Songs (Esther Mui) stats: https://vidiq.com/youtube-stats/channel/UCLWHNkhCKvijdq59bFq0bQw/
+- DappyTKeys Piano Worship background: https://www.timoladeru.com/about
+- Dandelion Praise scripture-song packaging: https://praise.dandelionbible.org/

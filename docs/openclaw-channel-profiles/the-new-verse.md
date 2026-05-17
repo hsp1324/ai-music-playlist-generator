@@ -62,6 +62,9 @@ Stable composition, no hard cuts, no photorealism, no live action, no disrespect
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language should be English unless the human asks otherwise.
 - Include the passage reference in the main title, every localized title, and the description, for example `Matthew 1:1-17`.
+- The first description paragraph must clearly say which passage inspired the music and what Gospel/New Testament theme was adapted, for example grace, mercy, discipleship, healing, prayer, resurrection hope, or kingdom teaching.
+- Also include one natural music-style sentence in the description, such as `This release is arranged as modern scripture worship with warm piano, acoustic guitar, soft drums, and congregational vocal songs.` Do not hide the style, but keep it descriptive rather than technical.
 - Titles should include New Testament/Gospel/worship keywords plus a listening use case such as prayer, worship, reflection, hope, or quiet focus.
 - Make titles broad and public-facing first. Use exact passage scene details as atmosphere unless they are the strongest searchable hook.
+- Keep each release in one coherent style family, with controlled variety across tracks. Do not make one playlist jump randomly between unrelated styles. For example, use a modern worship pop / gospel ballad / intimate prayer-song lane, then vary tempo, instrumentation, and emotional intensity inside that lane.
 - Avoid denominational claims, copyrighted translation names, and protected media references.
