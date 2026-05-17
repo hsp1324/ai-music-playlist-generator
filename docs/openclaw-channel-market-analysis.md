@@ -172,15 +172,17 @@ Reference set:
 
 What gets views:
 
-- Viewers understand mood/function quickly: cute arcade, fantasy RPG town, item shop, cozy game BGM, playful anime game OST.
+- Viewers understand mood/function quickly: happy game BGM, feel-good arcade BGM, cozy fantasy game music, cute background music for work, reading, gaming, and light focus.
 - Existing market often uses protected game names, but our channel must not. Replace IP with original genre/function wording.
+- Narrow in-game labels are weak primary hooks. `Bonus Stage Music`, `Item Shop BGM`, `Quest Board`, `Inventory Screen`, and similar scene words can support the description, thumbnail, or tracklist, but they should not carry the title unless the human explicitly asks for that exact scene.
+- Mild click appeal is useful when it is honest to the music: mood boost, happy music, cheerful BGM, cozy focus, relaxing, work music, reading music, and gaming background music.
 
 Our direction:
 
-- Title shape: `[playlist] Cute Arcade Game OST | Playful Japanese BGM for Gaming and Focus`.
+- Title shape: `[playlist] Feel-Good Arcade BGM | Happy Game Music for Gaming, Work and Mood Boost`.
 - Song direction: original no-vocal game/anime-style cues; bright melodies, short motifs, loopable sections, light percussion, playful synths, small orchestra, chiptune accents.
 - Thumbnail text: `CUTE GAME OST`, `RPG TOWN`, `ITEM SHOP`, `ARCADE BGM`.
-- Avoid: Nintendo, Pokemon, Zelda, Ghibli, franchise names, character names, or direct style imitation.
+- Avoid: Nintendo, Pokemon, Zelda, Ghibli, franchise names, character names, direct style imitation, or titles that sound like a game settings/menu label instead of a music video people would click.
 
 ## Cinematic Pulse
 

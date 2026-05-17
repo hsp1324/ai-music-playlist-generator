@@ -60,6 +60,9 @@ Stable composition, no hard cuts, no photorealism, no live action, no protected 
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language can be English unless the human asks otherwise.
-- Titles should include game/anime-OST keywords plus a use case such as gaming, reading, light focus, work, cozy focus, or playful background listening.
-- Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.
+- Titles should sell the listening benefit first: happy mood, mood boost, cute background music, work focus, reading, gaming, relaxing, light focus, cozy focus, or cheerful background listening.
+- Include broad game/anime-BGM keywords such as `Cute Game BGM`, `Happy Game Music`, `Cozy Fantasy Game BGM`, `Anime Game BGM`, or `Feel-Good Arcade BGM`.
+- Make titles broad and public-facing first. Use exact visual scene details as atmosphere in the description unless they are already a strong public search hook.
+- Do not lead titles with narrow in-game mechanic, prop, or location wording such as `Bonus Stage Music`, `Item Shop BGM`, `Quest Board`, `Inventory Screen`, `Potion Counter`, or `Save Point`. Those details can appear in the description or tracklist.
+- Strong title shapes: `[playlist] Feel-Good Arcade BGM | Happy Game Music for Gaming, Work and Mood Boost`; `[playlist] Cozy Fantasy Game BGM | Happy Music for Reading, Work and Gaming`; `[playlist] Cute Game BGM for Work | Cozy Happy Music for Focus and Relaxing`.
 - Avoid claiming a specific existing game, anime, film, studio, or composer.

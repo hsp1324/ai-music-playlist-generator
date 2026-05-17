@@ -10,7 +10,9 @@ Soft Hour Radio is practical cafe/study/rest BGM. Storylight OST should feel mor
 
 The audience should immediately understand: fun Japanese game/anime-style instrumental OST that can be used for gaming, reading, light focus, or playful background listening.
 
-Titles should be broad game/anime-OST packaging first. Use the exact visual scene as atmosphere unless it is the strongest public hook; do not make narrow prop/location names the main title by default.
+Titles should be broad, clickable, and listener-benefit-first. Lead with why someone should click or keep it on: feel-good energy, mood boost, happy background music, work focus, reading, gaming, cozy focus, relaxing, or light concentration. Game/anime-BGM identity should be clear, but exact scene names are usually description/thumbnail/tracklist material.
+
+Do not make internal game-scene wording the main hook. `Bonus Stage Music`, `Item Shop BGM`, `Quest Board`, `Inventory Screen`, `Potion Counter`, and similar phrases are too narrow for the main title unless the human explicitly asks for that exact theme.
 
 ## Recent Release Check
 
@@ -54,10 +56,10 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Cute Arcade Game OST | Playful Japanese BGM for Gaming and Focus`
-- `[playlist] Fantasy RPG Town Music | Light Anime Game BGM for Reading and Play`
-- `[playlist] Kawaii Item Shop BGM | Cute Game OST for Work and Cozy Focus`
-- `[playlist] Anime Side Quest Music | Playful No-Vocal BGM for Gaming`
+- `[playlist] Feel-Good Arcade BGM | Happy Game Music for Gaming, Work and Mood Boost`
+- `[playlist] Cozy Fantasy Game BGM | Happy Music for Reading, Work and Gaming`
+- `[playlist] Cute Game BGM for Work | Cozy Happy Music for Focus and Relaxing`
+- `[playlist] Happy Anime Game BGM | Cheerful Music for Reading, Gaming and Work`
 
 ## Bad Directions
 
@@ -66,3 +68,4 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Vocal pop, idol pop, J-pop songs with lyrics, K-pop, EDM, or Latin pop.
 - Popular-song remakes, anime opening covers, or recognizable franchise soundtrack imitation.
 - Protected IP, studio names, game titles, character names, or `in the style of` wording.
+- Titles that depend on narrow internal scene labels as the main hook, such as `Bonus Stage Music`, `Item Shop BGM`, `Inventory Screen`, `Quest Board`, or `Potion Counter`, when a broader mood/use-case title would be more clickable.
