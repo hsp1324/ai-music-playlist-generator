@@ -2,11 +2,11 @@
 
 Last reviewed: 2026-05-17.
 
-Use this document when choosing playlist concepts, YouTube titles, thumbnail text, and song direction. Each AI Music channel should compare against channels in the same genre or same listening context. Do not apply an EDM reference channel to J-pop, worship, scripture music, cinematic score, or sleep/study BGM.
+Use this document when choosing playlist concepts, YouTube titles, thumbnail text, and song direction. The genre-matched market comparison has already been done here. During normal release automation, OpenClaw should read the selected channel's section and apply its fixed title/content rules without doing live YouTube competitor research.
 
-The reference channels below are not style-copy targets. They are market signals for title shape, genre labeling, audience intent, and content packaging. Subscriber and view counts are third-party snapshots from vidIQ, SocialBlade, SpeakRJ, HypeAuditor, HunterTuber, TrendAtlas, SocialCounts, FollowerCharts, ChartMasters, or similar public stats pages; treat them as directional and refresh them before a major strategy change.
+The reference channels below are not style-copy targets. They are market signals for title shape, genre labeling, audience intent, and content packaging. Subscriber and view counts are third-party snapshots from vidIQ, SocialBlade, SpeakRJ, HypeAuditor, HunterTuber, TrendAtlas, SocialCounts, FollowerCharts, ChartMasters, or similar public stats pages; treat them as directional background for the written recommendations below.
 
-This covers the active automatic-release channels. `MusicSun` is manual-only and excluded from automatic rotation unless the human explicitly overrides. For a custom or newly connected channel, first infer the channel identity from existing uploads, then build a five-channel reference set in the same genre before creating titles or songs.
+This covers the active automatic-release channels. `MusicSun` is manual-only and excluded from automatic rotation unless the human explicitly overrides. For a custom or newly connected channel, follow `custom-channel` docs and local release history; do not pause normal automation to build a new competitor analysis unless the human explicitly asks.
 
 ## Global Title Rules
 

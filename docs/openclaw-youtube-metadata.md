@@ -56,7 +56,7 @@ If Codex is unavailable, times out, or returns invalid JSON, the app falls back 
 - For `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, and `The New Verse`, use English as the main/default metadata language with `--default-language en`.
 - Keep the exact same timestamps and playback order in Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions. YouTube supports Egyptian-facing Arabic through the `ar` localization; it does not expose a separate `ar-EG` code.
 - If using the web `Regenerate Metadata Draft` button, still review the generated title, description, and tags before approving.
-- For channel-specific market positioning and reference-channel title patterns, read [openclaw-channel-market-analysis.md](openclaw-channel-market-analysis.md). Use only reference channels in the same genre or listening context as the selected AI Music channel.
+- For channel-specific market positioning and title/content rules, read [openclaw-channel-market-analysis.md](openclaw-channel-market-analysis.md). Use the prewritten selected-channel section; do not perform live YouTube competitor research during normal metadata work unless the human explicitly asks.
 
 ## Metadata Style Prompt
 
