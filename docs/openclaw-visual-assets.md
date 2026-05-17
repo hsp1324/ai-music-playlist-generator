@@ -42,6 +42,7 @@ Default visual signature:
 - Exactly three people seen from behind, walking forward away from the viewer into the scene.
 - The camera/viewer sees backs and backs of heads, not front-facing faces.
 - The three people stay centered and visually important.
+- For loop videos, subtle camera-follow motion is allowed, but the camera must keep the same distance from the three people. Do not allow zoom-in, push-in, pull-back, lens breathing, or subject scale growth. The three-person silhouette should remain roughly the same size and centered throughout the clip.
 - Text must fit around the centered three-person silhouette, usually in lower-left or lower negative space. Do not push the people sideways.
 - Background can adapt to the release: Tokyo street, forest path, beach, rainy city, night park, station road, fantasy forest, seaside walk, etc.
 
@@ -65,6 +66,7 @@ Preserve the opening composition, lighting, palette, and anime/illustrated style
 Preserve the large, readable lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 Adapt the background and atmosphere to the release concept.
 Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
+Keep the camera at the same distance from the three people while following them; no zoom in, no push-in, no pull-back, no camera breathing, no changing lens scale. The three people must stay roughly the same size in frame.
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI, no extra people or characters.
 ```
 
