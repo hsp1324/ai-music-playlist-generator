@@ -1,10 +1,16 @@
 import json
 
 import pytest
+from PIL import Image
 
 from app.config import Settings
 from app.models.track import Track
-from app.services.playlist_builder import FFMpegPlaylistBuilder, YOUTUBE_STILL_IMAGE_FILTER
+from app.services.playlist_builder import (
+    FFMpegPlaylistBuilder,
+    SPECTRUM_OVERLAY_HEIGHT,
+    SPECTRUM_OVERLAY_WIDTH,
+    YOUTUBE_STILL_IMAGE_FILTER,
+)
 
 
 def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> None:
@@ -62,6 +68,20 @@ def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
         )
 
     assert not output_path.exists()
+
+
+def test_spectrum_edge_fade_softens_linear_overlay_edges(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (255, 255, 255, 200))
+
+    mask = builder._spectrum_edge_fade_mask(image.size)
+    faded = builder._apply_spectrum_edge_fade(image, mask)
+
+    center_x = SPECTRUM_OVERLAY_WIDTH // 2
+    assert faded.getpixel((0, SPECTRUM_OVERLAY_HEIGHT // 2))[3] == 0
+    assert faded.getpixel((SPECTRUM_OVERLAY_WIDTH - 1, SPECTRUM_OVERLAY_HEIGHT // 2))[3] == 0
+    assert faded.getpixel((center_x, SPECTRUM_OVERLAY_HEIGHT // 2))[3] == 200
+    assert 0 < faded.getpixel((32, SPECTRUM_OVERLAY_HEIGHT // 2))[3] < 200
 
 
 def test_build_audio_reports_ffmpeg_progress(tmp_path, monkeypatch) -> None:

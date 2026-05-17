@@ -12,7 +12,7 @@ from selectors import EVENT_READ, DefaultSelector
 from tempfile import NamedTemporaryFile
 from typing import Any, Callable
 
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageOps
 
 from app.config import Settings
 from app.models.track import Track
@@ -33,11 +33,13 @@ YOUTUBE_LOOP_VIDEO_FILTER = (
 )
 DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 6
 DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 1.0
-SPECTRUM_OVERLAY_WIDTH = 430
+SPECTRUM_OVERLAY_WIDTH = 560
 SPECTRUM_OVERLAY_HEIGHT = 90
 SPECTRUM_OVERLAY_FPS = 30
-SPECTRUM_OVERLAY_BARS = 20
+SPECTRUM_OVERLAY_BARS = 28
 SPECTRUM_ANALYSIS_SAMPLE_RATE = 4000
+SPECTRUM_EDGE_FADE_MIN_PX = 64
+SPECTRUM_EDGE_FADE_RATIO = 0.16
 RADIAL_SPECTRUM_OVERLAY_WIDTH = 320
 RADIAL_SPECTRUM_OVERLAY_HEIGHT = 320
 
@@ -706,6 +708,7 @@ class FFMpegPlaylistBuilder:
         samples = self._read_audio_samples(audio_path, duration_seconds)
         frame_count = max(1, int(math.ceil(duration_seconds * SPECTRUM_OVERLAY_FPS)))
         overlay_width, overlay_height = overlay_size
+        edge_fade_mask = None if style == "radial" else self._spectrum_edge_fade_mask(overlay_size)
 
         command = [
             self.settings.ffmpeg_binary,
@@ -834,6 +837,8 @@ class FFMpegPlaylistBuilder:
                         primary=primary,
                         accent=accent,
                     )
+                if edge_fade_mask is not None:
+                    frame = self._apply_spectrum_edge_fade(frame, edge_fade_mask)
                 process.stdin.write(frame.tobytes())
                 emit_overlay_progress(frame_index)
             emit_overlay_progress(frame_count, force=True)
@@ -853,6 +858,25 @@ class FFMpegPlaylistBuilder:
         if style == "radial":
             return (RADIAL_SPECTRUM_OVERLAY_WIDTH, RADIAL_SPECTRUM_OVERLAY_HEIGHT)
         return (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT)
+
+    def _spectrum_edge_fade_mask(self, size: tuple[int, int]) -> Image.Image:
+        width, height = size
+        fade_width = min(width // 2, max(SPECTRUM_EDGE_FADE_MIN_PX, int(width * SPECTRUM_EDGE_FADE_RATIO)))
+        values: list[int] = []
+        for _y in range(height):
+            for x in range(width):
+                edge_distance = min(x, width - 1 - x)
+                ratio = min(max(edge_distance / max(fade_width, 1), 0.0), 1.0)
+                eased = ratio * ratio * (3 - (2 * ratio))
+                values.append(int(round(eased * 255)))
+        mask = Image.new("L", size)
+        mask.putdata(values)
+        return mask
+
+    def _apply_spectrum_edge_fade(self, image: Image.Image, mask: Image.Image) -> Image.Image:
+        faded = image.copy()
+        faded.putalpha(ImageChops.multiply(faded.getchannel("A"), mask))
+        return faded
 
     def _read_audio_samples(self, audio_path: Path, duration_seconds: float) -> array:
         command = [
@@ -1280,13 +1304,15 @@ class FFMpegPlaylistBuilder:
                 (760, 360),
             ]
         else:
+            right_x = max(1280 - width - 55, 0)
+            lower_y = max(720 - height - 45, 0)
             candidates = [
-                (800, 585),
-                (760, 585),
-                (825, 500),
-                (430, 585),
-                (610, 600),
-                (760, 455),
+                (right_x, lower_y),
+                (max(right_x - 35, 0), lower_y),
+                (max(1280 - width - 40, 0), 500),
+                (max(right_x - 205, 0), lower_y),
+                (max(640 - (width // 2), 0), max(720 - height - 30, 0)),
+                (max(1280 - width - 55, 0), 455),
             ]
         candidates = [(x, y) for x, y in candidates if x + width <= 1280 and y + height <= 720]
         if not candidates:
