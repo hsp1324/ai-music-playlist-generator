@@ -60,6 +60,7 @@ from app.workflows.playlist_automation import (
 )
 from app.utils.openclaw_slack_loop import post_next_playlist_request
 from app.utils.ops_notifications import notify_video_render_queued
+from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
 from app.utils.render_worker_registry import set_render_worker_nickname
 from app.utils.youtube_localizations import (
     normalize_youtube_language,
@@ -80,6 +81,10 @@ class RenderWorkerNicknameRequest(BaseModel):
 
 def get_services(request: Request) -> ServiceRegistry:
     return request.app.state.services
+
+
+def _run_public_video_cleanup(db: Session, services: ServiceRegistry) -> None:
+    cleanup_public_uploaded_local_videos(db, services.settings)
 
 
 def _store_image_upload(upload: UploadFile, destination_dir: Path, playlist_id: str, *, asset_name: str) -> str:
@@ -461,6 +466,7 @@ def upload_workspace_loop_video(
             loop_video_path=loop_video_path,
             smooth_loop=smooth_loop,
         )
+        _run_public_video_cleanup(db, services)
     except HTTPException:
         Path(loop_video_path).unlink(missing_ok=True)
         raise

@@ -319,7 +319,7 @@ AIMP_RENDER_WORKER_SHARED_TOKEN=
 AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS=21600
 AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES=8388608
 AIMP_LOCAL_VIDEO_CLEANUP_ENABLED=true
-AIMP_LOCAL_VIDEO_CLEANUP_DISK_THRESHOLD_PERCENT=50
+AIMP_LOCAL_VIDEO_CLEANUP_DISK_THRESHOLD_PERCENT=80
 AIMP_LOCAL_VIDEO_CLEANUP_INTERVAL_SECONDS=300
 ```
 
@@ -335,7 +335,7 @@ Runtime behavior:
 - Long video renders report ffmpeg progress back to the web UI with percent, elapsed media time, ETA, and output file growth. The worker only fails a render as stalled when ffmpeg stops making progress and the output file stops growing for `AIMP_FFMPEG_STALL_TIMEOUT_SECONDS`.
 - Normal automation can offload video rendering to external render workers. Set `AIMP_VIDEO_RENDER_EXECUTION_MODE=external` and `AIMP_RENDER_WORKER_SHARED_TOKEN`, then run `scripts/render-worker` on another machine. The main VM keeps DB/UI/YouTube ownership; the render worker claims queued video jobs, renders locally, and uploads the final MP4 back with resumable chunks. See `docs/external-video-render-worker.md`.
 - Operational Slack notices use `AIMP_SLACK_OPS_CHANNEL_ID`; production must set it to `#all-ai-music-playlist-generator` / `C0ATYMCMLLE`, not the OpenClaw command channel. The app posts clean video-render queued, render-worker claim, render-worker complete, render-worker heartbeat-timeout requeue, and YouTube publish-complete notices there, attaching the release thumbnail/cover when available and omitting internal job IDs from visible Slack text. It does not post a Slack notice merely because a playlist reached its target duration.
-- Local rendered MP4 cleanup is enabled by default. When disk usage for `AIMP_STORAGE_ROOT` rises above `AIMP_LOCAL_VIDEO_CLEANUP_DISK_THRESHOLD_PERCENT` (default `50`), the background worker deletes local rendered MP4 files for releases that were successfully uploaded to YouTube, oldest first, then records the deletion in the release metadata and clears `output_video_path`.
+- Local rendered MP4 cleanup is enabled by default. When disk usage for `AIMP_STORAGE_ROOT` rises above `AIMP_LOCAL_VIDEO_CLEANUP_DISK_THRESHOLD_PERCENT` (default `80`), the app deletes local rendered MP4 files for releases that were already uploaded to YouTube and are public, oldest first, then records the deletion in the release metadata and clears `output_video_path`. This check runs periodically and immediately after loop-video uploads, external render-worker chunk uploads, and external render completion.
 - Release cards are returned from the workspace API in stable Published sort order: unpublished releases first, then scheduled publish time, then actual publish/upload time, then creation time. Channel filters preserve that same API order by default, and the web UI can toggle Published, Updated, or Created sorting in either direction for the current view.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
 - Playlist Release YouTube titles are normalized with a `[playlist]` prefix across the default title and localized `ko`/`ja`/`en`/`es` titles. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles are not prefixed.

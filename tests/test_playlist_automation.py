@@ -34,6 +34,7 @@ from app.utils.openclaw_slack_loop import (
 )
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import next_youtube_scheduled_publish_at
+from scripts import render_worker as render_worker_script
 
 
 def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> TestClient:
@@ -70,6 +71,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_RENDER_WORKER_SHARED_TOKEN", None)
     os.environ.pop("AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS", None)
     os.environ.pop("AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES", None)
+    os.environ.pop("AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_PUBLIC_ENABLED", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_TIMEZONE", None)
     os.environ.pop("AIMP_YOUTUBE_SCHEDULE_HOUR", None)
@@ -1261,7 +1263,7 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_local_video_cleanup_deletes_uploaded_youtube_videos_above_threshold_oldest_first(tmp_path) -> None:
+def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldest_first(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         settings = client.app.state.settings
@@ -1353,17 +1355,15 @@ def test_local_video_cleanup_deletes_uploaded_youtube_videos_above_threshold_old
                 usage_provider=lambda _path: SimpleNamespace(total=100, used=90, free=10),
             )
 
-            assert result["deleted_count"] == 4
+            assert result["deleted_count"] == 2
             assert [item["playlist_id"] for item in result["deleted"]] == [
                 public_id,
                 orphan_id,
-                future_id,
-                private_id,
             ]
             assert not public_path.exists()
             assert not orphan_path.exists()
-            assert not future_path.exists()
-            assert not private_path.exists()
+            assert future_path.exists()
+            assert private_path.exists()
             assert not_uploaded_path.exists()
             public_updated = db.get(Playlist, public_id)
             orphan_updated = db.get(Playlist, orphan_id)
@@ -1375,8 +1375,8 @@ def test_local_video_cleanup_deletes_uploaded_youtube_videos_above_threshold_old
             assert public_updated.metadata_json["local_video_cleanup_reason"] == "disk_usage_threshold_uploaded_youtube_video"
             assert orphan_updated.output_video_path is None
             assert orphan_updated.metadata_json["local_video_cleanup_source"] == "canonical_playlist_mp4"
-            assert future_updated.output_video_path is None
-            assert private_updated.output_video_path is None
+            assert future_updated.output_video_path == str(future_path)
+            assert private_updated.output_video_path == str(private_path)
             assert not_uploaded_updated.output_video_path == str(not_uploaded_path)
     finally:
         clear_isolated_client_env()
@@ -1422,6 +1422,72 @@ def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_
             assert db.get(Playlist, playlist.id).output_video_path == str(video_path)
     finally:
         clear_isolated_client_env()
+
+
+def test_loop_video_upload_triggers_public_video_cleanup(tmp_path, monkeypatch) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        calls = []
+
+        def fake_cleanup(db, settings):
+            calls.append({"storage_root": str(settings.storage_root)})
+            return {"ok": True, "deleted_count": 0}
+
+        monkeypatch.setattr(playlist_routes, "cleanup_public_uploaded_local_videos", fake_cleanup)
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={"title": "Loop Cleanup Trigger", "target_duration_seconds": 60},
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        upload_test_loop_video(client, workspace_id)
+
+        assert calls == [{"storage_root": str(client.app.state.settings.storage_root)}]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_render_worker_cache_cleanup_deletes_stale_unmarked_jobs(tmp_path, monkeypatch) -> None:
+    cache_dir = tmp_path / "cache"
+    jobs_dir = cache_dir / "jobs"
+    completed_dir = jobs_dir / "completed-job"
+    orphan_dir = jobs_dir / "old-unmarked-job"
+    fresh_dir = jobs_dir / "fresh-unmarked-job"
+    for directory in (completed_dir, orphan_dir, fresh_dir):
+        directory.mkdir(parents=True)
+        (directory / "render.mp4").write_bytes(b"fake-video")
+
+    (completed_dir / render_worker_script.COMPLETED_JOB_MARKER).write_text(
+        json.dumps(
+            {
+                "job_id": "completed-job",
+                "playlist_id": "playlist-completed",
+                "uploaded_to_webapp_at": "2026-05-10T12:00:00+00:00",
+            }
+        ),
+        encoding="utf-8",
+    )
+    old_timestamp = time.time() - (48 * 60 * 60)
+    for path in (orphan_dir, orphan_dir / "render.mp4"):
+        os.utime(path, (old_timestamp, old_timestamp))
+
+    monkeypatch.setattr(
+        render_worker_script.shutil,
+        "disk_usage",
+        lambda _path: SimpleNamespace(total=100, used=90, free=10),
+    )
+
+    result = render_worker_script.cleanup_uploaded_job_cache(
+        cache_dir,
+        80,
+        orphan_age_hours=24,
+    )
+
+    assert result["deleted_count"] == 2
+    assert {item["job_id"] for item in result["deleted"]} == {"completed-job", "old-unmarked-job"}
+    assert not completed_dir.exists()
+    assert not orphan_dir.exists()
+    assert fresh_dir.exists()
 
 
 def test_workspace_lists_sort_unpublished_before_scheduled_publish_then_published(tmp_path) -> None:

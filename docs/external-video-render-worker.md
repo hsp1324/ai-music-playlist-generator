@@ -37,6 +37,7 @@ Set the API URL and token:
 export AIMP_RENDER_WORKER_API_BASE="https://ai-music.168.107.34.175.sslip.io/api"
 export AIMP_RENDER_WORKER_SHARED_TOKEN="PASTE_THE_MAIN_VM_TOKEN_HERE"
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT=50
+export AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS=24
 ```
 
 Run once for a smoke test:
@@ -53,7 +54,7 @@ scripts/render-worker --worker-id "$(hostname)-render" --poll-seconds 20
 
 Keep `--worker-id` stable. If the worker disconnects during upload, restarting with the same worker id lets it resume the same claimed job and continue the chunked upload from the server's current byte offset.
 
-After the final MP4 is successfully uploaded back to the web app, the worker writes a completion marker in that job cache directory. When disk usage for the worker cache filesystem rises above `AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT` (default `50`), the worker deletes completed job cache directories oldest first. In-progress jobs do not have this marker and are not deleted by cache cleanup.
+After the final MP4 is successfully uploaded back to the web app, the worker writes a completion marker in that job cache directory. When disk usage for the worker cache filesystem rises above `AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT` (default `50`), the worker deletes completed job cache directories oldest first. It also deletes unmarked stale job cache directories older than `AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS` (default `24`) because older workers may have left successful renders without markers. The active job writes `.render-worker-active.json`; fresh in-progress job directories are not deleted by cache cleanup.
 
 After a worker claims a job, the web app shows that `worker_id` in the release render status card. Click `Set Nickname` there to assign a human-readable name such as `Oracle Render 1`, `Home Desktop`, or `Laptop GPU`. The nickname is stored on the main VM in `storage/render-workers.json`, so the external machine does not need its own nickname configuration.
 

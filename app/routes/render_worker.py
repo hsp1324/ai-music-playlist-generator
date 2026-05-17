@@ -19,6 +19,7 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
+from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
 from app.utils.ops_notifications import (
     notify_render_worker_claimed,
     notify_render_worker_completed,
@@ -58,6 +59,10 @@ def _utcnow() -> datetime:
 
 def get_services(request: Request) -> ServiceRegistry:
     return request.app.state.services
+
+
+def _run_public_video_cleanup(db: Session, services: ServiceRegistry) -> None:
+    cleanup_public_uploaded_local_videos(db, services.settings)
 
 
 def _request_token(
@@ -561,6 +566,7 @@ async def upload_render_chunk(
         progress["upload_complete"] = True
         progress["message"] = "External render worker upload complete; awaiting finalize."
     _update_video_progress(db, job, playlist, progress)
+    _run_public_video_cleanup(db, services)
     return {"ok": True, "received_bytes": received, "complete": bool(total and received >= total)}
 
 
@@ -694,6 +700,7 @@ def complete_render_job(
     db.add(playlist)
     db.add(job)
     db.commit()
+    _run_public_video_cleanup(db, services)
     notify_render_worker_completed(db, services, playlist=playlist, job=job, worker=worker, now=now)
 
     services.worker._request_openclaw_for_video_event(

@@ -16,7 +16,7 @@ import shutil
 import socket
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +27,7 @@ from app.services.playlist_builder import FFMpegPlaylistBuilder
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
+ACTIVE_JOB_MARKER = ".render-worker-active.json"
 
 
 def normalize_api_base(value: str | None) -> str:
@@ -88,6 +89,20 @@ def directory_size_bytes(path: Path) -> int:
     return total
 
 
+def latest_mtime(path: Path) -> float:
+    latest = 0.0
+    try:
+        latest = path.stat().st_mtime
+    except OSError:
+        return latest
+    for item in path.rglob("*"):
+        try:
+            latest = max(latest, item.stat().st_mtime)
+        except OSError:
+            continue
+    return latest
+
+
 def request_json(client: httpx.Client, method: str, url: str, *, token: str, **kwargs) -> Any:
     headers = dict(kwargs.pop("headers", {}) or {})
     headers.update(auth_headers(token))
@@ -143,28 +158,74 @@ def mark_job_uploaded(job: dict[str, Any], video_path: Path) -> None:
         "uploaded_to_webapp_at": utcnow_iso(),
     }
     marker_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    clear_job_active(video_path.parent)
 
 
-def uploaded_job_cache_candidates(cache_dir: Path) -> list[dict[str, Any]]:
+def mark_job_active(job: dict[str, Any], job_dir: Path, worker_id: str) -> None:
+    marker_path = job_dir / ACTIVE_JOB_MARKER
+    payload = {
+        "job_id": job.get("id"),
+        "playlist_id": job.get("playlist_id"),
+        "title": job.get("title"),
+        "worker_id": worker_id,
+        "active_at": utcnow_iso(),
+    }
+    marker_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def clear_job_active(job_dir: Path) -> None:
+    try:
+        (job_dir / ACTIVE_JOB_MARKER).unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def uploaded_job_cache_candidates(cache_dir: Path, *, orphan_age_hours: float = 24.0) -> list[dict[str, Any]]:
     jobs_dir = cache_dir / "jobs"
     if not jobs_dir.exists():
         return []
 
     candidates: list[dict[str, Any]] = []
-    for marker_path in jobs_dir.glob(f"*/{COMPLETED_JOB_MARKER}"):
-        job_dir = marker_path.parent
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=max(float(orphan_age_hours), 0.0))
+    for job_dir in jobs_dir.iterdir():
+        if not job_dir.is_dir():
+            continue
+        marker_path = job_dir / COMPLETED_JOB_MARKER
+        marker: dict[str, Any] = {}
+        completed_at: datetime
+        cleanup_reason = "uploaded_marker"
+        uploaded_to_webapp_at: str | None = None
+
+        if marker_path.exists():
+            try:
+                marker = json.loads(marker_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                marker = {}
+            try:
+                marker_mtime = marker_path.stat().st_mtime
+            except OSError:
+                marker_mtime = time.time()
+            completed_at = parse_datetime(marker.get("uploaded_to_webapp_at")) or datetime.fromtimestamp(
+                marker_mtime,
+                tz=timezone.utc,
+            )
+            uploaded_to_webapp_at = completed_at.isoformat()
+        else:
+            if orphan_age_hours <= 0:
+                continue
+            newest_mtime = latest_mtime(job_dir)
+            completed_at = datetime.fromtimestamp(newest_mtime, tz=timezone.utc)
+            if completed_at > cutoff:
+                continue
+            cleanup_reason = "stale_unmarked_cache"
+
         try:
-            marker = json.loads(marker_path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            marker = {}
-        try:
-            marker_mtime = marker_path.stat().st_mtime
+            active_marker = json.loads((job_dir / ACTIVE_JOB_MARKER).read_text(encoding="utf-8"))
         except OSError:
-            marker_mtime = time.time()
-        completed_at = parse_datetime(marker.get("uploaded_to_webapp_at")) or datetime.fromtimestamp(
-            marker_mtime,
-            tz=timezone.utc,
-        )
+            active_marker = {}
+        except ValueError:
+            active_marker = {}
+
         candidates.append(
             {
                 "job_id": marker.get("job_id") or job_dir.name,
@@ -172,18 +233,27 @@ def uploaded_job_cache_candidates(cache_dir: Path) -> list[dict[str, Any]]:
                 "title": marker.get("title"),
                 "path": job_dir,
                 "completed_at": completed_at,
+                "cleanup_reason": cleanup_reason,
+                "uploaded_to_webapp_at": uploaded_to_webapp_at,
+                "active_marker": active_marker,
                 "size_bytes": directory_size_bytes(job_dir),
             }
         )
     return sorted(candidates, key=lambda item: item["completed_at"])
 
 
-def cleanup_uploaded_job_cache(cache_dir: Path, threshold_percent: float) -> dict[str, Any]:
+def cleanup_uploaded_job_cache(
+    cache_dir: Path,
+    threshold_percent: float,
+    *,
+    orphan_age_hours: float = 24.0,
+) -> dict[str, Any]:
     threshold = max(0.0, min(float(threshold_percent), 100.0))
     before_percent = disk_usage_percent(cache_dir)
     result: dict[str, Any] = {
         "ok": True,
         "threshold_percent": threshold,
+        "orphan_age_hours": max(float(orphan_age_hours), 0.0),
         "disk_usage_before_percent": round(before_percent, 2),
         "disk_usage_after_percent": round(before_percent, 2),
         "deleted_count": 0,
@@ -197,7 +267,7 @@ def cleanup_uploaded_job_cache(cache_dir: Path, threshold_percent: float) -> dic
         result["reason"] = "below_threshold"
         return result
 
-    for candidate in uploaded_job_cache_candidates(cache_dir):
+    for candidate in uploaded_job_cache_candidates(cache_dir, orphan_age_hours=orphan_age_hours):
         current_percent = disk_usage_percent(cache_dir)
         if current_percent <= threshold:
             break
@@ -221,7 +291,9 @@ def cleanup_uploaded_job_cache(cache_dir: Path, threshold_percent: float) -> dic
                 "title": candidate["title"],
                 "path": str(candidate["path"]),
                 "size_bytes": candidate["size_bytes"],
-                "uploaded_to_webapp_at": candidate["completed_at"].isoformat(),
+                "cleanup_reason": candidate["cleanup_reason"],
+                "last_modified_at": candidate["completed_at"].isoformat(),
+                "uploaded_to_webapp_at": candidate["uploaded_to_webapp_at"],
             }
         )
 
@@ -231,7 +303,11 @@ def cleanup_uploaded_job_cache(cache_dir: Path, threshold_percent: float) -> dic
 
 
 def maybe_cleanup_uploaded_job_cache(args: argparse.Namespace) -> dict[str, Any] | None:
-    cleanup = cleanup_uploaded_job_cache(args.cache_dir, args.cache_cleanup_threshold_percent)
+    cleanup = cleanup_uploaded_job_cache(
+        args.cache_dir,
+        args.cache_cleanup_threshold_percent,
+        orphan_age_hours=args.cache_cleanup_orphan_age_hours,
+    )
     if cleanup["deleted_count"] or cleanup["errors"]:
         print_json({"ok": cleanup["ok"], "cache_cleanup": cleanup})
     return cleanup
@@ -270,6 +346,7 @@ def render_job(
     job_id = job["id"]
     job_dir = cache_dir / "jobs" / job_id
     job_dir.mkdir(parents=True, exist_ok=True)
+    mark_job_active(job, job_dir, worker_id)
 
     assets = job["assets"]
     audio_path = download_asset(
@@ -451,7 +528,11 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         chunk_size=args.chunk_size_bytes,
     )
     mark_job_uploaded(job, rendered)
-    cache_cleanup = cleanup_uploaded_job_cache(args.cache_dir, args.cache_cleanup_threshold_percent)
+    cache_cleanup = cleanup_uploaded_job_cache(
+        args.cache_dir,
+        args.cache_cleanup_threshold_percent,
+        orphan_age_hours=args.cache_cleanup_orphan_age_hours,
+    )
     print_json(
         {
             "ok": True,
@@ -476,6 +557,12 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=float(os.environ.get("AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT", 50)),
         help="Delete successfully uploaded job cache directories, oldest first, when cache disk usage is above this percent.",
+    )
+    parser.add_argument(
+        "--cache-cleanup-orphan-age-hours",
+        type=float,
+        default=float(os.environ.get("AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS", 24)),
+        help="Also delete unmarked worker job cache directories older than this many hours when disk cleanup runs.",
     )
     parser.add_argument("--poll-seconds", type=float, default=20.0, help="Seconds to wait between polls.")
     parser.add_argument("--once", action="store_true", help="Process at most one job and exit.")

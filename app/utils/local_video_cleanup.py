@@ -151,6 +151,8 @@ def collect_public_uploaded_local_video_candidates(
     ).all()
     seen_paths: set[Path] = set()
     for playlist in playlists:
+        if youtube_public_at(playlist, now=current) is None:
+            continue
         uploaded_at = youtube_uploaded_at(playlist, now=current)
         if uploaded_at is None:
             continue
