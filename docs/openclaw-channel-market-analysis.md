@@ -13,6 +13,7 @@ This covers the active automatic-release channels. `MusicSun` is manual-only and
 - Lead with what a normal viewer searches for: genre, subgenre, language/scene when relevant, and listening use case.
 - For official-artist reference channels, do not copy artist-first title shapes directly. Our generated playlists need genre/use-case title shapes because we do not have existing artist fandom demand.
 - Reusing a strong mainstream title shape is acceptable. Weak novelty hurts discovery more than mild repetition.
+- Example titles below are broad shape references, not fixed templates. Rotate moods, genres, scenes, and listening uses so each release still feels fresh inside the channel identity.
 - Visual scenes are usually supporting atmosphere. Use them in title only when the scene is also a mainstream search phrase.
 - Lyrics do not need to repeat the playlist use case. For vocal channels, song quality, hook, melody fit, and believable emotion matter more than literal title words.
 - Avoid protected artists, real franchises, game names, brand names, celebrity likenesses, and `in the style of` wording.
