@@ -40,6 +40,10 @@ SPECTRUM_OVERLAY_BARS = 28
 SPECTRUM_ANALYSIS_SAMPLE_RATE = 4000
 SPECTRUM_EDGE_FADE_MIN_PX = 64
 SPECTRUM_EDGE_FADE_RATIO = 0.16
+SPECTRUM_DOT_COUNT = 44
+SPECTRUM_DOT_BASE_RADIUS = 2
+SPECTRUM_DOT_SIGNAL_RADIUS = 4.0
+SPECTRUM_DOT_PUNCH_RADIUS = 3.0
 RADIAL_SPECTRUM_OVERLAY_WIDTH = 320
 RADIAL_SPECTRUM_OVERLAY_HEIGHT = 320
 
@@ -1016,28 +1020,29 @@ class FFMpegPlaylistBuilder:
     ) -> Image.Image:
         image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image, "RGBA")
-        dot_count = 24
         center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.55)
         transient = max(raw_level - (level * 0.78), 0.0)
-        punch = min((raw_level * 1.2) + (transient * 5.0), 1.0)
-        x_gap = SPECTRUM_OVERLAY_WIDTH / max(dot_count - 1, 1)
+        punch = min((raw_level * 1.08) + (transient * 4.2), 1.0)
+        x_gap = SPECTRUM_OVERLAY_WIDTH / max(SPECTRUM_DOT_COUNT - 1, 1)
 
-        for index in range(dot_count):
-            ratio = index / max(dot_count - 1, 1)
-            sample_time = timestamp + ((ratio - 0.5) * 0.22)
+        for index in range(SPECTRUM_DOT_COUNT):
+            ratio = index / max(SPECTRUM_DOT_COUNT - 1, 1)
+            sample_time = timestamp + ((ratio - 0.5) * 0.26)
             signal = self._audio_signal_at_time(samples, sample_time)
-            envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.34**2))
-            radius = 3 + int((abs(signal) * 7) + (punch * 5 * envelope))
+            envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.36**2))
+            radius = SPECTRUM_DOT_BASE_RADIUS + int(
+                (abs(signal) * SPECTRUM_DOT_SIGNAL_RADIUS) + (punch * SPECTRUM_DOT_PUNCH_RADIUS * envelope)
+            )
             x = int(round(index * x_gap))
-            y = center_y + int(signal * (22 + (punch * 24)) * (0.45 + envelope))
+            y = center_y + int(signal * (15 + (punch * 14)) * (0.42 + envelope))
             color = self._mix_rgb(primary, accent, ratio)
             draw.ellipse(
-                [x - radius - 4, y - radius - 4, x + radius + 4, y + radius + 4],
-                fill=(*color, 34 + int(punch * 34)),
+                [x - radius - 2, y - radius - 2, x + radius + 2, y + radius + 2],
+                fill=(*color, 26 + int(punch * 30)),
             )
             draw.ellipse(
                 [x - radius, y - radius, x + radius, y + radius],
-                fill=(*color, min(130 + int(punch * 85), 220)),
+                fill=(*color, min(120 + int(punch * 72), 205)),
             )
         return image
 
