@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     slack_ops_channel_id: str = ""
     slack_enable_signature_verification: bool = False
     slack_single_message_audio_reviews: bool = False
-    slack_image_upload_max_edge: int = 960
+    slack_image_upload_max_edge: int = 480
     slack_image_upload_jpeg_quality: int = 82
     public_base_url: str = "http://127.0.0.1:8000"
     cache_remote_audio_on_intake: bool = True

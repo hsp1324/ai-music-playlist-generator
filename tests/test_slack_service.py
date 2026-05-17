@@ -382,6 +382,33 @@ def test_upload_local_file_downscales_image_for_slack_preview(tmp_path) -> None:
     assert len(upload_call["file_bytes"]) < image_path.stat().st_size
 
 
+def test_upload_local_file_uses_compact_default_slack_preview_size(tmp_path) -> None:
+    image_path = tmp_path / "large-thumbnail.png"
+    Image.frombytes("RGB", (1600, 900), os.urandom(1600 * 900 * 3)).save(image_path)
+    service = SlackService(Settings(slack_bot_token="xoxb-test", slack_ops_channel_id="C123"))
+    upload_call = {}
+
+    async def fake_upload_audio_bytes(**kwargs):
+        upload_call.update(kwargs)
+        return SlackFileUploadResult(ok=True, file_id="F123", channel="C123", ts="1777000000.000300")
+
+    service._upload_audio_bytes = fake_upload_audio_bytes
+
+    result = asyncio.run(
+        service.upload_local_file(
+            file_path=str(image_path),
+            title="Release thumbnail",
+            token="xoxb-test",
+            channel="C123",
+            initial_comment="Render complete",
+        )
+    )
+
+    assert result.ok is True
+    uploaded_image = Image.open(BytesIO(upload_call["file_bytes"]))
+    assert uploaded_image.size == (480, 270)
+
+
 def test_upload_local_file_keeps_non_image_bytes(tmp_path) -> None:
     payload_path = tmp_path / "render.txt"
     payload_path.write_bytes(b"plain text payload")
