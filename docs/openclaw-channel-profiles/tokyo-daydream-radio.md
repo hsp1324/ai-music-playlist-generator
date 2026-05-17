@@ -69,6 +69,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the J-pop identity, mood, and real listening use case truthful.
 - Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - Use Korean as the default API metadata unless the human changes this app convention.
 - Titles must be broad mainstream J-pop discovery copy first. Use specific city/visual scenes as supporting atmosphere unless they are clearly the strongest public keyword.

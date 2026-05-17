@@ -64,6 +64,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the BGM use case and calm channel identity truthful.
 - Titles should include listening use cases such as study, work, sleep, reading, rest, cafe, focus, or relaxation.
 - Keep titles and descriptions audience-friendly and searchable. If the visual is a niche scene, do not make that niche the main title unless the human asks. For example, use `조용히 집중할 때 듣는 따뜻한 BGM | 공부, 작업, 독서, 휴식 음악` instead of making `도자기 공방` the primary hook.
 - The description can mention the visual atmosphere lightly, but the first paragraph should explain how the music is useful: study, work, reading, writing, calm handwork, rest, sleep, cafe, or focus.

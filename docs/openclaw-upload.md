@@ -341,18 +341,19 @@ Localized YouTube metadata rules for OpenClaw:
 - For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, playful Japanese game/anime OST BGM, cinematic orchestra/movie-OST/film-score BGM, no-vocal club music, scripture music, or similar pop-family/story-BGM releases, always write every configured language version: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
 - Use Korean as the default upload metadata for Tokyo/Soft Hour/HaruHaru unless the channel profile says otherwise. Use `--default-language en` for `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `The Old Verse`, `The New Verse`, and `sundaze`; use `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
-- Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese copy, not a literal Korean line-by-line translation.
+- Treat localized video titles as transcreation, not literal translation. For every language below, write a natural, clickable title for that audience; if direct translation sounds awkward or weaker, change the wording, order, or exact hook while keeping the release identity, genre/lane, and use case truthful.
+- Pass Japanese through `--ja-title` and `--ja-description-file`. This should be natural Japanese YouTube copy, not a literal line-by-line translation.
 - Pass English through `--en-title` and `--en-description-file`. This should be natural English YouTube copy for international listeners.
 - Pass Spanish through `--es-title` and `--es-description-file`. This should be natural Spanish YouTube copy for Spanish-speaking listeners.
-- Pass Vietnamese through `--vi-title` and `--vi-description-file`.
-- Pass Thai through `--th-title` and `--th-description-file`.
-- Pass Hindi through `--hi-title` and `--hi-description-file`.
-- Pass Filipino through `--fil-title` and `--fil-description-file`.
-- Pass Indonesian through `--id-title` and `--id-description-file`.
-- Pass Brazilian Portuguese through `--pt-title` and `--pt-description-file`; the app stores this as `pt-BR`.
-- Pass European Portuguese for Portugal through `--pt-pt-title` and `--pt-pt-description-file`; the app stores this as `pt-PT`.
-- Pass French through `--fr-title` and `--fr-description-file`.
-- Pass German through `--de-title` and `--de-description-file`.
+- Pass Vietnamese through `--vi-title` and `--vi-description-file`; make the title natural Vietnamese, not literal English/Korean word order.
+- Pass Thai through `--th-title` and `--th-description-file`; make the title natural Thai, not literal English/Korean word order.
+- Pass Hindi through `--hi-title` and `--hi-description-file`; make the title natural Hindi, not literal English/Korean word order.
+- Pass Filipino through `--fil-title` and `--fil-description-file`; make the title natural Filipino/Tagalog YouTube copy.
+- Pass Indonesian through `--id-title` and `--id-description-file`; make the title natural Indonesian YouTube copy.
+- Pass Brazilian Portuguese through `--pt-title` and `--pt-description-file`; the app stores this as `pt-BR`. Make the title natural for Brazilian viewers.
+- Pass European Portuguese for Portugal through `--pt-pt-title` and `--pt-pt-description-file`; the app stores this as `pt-PT`. Make the title natural for Portugal, not a Brazilian copy when phrasing differs.
+- Pass French through `--fr-title` and `--fr-description-file`; make the title natural French YouTube copy.
+- Pass German through `--de-title` and `--de-description-file`; make the title natural German YouTube copy.
 - Pass Arabic through `--ar-title` and `--ar-description-file`. YouTube uses `ar` for Arabic; it does not expose a separate `ar-EG` localization, so write Arabic that is natural for Arabic/Egyptian audiences.
 - Pass Simplified Chinese through `--zh-title` and `--zh-description-file`; the app stores this as `zh-CN`.
 - Pass Traditional Chinese for Taiwan through `--zh-tw-title` and `--zh-tw-description-file`; the app stores this as `zh-TW`.
@@ -365,9 +366,9 @@ Localized YouTube metadata rules for OpenClaw:
 - Use `walk` / `산책` only when walking, commuting on foot, street movement, beach/forest walks, crosswalks, or similar movement is genuinely central. For arcade, game-center, karaoke, friend-hangout, party, rooftop, club, dance-pop, bass-heavy, or workout-ready releases, prefer arcade, gaming, friends, night out, getting ready, workout, running, party warmup, driving, nightlife, confidence, or weekend energy.
 - For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, the actual Japan scene, city-pop/mainstream pop substyle, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. `Tokyo Daydream Radio` is the channel brand, not a required title keyword; use `Tokyo` only for genuinely Tokyo-specific concepts. If language matters, mention it naturally in the description instead; the thumbnail/channel branding can carry `J-POP`.
 - In Korean title/description/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
-- Keep all localized titles under 100 characters. Keep timestamps identical across languages; translate only the displayed title text and surrounding description.
+- Keep all localized titles under 100 characters. Keep timestamps identical across languages; localize displayed track-title text and surrounding description naturally unless a channel-specific rule says to preserve original song titles.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and every other localized description uses translated title text only.
-- For sundaze/English pop metadata, keep every localized YouTube title exactly the same as the English title. In timestamped tracklists, keep the English song title after each timestamp in every localized description. Translate only the surrounding description prose, use-case line, and hashtags.
+- For sundaze/English pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In timestamped tracklists, keep the English song title after each timestamp in every localized description. Translate only the surrounding description prose, use-case line, and hashtags.
 - If the release is 40+ minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
 - Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 

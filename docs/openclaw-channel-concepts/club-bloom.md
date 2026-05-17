@@ -10,7 +10,9 @@ It fills the high-energy instrumental dance lane that is currently separate from
 
 The audience should immediately understand: modern no-vocal dance music for movement, nightlife, gaming, workout, driving, and party warmup.
 
-Titles should be broad dance/EDM packaging first, with the exact genre or subgenre visible immediately after `[playlist]`. Use clear YouTube mix language such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, or `Bass House Club Mix`. Add one or two public listening hooks after the separator, such as night drive, gaming, workout, running, club, festival, or party warmup. Do not list three awkward use cases as the main title, and do not make narrow scene names the title hook unless the scene is also a strong public search phrase.
+Titles should be broad dance/EDM packaging first, with the exact genre or subgenre visible immediately after `[playlist]`. Use clear YouTube mix language such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Workout Mix`, or `Bass Boosted EDM & Electro House Mix`. Add one or two public listening hooks after the separator, using natural phrasing such as `Heavy EDM for Gaming & Night Drive`, `Running Beats and Club Bass`, or `Night Drive & Gaming Club Music`. Do not list three awkward use cases as the main title, do not use abstract keyword tails like `Gaming Night & Workout Energy`, and do not make narrow scene names the title hook unless the scene is also a strong public search phrase.
+
+Before finalizing metadata, check the main title and every localized title in its own language. If any language turns the hook into the equivalent of `게임 밤과 운동 에너지`, `밤길, 게임 집중, 클럽 드라이브`, or another awkward noun chain, rewrite it for that audience. Keep the genre clear and use a natural club-mix promise with one or two situations.
 
 ## Recent Release Check
 
@@ -70,7 +72,7 @@ Good style lanes:
 ## Good Fresh Concept Shapes
 
 - `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`
-- `[playlist] Hype Trap x EDM Mix | Workout, Gaming and Club Energy`
+- `[playlist] Bass House Workout Mix 2026 | Heavy EDM for Gaming & Night Drive`
 - `[playlist] Tech House Workout Mix | Running Beats and Club Bass`
 - `[playlist] Melodic Techno Night Drive | Dark Club Mix for Gaming`
 - `[playlist] Festival EDM Mix | Big Room Drops for Party Warmup`
@@ -82,3 +84,5 @@ Good style lanes:
 - K-pop/J-pop vocal releases.
 - Cozy BGM, cinematic battle music, or fantasy OST music.
 - Titles that read like keyword-stuffed use-case lists, such as `[playlist] Progressive Trance for Night Roads, Gaming Focus and Club Drive`.
+- Titles that glue abstract nouns together after the separator, such as `[playlist] Bass House Club Mix | Gaming Night & Workout Energy`; this reads like a machine-translated keyword list, not a YouTube title.
+- Titles that hide the EDM/house/trance/techno lane or sound like translated keywords instead of a real mix title.

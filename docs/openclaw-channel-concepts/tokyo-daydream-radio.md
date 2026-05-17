@@ -10,6 +10,8 @@ The audience should immediately understand: hook-driven Japanese vocal pop for J
 
 Titles should be mainstream J-pop packaging first. Use the specific visual scene or city setting as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
 
+Before finalizing metadata, check the main title and every localized title in its own language. Reject titles that sound like language labels or keyword piles, such as `Japanese vocal`, `Tokyo walk energy`, or an arcade/night/friends list that does not read like a real J-pop playlist in that language. Use `J-POP`, mood, pop substyle, and one or two natural listening situations, rewritten naturally per language.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Tokyo Daydream Radio` releases and avoid repeating:
@@ -76,3 +78,4 @@ Use one lane, then vary substyle and lyric premise:
 - Reusing the same rainy Tokyo/night walk/beach/forest concept too soon.
 - Adding `Tokyo` to titles when the concept is not Tokyo-specific.
 - Forcing `walk` / `산책` into indoor arcade, game-center, karaoke, party, or friend-hangout concepts.
+- Titles that translate into awkward keyword lists instead of natural J-pop discovery copy.

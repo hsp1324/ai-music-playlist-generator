@@ -14,6 +14,8 @@ Titles should be broad, clickable, and listener-benefit-first. Lead with why som
 
 Do not make internal game-scene wording the main hook. `Bonus Stage Music`, `Item Shop BGM`, `Quest Board`, `Inventory Screen`, `Potion Counter`, and similar phrases are too narrow for the main title unless the human explicitly asks for that exact theme.
 
+Before finalizing metadata, check the main title and every localized title in its own language. If a title reads like `bonus stage music`, `item shop music`, or another internal game mechanic instead of happy, cute, cozy, work, reading, gaming, or mood-boost listening, rewrite it with the listener benefit first in that language.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Storylight OST` releases. Avoid repeating:
@@ -69,3 +71,4 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Popular-song remakes, anime opening covers, or recognizable franchise soundtrack imitation.
 - Protected IP, studio names, game titles, character names, or `in the style of` wording.
 - Titles that depend on narrow internal scene labels as the main hook, such as `Bonus Stage Music`, `Item Shop BGM`, `Inventory Screen`, `Quest Board`, or `Potion Counter`, when a broader mood/use-case title would be more clickable.
+- Titles that sound like game-menu documentation instead of public-facing music discovery copy.

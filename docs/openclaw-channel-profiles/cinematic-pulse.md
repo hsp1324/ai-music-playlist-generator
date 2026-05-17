@@ -59,6 +59,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no gore, no r
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds childish, vague, or less cinematic, rewrite it while keeping the film-score/orchestra lane and real listening use case truthful.
 - Default metadata language can be English unless the human asks otherwise.
 - Titles should be bold, search-friendly, and immediately understandable to a broad YouTube audience. Include cinematic music, cinematic orchestra, movie OST, film score, trailer music, final battle scene, orchestral battle, emotional film score, mystery tension, fantasy writing, or epic scene use cases when accurate.
 - Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.

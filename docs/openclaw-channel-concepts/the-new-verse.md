@@ -12,6 +12,8 @@ This is not a Bible-reading channel. Do not simply narrate verses. Reinterpret t
 
 The audience should immediately understand: New Testament messages turned into original worship songs.
 
+Public titles must include the passage or Gospel theme, but they should not become generic worship keyword piles. Before finalizing metadata, check every localized title in its own language and reject vague tails such as `Grace Energy`, `Prayer Focus Music`, `Worship Music`, or literal equivalents without a clear passage/theme/style. The title should tell viewers what New Testament section inspired the release and what kind of worship music they are getting in natural local wording.
+
 ## Sequence Rule
 
 - Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. This ledger is mandatory, not optional.
@@ -87,3 +89,4 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 - Sermon/apologetics/debate content instead of music.
 - Generic church piano BGM with no clear passage reference.
 - Old Testament-focused concepts that belong on The Old Verse.
+- Vague worship titles that omit the passage/theme or read like abstract keyword tags instead of New Testament music.

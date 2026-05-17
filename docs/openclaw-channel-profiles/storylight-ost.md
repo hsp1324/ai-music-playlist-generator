@@ -59,6 +59,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no protected 
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds like a game menu label or less clickable, rewrite it while keeping the playful game/anime-BGM identity and listener benefit truthful.
 - Default metadata language can be English unless the human asks otherwise.
 - Titles should sell the listening benefit first: happy mood, mood boost, cute background music, work focus, reading, gaming, relaxing, light focus, cozy focus, or cheerful background listening.
 - Include broad game/anime-BGM keywords such as `Cute Game BGM`, `Happy Game Music`, `Cozy Fantasy Game BGM`, `Anime Game BGM`, or `Feel-Good Arcade BGM`.

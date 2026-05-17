@@ -60,6 +60,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no direct dep
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds vague, doctrinally awkward, or less clickable, rewrite it while keeping the passage reference, Old Testament theme, and broad music style truthful.
 - Default metadata language should be English unless the human asks otherwise.
 - Include the passage reference in the main title, every localized title, and the description, for example `Genesis 1:1-5`.
 - The first description paragraph must clearly say which passage inspired the music and what theme was adapted, for example creation, covenant, wilderness trust, lament, deliverance, wisdom, or prophetic hope.

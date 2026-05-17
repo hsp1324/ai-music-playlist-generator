@@ -10,6 +10,8 @@ The audience should immediately understand: Korean vocal pop with lyrics, built 
 
 Visual scenes can be specific, such as a rooftop, Seoul street, practice room, bus stop, cafe, or rainy window, but the public title should usually be broader than the visual. Lead with searchable K-pop listening reasons such as workout, running, getting ready, party warmup, dance-pop, heartbreak, night drive, confidence boost, or feel-good K-pop. Mention a niche visual scene only when it is a strong mainstream hook.
 
+Before finalizing metadata, read the Korean/default title as normal Korean playlist copy and check every localized title in its own language. Reject direct keyword piles like `연습실 밤과 운동 에너지`, `Seoul Music`, `Korean Pop`, or any localized title that sounds like nouns pasted together. The title should feel like something local viewers would actually click, using natural equivalents of 신나는 K-POP, 기분전환, 운동/러닝, 외출 준비, 밤 드라이브, 이별 감성, 설렘, 자신감, or party warmup when the music fits.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `HaruHaru` releases and avoid repeating:
@@ -70,5 +72,6 @@ Use one broad K-pop listening promise plus an optional visual/emotional flavor:
 - Forcing title/use-case words such as `댄스 연습실`, `운동`, `산책`, `공부`, `드라이브`, or `외출 준비` into lyrics unless they naturally belong in the song.
 - Titles like `KPOP Playlist`, `Korean Pop`, or `Seoul Music` by themselves.
 - Overly narrow visual-scene titles such as rooftop-after-rain, pottery-studio, exact street corners, or prop-first titles when the music is really a broad workout, running, getting-ready, party, heartbreak, or mood playlist.
+- Titles that sound machine-translated or keyword-stuffed instead of natural Korean K-pop playlist copy.
 - Concepts that sound like J-pop/Tokyo Daydream Radio or English pop/sundaze.
 - Remake/cover concepts based on existing popular songs. HaruHaru is for original K-pop.

@@ -14,6 +14,8 @@ Titles should be broad cinematic orchestra / film-score packaging first. The mus
 
 For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer broad titles a normal viewer would search or understand quickly, spanning varied title families such as final battle scene, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, epic writing music, and movie OST focus. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand. The examples below are style references, not fixed templates to repeat mechanically.
 
+Before finalizing metadata, check the main title and every localized title in its own language. If any title reads like a game-menu label, focus keyword pile, `최종 보스 집중 음악`, or a local equivalent that feels minor, childish, or unclear, rewrite toward movie OST, film score, trailer music, cinematic orchestra, emotional score, dark fantasy, sci-fi action, final battle scene, or writing/focus only when it sounds natural in that language.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Cinematic Pulse` releases and avoid repeating:
@@ -72,3 +74,4 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Cafe/study/sleep BGM that belongs on Soft Hour Radio.
 - EDM/club mixes that belong on Club Bloom.
 - Vocal pop or copyrighted soundtrack/remake concepts.
+- Public titles that read like game UI labels, abstract focus labels, or literal keyword piles instead of cinematic orchestra / film-score packaging.

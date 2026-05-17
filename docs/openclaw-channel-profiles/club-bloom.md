@@ -71,9 +71,10 @@ Stable composition, no hard cuts, no photorealism, no live action, no full nudit
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation becomes an awkward keyword tail, rewrite it while keeping the selected EDM/house/techno/trance lane and one or two real listening situations truthful.
 - Default metadata language can be English unless the human asks otherwise.
-- Titles must put the selected club style lane or genre fusion near the front, immediately after `[playlist]`. Prefer direct YouTube mix wording such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Club Mix`, or `Festival EDM Mix`.
-- After the separator, add one or two clear dance-listening situations such as night drive, workout, party warmup, gaming, club, running, festival, or rooftop. Avoid awkward three-part use-case lists such as `for Night Roads, Gaming Focus and Club Drive`.
+- Titles must put the selected club style lane or genre fusion near the front, immediately after `[playlist]`. Prefer direct YouTube mix wording such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Workout Mix`, `Bass Boosted EDM & Electro House Mix`, or `Festival EDM Mix`.
+- After the separator, add one or two clear dance-listening situations using natural YouTube phrasing, such as `Heavy EDM for Gaming & Night Drive`, `Running Beats and Club Bass`, `Night Drive & Gaming Club Music`, or `Big Room Drops for Party Warmup`. Avoid awkward three-part use-case lists such as `for Night Roads, Gaming Focus and Club Drive`, and never use keyword tails like `Gaming Night & Workout Energy`.
 - Make titles broad and public-facing first. Use the exact visual scene as atmosphere unless it is the strongest searchable hook.
 - Metadata should describe the release as no-vocal/instrumental club music. Do not imply vocals, singers, lyrics, or pop songs.
 - Avoid AI/process/tool hashtags and avoid overstating `hits` if the music is original.

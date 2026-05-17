@@ -81,6 +81,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=int, default=360, help="Per-release Codex timeout in seconds.")
     parser.add_argument("--model", default="", help="Optional Codex model override.")
     parser.add_argument("--force", action="store_true", help="Regenerate target languages even if they already exist.")
+    parser.add_argument(
+        "--rewrite-default",
+        action="store_true",
+        help="Also replace the default YouTube snippet title/description with the generated default-language copy.",
+    )
     return parser.parse_args()
 
 
@@ -195,17 +200,20 @@ def build_prompt(payload: dict[str, Any], missing_languages: list[str]) -> str:
     source_json = json.dumps(payload, ensure_ascii=False, indent=2)
     return "\n".join(
         [
-            "You are translating YouTube metadata for an AI music channel.",
-            f"Write localized metadata for these languages only: {requested}.",
+            "You are rewriting and transcreating YouTube metadata for an AI music channel.",
+            f"Write improved localized metadata for these languages only: {requested}.",
             f"Return JSON with exactly these keys: {keys}.",
             "",
             "Rules:",
             "- Preserve the release intent, music genre, mood, and target use case.",
             "- If any source title starts with [playlist], every output title must also start with [playlist].",
-            "- Keep each title natural for YouTube and no longer than 100 characters.",
+            "- Keep each title natural, mainstream, clickable, and no longer than 100 characters.",
+            "- Treat localized video titles as transcreation, not literal translation. If a direct translation is awkward, weak, too long, or less clickable in the target language, change the wording, order, or exact hook while keeping the release identity, genre, mood, and target use case truthful.",
+            "- Do not preserve a source title just because it already exists. If the source title is keyword-stuffed, machine-translated, too niche, scene-led, or weak for YouTube discovery, replace it with a stronger natural title in that same language.",
+            "- Use only one or two clear hooks after the separator. Avoid noun piles like gaming night and workout energy, focus and club drive, bonus stage music as the main hook, final boss focus music, hope energy, or literal equivalents in any language.",
             "- Preserve every timestamp exactly. Do not add, remove, reorder, round, or translate timestamp tokens.",
             "- Preserve the tracklist order exactly. Translate only the displayed track title text after each timestamp.",
-            "- Exception: for sundaze or English/American pop releases, keep every localized title exactly the same as the English title. Also keep the track title text after each timestamp in English in every localized description. Translate only the surrounding prose, use-case line, and hashtags.",
+            "- Exception: for sundaze or English/American pop releases, keep the track title text after each timestamp in English in every localized description. Translate only the surrounding prose, use-case line, and hashtags. The localized video title itself may be naturally adapted for the target language.",
             "- Keep hashtag lines at the end of every description; translate or localize hashtags where natural, but do not omit them.",
             "- Do not invent upload status, URLs, channel claims, or extra metadata fields.",
             "- Use natural localized copy for listeners in each requested language. For zh-CN, use Simplified Chinese. For zh-TW, use Traditional Chinese suitable for Taiwan.",
@@ -282,11 +290,13 @@ def update_youtube_item(
     item: dict[str, Any],
     localizations: dict[str, dict[str, str]],
     default_language: str,
+    default_copy: dict[str, str] | None = None,
 ) -> None:
     snippet = dict(item.get("snippet") or {})
+    default_copy = default_copy or {}
     body_snippet = {
-        "title": sanitize_youtube_copy(snippet.get("title")).strip()[:100],
-        "description": sanitize_youtube_copy(snippet.get("description")).strip(),
+        "title": sanitize_youtube_copy(default_copy.get("title") or snippet.get("title")).strip()[:100],
+        "description": sanitize_youtube_copy(default_copy.get("description") or snippet.get("description")).strip(),
         "categoryId": str(snippet.get("categoryId") or "10"),
     }
     if snippet.get("tags"):
@@ -420,14 +430,22 @@ def main() -> int:
                     continue
 
                 if youtube is not None and youtube_item is not None:
+                    default_copy = merged.get(payload["default_copy"]["language"]) if args.rewrite_default else None
                     update_youtube_item(
                         youtube,
                         item=youtube_item,
                         localizations=merged,
                         default_language=payload["default_copy"]["language"],
+                        default_copy=default_copy,
                     )
 
                 meta["youtube_localizations"] = merged
+                if args.rewrite_default and payload["default_copy"]["language"] in merged:
+                    rewritten_default = merged[payload["default_copy"]["language"]]
+                    meta["youtube_title"] = rewritten_default["title"]
+                    meta["youtube_description"] = rewritten_default["description"]
+                    meta["youtube_default_language"] = payload["default_copy"]["language"]
+                    playlist.title = rewritten_default["title"][:255]
                 meta["youtube_localizations_backfilled_at"] = datetime.now(timezone.utc).isoformat()
                 playlist.metadata_json = meta
                 db.add(playlist)

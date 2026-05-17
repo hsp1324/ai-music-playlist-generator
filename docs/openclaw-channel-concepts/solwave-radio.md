@@ -10,6 +10,8 @@ The audience should immediately understand: Spanish-language pop for a specific 
 
 Titles should be mainstream Latin/Spanish pop packaging first. Use the specific visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
 
+Before finalizing metadata, check the Spanish/default title and every localized title in its own language. Reject raw labels such as `Ruta Dorada Pop`, `Latin Pop`, `Spanish Pop`, or mixed keyword tails that would sound awkward in any localization. Lead with the Latin style/mood and one or two natural uses such as carretera, playa, fiesta, bailar, verano, noche, romance, manejar, workout, or buenas vibras when the music fits, rewritten naturally per language.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Solwave Radio` releases and avoid repeating:
@@ -62,6 +64,7 @@ Use a vivid Latin scene plus substyle:
 ## Bad Directions
 
 - Generic titles like `Latin Pop`, `Spanish Pop`, or `Ruta Dorada Pop` by themselves.
+- Titles that sound like translated labels or mixed-language keyword piles instead of natural Spanish/Latin playlist copy.
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.
 - Forcing title/use-case words such as carretera, playa, fiesta, manejar, workout, morning energy, or night drive into lyrics unless they naturally belong in the song.
 - Repeating beach sunset every time.

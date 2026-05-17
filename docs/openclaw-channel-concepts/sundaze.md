@@ -10,6 +10,8 @@ The audience should immediately understand: English vocal pop for a specific eve
 
 Titles should be mainstream English/American pop packaging first. Use the specific visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
 
+Before finalizing metadata, check the English/default title and every localized title in its own language. Reject raw workspace labels or abstract noun chains such as `Golden Hour Drive Pop`, `City Night Confidence Energy`, `Weekend Work Pop`, or literal equivalents. Use a natural pop promise: road trip, feel-good, heartbreak, getting ready, night drive, summer, confidence, workout, party warmup, or work/walk only when the audio fits, rewritten naturally per language.
+
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `sundaze` releases and avoid repeating:
@@ -63,6 +65,7 @@ Use a vivid situation or emotion plus pop identity:
 ## Bad Directions
 
 - Short generic titles like `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
+- Titles that translate into awkward keyword piles instead of natural English-pop playlist copy.
 - Mismatched use cases, such as calling a club-like rooftop dance-pop playlist `focus`, `study`, or `quiet work` music.
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.
 - Forcing title/use-case words such as drive, workout, running, party, getting ready, walk, or work into lyrics unless they naturally belong in the song.

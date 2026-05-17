@@ -30,6 +30,7 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 ## Metadata
 
 - Follow `docs/openclaw-youtube-metadata.md`.
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the inferred channel identity, genre/lane, and real listening use case truthful.
 - If the channel has no dedicated language rule, include every supported localization unless the human says otherwise.
 - Choose the default language from the channel identity. If unclear, use English for global pop-style channels and Korean for Korean-run background/BGM channels.
 - Make titles broad and public-facing first. Use exact visual-scene details as atmosphere unless they are clearly the strongest searchable hook for that custom channel.

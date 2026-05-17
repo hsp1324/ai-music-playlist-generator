@@ -12,6 +12,8 @@ This is not a Bible-reading channel. Do not simply narrate verses. Reinterpret t
 
 The audience should immediately understand: Old Testament stories and messages turned into original Bible music.
 
+Public titles must include the passage or passage theme, but they should not become generic religious keyword piles. Before finalizing metadata, check every localized title in its own language and reject vague tails such as `Hope Energy`, `Prayer Focus Music`, `Bible Music`, or literal equivalents without a clear passage/theme/style. The title should tell viewers what scripture section inspired the release and what kind of worship/scripture music they are getting in natural local wording.
+
 ## Sequence Rule
 
 - Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. This ledger is mandatory, not optional.
@@ -86,3 +88,4 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 - Debate/apologetics content instead of music.
 - Generic fantasy OST that belongs on Storylight OST.
 - Generic church piano BGM with no clear passage reference.
+- Vague scripture titles that omit the passage/theme or read like abstract keyword tags instead of Old Testament music.

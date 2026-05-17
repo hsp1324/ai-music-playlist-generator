@@ -21,6 +21,7 @@ Infer the channel identity from the connected channel title, the human request, 
 - Use one clear genre or listening lane per playlist.
 - Choose a specific setting, use case, emotional direction, and thumbnail phrase.
 - Make the release title broad enough for normal YouTube discovery. Use the specific setting as atmosphere, not as the main hook, unless that setting is already a strong public keyword for the channel.
+- Before finalizing metadata, read the main title and every localized title in its own language. Reject awkward noun chains, raw workspace labels, or abstract keyword tails such as `Gaming Night & Workout Energy`, `Focus and Club Drive`, `Hope Energy`, or `Morning Study Warmth` unless they sound natural for that channel's actual audience.
 - Avoid generic titles like `Pop Mix`, `New Playlist`, `BGM`, or `Music for You` unless the human explicitly wants that.
 - If the channel appears to be language-specific, write lyrics and metadata in that language by default.
 - If the channel is vocal/pop-focused, separate playlist packaging from lyrics. The release title/use case can describe when to listen, but lyrics should work as standalone songs with natural emotion, strong hooks, and genre-appropriate phrasing rather than literally repeating the title/use-case words.

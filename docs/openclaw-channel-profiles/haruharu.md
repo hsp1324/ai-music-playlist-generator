@@ -63,6 +63,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
+- Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the K-pop identity, emotion, and real listening use case truthful.
 - Main upload metadata should be Korean. Use `--default-language ko` when OpenClaw approves metadata manually.
 - Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--ko-title` / `--ko-description-file` should match.
