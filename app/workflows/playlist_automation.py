@@ -61,6 +61,25 @@ REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "zh-TW",
 )
 TIMELINE_ROW_PATTERN = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?\s+\S+", re.MULTILINE)
+LOOP_VIDEO_PROVIDER_ALIASES = {
+    "gemini": "gemini",
+    "google-gemini": "gemini",
+    "google gemini": "gemini",
+    "veo": "gemini",
+    "gemini-veo": "gemini",
+    "gemini veo": "gemini",
+    "dreamina": "dreamina",
+    "capcut-dreamina": "dreamina",
+    "capcut dreamina": "dreamina",
+    "seedance": "seedance",
+    "sea-dance": "seedance",
+    "sea dance": "seedance",
+    "dreamina-seedance": "seedance",
+    "dreamina/seedance": "seedance",
+    "manual": "manual",
+    "human": "manual",
+    "unknown": "unknown",
+}
 
 
 def _utcnow() -> datetime:
@@ -465,6 +484,28 @@ def _loop_video_source(meta: dict) -> str | None:
     return None
 
 
+def normalize_loop_video_provider(value: str | None) -> str | None:
+    normalized = re.sub(r"\s+", " ", str(value or "").strip().lower().replace("_", "-"))
+    if not normalized:
+        return None
+    return LOOP_VIDEO_PROVIDER_ALIASES.get(normalized, "other")
+
+
+def _loop_video_provider(meta: dict) -> str | None:
+    loop_video_path = meta.get("loop_video_path")
+    if not loop_video_path:
+        return None
+    provider = normalize_loop_video_provider(meta.get("loop_video_provider"))
+    if provider:
+        return provider
+    for entry in reversed(list(meta.get("loop_video_history") or [])):
+        if entry.get("loop_video_path") == loop_video_path:
+            provider = normalize_loop_video_provider(entry.get("provider"))
+            if provider:
+                return provider
+    return None
+
+
 _UNSET = object()
 
 
@@ -613,6 +654,7 @@ def serialize_playlist_workspace(
         cover_source=_cover_source(meta),
         loop_video_path=meta.get("loop_video_path"),
         loop_video_source=_loop_video_source(meta),
+        loop_video_provider=_loop_video_provider(meta),
         loop_video_smooth=bool(meta.get("loop_video_smooth", True)),
         video_spectrum_overlay_style=str(meta.get("video_spectrum_overlay_style") or "bars"),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
@@ -1532,6 +1574,7 @@ def attach_uploaded_loop_video(
     actor: str,
     loop_video_path: str,
     smooth_loop: bool = True,
+    provider: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -1540,19 +1583,25 @@ def attach_uploaded_loop_video(
         raise ValueError("Uploaded loop video is missing on disk.")
 
     meta = _playlist_meta(playlist)
+    normalized_provider = normalize_loop_video_provider(provider)
     history = list(meta.get("loop_video_history") or [])
-    history.append(
-        {
-            "actor": actor,
-            "loop_video_path": loop_video_path,
-            "uploaded_at": _utcnow().isoformat(),
-            "source": "manual-upload",
-            "smooth_loop": smooth_loop,
-        }
-    )
+    history_entry = {
+        "actor": actor,
+        "loop_video_path": loop_video_path,
+        "uploaded_at": _utcnow().isoformat(),
+        "source": "manual-upload",
+        "smooth_loop": smooth_loop,
+    }
+    if normalized_provider:
+        history_entry["provider"] = normalized_provider
+    history.append(history_entry)
     meta["loop_video_history"] = history
     meta["loop_video_path"] = loop_video_path
     meta["loop_video_source"] = "manual-upload"
+    if normalized_provider:
+        meta["loop_video_provider"] = normalized_provider
+    else:
+        meta.pop("loop_video_provider", None)
     meta["loop_video_smooth"] = smooth_loop
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
@@ -1596,6 +1645,7 @@ def clear_uploaded_loop_video(
             "loop_video_path": loop_video_path or None,
             "cleared_at": _utcnow().isoformat(),
             "source": meta.get("loop_video_source"),
+            "provider": meta.get("loop_video_provider"),
             "smooth_loop": bool(meta.get("loop_video_smooth", True)),
             "deleted_local_file": deleted,
         }
@@ -1603,6 +1653,7 @@ def clear_uploaded_loop_video(
     meta["loop_video_clear_history"] = history
     meta.pop("loop_video_path", None)
     meta.pop("loop_video_source", None)
+    meta.pop("loop_video_provider", None)
     meta.pop("loop_video_smooth", None)
     meta.pop("loop_video_render_mode", None)
     meta["metadata_approved"] = False

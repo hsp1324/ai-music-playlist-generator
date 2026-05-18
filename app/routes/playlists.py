@@ -448,6 +448,7 @@ def upload_workspace_loop_video(
     request: Request,
     actor: str = Form("web-ui"),
     smooth_loop: bool = Form(True),
+    loop_video_provider: str = Form(""),
     loop_video_file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ) -> PlaylistWorkspaceRead:
@@ -465,6 +466,7 @@ def upload_workspace_loop_video(
             actor=actor,
             loop_video_path=loop_video_path,
             smooth_loop=smooth_loop,
+            provider=loop_video_provider,
         )
         _run_public_video_cleanup(db, services)
     except HTTPException:

@@ -1014,6 +1014,7 @@ async function uploadLoopVideoFile(workspace, file) {
     file,
     extraFields: {
       smooth_loop: "true",
+      loop_video_provider: "manual",
     },
   });
 }
@@ -1591,7 +1592,8 @@ function appendLoopVideoPreview(workspace) {
   body.className = "asset-preview-body";
 
   const title = document.createElement("strong");
-  title.textContent = "Loop Video";
+  const provider = String(workspace.loop_video_provider || "").trim();
+  title.textContent = provider ? `Loop Video · ${provider.toUpperCase()}` : "Loop Video";
 
   const copy = document.createElement("span");
   copy.textContent = workspace.loop_video_smooth

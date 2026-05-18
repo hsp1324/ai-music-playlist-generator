@@ -204,6 +204,7 @@ Static image creation rules:
 Required moving visual:
 
 - `--loop-video /absolute/path/to/loop-video.mp4`: Gemini/Dreamina/Seedance visual clip for the rendered video. Gemini clips are uploaded as generated after inspection; Dreamina/Seedance clips should be generated with the duration control set to exactly 6 seconds.
+- `--loop-video-provider gemini|dreamina|seedance`: required for OpenClaw-created provider clips so the app records where the loop video came from. Use `gemini` for Gemini/Veo output, `dreamina` for Dreamina output, and `seedance` for Seedance output. The app stores this in `loop_video_provider` and `loop_video_history[].provider`.
 - OpenClaw should generate/download only the short clip. Do not export a long MP4 from OpenClaw.
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
@@ -219,7 +220,7 @@ Gemini-first website workflow for OpenClaw:
 - Count only Gemini attempts where Gemini actually creates a video result. Copyright, policy, moderation, or prompt blocks that stop generation before a video is made do not count against the 3 successful videos.
 - If Gemini creates a video but OpenClaw rejects it for quality, wrong text, weak motion, or bad framing, count it as one successful Gemini generation because the quota was spent.
 - If Gemini says the daily video limit is reached or OpenClaw knows 3 successful Gemini videos were generated less than 24 hours ago, stop using Gemini for now and use Dreamina/Seedance for the loop video. If Dreamina/Seedance also cannot create the video, defer this release until the Gemini cooldown clears instead of rendering with a missing loop video.
-- When Gemini cooldown clears, process deferred releases that failed Dreamina/Seedance first. Create the Gemini loop video, upload it, then queue render before starting new loop-video work for other releases.
+- When Gemini cooldown clears, process deferred releases that failed Dreamina/Seedance first. Create the Gemini loop video, upload it with `--loop-video-provider gemini`, then queue render before starting new loop-video work for other releases.
 - Open Gemini in the authenticated browser session.
 - Click the `Create image` / creation entry that accepts an image attachment and prompt. Use the image-to-video or video creation option when the UI offers it.
 - Attach the final cover or dedicated first-frame image as the first image. This image must contain only the lower-left channel brand label and no thumbnail click text.
@@ -258,7 +259,7 @@ Dreamina website workflow for OpenClaw:
 - Generate exactly one `6 second` MP4.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
-- If login, CAPTCHA, subscription limits, face detection, moderation, or manual approval blocks Dreamina/Seedance generation/download, do not create a local motion-loop substitute. Try Gemini if quota is available. If Gemini has already created 3 videos in the active 24 hour window, defer this release and move on to another eligible release.
+- If login, CAPTCHA, subscription limits, face detection, moderation, or manual approval blocks Dreamina/Seedance generation/download, do not create a local motion-loop substitute. Try Gemini if quota is available. If Gemini has already created 3 videos in the active 24 hour window, defer this release and move on to another eligible release. When uploading any successful Dreamina/Seedance fallback clip, pass `--loop-video-provider dreamina` or `--loop-video-provider seedance`.
 
 Dreamina/Seedance fallback rejection recovery:
 
@@ -603,7 +604,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - OpenClaw must create a Gemini/Dreamina/Seedance clip and pass the short MP4 as `--loop-video` before normal video render/publish. Try Gemini first unless its 24 hour cooldown is active; otherwise use Dreamina/Seedance. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if all 3 Gemini videos are already spent, defer this release until the 24 hour Gemini cooldown clears and process it before new loop-video work. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Gemini/Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
 - A Gemini/Veo provider logo or watermark in the corner is allowed and is not a reason to regenerate the loop video.
-- For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, and count only successful video generations toward the 3 videos per 24 hour quota. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls. Do not put those settings in the prompt.
+- For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, count only successful video generations toward the 3 videos per 24 hour quota, and upload with `--loop-video-provider gemini`. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls, then upload with `--loop-video-provider dreamina` or `--loop-video-provider seedance`. Do not put those settings in the prompt.
 - For normal OpenClaw auto-publish work, verify the MP4 after download. If Seedance/Dreamina did not produce the requested 6 second clip, discard/regenerate unless the human explicitly accepts it and OpenClaw passes `--allow-short-loop-video`. For Gemini, inspect the generated MP4 and upload it as-is when text, framing, and motion are acceptable.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.

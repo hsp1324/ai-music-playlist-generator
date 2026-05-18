@@ -30,6 +30,7 @@ from scripts.openclaw_release import (
     resolve_style_items,
     slack_notify_command,
     upload_audio_file_to_release,
+    upload_loop_video,
     upload_single_candidates,
 )
 
@@ -64,6 +65,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "thumbnail": "",
         "allow_cover_as_thumbnail": False,
         "loop_video": "",
+        "loop_video_provider": "",
         "hard_loop_video": False,
         "allow_still_image_video": False,
         "allow_short_loop_video": False,
@@ -161,6 +163,54 @@ def test_require_normal_loop_video_duration_allows_explicit_short_override(monke
         SimpleNamespace(allow_short_loop_video=True),
         context="upload-loop-video",
     )
+
+
+def test_upload_loop_video_sends_provider_tag(tmp_path) -> None:
+    loop_video = tmp_path / "gemini-loop.mp4"
+    loop_video.write_bytes(b"fake mp4")
+    captured_bodies: list[bytes] = []
+    release = {
+        "id": "release-1",
+        "title": "Storylight Test",
+        "workflow_state": "audio_ready",
+        "loop_video_path": None,
+        "loop_video_source": None,
+        "loop_video_provider": None,
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
+            return httpx.Response(200, json=[release])
+        if request.method == "POST" and request.url.path.endswith("/playlists/release-1/loop-video/upload"):
+            captured_bodies.append(request.read())
+            uploaded = {
+                **release,
+                "loop_video_path": "/tmp/uploaded-loop.mp4",
+                "loop_video_source": "manual-upload",
+                "loop_video_provider": "gemini",
+                "loop_video_smooth": True,
+            }
+            return httpx.Response(200, json=uploaded)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = upload_loop_video(
+        client,
+        SimpleNamespace(
+            release_id="release-1",
+            release_title="",
+            loop_video=str(loop_video),
+            loop_video_provider="gemini",
+            hard_loop=False,
+            allow_short_loop_video=True,
+            actor="openclaw",
+        ),
+    )
+
+    assert captured_bodies
+    assert b'name="loop_video_provider"' in captured_bodies[-1]
+    assert b"gemini" in captured_bodies[-1]
+    assert result["release"]["loop_video_provider"] == "gemini"
 
 
 def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:

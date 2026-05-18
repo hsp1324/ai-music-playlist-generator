@@ -29,6 +29,7 @@ MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 0
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
+LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
@@ -1003,6 +1004,26 @@ def resolve_loop_video_path(value: str | None) -> Path | None:
     return resolve_image_path(value, label="Loop video")
 
 
+def infer_loop_video_provider(loop_video_path: Path | None) -> str:
+    if not loop_video_path:
+        return "unknown"
+    haystack = str(loop_video_path).lower()
+    if "gemini" in haystack or "veo" in haystack:
+        return "gemini"
+    if "dreamina" in haystack:
+        return "dreamina"
+    if "seedance" in haystack or "sea-dance" in haystack:
+        return "seedance"
+    return "unknown"
+
+
+def loop_video_provider_value(args: argparse.Namespace, loop_video_path: Path | None) -> str:
+    explicit = str(getattr(args, "loop_video_provider", "") or "").strip().lower()
+    if explicit:
+        return explicit
+    return infer_loop_video_provider(loop_video_path)
+
+
 def probe_media_duration_seconds(media_path: Path) -> float | None:
     try:
         result = subprocess.run(
@@ -1794,6 +1815,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
 
     if loop_video_path:
         content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
+        loop_video_provider = loop_video_provider_value(args, loop_video_path)
         with loop_video_path.open("rb") as handle:
             release = request_json(
                 client,
@@ -1802,6 +1824,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 data={
                     "actor": args.actor,
                     "smooth_loop": str(not args.hard_loop_video).lower(),
+                    "loop_video_provider": loop_video_provider,
                 },
                 files={"loop_video_file": (loop_video_path.name, handle, content_type)},
             )
@@ -2007,6 +2030,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "output_audio_path": release.get("output_audio_path"),
             "output_video_path": release.get("output_video_path"),
             "loop_video_path": release.get("loop_video_path"),
+            "loop_video_provider": release.get("loop_video_provider"),
             "youtube_thumbnail_path": release.get("youtube_thumbnail_path"),
             "youtube_title": release.get("youtube_title"),
             "youtube_video_id": release.get("youtube_video_id"),
@@ -2124,6 +2148,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
 
     if loop_video_path:
         content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
+        loop_video_provider = loop_video_provider_value(args, loop_video_path)
         with loop_video_path.open("rb") as handle:
             release = request_json(
                 client,
@@ -2132,6 +2157,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 data={
                     "actor": args.actor,
                     "smooth_loop": str(not args.hard_loop_video).lower(),
+                    "loop_video_provider": loop_video_provider,
                 },
                 files={"loop_video_file": (loop_video_path.name, handle, content_type)},
             )
@@ -2317,6 +2343,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "output_audio_path": release.get("output_audio_path"),
             "output_video_path": release.get("output_video_path"),
             "loop_video_path": release.get("loop_video_path"),
+            "loop_video_provider": release.get("loop_video_provider"),
             "youtube_thumbnail_path": release.get("youtube_thumbnail_path"),
             "youtube_title": release.get("youtube_title"),
             "youtube_video_id": release.get("youtube_video_id"),
@@ -2405,6 +2432,7 @@ def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
     require_normal_loop_video_duration(loop_video_path, args, context="upload-loop-video")
 
     content_type = mimetypes.guess_type(str(loop_video_path))[0] or "video/mp4"
+    loop_video_provider = loop_video_provider_value(args, loop_video_path)
     with loop_video_path.open("rb") as handle:
         release = request_json(
             client,
@@ -2413,6 +2441,7 @@ def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
             data={
                 "actor": args.actor,
                 "smooth_loop": str(not args.hard_loop).lower(),
+                "loop_video_provider": loop_video_provider,
             },
             files={"loop_video_file": (loop_video_path.name, handle, content_type)},
         )
@@ -2425,6 +2454,7 @@ def upload_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
             "workflow_state": release["workflow_state"],
             "loop_video_path": release.get("loop_video_path"),
             "loop_video_source": release.get("loop_video_source"),
+            "loop_video_provider": release.get("loop_video_provider"),
             "loop_video_smooth": release.get("loop_video_smooth"),
         },
         "next": "This visual clip will be used during the next video render.",
@@ -2898,6 +2928,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
     auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release.")
     auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
+    auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
@@ -2942,6 +2973,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover image with only the large, readable lower-left channel-name brand label unless an uploaded final cover already exists on the release.")
     auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release.")
     auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
+    auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
@@ -2986,6 +3018,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     loop_video_parser = subparsers.add_parser("upload-loop-video", help="Upload a short visual loop clip for a release.")
     loop_video_parser.add_argument("--loop-video", required=True, help="Path to a short loop video: mp4, mov, m4v, or webm.")
+    loop_video_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created the loop video. Use gemini, dreamina, or seedance for generated clips.")
     loop_video_parser.add_argument("--release-id", default="", help="Existing release id.")
     loop_video_parser.add_argument("--release-title", default="", help="Existing release title.")
     loop_video_parser.add_argument("--hard-loop", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")

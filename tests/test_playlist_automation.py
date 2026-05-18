@@ -904,13 +904,16 @@ def install_fake_ops_slack(services, ops_calls: list[dict]) -> None:
     services.slack.upload_local_file = fake_upload_local_file
 
 
-def upload_test_loop_video(client: TestClient, workspace_id: str) -> dict:
+def upload_test_loop_video(client: TestClient, workspace_id: str, *, provider: str = "") -> dict:
     original_validator = playlist_routes._validate_loop_video_file
     playlist_routes._validate_loop_video_file = lambda *_args, **_kwargs: None
+    data = {"actor": "test-suite", "smooth_loop": "true"}
+    if provider:
+        data["loop_video_provider"] = provider
     try:
         loop_response = client.post(
             f"/api/playlists/{workspace_id}/loop-video/upload",
-            data={"actor": "test-suite", "smooth_loop": "true"},
+            data=data,
             files={"loop_video_file": ("test-loop.mp4", b"fake-loop-mp4", "video/mp4")},
         )
     finally:
@@ -3214,9 +3217,10 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
             files={"cover_file": ("cover.png", b"fake-png", "image/png")},
         )
         assert cover_response.status_code == 200
-        loop_payload = upload_test_loop_video(client, workspace_id)
+        loop_payload = upload_test_loop_video(client, workspace_id, provider="gemini")
         assert loop_payload["loop_video_path"].endswith(".mp4")
         assert loop_payload["loop_video_source"] == "manual-upload"
+        assert loop_payload["loop_video_provider"] == "gemini"
         assert loop_payload["loop_video_smooth"] is True
 
         approve_cover_response = client.post(
@@ -3236,6 +3240,7 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
         assert workspace["workflow_state"] == "metadata_review"
         assert workspace["output_video_path"].endswith(".mp4")
         assert workspace["loop_video_path"].endswith(".mp4")
+        assert workspace["loop_video_provider"] == "gemini"
     finally:
         clear_isolated_client_env()
 

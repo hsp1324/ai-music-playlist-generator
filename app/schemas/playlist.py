@@ -162,6 +162,7 @@ class PlaylistWorkspaceRead(BaseModel):
     cover_source: str | None = None
     loop_video_path: str | None = None
     loop_video_source: str | None = None
+    loop_video_provider: str | None = None
     loop_video_smooth: bool = True
     video_spectrum_overlay_style: str = "bars"
     youtube_thumbnail_path: str | None = None
