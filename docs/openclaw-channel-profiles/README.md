@@ -205,13 +205,13 @@ Cover / first frame:
 
 - 16:9 illustrated/anime/stylized neon image for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, or party-energy releases.
 - No fixed recurring visual signature yet. The selected club style lane decides the scene, subject, color, and camera.
-- Prefer visuals that immediately read as club/dance music: DJ/performance moments, dance floors, nightlife, festival lights, rooftop parties, or movement energy. A stylish adult female DJ or dancer can fit, including bold club fashion, confident poses, and sexy nightlife energy, but it is not required and should not repeat as the same template every time.
+- Prefer visuals that immediately read as club/dance music through an active DJ/performance moment in a premium venue: beach-club deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air stage, yacht/harbor party, neon city terrace, or cyber club. A stylish adult female DJ or dancer can fit, including bold club fashion, confident poses, and sexy nightlife energy, but it is not required and should not repeat as the same template every time.
 - Reject mild or wallpaper-like visuals. Club Bloom should be click-stopping in a mobile feed, with strong neon contrast, active nightlife/performance energy, and a more provocative club feel than calm BGM channels.
 - Only text allowed is the large lower-left `Club Bloom` brand label.
 
 Loop video:
 
-- Animate the cover/first-frame with visible rhythmic motion such as light sweeps, neon reflections, LED pulses, laser haze, stage particles, city lights, road light streaks, dance-floor glow, or atmospheric color pulses.
+- Animate the cover/first-frame with visible rhythmic DJ/performance motion such as DJ hand movement, mixer/deck LEDs, crowd movement, light sweeps, neon reflections, LED pulses, laser haze, concert strobes, city or ocean reflections, dance-floor glow, or atmospheric color pulses.
 - Preserve the large lower-left `Club Bloom` brand label exactly for the whole clip.
 - Reject loop videos that look static or only add tiny particle motion.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, sexual acts, unsafe minors, fetish framing, protected brands, or unrelated words.

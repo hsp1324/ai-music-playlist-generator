@@ -156,6 +156,7 @@ Our direction:
 
 - Title shape: `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`.
 - Song direction: one club style lane per release; no-vocal, clean drops, strong groove, 40+ minute playlist flow.
+- Visual direction: sell the channel as a real DJ/performance destination, not abstract neon. Prefer active DJ sets in premium places such as beach clubs, rooftop skylines, packed nightclubs, concert/festival stages, warehouse raves, pool-party decks, open-air stages, yacht/harbor parties, neon city terraces, or cyber clubs.
 - Thumbnail text: `TRANCE MIX`, `TECH HOUSE`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`.
 - Avoid: keyword-stuffed strings like `for Night Roads, Gaming Focus and Club Drive`.
 

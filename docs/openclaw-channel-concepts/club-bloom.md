@@ -19,12 +19,12 @@ Before finalizing metadata, check the main title and every localized title in it
 From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` releases and avoid repeating:
 
 - The same dance lane, such as house, future house, dance-pop, festival EDM, techno-pop, night drive, workout, or gaming mix.
-- The same setting, such as neon club, rooftop party, festival stage, cyber city, gym lights, highway, beach club, or DJ booth.
+- The same venue/performance setting, such as beach-club DJ deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, cyber club, gym event stage, highway/night-drive visual, or DJ booth.
 - The same energy curve, such as warmup, peak-time, late-night, workout sprint, or chill-house.
 - The same thumbnail phrase, such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, or `WORKOUT EDM`.
 - The same visual scene if used recently.
 
-If the latest Club Bloom release was neon club or night drive, choose festival, workout, gaming, rooftop, beach club, or future house next.
+If the latest Club Bloom release was generic neon club or night drive, choose a stronger venue-based DJ/performance setup next, such as beach club, rooftop skyline, concert/festival stage, warehouse rave, pool party, open-air stage, or cyber club.
 
 ## Club Style Lanes
 
@@ -64,10 +64,11 @@ Good style lanes:
 ## Visual Direction
 
 - Illustrated/anime/stylized neon visuals. Avoid photorealistic/live-action club footage.
-- Visuals should usually communicate club/dance energy quickly: nightlife venues, DJ/performance moments, dance-floor movement, festival lights, rooftop parties, city nightlife, athletic workout energy, beach clubs, or cyber arcade lighting.
-- Human figures are allowed when they fit the concept. A stylish adult woman DJing or dancing is a valid Club Bloom direction, including bold club fashion, confident poses, and sexy nightlife energy, but it must not become a repeated formula. Vary the subject, setting, camera, composition, crowd presence, outfit palette, and action so each release feels fresh.
+- Visuals should communicate club/dance energy quickly through a concrete premium venue and performance action. Prefer an active DJ/performance scene over abstract neon: beach-club DJ deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, neon city terrace, cyber club, or dance-floor crowd.
+- Unless the human explicitly asks for a non-DJ concept, make the visual read as a DJ set or live club performance through visible decks/mixer, performer, crowd, lighting rig, stage, or dance-floor action.
+- Human figures are allowed when they fit the concept. A stylish adult woman DJing or dancing is a valid Club Bloom direction, including bold club fashion, confident poses, and sexy nightlife energy, but it must not become a repeated formula. Vary the subject, setting, camera, composition, crowd presence, outfit palette, venue type, and action so each release feels fresh.
 - Keep adult nightlife imagery bold but YouTube-safe. Avoid full nudity, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
-- Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`.
+- Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`. The text is the hook; the image should sell the DJ/performance venue.
 
 ## Good Fresh Concept Shapes
 
