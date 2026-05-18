@@ -468,6 +468,59 @@ def test_backlog_request_message_includes_future_scheduled_public_upload_counts(
     assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 2 future scheduled-public YouTube uploads" in message
 
 
+def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() -> None:
+    message = build_backlog_queue_request_message(
+        reason="underfilled_backlog",
+        backlog_summary={
+            "target_per_channel": 10,
+            "max_per_channel": 10,
+            "channels": {
+                "sundaze": {
+                    "count": 2,
+                    "finishable": 0,
+                    "deferred": 2,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 11,
+                    "releases": [],
+                },
+                "The Old Verse": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 1,
+                    "releases": [],
+                },
+                "The New Verse": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 1,
+                    "releases": [],
+                },
+                "Club Bloom": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 2,
+                    "youtube_uploaded_count": 4,
+                    "releases": [],
+                },
+            },
+            "unknown_channel_releases": [],
+        },
+    )
+
+    priority_header = message.index("먼저 채울 채널 우선순위")
+    new_index = message.index("- The New Verse: 0 unfinished", priority_header)
+    old_index = message.index("- The Old Verse: 0 unfinished", priority_header)
+    sundaze_index = message.index("- sundaze: 2 unfinished", priority_header)
+    assert new_index < sundaze_index
+    assert old_index < sundaze_index
+    assert "먼저 채울 채널 우선순위" in message
+
+
 def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads(tmp_path) -> None:
     client = create_isolated_client(tmp_path)
     try:

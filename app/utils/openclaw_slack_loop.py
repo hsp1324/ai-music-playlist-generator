@@ -300,6 +300,36 @@ def build_next_playlist_request_message(
     return _with_trigger_prefix("\n".join(previous_context), trigger_prefix)
 
 
+def _backlog_priority_channel_lines(channel_payload: dict[str, Any], max_per_channel: int) -> list[str]:
+    candidates: list[tuple[int, int, int, str, dict[str, Any]]] = []
+    for title, payload in channel_payload.items():
+        if not isinstance(payload, dict):
+            continue
+        count = int(payload.get("count") or 0)
+        if count >= max_per_channel:
+            continue
+        scheduled_public = int(payload.get("youtube_scheduled_public_count") or 0)
+        if scheduled_public != 0:
+            continue
+        deferred = int(payload.get("deferred") or 0)
+        uploaded = int(payload.get("youtube_uploaded_count") or 0)
+        candidates.append((count, deferred, uploaded, str(title), payload))
+
+    if not candidates:
+        return []
+
+    lines = [
+        "먼저 채울 채널 우선순위(0 future scheduled-public, unfinished 적은 순):",
+    ]
+    for count, deferred, _uploaded, title, payload in sorted(candidates)[:10]:
+        lines.append(
+            f"- {title}: {count} unfinished"
+            f", {deferred} deferred"
+            f", {payload.get('youtube_scheduled_public_count', 0)} future scheduled-public YouTube uploads"
+        )
+    return lines
+
+
 def build_backlog_queue_request_message(
     *,
     reason: str,
@@ -329,6 +359,9 @@ def build_backlog_queue_request_message(
         "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
     ]
     if isinstance(channel_payload, dict) and channel_payload:
+        priority_lines = _backlog_priority_channel_lines(channel_payload, max_per_channel)
+        if priority_lines:
+            lines.extend(["", *priority_lines])
         lines.extend(["", "현재 웹앱 backlog snapshot:"])
         for title, payload in sorted(channel_payload.items()):
             lines.append(
