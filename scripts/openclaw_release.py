@@ -1695,6 +1695,10 @@ def openclaw_backlog_status(client: httpx.Client, _args: argparse.Namespace) -> 
     return request_json(client, "GET", "/openclaw/backlog/status")
 
 
+def openclaw_scripture_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(client, "GET", "/openclaw/scripture/status")
+
+
 def youtube_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
     return request_json(client, "GET", "/youtube/status", headers={"Accept": "application/json"})
 
@@ -1705,6 +1709,54 @@ def openclaw_backlog_request(client: httpx.Client, args: argparse.Namespace) -> 
         "POST",
         "/openclaw/backlog/request",
         json={"reason": args.reason, "prompt": args.prompt},
+    )
+
+
+def openclaw_scripture_reserve(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/scripture/reserve",
+        json={
+            "channel_title": args.channel_title,
+            "release_id": args.release_id,
+            "title": args.title,
+            "notes": args.notes,
+            "passage_range": args.passage_range,
+        },
+    )
+
+
+def openclaw_scripture_complete(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/scripture/complete",
+        json={
+            "channel_title": args.channel_title,
+            "passage_range": args.passage_range,
+            "status": args.status,
+            "release_id": args.release_id,
+            "youtube_video_id": args.youtube_video_id,
+            "title": args.title,
+            "notes": args.notes,
+            "next_start": args.next_start,
+        },
+    )
+
+
+def openclaw_scripture_fail(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        "/openclaw/scripture/fail",
+        json={
+            "channel_title": args.channel_title,
+            "passage_range": args.passage_range,
+            "release_id": args.release_id,
+            "title": args.title,
+            "reason": args.reason,
+        },
     )
 
 
@@ -3184,6 +3236,36 @@ def build_parser() -> argparse.ArgumentParser:
 
     backlog_status_parser = subparsers.add_parser("openclaw-backlog-status", help="Show app-side backlog scheduler evaluation.")
     backlog_status_parser.set_defaults(func=openclaw_backlog_status)
+
+    scripture_status_parser = subparsers.add_parser("openclaw-scripture-status", help="Show app-side Old/New Verse scripture sequence state.")
+    scripture_status_parser.set_defaults(func=openclaw_scripture_status)
+
+    scripture_reserve_parser = subparsers.add_parser("openclaw-scripture-reserve", help="Reserve the next app-owned scripture passage for The Old Verse or The New Verse.")
+    scripture_reserve_parser.add_argument("--channel-title", required=True, help="The Old Verse or The New Verse.")
+    scripture_reserve_parser.add_argument("--release-id", default="", help="Release id to associate with the reserved passage.")
+    scripture_reserve_parser.add_argument("--title", default="", help="Release title to store on the passage ledger.")
+    scripture_reserve_parser.add_argument("--notes", default="", help="Optional ledger notes.")
+    scripture_reserve_parser.add_argument("--passage-range", default="", help="Optional explicit passage override. Omit for the app-managed next passage.")
+    scripture_reserve_parser.set_defaults(func=openclaw_scripture_reserve)
+
+    scripture_complete_parser = subparsers.add_parser("openclaw-scripture-complete", help="Mark an app-owned scripture passage scheduled or published.")
+    scripture_complete_parser.add_argument("--channel-title", required=True, help="The Old Verse or The New Verse.")
+    scripture_complete_parser.add_argument("--passage-range", required=True, help="Passage range returned by openclaw-scripture-reserve.")
+    scripture_complete_parser.add_argument("--status", choices=["scheduled", "published"], default="scheduled")
+    scripture_complete_parser.add_argument("--release-id", default="", help="Release id associated with this passage.")
+    scripture_complete_parser.add_argument("--youtube-video-id", default="", help="YouTube video id after upload/scheduling.")
+    scripture_complete_parser.add_argument("--title", default="", help="Final release/YouTube title to store on the ledger.")
+    scripture_complete_parser.add_argument("--notes", default="", help="Optional ledger notes.")
+    scripture_complete_parser.add_argument("--next-start", default="", help="Optional next canonical start override. Normally omit and let the app use its configured sequence.")
+    scripture_complete_parser.set_defaults(func=openclaw_scripture_complete)
+
+    scripture_fail_parser = subparsers.add_parser("openclaw-scripture-fail", help="Mark a reserved scripture passage failed so it can be retried later.")
+    scripture_fail_parser.add_argument("--channel-title", required=True, help="The Old Verse or The New Verse.")
+    scripture_fail_parser.add_argument("--passage-range", required=True, help="Passage range returned by openclaw-scripture-reserve.")
+    scripture_fail_parser.add_argument("--release-id", default="", help="Release id associated with this passage.")
+    scripture_fail_parser.add_argument("--title", default="", help="Release title to store on the ledger.")
+    scripture_fail_parser.add_argument("--reason", required=True, help="Failure reason.")
+    scripture_fail_parser.set_defaults(func=openclaw_scripture_fail)
 
     youtube_status_parser = subparsers.add_parser("youtube-status", help="Show connected YouTube status/channels as JSON.")
     youtube_status_parser.set_defaults(func=youtube_status)

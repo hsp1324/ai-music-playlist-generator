@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Track sequential scripture progress for OpenClaw Bible channels.
+"""Legacy local scripture ledger helper.
 
-This file intentionally keeps the Bible-order decision human/OpenClaw-facing:
-the tool records and guards passage ranges, while the channel concept docs
-decide the next coherent passage block.
+Normal OpenClaw automation should use the deployed app-owned helpers in
+scripts/openclaw-release: openclaw-scripture-status/reserve/complete/fail.
+This local helper is kept only for manual emergency inspection or migration.
 """
 
 from __future__ import annotations

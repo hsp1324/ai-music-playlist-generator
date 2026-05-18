@@ -16,15 +16,15 @@ Public titles must include the passage or passage theme, but they should not bec
 
 ## Sequence Rule
 
-- Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. This ledger is mandatory, not optional.
-- Always inspect recent `The Old Verse` releases in `scripts/openclaw-release list-releases` and compare them with `scripts/openclaw-scripture-sequence status --init`.
-- Continue from the ledger's `next_start` / `last_completed`. Do not jump randomly to Psalms, Exodus, prophets, or famous stories unless the sequence has reached them or the human explicitly asks.
-- If there is no prior app catalog history, start with `Genesis 1:1-5`.
-- Mark the chosen passage as `in_progress` with `scripts/openclaw-scripture-sequence start` before opening Suno.
+- Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. The deployed web app ledger is mandatory, not optional.
+- Always inspect recent `The Old Verse` releases in `scripts/openclaw-release list-releases`, then reserve the next passage from the web app with `scripts/openclaw-release openclaw-scripture-reserve`.
+- Continue from the app-returned passage. Do not jump randomly to Psalms, Exodus, prophets, or famous stories unless the app sequence has reached them or the human explicitly asks and the app ledger is updated.
+- If there is no prior app catalog history, the app starts with `Genesis 1:1-5`.
+- Create the release first, then reserve the chosen passage as `in_progress` with `scripts/openclaw-release openclaw-scripture-reserve` before opening Suno.
 - Put the passage reference in the private plan, title, and description, for example `Genesis 1:1-5`.
 - For a 40+ minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
-- After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-scripture-sequence complete` and set the next canonical start.
-- If the ledger and app catalog disagree, stop and report the mismatch. Do not guess and do not reuse a passage already marked `in_progress`, `scheduled`, or `published`.
+- After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-release openclaw-scripture-complete`.
+- Do not compare against a local ledger and do not stop because title wording differs. The web app rejects duplicate active passages; use its response as the source of truth.
 
 ## Scripture Handling
 

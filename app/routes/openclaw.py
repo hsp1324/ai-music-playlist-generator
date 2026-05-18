@@ -20,6 +20,13 @@ from app.workflows.openclaw_runtime import (
     record_openclaw_backlog_scheduler_request,
     read_runtime_state,
 )
+from app.workflows.scripture_sequence import (
+    ScriptureSequenceError,
+    complete_scripture_passage,
+    fail_scripture_passage,
+    reserve_scripture_passage,
+    scripture_sequence_status,
+)
 
 router = APIRouter(prefix="/openclaw", tags=["openclaw"])
 
@@ -43,6 +50,33 @@ class OpenClawLockFinishRequest(BaseModel):
 class OpenClawBacklogRequest(BaseModel):
     reason: str = "manual"
     prompt: str | None = None
+
+
+class OpenClawScriptureReserveRequest(BaseModel):
+    channel_title: str
+    release_id: str = ""
+    title: str = ""
+    notes: str = ""
+    passage_range: str = ""
+
+
+class OpenClawScriptureCompleteRequest(BaseModel):
+    channel_title: str
+    passage_range: str
+    status: str = "scheduled"
+    release_id: str = ""
+    youtube_video_id: str = ""
+    title: str = ""
+    notes: str = ""
+    next_start: str = ""
+
+
+class OpenClawScriptureFailRequest(BaseModel):
+    channel_title: str
+    passage_range: str
+    release_id: str = ""
+    title: str = ""
+    reason: str = ""
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -91,6 +125,52 @@ def _record_release_channel_hint(db: Session, *, release_id: str, channel_title:
     db.add(playlist)
     db.commit()
     return True
+
+
+def _record_release_scripture_hint(
+    db: Session,
+    *,
+    release_id: str,
+    channel_title: str,
+    passage_range: str,
+    sequence_status: str,
+) -> bool:
+    normalized_release_id = release_id.strip()
+    if not normalized_release_id:
+        return False
+
+    playlist = db.get(Playlist, normalized_release_id)
+    if playlist is None:
+        return False
+
+    meta = dict(playlist.metadata_json or {})
+    changed = False
+    normalized_channel_title = channel_title.strip()
+    normalized_passage_range = passage_range.strip()
+    if normalized_channel_title and not str(meta.get("target_youtube_channel_title") or "").strip():
+        meta["target_youtube_channel_title"] = normalized_channel_title
+        changed = True
+    scripture_updates = {
+        "scripture_channel_title": normalized_channel_title,
+        "scripture_passage_range": normalized_passage_range,
+        "scripture_sequence_status": sequence_status,
+    }
+    for key, value in scripture_updates.items():
+        if value and meta.get(key) != value:
+            meta[key] = value
+            changed = True
+    if not changed:
+        return False
+
+    playlist.metadata_json = meta
+    db.add(playlist)
+    db.commit()
+    return True
+
+
+def _scripture_http_error(exc: ScriptureSequenceError) -> HTTPException:
+    status_code = 409 if exc.code in {"passage_already_active", "next_block_missing"} else 400
+    return HTTPException(status_code=status_code, detail={"code": exc.code, "message": str(exc)})
 
 
 @router.get("/status")
@@ -232,3 +312,105 @@ async def request_backlog(
     if not result.get("ok"):
         raise HTTPException(status_code=502, detail=result)
     return {"ok": True, "evaluation": evaluation, "slack": result}
+
+
+@router.get("/scripture/status")
+def scripture_status(
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    return {"ok": True, **scripture_sequence_status(services.settings.storage_root)}
+
+
+@router.post("/scripture/reserve")
+def reserve_scripture(
+    payload: OpenClawScriptureReserveRequest,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    try:
+        result = reserve_scripture_passage(
+            services.settings.storage_root,
+            channel_title=payload.channel_title,
+            release_id=payload.release_id,
+            title=payload.title,
+            notes=payload.notes,
+            passage_range=payload.passage_range,
+        )
+    except ScriptureSequenceError as exc:
+        raise _scripture_http_error(exc) from exc
+    entry = dict(result.get("entry") or {})
+    result["release_scripture_hint_recorded"] = _record_release_scripture_hint(
+        db,
+        release_id=payload.release_id,
+        channel_title=result.get("channel") or payload.channel_title,
+        passage_range=str(entry.get("passage_range") or ""),
+        sequence_status=str(entry.get("status") or "in_progress"),
+    )
+    return {"ok": True, **result}
+
+
+@router.post("/scripture/complete")
+def complete_scripture(
+    payload: OpenClawScriptureCompleteRequest,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    try:
+        result = complete_scripture_passage(
+            services.settings.storage_root,
+            channel_title=payload.channel_title,
+            passage_range=payload.passage_range,
+            status=payload.status,
+            release_id=payload.release_id,
+            youtube_video_id=payload.youtube_video_id,
+            title=payload.title,
+            notes=payload.notes,
+            next_start=payload.next_start,
+        )
+    except ScriptureSequenceError as exc:
+        raise _scripture_http_error(exc) from exc
+    entry = dict(result.get("entry") or {})
+    result["release_scripture_hint_recorded"] = _record_release_scripture_hint(
+        db,
+        release_id=payload.release_id,
+        channel_title=result.get("channel") or payload.channel_title,
+        passage_range=str(entry.get("passage_range") or payload.passage_range),
+        sequence_status=str(entry.get("status") or payload.status),
+    )
+    return {"ok": True, **result}
+
+
+@router.post("/scripture/fail")
+def fail_scripture(
+    payload: OpenClawScriptureFailRequest,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    try:
+        result = fail_scripture_passage(
+            services.settings.storage_root,
+            channel_title=payload.channel_title,
+            passage_range=payload.passage_range,
+            release_id=payload.release_id,
+            title=payload.title,
+            reason=payload.reason,
+        )
+    except ScriptureSequenceError as exc:
+        raise _scripture_http_error(exc) from exc
+    entry = dict(result.get("entry") or {})
+    result["release_scripture_hint_recorded"] = _record_release_scripture_hint(
+        db,
+        release_id=payload.release_id,
+        channel_title=result.get("channel") or payload.channel_title,
+        passage_range=str(entry.get("passage_range") or payload.passage_range),
+        sequence_status=str(entry.get("status") or "failed"),
+    )
+    return {"ok": True, **result}

@@ -101,7 +101,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 
 ## Channel Concept Delegation
 
-After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. If the selected channel is `The Old Verse` or `The New Verse`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md), inspect `scripts/openclaw-scripture-sequence status --init`, and reserve the next canonical passage before generating audio. Read both returned docs:
+After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. If the selected channel is `The Old Verse` or `The New Verse`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md). Create the release, then reserve the next app-owned canonical passage with `scripts/openclaw-release openclaw-scripture-reserve` before generating audio. Read both returned docs:
 
 - `concept_doc`: choose the next playlist concept and avoid recent repetition.
 - `profile_doc`: generate cover, thumbnail, and short loop video without mixing channel visual signatures.
@@ -160,7 +160,7 @@ Return this compact plan before generating audio:
 - `metadata_language_plan`
 - `recent_releases_checked`
 - `why_this_is_fresh`
-- For `The Old Verse` / `The New Verse`: `scripture_ledger_path`, `scripture_last_completed`, `scripture_next_start`, `selected_passage_range`, and `why_this_passage_is_next`
+- For `The Old Verse` / `The New Verse`: `scripture_source=web_app`, `selected_passage_range`, `scripture_next_start_after_completion`, and `why_this_passage_is_next`
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
@@ -203,7 +203,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.
 - Read the returned profile_doc before making cover, thumbnail, and loop video assets.
-- If the selected channel is The Old Verse or The New Verse, read docs/openclaw-scripture-sequence.md, run scripts/openclaw-scripture-sequence status --init, reserve the next canonical passage with scripts/openclaw-scripture-sequence start before Suno, include that passage range in every YouTube title, and mark it scheduled/published after upload.
+- If the selected channel is The Old Verse or The New Verse, read docs/openclaw-scripture-sequence.md, create the app release first, reserve the next canonical passage from the web app with scripts/openclaw-release openclaw-scripture-reserve before Suno, include the returned passage range in every YouTube title, and mark it scheduled/published after upload with scripts/openclaw-release openclaw-scripture-complete. Do not use or compare a local scripture ledger.
 - If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.
 

@@ -591,6 +591,105 @@ def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads
         clear_isolated_client_env()
 
 
+def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_SHARED_TOKEN"] = "test-token"
+    client = create_isolated_client(tmp_path)
+    headers = {"X-OpenClaw-Token": "test-token"}
+    try:
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="[playlist] Matthew 1:18-25 Emmanuel Worship",
+                status=PlaylistStatus.draft,
+                metadata_json={"workflow_state": "collecting"},
+            )
+            db.add(playlist)
+            db.commit()
+            release_id = playlist.id
+
+        reserve_response = client.post(
+            "/api/openclaw/scripture/reserve",
+            headers=headers,
+            json={
+                "channel_title": "The New Verse",
+                "release_id": release_id,
+                "title": "[playlist] Matthew 1:1-17 Gospel Worship",
+            },
+        )
+        assert reserve_response.status_code == 200
+        reserved = reserve_response.json()
+        assert reserved["entry"]["passage_range"] == "Matthew 1:1-17"
+        assert reserved["entry"]["next_start_after_completion"] == "Matthew 1:18"
+        assert reserved["release_scripture_hint_recorded"] is True
+
+        retry_response = client.post(
+            "/api/openclaw/scripture/reserve",
+            headers=headers,
+            json={
+                "channel_title": "The New Verse",
+                "release_id": release_id,
+                "title": "[playlist] Matthew 1:1-17 Gospel Worship",
+            },
+        )
+        assert retry_response.status_code == 200
+        assert retry_response.json()["idempotent"] is True
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, release_id)
+            assert playlist.metadata_json["target_youtube_channel_title"] == "The New Verse"
+            assert playlist.metadata_json["scripture_passage_range"] == "Matthew 1:1-17"
+            assert playlist.metadata_json["scripture_sequence_status"] == "in_progress"
+
+        complete_response = client.post(
+            "/api/openclaw/scripture/complete",
+            headers=headers,
+            json={
+                "channel_title": "The New Verse",
+                "passage_range": "Matthew 1:1-17",
+                "release_id": release_id,
+                "youtube_video_id": "yt-new-1",
+                "title": "[playlist] Matthew 1:1-17 Gospel Worship",
+                "status": "scheduled",
+            },
+        )
+        assert complete_response.status_code == 200
+        assert complete_response.json()["next_start"] == "Matthew 1:18"
+
+        status_response = client.get("/api/openclaw/scripture/status", headers=headers)
+        assert status_response.status_code == 200
+        status_payload = status_response.json()
+        assert status_payload["state"]["the_new_verse"]["last_completed"] == "Matthew 1:1-17"
+        assert status_payload["next_suggestions"]["the_new_verse"]["passage_range"] == "Matthew 1:18-25"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_scripture_sequence_rejects_duplicate_active_passage(tmp_path) -> None:
+    client = create_isolated_client(tmp_path)
+    try:
+        first_response = client.post(
+            "/api/openclaw/scripture/reserve",
+            json={
+                "channel_title": "The Old Verse",
+                "release_id": "release-1",
+                "title": "[playlist] Genesis 1:1-5 Creation Worship",
+            },
+        )
+        assert first_response.status_code == 200
+
+        duplicate_response = client.post(
+            "/api/openclaw/scripture/reserve",
+            json={
+                "channel_title": "The Old Verse",
+                "release_id": "release-2",
+                "title": "[playlist] Genesis 1:1-5 Duplicate",
+            },
+        )
+        assert duplicate_response.status_code == 409
+        assert duplicate_response.json()["detail"]["code"] == "passage_already_active"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_openclaw_backlog_scheduler_does_not_prioritize_auth_blocked_upload_failures(tmp_path) -> None:
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
