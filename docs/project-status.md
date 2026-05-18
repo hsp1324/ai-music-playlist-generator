@@ -86,12 +86,12 @@ Video render now adds an app-managed audio-reactive visualizer overlay:
 
 - the app fallback style is a transparent 28-bar spectrum near the lower-right of the video
 - the final loop video is normalized to 30fps, and the audio-reactive visualizer overlay is generated at 30fps so spectrum motion matches the rendered video cadence
-- linear visualizer overlays are wider than the original fallback and fade out at both horizontal edges, so bars/waves/dots do not appear abruptly cut off
+- linear visualizer overlays are wider than the original fallback and fade out at both horizontal edges, so bars/waves do not appear abruptly cut off
 - the app samples the cover/loop-video frame and chooses colors that fit the visual palette
 - the app can move the overlay away from bright text-heavy areas so it does not cover channel branding
 - `AIMP_VIDEO_SPECTRUM_OVERLAY_ENABLED=false` disables it
-- `AIMP_VIDEO_SPECTRUM_OVERLAY_STYLE` can be `bars`, `multiwave`, `thinwave`, `dots`, `mirror-bars`, `radial`, `pulse`, or `none`
-- `bars` is the production default; `multiwave` draws layered actual audio waveform lines, `thinwave` is a cleaner thinner waveform, `dots` draws smaller, denser frequency-smoothed glowing dots, `mirror-bars` draws centered mirrored bars, `radial` draws a large circular spectrum, `pulse` draws a punchy pulse line, and `none` skips the spectrum overlay for the fastest render
+- `AIMP_VIDEO_SPECTRUM_OVERLAY_STYLE` can be `bars`, `multiwave`, `thinwave`, `mirror-bars`, `radial`, `pulse`, or `none`
+- `bars` is the production default; `multiwave` draws layered actual audio waveform lines, `thinwave` is a cleaner thinner waveform, `mirror-bars` draws centered mirrored bars, `radial` draws a large circular spectrum, `pulse` draws a punchy pulse line, and `none` skips the spectrum overlay for the fastest render. The former small-dot visualizer preset has been removed; legacy `dot` / `dots` / `particles` values fall back to `bars`.
 - the web `Render Video` action and OpenClaw auto-publish commands can pass a per-render visualizer preset; if omitted, `bars` is used. OpenClaw should choose and pass the preset that best fits the release art instead of relying on the fallback. Use `none` for long urgent renders where speed matters more than the audio-reactive visualizer.
 - OpenClaw should not bake spectrum bars, waveform graphics, equalizers, or audio meters into the static cover or Dreamina loop video; the app adds those during final render
 

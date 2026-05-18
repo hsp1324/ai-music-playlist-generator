@@ -1,7 +1,4 @@
 import json
-import math
-from array import array
-
 import pytest
 from PIL import Image
 
@@ -9,9 +6,6 @@ from app.config import Settings
 from app.models.track import Track
 from app.services.playlist_builder import (
     FFMpegPlaylistBuilder,
-    SPECTRUM_DOT_COUNT,
-    SPECTRUM_DOT_FREQUENCY_BANDS,
-    SPECTRUM_ANALYSIS_SAMPLE_RATE,
     SPECTRUM_OVERLAY_HEIGHT,
     SPECTRUM_OVERLAY_WIDTH,
     YOUTUBE_STILL_IMAGE_FILTER,
@@ -89,77 +83,12 @@ def test_spectrum_edge_fade_softens_linear_overlay_edges(tmp_path) -> None:
     assert 0 < faded.getpixel((32, SPECTRUM_OVERLAY_HEIGHT // 2))[3] < 200
 
 
-def test_dot_spectrum_uses_dense_small_dot_layout(tmp_path) -> None:
+def test_removed_dot_visualizer_aliases_fall_back_to_bars(tmp_path) -> None:
     builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
 
-    frame = builder._draw_dot_spectrum_frame(
-        0,
-        0.0,
-        raw_level=0.0,
-        samples=array("h", [0] * 1000),
-        timestamp=0.0,
-        primary=(100, 220, 255),
-        accent=(255, 120, 220),
-    )
-
-    y = int(SPECTRUM_OVERLAY_HEIGHT * 0.66)
-    segments: list[int] = []
-    current_width = 0
-    for x in range(SPECTRUM_OVERLAY_WIDTH):
-        alpha = frame.getpixel((x, y))[3]
-        if alpha:
-            current_width += 1
-        elif current_width:
-            segments.append(current_width)
-            current_width = 0
-    if current_width:
-        segments.append(current_width)
-
-    assert len(segments) >= SPECTRUM_DOT_COUNT - 1
-    assert max(segments) <= 9
-
-
-def test_dot_spectrum_moves_from_frequency_levels_not_raw_waveform(tmp_path) -> None:
-    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
-    levels = [0.0] * SPECTRUM_DOT_FREQUENCY_BANDS
-    levels[-1] = 1.0
-
-    frame = builder._draw_dot_spectrum_frame(
-        0,
-        0.2,
-        raw_level=0.2,
-        samples=array("h", [32767, -32767] * 500),
-        timestamp=0.0,
-        frequency_levels=levels,
-        primary=(100, 220, 255),
-        accent=(255, 120, 220),
-    )
-
-    center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.66)
-    left_column_has_lift = any(frame.getpixel((6, y))[3] for y in range(0, center_y - 6))
-    right_column_has_lift = any(
-        frame.getpixel((SPECTRUM_OVERLAY_WIDTH - 6, y))[3] for y in range(0, center_y - 6)
-    )
-
-    assert left_column_has_lift is False
-    assert right_column_has_lift is True
-
-
-def test_dot_frequency_analysis_responds_to_sine_band(tmp_path) -> None:
-    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
-    frequency = 120
-    samples = array(
-        "h",
-        [
-            int(24000 * math.sin(math.tau * frequency * (index / SPECTRUM_ANALYSIS_SAMPLE_RATE)))
-            for index in range(SPECTRUM_ANALYSIS_SAMPLE_RATE)
-        ],
-    )
-
-    frames = builder._dot_spectrum_frequency_frames(samples, 1.0)
-    middle = frames[len(frames) // 2]
-
-    assert max(middle[:4]) > max(middle[-4:])
+    assert builder._normalize_spectrum_overlay_style("dots") == "bars"
+    assert builder._normalize_spectrum_overlay_style("dot") == "bars"
+    assert builder._normalize_spectrum_overlay_style("particles") == "bars"
 
 
 def test_build_audio_reports_ffmpeg_progress(tmp_path, monkeypatch) -> None:

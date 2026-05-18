@@ -40,15 +40,6 @@ SPECTRUM_OVERLAY_BARS = 28
 SPECTRUM_ANALYSIS_SAMPLE_RATE = 4000
 SPECTRUM_EDGE_FADE_MIN_PX = 64
 SPECTRUM_EDGE_FADE_RATIO = 0.16
-SPECTRUM_DOT_COUNT = 44
-SPECTRUM_DOT_BASE_RADIUS = 2
-SPECTRUM_DOT_SIGNAL_RADIUS = 4.0
-SPECTRUM_DOT_PUNCH_RADIUS = 3.0
-SPECTRUM_DOT_FREQUENCY_BANDS = 12
-SPECTRUM_DOT_ANALYSIS_FPS = 12
-SPECTRUM_DOT_ANALYSIS_WINDOW = 192
-SPECTRUM_DOT_MIN_FREQUENCY = 70.0
-SPECTRUM_DOT_MAX_FREQUENCY = 1800.0
 RADIAL_SPECTRUM_OVERLAY_WIDTH = 320
 RADIAL_SPECTRUM_OVERLAY_HEIGHT = 320
 
@@ -566,8 +557,10 @@ class FFMpegPlaylistBuilder:
             "multi-wave": "multiwave",
             "thin-wave": "thinwave",
             "clean-wave": "thinwave",
-            "dot": "dots",
-            "particles": "dots",
+            "dot": "bars",
+            "dots": "bars",
+            "particle": "bars",
+            "particles": "bars",
             "mirror": "mirror-bars",
             "mirrorbars": "mirror-bars",
             "mirrored-bars": "mirror-bars",
@@ -584,7 +577,7 @@ class FFMpegPlaylistBuilder:
             "fast": "none",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized not in {"bars", "multiwave", "thinwave", "dots", "mirror-bars", "radial", "pulse", "none"}:
+        if normalized not in {"bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"}:
             return "bars"
         return normalized
 
@@ -715,21 +708,6 @@ class FFMpegPlaylistBuilder:
                 }
             )
         samples = self._read_audio_samples(audio_path, duration_seconds)
-        dot_frequency_frames: list[list[float]] | None = None
-        if style == "dots":
-            if progress_callback:
-                progress_callback(
-                    {
-                        "stage": "video_spectrum_prepare",
-                        "progress_ratio": 0.0,
-                        "percent": 0.0,
-                        "processed_seconds": 0.0,
-                        "total_seconds": round(duration_seconds, 1),
-                        "eta_seconds": None,
-                        "status": "analyzing_dot_frequencies",
-                    }
-                )
-            dot_frequency_frames = self._dot_spectrum_frequency_frames(samples, duration_seconds)
         frame_count = max(1, int(math.ceil(duration_seconds * SPECTRUM_OVERLAY_FPS)))
         overlay_width, overlay_height = overlay_size
         edge_fade_mask = None if style == "radial" else self._spectrum_edge_fade_mask(overlay_size)
@@ -816,17 +794,6 @@ class FFMpegPlaylistBuilder:
                         raw_level=raw_level,
                         samples=samples,
                         timestamp=timestamp,
-                        primary=primary,
-                        accent=accent,
-                    )
-                elif style == "dots":
-                    frame = self._draw_dot_spectrum_frame(
-                        frame_index,
-                        smoothed,
-                        raw_level=raw_level,
-                        samples=samples,
-                        timestamp=timestamp,
-                        frequency_levels=self._dot_spectrum_levels_at(dot_frequency_frames, timestamp),
                         primary=primary,
                         accent=accent,
                     )
@@ -1027,134 +994,6 @@ class FFMpegPlaylistBuilder:
                 fill=(*color, min(alpha, 225)),
             )
         return image
-
-    def _draw_dot_spectrum_frame(
-        self,
-        frame_index: int,
-        level: float,
-        *,
-        raw_level: float,
-        samples: array,
-        timestamp: float,
-        frequency_levels: list[float] | None = None,
-        primary: tuple[int, int, int],
-        accent: tuple[int, int, int],
-    ) -> Image.Image:
-        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image, "RGBA")
-        center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.66)
-        transient = max(raw_level - (level * 0.78), 0.0)
-        punch = min((raw_level * 0.86) + (transient * 3.0), 1.0)
-        x_gap = SPECTRUM_OVERLAY_WIDTH / max(SPECTRUM_DOT_COUNT - 1, 1)
-
-        for index in range(SPECTRUM_DOT_COUNT):
-            ratio = index / max(SPECTRUM_DOT_COUNT - 1, 1)
-            band_level = self._dot_frequency_level_for_ratio(frequency_levels, ratio)
-            if frequency_levels is None:
-                envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.38**2))
-                band_level = min((level * (0.30 + (0.86 * envelope))), 1.0)
-            band_level = min(max(band_level, 0.0), 1.0)
-            envelope = math.exp(-((ratio - 0.52) ** 2) / (2 * 0.46**2))
-            radius = SPECTRUM_DOT_BASE_RADIUS + int(
-                (band_level * SPECTRUM_DOT_SIGNAL_RADIUS) + (punch * SPECTRUM_DOT_PUNCH_RADIUS * envelope)
-            )
-            x = int(round(index * x_gap))
-            lift = int((band_level * (30 + (punch * 10))) * (0.40 + (0.75 * envelope)))
-            y = center_y - lift
-            color = self._mix_rgb(primary, accent, ratio)
-            draw.ellipse(
-                [x - radius - 2, y - radius - 2, x + radius + 2, y + radius + 2],
-                fill=(*color, 22 + int((band_level + punch) * 24)),
-            )
-            draw.ellipse(
-                [x - radius, y - radius, x + radius, y + radius],
-                fill=(*color, min(112 + int(band_level * 76) + int(punch * 34), 215)),
-            )
-        return image
-
-    def _dot_spectrum_frequency_frames(self, samples: array, duration_seconds: float) -> list[list[float]]:
-        band_count = SPECTRUM_DOT_FREQUENCY_BANDS
-        if not samples:
-            return [[0.0] * band_count]
-
-        window_size = SPECTRUM_DOT_ANALYSIS_WINDOW
-        half_window = window_size // 2
-        frame_count = max(2, int(math.ceil(duration_seconds * SPECTRUM_DOT_ANALYSIS_FPS)) + 1)
-        window = [
-            0.5 - (0.5 * math.cos((math.tau * sample_index) / max(window_size - 1, 1)))
-            for sample_index in range(window_size)
-        ]
-        window_sum = max(sum(window), 1.0)
-        frequency_ratio = SPECTRUM_DOT_MAX_FREQUENCY / SPECTRUM_DOT_MIN_FREQUENCY
-        frequencies = [
-            SPECTRUM_DOT_MIN_FREQUENCY * (frequency_ratio ** (index / max(band_count - 1, 1)))
-            for index in range(band_count)
-        ]
-        bases = []
-        for frequency in frequencies:
-            cos_basis = []
-            sin_basis = []
-            for sample_index in range(window_size):
-                angle = math.tau * frequency * (sample_index / SPECTRUM_ANALYSIS_SAMPLE_RATE)
-                cos_basis.append(math.cos(angle))
-                sin_basis.append(math.sin(angle))
-            bases.append((cos_basis, sin_basis))
-
-        frames: list[list[float]] = []
-        smoothed = [0.0] * band_count
-        sample_count = len(samples)
-        for frame_index in range(frame_count):
-            timestamp = frame_index / SPECTRUM_DOT_ANALYSIS_FPS
-            center = int(timestamp * SPECTRUM_ANALYSIS_SAMPLE_RATE)
-            start = center - half_window
-            windowed: list[float] = []
-            for offset, multiplier in enumerate(window):
-                sample_index = start + offset
-                value = int(samples[sample_index]) / 32768 if 0 <= sample_index < sample_count else 0.0
-                windowed.append(value * multiplier)
-
-            raw_levels: list[float] = []
-            for cos_basis, sin_basis in bases:
-                real = 0.0
-                imaginary = 0.0
-                for value, cos_value, sin_value in zip(windowed, cos_basis, sin_basis):
-                    real += value * cos_value
-                    imaginary += value * sin_value
-                magnitude = math.sqrt((real * real) + (imaginary * imaginary)) / window_sum
-                raw_levels.append(min((magnitude * 3.6) ** 0.62, 1.0))
-
-            for index, raw_value in enumerate(raw_levels):
-                previous = smoothed[index]
-                if raw_value > previous:
-                    smoothed[index] = (previous * 0.44) + (raw_value * 0.56)
-                else:
-                    smoothed[index] = (previous * 0.88) + (raw_value * 0.12)
-            frames.append(smoothed.copy())
-        return frames
-
-    def _dot_spectrum_levels_at(self, frames: list[list[float]] | None, timestamp: float) -> list[float] | None:
-        if not frames:
-            return None
-        position = max(timestamp * SPECTRUM_DOT_ANALYSIS_FPS, 0.0)
-        left_index = min(int(position), len(frames) - 1)
-        right_index = min(left_index + 1, len(frames) - 1)
-        ratio = position - left_index
-        left = frames[left_index]
-        right = frames[right_index]
-        return [
-            left_value + ((right[index] - left_value) * ratio)
-            for index, left_value in enumerate(left)
-        ]
-
-    @staticmethod
-    def _dot_frequency_level_for_ratio(levels: list[float] | None, ratio: float) -> float:
-        if not levels:
-            return 0.0
-        position = min(max(ratio, 0.0), 1.0) * max(len(levels) - 1, 0)
-        left_index = min(int(position), len(levels) - 1)
-        right_index = min(left_index + 1, len(levels) - 1)
-        local_ratio = position - left_index
-        return levels[left_index] + ((levels[right_index] - levels[left_index]) * local_ratio)
 
     def _draw_radial_spectrum_frame(
         self,
