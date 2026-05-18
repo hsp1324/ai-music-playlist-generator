@@ -110,6 +110,7 @@ Our direction:
 - Title shape: `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`.
 - Song direction: English vocal pop with standalone song concepts, sticky chorus, emotional clarity, modern production, and no BGM-like flatness.
 - Thumbnail text: `POP DRIVE`, `FEEL-GOOD POP`, `HEARTBREAK POP`, `SUMMER POP`.
+- Keep the channel brand as plain integrated text. Avoid pill/capsule/button badges for `SUNDAZE`; they read like pasted UI and can make the thumbnail feel less premium.
 - Avoid: generic `English Pop` or lyrics that only paraphrase the playlist title.
 
 ## Solwave Radio
@@ -233,7 +234,7 @@ Our direction:
 - Title shape: `[playlist] Genesis 1:1-5 Creation Songs | Old Testament Music for Worship and Reflection`.
 - Song direction: original English lyric songs grounded in the selected Old Testament passage, with paraphrase instead of long copied scripture text. Choose one style family per release, such as cinematic scripture worship, acoustic folk prayer songs, ancient-worship ballads, or psalm-like piano worship.
 - Description direction: first paragraph states the passage and theme; second paragraph or style line names the music style family in natural language.
-- Thumbnail text: `GENESIS SONGS`, `PSALMS WORSHIP`, `OLD TESTAMENT`, `SCRIPTURE SONGS`.
+- Thumbnail text: passage-aware Bible/worship wording, not only a broad genre tag. Use the selected book, passage theme, or worship/reflection lane when it improves clarity; `GENESIS SONGS`, `PSALMS WORSHIP`, `OLD TESTAMENT`, or `SCRIPTURE SONGS` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: skipping canonical sequence, vague worship titles without passage reference, or copying long Bible text.
 
 ## The New Verse
@@ -261,7 +262,7 @@ Our direction:
 - Title shape: `[playlist] Matthew 5:1-12 Beatitudes Worship | New Testament Music for Hope and Prayer`.
 - Song direction: original English worship songs with clear chorus, congregational melody, grace/Gospel/prayer language, and New Testament passage sequence. Choose one style family per release, such as modern worship pop, warm gospel ballads, acoustic prayer songs, cinematic worship, or intimate piano worship.
 - Description direction: first paragraph states the passage and Gospel theme; second paragraph or style line names the music style family in natural language.
-- Thumbnail text: `GOSPEL SONGS`, `GRACE WORSHIP`, `NEW TESTAMENT`, `SCRIPTURE WORSHIP`.
+- Thumbnail text: passage-aware Gospel/worship wording, not only a broad genre tag. Use the selected passage, Gospel theme, or prayer/worship lane when it improves clarity; `GOSPEL SONGS`, `GRACE WORSHIP`, `NEW TESTAMENT`, or `SCRIPTURE WORSHIP` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: generic `Christian music`, Old Testament passage confusion, or worship titles without the passage reference.
 
 ## Source Index

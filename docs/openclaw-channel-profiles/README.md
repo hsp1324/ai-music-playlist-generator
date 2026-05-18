@@ -33,6 +33,8 @@ Global branding rule for every channel:
 - For normal OpenClaw work, try Gemini first for loop video generation. Count only successful Gemini video generations where a video is actually made; copyright/policy blocks before video output do not count. After the 3rd successful Gemini video, use Dreamina/Seedance until 24 hours have passed from that 3rd generation. If Dreamina/Seedance cannot create the clip and Gemini quota is exhausted, defer that release until the Gemini cooldown clears, then create/upload its Gemini loop video before starting new loop-video work. For Dreamina/Seedance, duration must be set to `6 seconds` before the Generate click. Do not create a draft/test clip first.
 - Do not replace a failed Gemini/Dreamina/Seedance generation with a local motion loop, app still-image animation, pan/zoom video, or other workaround. Use Gemini when quota is available; defer the release when quota is exhausted.
 - The YouTube thumbnail still needs large click text above or near a channel-brand line. Keep the channel-brand line size/style consistent with the large cover channel label.
+- Thumbnail channel branding should read as a clean text line, not a UI button. Do not put the channel name inside a rounded pill, capsule, badge, sticker, label tag, or floating plaque unless a human explicitly requests that treatment. Reject/regenerate thumbnails where the channel name looks clipped, cramped inside a shape, detached from the text layout, pasted on top of the art, too close to an edge, or outside the intended safe area.
+- Keep all cover and thumbnail text comfortably inside safe margins. On a 16:9 image, leave roughly 5% image-width horizontal margin and 5% image-height vertical margin around every text block unless the channel profile gives a stricter layout. No letters should touch image edges, subject silhouettes, or decorative borders.
 - Metadata titles should be broad and public-facing across all channels. Use the visual scene to guide cover/video mood, but do not let a niche scene name become the main title unless it is truly the most searchable hook.
 - Every localized YouTube title should be transcreated for its own language. Do not force literal translation when it becomes awkward, weak, or less clickable; a localized title may change wording, order, and exact hook as long as it stays truthful to the release identity, genre/lane, and listening use case.
 - If Gemini blocks generation for copyright, protected IP, policy, moderation, or similar issues, retry Gemini up to 10 blocked attempts with safer prompts; blocked attempts do not count against the 3 successful Gemini videos. If Gemini still cannot create a video after 10 blocked attempts, move on to Dreamina/Seedance. If Dreamina/Seedance also fails after safe retries, try Gemini again if quota is available. If Gemini quota is exhausted, send a Slack deferral message and stop before render/publish until the 24 hour cooldown clears unless the human explicitly approves a still-image fallback.
@@ -113,6 +115,7 @@ YouTube thumbnail:
 - Preserve the same subject, placement, lighting, palette, props, and camera angle.
 - Add large readable English pop text such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
 - Add `SUNDAZE` brand line, visually consistent with the large cover channel label.
+- Keep `SUNDAZE` as a plain brand line directly related to the headline layout. Do not put it in a rounded yellow pill, capsule, button, sticker, or detached badge.
 
 ### Solwave Radio
 
@@ -241,8 +244,9 @@ YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same passage scene, lighting, palette, props, and camera angle.
-- Add large readable Bible text such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`.
+- Add large readable Bible text that connects to the selected passage, book, theme, or worship lane. Generic labels such as `OLD TESTAMENT`, `BIBLE MUSIC`, or `SCRIPTURE SONGS` are allowed only when they are paired with a passage-aware hook or are clearly the most clickable summary.
 - Add `THE OLD VERSE` brand line, visually consistent with the large cover channel label.
+- Keep `THE OLD VERSE` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
 
 ### The New Verse
 
@@ -262,8 +266,9 @@ YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same passage scene, lighting, palette, props, and camera angle.
-- Add large readable worship text such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, `SCRIPTURE SONGS`, or `WORSHIP POP`.
+- Add large readable worship text that connects to the selected passage, Gospel/New Testament theme, or prayer/worship lane. A generic headline like `GOSPEL SONGS` by itself is too broad for this channel unless it is paired with a passage-aware hook or the release truly needs broad Gospel packaging.
 - Add `THE NEW VERSE` brand line, visually consistent with the large cover channel label.
+- Keep `THE NEW VERSE` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
 
 Profiles:
 

@@ -29,8 +29,11 @@ Use this profile only after channel selection returns `The Old Verse`, or when t
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Add short readable click text, for example `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`.
+- Add short readable click text that connects to the selected passage, Old Testament book, theme, and worship/reflection listening lane. Generic text such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC` may be used as part of the layout, but do not leave the thumbnail as only a broad genre label plus `THE OLD VERSE` when the release has a specific passage and theme.
+- Good thumbnail wording should feel like a natural YouTube Bible/worship thumbnail, not a raw genre tag. Prefer a passage/book cue, a clear theme cue, or a prayer/reflection cue when it helps viewers understand what this release is about.
 - Add `THE OLD VERSE` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
+- Keep `THE OLD VERSE` as plain integrated typography, preferably directly under or near the main click text. Do not put it inside a rounded yellow pill, capsule, button, sticker, badge, label tag, or detached floating plaque.
+- Keep all thumbnail text inside safe margins with breathing room. Reject/regenerate if the brand line is clipped, cramped inside a shape, too close to the edge, pasted over the art, or separated from the headline layout.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 - Do not paste long scripture text onto the thumbnail.
 

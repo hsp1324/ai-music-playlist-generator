@@ -19,6 +19,8 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 - The Dreamina/Seedance/Gemini loop video must preserve the exact lower-left channel label for the full clip. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
 - If Gemini/Veo adds its own provider logo or watermark, usually in the bottom-right corner, accept it as an unavoidable provider artifact. Do not regenerate a loop video only because that Gemini/Veo logo or watermark is present. The "no logos" rule means OpenClaw must not ask for, create, or add in-scene logos, brand marks, UI, or unrelated text.
 - The thumbnail should use larger click text plus a channel-brand line whose size/style matches the cover channel label.
+- The thumbnail channel-brand line should be plain, integrated typography. Do not put the channel name inside a rounded pill, capsule, button, sticker, badge, label tag, or floating plaque unless the human explicitly asks for that graphic treatment.
+- Keep every cover and thumbnail text block comfortably inside safe margins, with about 5% image-width horizontal padding and 5% image-height vertical padding on 16:9 assets. Reject/regenerate assets where text is clipped, crowded against image edges, cramped inside a shape, visually detached from the layout, or overlapping the main subject.
 - Do not include spectrum bars, waveform graphics, equalizers, or other audio-reactive overlays in generated assets. The app adds an audio-reactive visualizer during final video render, chooses colors from the cover/loop-video palette, and positions it away from channel text when possible.
 - Available app-rendered visualizer presets are `bars`, `multiwave`, `thinwave`, `mirror-bars`, `radial`, `pulse`, and `none`. Do not blindly use the default. Choose the preset for the release art: `bars` / `mirror-bars` for clean pop, EDM, and dance energy; `radial` for centered cinematic, scripture, or dramatic cover layouts; `pulse` for punchy pop/club motion; `thinwave` for calm BGM where the overlay should stay minimal. Do not use the removed small-dot visualizer style; it looked visually busy and legacy `dot` / `dots` / `particles` values fall back to `bars`. Avoid `multiwave` unless it remains clean with the image. Use `none` only when the human wants faster render or no audio-reactive overlay.
 - Human visual requests override the channel default. If the human asks for a specific scene, subject, action, camera angle, animal, object, or character type, apply that concept consistently to the cover, thumbnail, and loop video.
@@ -111,6 +113,7 @@ Use this for `sundaze`, English-language pop, American pop, US/UK pop, western p
 - Let the playlist concept decide the cover, thumbnail, and loop-video scene.
 - The cover must contain only the large lower-left `sundaze` brand label.
 - The thumbnail should use short English pop click text such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`, plus `SUNDAZE`.
+- Keep `SUNDAZE` as plain text directly tied to the thumbnail headline layout. Do not use a rounded yellow pill, capsule, button, sticker, or detached badge for the channel name.
 - The loop video should animate the selected cover concept, not borrow Tokyo Daydream or Soft Hour signatures.
 
 ## Solwave Radio Visual Skill
@@ -176,7 +179,8 @@ Use this for `The Old Verse`, Old Testament songs, Genesis songs, Psalms music, 
 
 - Follow `docs/openclaw-channel-profiles/the-old-verse.md`.
 - The cover must contain only the large lower-left `The Old Verse` brand label.
-- The thumbnail should use short Bible click text such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`, plus `THE OLD VERSE`.
+- The thumbnail should use short passage-aware Bible click text that connects to the selected book, passage, theme, or worship lane, plus `THE OLD VERSE`. Do not rely on a generic `BIBLE MUSIC` / `SCRIPTURE SONGS` headline alone when the passage can make the thumbnail more specific and trustworthy.
+- Keep `THE OLD VERSE` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
 - The loop video should animate the selected Old Testament passage scene with reverent symbolic motion and preserve the `The Old Verse` label.
 - Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
 
@@ -186,7 +190,8 @@ Use this for `The New Verse`, New Testament songs, Gospel songs, Jesus words, gr
 
 - Follow `docs/openclaw-channel-profiles/the-new-verse.md`.
 - The cover must contain only the large lower-left `The New Verse` brand label.
-- The thumbnail should use short worship click text such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, `SCRIPTURE SONGS`, or `WORSHIP POP`, plus `THE NEW VERSE`.
+- The thumbnail should use short passage-aware worship click text that connects to the selected Gospel/New Testament passage, theme, or prayer/worship lane, plus `THE NEW VERSE`. Do not use a generic `GOSPEL SONGS` headline by itself when the passage/theme can make the thumbnail clearer and less like an unrelated compilation.
+- Keep `THE NEW VERSE` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
 - The loop video should animate the selected New Testament/Gospel passage scene with warm worshipful motion and preserve the `The New Verse` label.
 - Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
 

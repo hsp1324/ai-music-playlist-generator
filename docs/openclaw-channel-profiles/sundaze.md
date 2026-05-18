@@ -33,6 +33,8 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable pop click text matched to the playlist concept, for example `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
 - Add `SUNDAZE` as the brand line. Keep it visually consistent with the large lower-left cover channel label.
+- Keep `SUNDAZE` as plain integrated typography, preferably directly under or near the main click text. Do not put it inside a rounded yellow pill, capsule, button, sticker, badge, label tag, or detached floating plaque.
+- Keep all thumbnail text inside safe margins with breathing room. Reject/regenerate if the brand line is clipped, cramped inside a shape, too close to the edge, pasted over the art, or separated from the headline layout.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Loop Video
