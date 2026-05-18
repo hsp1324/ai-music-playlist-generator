@@ -1,6 +1,6 @@
 import json
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from app.config import Settings
 from app.models.track import Track
@@ -89,6 +89,24 @@ def test_removed_dot_visualizer_aliases_fall_back_to_bars(tmp_path) -> None:
     assert builder._normalize_spectrum_overlay_style("dots") == "bars"
     assert builder._normalize_spectrum_overlay_style("dot") == "bars"
     assert builder._normalize_spectrum_overlay_style("particles") == "bars"
+
+
+def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    frame = Image.new("RGB", (1280, 720), "#111111")
+    draw = ImageDraw.Draw(frame)
+    expected = (1280 - SPECTRUM_OVERLAY_WIDTH - 55, 720 - SPECTRUM_OVERLAY_HEIGHT - 45)
+    draw.rectangle(
+        [
+            expected[0],
+            expected[1],
+            expected[0] + SPECTRUM_OVERLAY_WIDTH,
+            expected[1] + SPECTRUM_OVERLAY_HEIGHT,
+        ],
+        fill="#ffffff",
+    )
+
+    assert builder._choose_spectrum_overlay_position(frame, (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT)) == expected
 
 
 def test_build_audio_reports_ffmpeg_progress(tmp_path, monkeypatch) -> None:

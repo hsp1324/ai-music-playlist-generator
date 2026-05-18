@@ -1246,61 +1246,11 @@ class FFMpegPlaylistBuilder:
         accent = self._enhance_overlay_color(accent_rgb)
         return primary, accent
 
-    def _choose_spectrum_overlay_position(self, image: Image.Image, size: tuple[int, int]) -> tuple[int, int]:
+    def _choose_spectrum_overlay_position(self, _image: Image.Image, size: tuple[int, int]) -> tuple[int, int]:
         width, height = size
-        if width >= 300 and height >= 300:
-            candidates = [
-                (930, 380),
-                (950, 370),
-                (900, 395),
-                (875, 360),
-                (930, 300),
-                (760, 360),
-            ]
-        else:
-            right_x = max(1280 - width - 55, 0)
-            lower_y = max(720 - height - 45, 0)
-            candidates = [
-                (right_x, lower_y),
-                (max(right_x - 35, 0), lower_y),
-                (max(1280 - width - 40, 0), 500),
-                (max(right_x - 205, 0), lower_y),
-                (max(640 - (width // 2), 0), max(720 - height - 30, 0)),
-                (max(1280 - width - 55, 0), 455),
-            ]
-        candidates = [(x, y) for x, y in candidates if x + width <= 1280 and y + height <= 720]
-        if not candidates:
-            return max(1280 - width - 50, 0), max(720 - height - 45, 0)
-
-        scored = [(self._overlay_region_score(image, x, y, width, height), (x, y)) for x, y in candidates]
-        default_score = scored[0][0]
-        best_score, best_position = min(scored, key=lambda item: item[0])
-        if default_score <= 0.46 or default_score <= best_score + 0.12:
-            return candidates[0]
-        return best_position
-
-    def _overlay_region_score(self, image: Image.Image, x: int, y: int, width: int, height: int) -> float:
-        crop = image.crop((x, y, x + width, y + height)).resize((72, 24), Image.Resampling.BILINEAR).convert("RGB")
-        pixels = list(crop.getdata())
-        if not pixels:
-            return 0.0
-        bright = 0
-        white = 0
-        saturated = 0
-        luma_sum = 0.0
-        for r, g, b in pixels:
-            luma = ((r * 0.2126) + (g * 0.7152) + (b * 0.0722)) / 255
-            luma_sum += luma
-            if luma > 0.72:
-                bright += 1
-            if min(r, g, b) > 190:
-                white += 1
-            if max(r, g, b) - min(r, g, b) > 95 and luma > 0.36:
-                saturated += 1
-        count = len(pixels)
-        return ((bright / count) * 0.9) + ((white / count) * 1.5) + ((saturated / count) * 0.45) + (
-            (luma_sum / count) * 0.15
-        )
+        right_x = max(1280 - width - 55, 0)
+        lower_y = max(720 - height - 45, 0)
+        return right_x, lower_y
 
     def _average_rgb(self, values: list[tuple[int, int, int]]) -> tuple[int, int, int]:
         if not values:
