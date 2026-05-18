@@ -91,12 +91,13 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 
 1. Inspect recent Playlist Releases from `scripts/openclaw-release list-releases`.
 2. Apply `docs/openclaw-backlog-queue.md` first: finish ready releases, then fill channels with backlog below target.
-3. Prefer the active channel with the lowest backlog count. Do not create a new release for a channel with backlog `10` or more.
-4. Within the eligible channels, prefer the channel with the oldest recent published playlist unless the human explicitly asks for a channel.
-5. Do not pick the same channel twice in a row unless other channels are blocked, already at backlog max, not connected, unavailable, or explicitly requested.
-6. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
-7. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. `MusicSun` remains excluded because it is the only manual-only channel. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
-8. Within the selected channel, choose a fresh concept with controlled randomness across the channel's concept lanes after checking recent releases. Do not cycle through a fixed template list in the same order.
+3. Prefer active automated channels that have `0` future scheduled-public YouTube uploads in the app's backlog snapshot. Future scheduled-public means the release has a YouTube video id and a scheduled public publish time or YouTube `publishAt` that is still in the future. Fill these zero-future-scheduled channels before adding more releases to channels that already have at least one upcoming scheduled public video.
+4. Within the remaining eligible channels, prefer the active channel with the lowest unfinished backlog count. Do not create a new release for a channel with backlog `10` or more.
+5. If multiple eligible channels are tied, prefer the channel with the oldest recent scheduled/public playlist unless the human explicitly asks for a channel.
+6. Do not pick the same channel twice in a row unless other channels are blocked, already at backlog max, not connected, unavailable, or explicitly requested.
+7. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
+8. When future channels are added, rotate across all connected, non-excluded channels from `/youtube/status`. `MusicSun` remains excluded because it is the only manual-only channel. Use dedicated concept/profile docs when present; otherwise use the custom fallback docs.
+9. Within the selected channel, choose a fresh concept with controlled randomness across the channel's concept lanes after checking recent releases. Do not cycle through a fixed template list in the same order.
 
 ## Channel Concept Delegation
 
@@ -194,6 +195,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Keep each active automated channel filled toward the configured unfinished Playlist Release target, currently 10 per channel.
 - Finish metadata_review/publish_ready releases before creating new ones.
 - If a video render job is queued/running, VM is handling it. If any channel is below target, prepare the next eligible release up to queued video render; do not wait idle.
+- When choosing a new release channel, prioritize connected automated channels with `0` future scheduled-public YouTube uploads before channels that already have at least one upcoming scheduled public video.
 - Rotate active channels instead of repeating the same channel.
 - Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.

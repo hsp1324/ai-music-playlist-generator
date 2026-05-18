@@ -34,6 +34,7 @@ from app.utils.openclaw_slack_loop import (
 )
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import next_youtube_scheduled_publish_at
+from app.workflows.openclaw_runtime import build_openclaw_backlog_summary
 from scripts import render_worker as render_worker_script
 
 
@@ -432,6 +433,109 @@ def test_backlog_request_message_prioritizes_incomplete_unknown_workspaces() -> 
     assert "새 workspace를 만들기 전에 기존 미완성 workspace" in message
     assert "먼저 확인할 채널 미지정/미완성 workspace" in message
     assert "[playlist] Backyard Pool Party Pop: collecting, id workspace-1, channel unknown" in message
+
+
+def test_backlog_request_message_includes_future_scheduled_public_upload_counts() -> None:
+    message = build_backlog_queue_request_message(
+        reason="underfilled_backlog",
+        backlog_summary={
+            "target_per_channel": 10,
+            "max_per_channel": 10,
+            "channels": {
+                "The New Verse": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 0,
+                    "releases": [],
+                },
+                "Club Bloom": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 2,
+                    "youtube_uploaded_count": 2,
+                    "releases": [],
+                },
+            },
+            "unknown_channel_releases": [],
+        },
+    )
+
+    assert "future scheduled-public YouTube 업로드가 0개인 자동화 채널을 먼저" in message
+    assert "The New Verse: 0 unfinished, 0 finishable, 0 deferred, 0 future scheduled-public YouTube uploads" in message
+    assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 2 future scheduled-public YouTube uploads" in message
+
+
+def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads(tmp_path) -> None:
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [
+                {"id": "UC_NEW", "title": "The New Verse"},
+                {"id": "UC_CLUB", "title": "Club Bloom"},
+            ],
+        }
+        with SessionLocal() as db:
+            db.add_all(
+                [
+                    Playlist(
+                        title="Scheduled Club",
+                        status=PlaylistStatus.uploaded,
+                        youtube_video_id="yt-scheduled",
+                        metadata_json={
+                            "workflow_state": "uploaded",
+                            "youtube_channel_title": "Club Bloom",
+                            "youtube_scheduled_publish_at": "2099-05-18T22:00:00+00:00",
+                        },
+                    ),
+                    Playlist(
+                        title="Past Scheduled New Verse",
+                        status=PlaylistStatus.uploaded,
+                        youtube_video_id="yt-past-scheduled",
+                        metadata_json={
+                            "workflow_state": "uploaded",
+                            "youtube_channel_title": "The New Verse",
+                            "youtube_scheduled_publish_at": "2026-01-01T22:00:00+00:00",
+                        },
+                    ),
+                    Playlist(
+                        title="Private New Verse",
+                        status=PlaylistStatus.uploaded,
+                        youtube_video_id="yt-private",
+                        metadata_json={
+                            "workflow_state": "uploaded",
+                            "youtube_channel_title": "The New Verse",
+                            "youtube_published_at": "2026-05-18T21:00:00+00:00",
+                            "youtube_response": {"status": {"privacyStatus": "private"}},
+                        },
+                    ),
+                    Playlist(
+                        title="Collecting New Verse",
+                        status=PlaylistStatus.draft,
+                        metadata_json={
+                            "workflow_state": "collecting",
+                            "target_youtube_channel_title": "The New Verse",
+                        },
+                    ),
+                ]
+            )
+            db.commit()
+
+            summary = build_openclaw_backlog_summary(db, services)
+
+        assert summary["channels"]["Club Bloom"]["youtube_uploaded_count"] == 1
+        assert summary["channels"]["Club Bloom"]["youtube_scheduled_public_count"] == 1
+        assert summary["channels"]["The New Verse"]["youtube_uploaded_count"] == 2
+        assert summary["channels"]["The New Verse"]["youtube_scheduled_public_count"] == 0
+        assert summary["channels"]["The New Verse"]["count"] == 1
+    finally:
+        clear_isolated_client_env()
 
 
 def test_openclaw_backlog_scheduler_posts_when_channel_is_underfilled(tmp_path) -> None:

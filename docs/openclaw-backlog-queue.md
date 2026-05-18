@@ -43,10 +43,11 @@ On each `OPENCLAW_RUN:` backlog request:
    - loop-video deferred because Dreamina/Seedance failed and Gemini quota was exhausted: if the Gemini 24 hour cooldown has cleared, make/upload the Gemini loop video first and queue render before starting any new release. Do not replace the missing provider video with a local motion-loop workaround.
    - Gemini/Veo may add its own provider logo or watermark, usually in the bottom-right corner. This is acceptable and is not a reason to remake an otherwise valid loop video. The no-logo rule only forbids OpenClaw-requested/generated extra logos, UI, brand marks, or unrelated text.
 7. Before creating a new release, inspect existing unfinished workspaces that are not yet past video render, especially `collecting`, `audio_ready`, `render_required`, or channel-unknown workspaces with no app-visible tracks/assets. These may be interrupted OpenClaw runs with Suno audio, cover, thumbnail, or loop-video files already prepared locally. Search the local OpenClaw workspace/logs by release id and title, then resume that workspace first: set the target YouTube channel if missing, upload missing tracks/assets, render audio, approve cover, and queue video render. If the local assets cannot be found or the workspace should be abandoned, report the blocker instead of silently creating a duplicate.
-8. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. Prepare another eligible release for any channel that is still below target, including the same channel when it has not reached the maximum.
-9. OpenClaw requests should not be triggered by render-worker claim/start alone. The app may ask for more backlog work after the OpenClaw lock is released, and it asks OpenClaw to finish metadata/publish after the external worker completes and uploads the rendered MP4.
-10. Stop making new releases only for channels that have reached the configured maximum backlog.
-11. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
+8. When creating a new release, first fill any connected automated channel that has `0` future scheduled-public YouTube uploads in the app's backlog snapshot. Future scheduled-public means a YouTube video id exists and the app has a scheduled public publish time or YouTube `publishAt` value that is still in the future. This priority is above oldest-recent-upload rotation, but do not exceed the channel's maximum unfinished backlog.
+9. If a release is currently `video_rendering`, treat a render worker as busy but productive. Do not wait idle. Prepare another eligible release for any channel that is still below target, including the same channel when it has not reached the maximum.
+10. OpenClaw requests should not be triggered by render-worker claim/start alone. The app may ask for more backlog work after the OpenClaw lock is released, and it asks OpenClaw to finish metadata/publish after the external worker completes and uploads the rendered MP4.
+11. Stop making new releases only for channels that have reached the configured maximum backlog.
+12. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
 
 `AIMP_LOCAL_API_BASE` should point at the deployed VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
 
@@ -138,6 +139,7 @@ Report compactly after every backlog pass:
 - finished releases and YouTube ids
 - newly queued releases and release ids
 - channels currently below target, near target, or at the maximum backlog limit
+- channels with `0` future scheduled-public YouTube uploads that should be filled first
 - blockers that need human action
 
 Do not spam Slack for every small substep. Report only stage completion, retries, and blockers.

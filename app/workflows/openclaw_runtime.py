@@ -259,8 +259,36 @@ def _playlist_channel_title(playlist: Playlist) -> str:
     ).strip()
 
 
+def _playlist_uploaded_channel_title(playlist: Playlist) -> str:
+    meta = dict(playlist.metadata_json or {})
+    return str(
+        meta.get("youtube_channel_title")
+        or meta.get("target_youtube_channel_title")
+        or meta.get("youtube_channel_id")
+        or ""
+    ).strip()
+
+
 def _playlist_is_archived(meta: dict[str, Any]) -> bool:
     return bool(meta.get("archived_at") or meta.get("hidden"))
+
+
+def _playlist_scheduled_public_at(playlist: Playlist, *, now: datetime) -> datetime | None:
+    if not playlist.youtube_video_id:
+        return None
+    meta = dict(playlist.metadata_json or {})
+    response = meta.get("youtube_response") if isinstance(meta.get("youtube_response"), dict) else {}
+    status = response.get("status") if isinstance(response.get("status"), dict) else {}
+    scheduled_values = [
+        _parse_datetime(value)
+        for value in (
+            meta.get("youtube_scheduled_publish_at"),
+            meta.get("youtube_publish_at"),
+            status.get("publishAt"),
+        )
+    ]
+    future_values = sorted(value for value in scheduled_values if value and value >= now)
+    return future_values[0] if future_values else None
 
 
 def _playlist_counts_as_backlog(playlist: Playlist) -> bool:
@@ -303,6 +331,9 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             "count": 0,
             "finishable": 0,
             "deferred": 0,
+            "youtube_uploaded_count": 0,
+            "youtube_scheduled_public_count": 0,
+            "next_youtube_scheduled_public_at": None,
             "releases": [],
         }
         for title in channel_titles
@@ -310,7 +341,20 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
     unknown_channel_releases: list[dict[str, Any]] = []
 
     playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
+    now = _utcnow()
     for playlist in playlists:
+        uploaded_channel_title = _playlist_uploaded_channel_title(playlist)
+        if uploaded_channel_title in channels and playlist.youtube_video_id and not _playlist_is_archived(
+            dict(playlist.metadata_json or {})
+        ):
+            channels[uploaded_channel_title]["youtube_uploaded_count"] += 1
+            scheduled_at = _playlist_scheduled_public_at(playlist, now=now)
+            if scheduled_at:
+                channels[uploaded_channel_title]["youtube_scheduled_public_count"] += 1
+                scheduled_at_iso = scheduled_at.isoformat()
+                existing_scheduled_at = channels[uploaded_channel_title]["next_youtube_scheduled_public_at"]
+                if not existing_scheduled_at or scheduled_at_iso < existing_scheduled_at:
+                    channels[uploaded_channel_title]["next_youtube_scheduled_public_at"] = scheduled_at_iso
         if not _playlist_counts_as_backlog(playlist):
             continue
         meta = dict(playlist.metadata_json or {})
