@@ -50,6 +50,13 @@ FAILED_REPAIR_WORKFLOW_STATES = {
     "render_failed",
     "video_build_failed",
 }
+NON_RETRYABLE_YOUTUBE_AUTH_ERROR_PATTERNS = (
+    "stored youtube channel token expired or was revoked",
+    "connect this channel again",
+    "invalid_grant",
+    "token has been expired or revoked",
+    "token expired or was revoked",
+)
 
 _STATE_LOCK = threading.Lock()
 
@@ -305,6 +312,23 @@ def _playlist_counts_as_backlog(playlist: Playlist) -> bool:
     return workflow_state in BACKLOG_WORKFLOW_STATES or not workflow_state
 
 
+def _youtube_upload_failure_needs_auth(meta: dict[str, Any]) -> bool:
+    if str(meta.get("workflow_state") or "").strip() != "youtube_upload_failed":
+        return False
+    error_text = str(meta.get("youtube_upload_error") or meta.get("note") or "").lower()
+    return any(pattern in error_text for pattern in NON_RETRYABLE_YOUTUBE_AUTH_ERROR_PATTERNS)
+
+
+def _playlist_is_finishable(workflow_state: str, meta: dict[str, Any]) -> bool:
+    if workflow_state == "youtube_upload_failed" and _youtube_upload_failure_needs_auth(meta):
+        return False
+    return workflow_state in FINISHABLE_WORKFLOW_STATES
+
+
+def _playlist_is_deferred(workflow_state: str, meta: dict[str, Any]) -> bool:
+    return workflow_state in DEFERRED_WORKFLOW_STATES or _youtube_upload_failure_needs_auth(meta)
+
+
 def _active_youtube_channel_titles(services) -> list[str]:
     status = services.youtube.get_status()
     if not status.get("ready"):
@@ -373,9 +397,9 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             continue
         channels[channel_title]["count"] += 1
         channels[channel_title]["releases"].append(release_payload)
-        if workflow_state in FINISHABLE_WORKFLOW_STATES:
+        if _playlist_is_finishable(workflow_state, meta):
             channels[channel_title]["finishable"] += 1
-        if workflow_state in DEFERRED_WORKFLOW_STATES:
+        if _playlist_is_deferred(workflow_state, meta):
             channels[channel_title]["deferred"] += 1
 
     return {

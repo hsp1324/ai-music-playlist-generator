@@ -73,6 +73,7 @@ After that, continue in canonical order. Do not jump to famous passages, Psalms,
 
 - Never repeat a passage already marked `in_progress`, `scheduled`, or `published`.
 - If `list-releases` and the ledger disagree, stop and report the mismatch instead of guessing.
+- Title wording may change after metadata cleanup. If the passage range, release id, and YouTube video id match the app catalog, do not block only because the ledger title text differs from the current app/YouTube title. Continue from `next_start`; update the ledger title later if needed.
 - A `failed` passage may be retried, but only if no YouTube video was published or scheduled for that passage.
 - If a release was manually deleted from YouTube, keep the ledger entry and add a note rather than silently reusing the passage.
 
