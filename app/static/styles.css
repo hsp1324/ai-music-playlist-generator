@@ -226,6 +226,13 @@ button:disabled {
   color: #fff8ea;
 }
 
+.app-header .youtube-connect-button {
+  border-color: var(--line);
+  background: var(--accent-2);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 rgba(23, 19, 15, 0.28);
+}
+
 .action-button {
   border: 2px solid var(--line);
 }

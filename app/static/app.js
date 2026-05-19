@@ -3661,6 +3661,13 @@ function renderYouTubeStatus(youtubeStatus) {
       : youtubeStatus.configured
         ? `Press Connect once and finish OAuth. Redirect URI: ${youtubeStatus.redirect_uri || "not set"}`
         : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
+  if (youtubeConnectButton) {
+    youtubeConnectButton.textContent = youtubeStatus.ready ? "Add YouTube" : "Connect YouTube";
+    youtubeConnectButton.disabled = !youtubeStatus.configured;
+    youtubeConnectButton.title = youtubeStatus.ready
+      ? "Connect another YouTube channel for publishing."
+      : "Connect a YouTube channel for publishing.";
+  }
   if (youtubeChannelControls && youtubeChannelSelect) {
     youtubeChannelControls.hidden = !channels.length;
     youtubeChannelSelect.innerHTML = "";
@@ -3881,7 +3888,7 @@ sessionAlertButton.addEventListener("click", async () => {
   }
 });
 
-youtubeConnectButton.addEventListener("click", () => {
+youtubeConnectButton?.addEventListener("click", () => {
   window.location.href = "/api/youtube/connect";
 });
 
