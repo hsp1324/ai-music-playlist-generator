@@ -637,7 +637,7 @@ The scaffold also exposes:
 - `GET /api/suno/generations/{task_id}` -> `GET /api/v1/generate/record-info`
 - `GET /api/suno/credits` -> `GET /api/v1/generate/credit`
 
-Default model is `V5_5`, which matches the model list shown in the current docs.
+Default model is `V5_5`, which matches the current Suno paid-plan model list. OpenClaw should also choose Suno v5.5 in the web UI whenever it is available. If Suno later displays a higher per-generation credit cost for v5.5 than v5, pause bulk generation and report the exact credit difference before falling back.
 
 ## Slack Plan
 

@@ -33,6 +33,7 @@ Suno can block lyrics/custom-lyrics, metatags, style, prompts, tags, or excluded
 
 ## Suno UI / API Settings
 
+- Select Suno v5.5 for new generations whenever it is available. The AI Music app API default is `V5_5`. If Suno's UI or API shows v5.5 costing more credits than v5 for the same request, stop before batch generation and report the exact credit difference to the human.
 - In the Suno UI, enable `Instrumental` when that control is available.
 - In an API flow, set the instrumental flag when available, such as `make_instrumental=true`.
 - Put global genre/mood/style in the Suno style field.

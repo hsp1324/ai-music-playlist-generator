@@ -55,6 +55,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - If continuing existing work, run `scripts/openclaw-release list-releases` and use the existing `release.id` with `--release-id`. If starting fresh, first run `scripts/openclaw-release create-release` and keep the returned `release.id`; then generate Suno audio and upload everything into that same `release.id`.
 - Do not wait until after Suno generation to create the app workspace. The release id should exist before the first Suno prompt is submitted so all later audio, lyrics, style, cover, thumbnail, and video assets have one clear destination.
 - OpenClaw creates audio candidates and uploads them to the app review queue.
+- Use Suno v5.5 for new audio generation whenever the Suno account exposes it. The app API default is already `V5_5`. Suno's public pricing page currently lists v5 and v5.5 in the same paid-plan advanced-model allowance with the same song/credit allowance, so do not fall back to v5 just to save credits. If the Suno UI or API ever shows v5.5 costing more credits than v5 for the same generation, stop before bulk generation and report the exact credit difference to the human.
 - If cover art is ready with the audio, upload the cover in the same command with `--cover`.
 - Human review happens in Slack or the web UI.
 - Single Release means one final song, but it may contain up to two review candidates from Suno.
@@ -438,6 +439,7 @@ Use scripts/openclaw-release only.
 
 Goal:
 - Create or select one Playlist Release workspace before opening Suno or generating audio.
+- Select Suno v5.5 for every new generation whenever it is available. If the UI/API shows a higher credit cost than v5 for the same request, stop and report the exact difference instead of silently using v5.
 - Generate songs in batches until the usable duration is at least 2400 seconds, preferably around 2700 seconds.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.

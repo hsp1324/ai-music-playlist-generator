@@ -200,6 +200,7 @@ For `single_track_video`, the intended publish path is:
 - Browser session status and helper endpoints exist
 - Full generation automation is not the main completed path
 - Current operational assumption is manual audio intake
+- App/API generation default is `V5_5`, and OpenClaw should choose Suno v5.5 in the web UI whenever available. Suno's public pricing currently groups v5 and v5.5 under the same paid-plan advanced-model song/credit allowance; if the UI/API later shows v5.5 costing more credits than v5 for the same request, OpenClaw should stop and report the exact difference before bulk generation.
 
 ## Current UI Shape
 

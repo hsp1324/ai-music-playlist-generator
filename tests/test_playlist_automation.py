@@ -50,6 +50,8 @@ def create_isolated_client(tmp_path, *, cache_remote_audio: bool = False) -> Tes
     os.environ["AIMP_DATABASE_URL"] = f"sqlite:///{tmp_path / 'app.db'}"
     os.environ["AIMP_WORKER_AUTOSTART"] = "false"
     os.environ["AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE"] = "true" if cache_remote_audio else "false"
+    os.environ.pop("AIMP_SLACK_ENABLE_SIGNATURE_VERIFICATION", None)
+    os.environ.pop("AIMP_SLACK_SIGNING_SECRET", None)
     get_settings.cache_clear()
     return TestClient(create_app())
 
@@ -61,6 +63,8 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_CACHE_REMOTE_AUDIO_ON_INTAKE", None)
     os.environ.pop("AIMP_YOUTUBE_OAUTH_REDIRECT_URI", None)
     os.environ.pop("AIMP_SLACK_BOT_TOKEN", None)
+    os.environ.pop("AIMP_SLACK_ENABLE_SIGNATURE_VERIFICATION", None)
+    os.environ.pop("AIMP_SLACK_SIGNING_SECRET", None)
     os.environ.pop("AIMP_SLACK_OPS_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_SLACK_CHANNEL_ID", None)
     os.environ.pop("AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH", None)
