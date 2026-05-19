@@ -33,7 +33,10 @@ from app.utils.openclaw_slack_loop import (
     record_auto_loop_upload,
 )
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
-from app.workflows.playlist_automation import next_youtube_scheduled_publish_at
+from app.workflows.playlist_automation import (
+    next_youtube_scheduled_publish_at,
+    reconcile_due_scheduled_youtube_public_states,
+)
 from app.workflows.openclaw_runtime import build_openclaw_backlog_summary, evaluate_openclaw_backlog_scheduler
 from scripts import render_worker as render_worker_script
 
@@ -2132,7 +2135,7 @@ def test_workspace_lists_sort_unpublished_before_scheduled_publish_then_publishe
                 updated_at=datetime(2026, 5, 9, 13, 0, tzinfo=timezone.utc),
                 metadata_json={
                     "workflow_state": "uploaded",
-                    "youtube_scheduled_publish_at": "2026-05-15T12:00:00+00:00",
+                    "youtube_scheduled_publish_at": "2099-05-15T12:00:00+00:00",
                     "youtube_channel_id": "UC_A",
                     "youtube_channel_title": "Channel A",
                 },
@@ -2147,7 +2150,7 @@ def test_workspace_lists_sort_unpublished_before_scheduled_publish_then_publishe
                 updated_at=datetime(2026, 5, 8, 13, 0, tzinfo=timezone.utc),
                 metadata_json={
                     "workflow_state": "uploaded",
-                    "youtube_scheduled_publish_at": "2026-05-16T12:00:00+00:00",
+                    "youtube_scheduled_publish_at": "2099-05-16T12:00:00+00:00",
                     "youtube_channel_id": "UC_A",
                     "youtube_channel_title": "Channel A",
                 },
@@ -2168,6 +2171,100 @@ def test_workspace_lists_sort_unpublished_before_scheduled_publish_then_publishe
         assert compact_response.status_code == 200
         assert [item["id"] for item in full_response.json()] == expected_order
         assert [item["id"] for item in compact_response.json()] == expected_order
+    finally:
+        clear_isolated_client_env()
+
+
+def test_workspace_lists_treat_due_scheduled_upload_as_public(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            due_release = Playlist(
+                title="Due Scheduled Release",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-due-scheduled",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_published_at": "2026-05-10T12:00:00+00:00",
+                    "youtube_scheduled_publish_at": "2026-05-12T22:00:00+00:00",
+                    "youtube_channel_id": "UC_A",
+                    "youtube_channel_title": "Channel A",
+                    "youtube_response": {
+                        "status": {
+                            "privacyStatus": "private",
+                            "publishAt": "2026-05-12T22:00:00Z",
+                        }
+                    },
+                },
+            )
+            future_release = Playlist(
+                title="Future Scheduled Release",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-future-scheduled",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_scheduled_publish_at": "2099-05-12T22:00:00+00:00",
+                    "youtube_channel_id": "UC_A",
+                    "youtube_channel_title": "Channel A",
+                },
+            )
+            db.add_all([due_release, future_release])
+            db.commit()
+            due_id = due_release.id
+            future_id = future_release.id
+
+        response = client.get("/api/playlists/workspaces")
+
+        assert response.status_code == 200
+        by_id = {item["id"]: item for item in response.json()}
+        assert by_id[due_id]["youtube_scheduled_publish_at"] is None
+        assert by_id[due_id]["youtube_published_at"] == "2026-05-12T22:00:00Z"
+        assert by_id[future_id]["youtube_scheduled_publish_at"] == "2099-05-12T22:00:00Z"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_reconcile_due_scheduled_youtube_public_states_marks_past_schedule_public(tmp_path) -> None:
+    try:
+        create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Due Scheduled Release",
+                status=PlaylistStatus.uploaded,
+                youtube_video_id="yt-due-scheduled",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_scheduled_publish_at": "2026-05-12T22:00:00+00:00",
+                    "youtube_response": {
+                        "status": {
+                            "privacyStatus": "private",
+                            "publishAt": "2026-05-12T22:00:00Z",
+                        }
+                    },
+                },
+            )
+            db.add(playlist)
+            db.commit()
+            playlist_id = playlist.id
+
+            updated = reconcile_due_scheduled_youtube_public_states(
+                db,
+                now=datetime(2026, 5, 13, 0, 0, tzinfo=timezone.utc),
+            )
+
+            reloaded = db.get(Playlist, playlist_id)
+
+        assert updated == 1
+        meta = reloaded.metadata_json
+        assert meta["youtube_public_at"] == "2026-05-12T22:00:00+00:00"
+        assert meta["youtube_published_at"] == "2026-05-12T22:00:00+00:00"
+        assert meta["youtube_response"]["status"]["privacyStatus"] == "public"
+        assert "publishAt" not in meta["youtube_response"]["status"]
+        assert "youtube_scheduled_publish_at" not in meta
     finally:
         clear_isolated_client_env()
 

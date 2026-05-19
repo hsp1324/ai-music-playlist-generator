@@ -193,6 +193,80 @@ def _scheduled_publish_values_from_meta(meta: dict) -> list[datetime]:
     return values
 
 
+def _youtube_response_status(meta: dict) -> dict:
+    response = meta.get("youtube_response") if isinstance(meta.get("youtube_response"), dict) else {}
+    status = response.get("status") if isinstance(response.get("status"), dict) else {}
+    return status
+
+
+def _youtube_privacy_status(meta: dict) -> str:
+    return str(
+        _youtube_response_status(meta).get("privacyStatus")
+        or meta.get("youtube_privacy_status")
+        or meta.get("privacy_status")
+        or ""
+    ).strip().lower()
+
+
+def _due_scheduled_publish_at(meta: dict, *, now: datetime | None = None) -> datetime | None:
+    current = _parse_metadata_datetime(now) or _utcnow()
+    due_values = [value for value in _scheduled_publish_values_from_meta(meta) if value <= current]
+    return max(due_values) if due_values else None
+
+
+def _future_scheduled_publish_at(meta: dict, *, now: datetime | None = None) -> datetime | None:
+    current = _parse_metadata_datetime(now) or _utcnow()
+    future_values = [value for value in _scheduled_publish_values_from_meta(meta) if value > current]
+    return max(future_values) if future_values else None
+
+
+def reconcile_due_scheduled_youtube_public_states(
+    db: Session,
+    *,
+    now: datetime | None = None,
+) -> int:
+    current = _parse_metadata_datetime(now) or _utcnow()
+    updated = 0
+    playlists = db.scalars(
+        select(Playlist).where(
+            Playlist.status == PlaylistStatus.uploaded,
+            Playlist.youtube_video_id.is_not(None),
+        )
+    ).all()
+    for playlist in playlists:
+        meta = _playlist_meta(playlist)
+        due_at = _due_scheduled_publish_at(meta, now=current)
+        if due_at is None:
+            continue
+
+        due_at_iso = due_at.isoformat()
+        if meta.get("youtube_public_at") == due_at_iso and not meta.get("youtube_scheduled_publish_at"):
+            continue
+
+        original_scheduled_at = meta.get("youtube_scheduled_publish_at") or meta.get("youtube_publish_at") or due_at_iso
+        meta["youtube_public_at"] = due_at_iso
+        meta["youtube_published_at"] = due_at_iso
+        meta["youtube_scheduled_publish_completed_at"] = current.isoformat()
+        meta["youtube_original_scheduled_publish_at"] = original_scheduled_at
+        meta.pop("youtube_scheduled_publish_at", None)
+        meta.pop("youtube_publish_at", None)
+
+        response = dict(meta.get("youtube_response") or {}) if isinstance(meta.get("youtube_response"), dict) else {}
+        status = dict(response.get("status") or {}) if isinstance(response.get("status"), dict) else {}
+        status["privacyStatus"] = "public"
+        status.pop("publishAt", None)
+        response["status"] = status
+        meta["youtube_response"] = response
+
+        playlist.metadata_json = meta
+        db.add(playlist)
+        updated += 1
+
+    if updated:
+        db.commit()
+    return updated
+
+
 def _playlist_matches_youtube_channel(
     playlist: Playlist,
     services: ServiceRegistry,
@@ -516,9 +590,15 @@ def _youtube_published_at(
     fallback_uploaded_at: datetime | None = None,
     use_job_fallback: bool = True,
 ) -> datetime | None:
+    if playlist.status == PlaylistStatus.uploaded and playlist.youtube_video_id:
+        due_scheduled_at = _due_scheduled_publish_at(meta)
+        if due_scheduled_at:
+            return due_scheduled_at
+
     youtube_response = meta.get("youtube_response") if isinstance(meta.get("youtube_response"), dict) else {}
     snippet = youtube_response.get("snippet") if isinstance(youtube_response.get("snippet"), dict) else {}
     for value in (
+        meta.get("youtube_public_at"),
         meta.get("youtube_published_at"),
         snippet.get("publishedAt"),
         meta.get("uploaded_at"),
@@ -545,10 +625,9 @@ def _youtube_published_at(
 
 
 def _youtube_scheduled_publish_at(meta: dict) -> datetime | None:
-    values = _scheduled_publish_values_from_meta(meta)
-    if not values:
+    if _youtube_privacy_status(meta) == "public":
         return None
-    return max(values)
+    return _future_scheduled_publish_at(meta)
 
 
 def _workspace_display_sort_at(

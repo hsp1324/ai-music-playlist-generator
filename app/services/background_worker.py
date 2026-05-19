@@ -317,6 +317,9 @@ class BackgroundJobWorker:
             return
         self._last_local_video_cleanup_check = now
         with SessionLocal() as db:
+            from app.workflows.playlist_automation import reconcile_due_scheduled_youtube_public_states
+
+            reconcile_due_scheduled_youtube_public_states(db)
             cleanup_public_uploaded_local_videos(db, self.settings)
 
     def _maybe_request_openclaw_backlog(self) -> None:

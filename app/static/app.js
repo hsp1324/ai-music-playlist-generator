@@ -322,7 +322,8 @@ function releasePublishedChannelLabel(workspace) {
 
 function releasePublishedAtLabel(workspace) {
   if (!workspace?.youtube_video_id && workspace?.workflow_state !== "uploaded") return "";
-  return formatPublishedDate(workspace.youtube_scheduled_publish_at || workspace.youtube_published_at);
+  const scheduledAt = releaseIsScheduled(workspace) ? workspace.youtube_scheduled_publish_at : "";
+  return formatPublishedDate(scheduledAt || workspace.youtube_published_at || workspace.youtube_scheduled_publish_at);
 }
 
 function dateSortTimestamp(value) {
@@ -331,8 +332,9 @@ function dateSortTimestamp(value) {
 }
 
 function releaseDisplaySortTimestamp(workspace) {
+  const scheduledAt = releaseIsScheduled(workspace) ? workspace?.youtube_scheduled_publish_at : "";
   return dateSortTimestamp(
-    workspace?.youtube_scheduled_publish_at || workspace?.youtube_published_at || workspace?.created_at || 0
+    scheduledAt || workspace?.youtube_published_at || workspace?.youtube_scheduled_publish_at || workspace?.created_at || 0
   );
 }
 
@@ -347,7 +349,8 @@ function workspaceSortTimestamp(workspace, sortKey) {
 }
 
 function releaseIsScheduled(workspace) {
-  return Boolean(workspace?.youtube_scheduled_publish_at);
+  const scheduledAt = dateSortTimestamp(workspace?.youtube_scheduled_publish_at);
+  return Boolean(scheduledAt && scheduledAt > Date.now());
 }
 
 function releaseChannelKey(workspace) {
