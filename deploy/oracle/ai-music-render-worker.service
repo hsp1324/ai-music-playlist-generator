@@ -1,0 +1,21 @@
+[Unit]
+Description=AI Music External Render Worker (Oracle profile)
+After=network.target ai-music-playlist-generator.service
+Wants=ai-music-playlist-generator.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/ai-music-playlist-generator
+EnvironmentFile=/etc/ai-music-playlist-generator.env
+Environment=AIMP_RENDER_WORKER_API_BASE=http://127.0.0.1:8000/api
+Environment=AIMP_RENDER_WORKER_PROFILE=oracle
+Environment=AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT=50
+Environment=AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS=24
+ExecStart=/bin/bash -lc 'exec /opt/ai-music-playlist-generator/scripts/render-worker --api-base "${AIMP_RENDER_WORKER_API_BASE}" --worker-id oracle-renderer --worker-profile oracle --cache-dir /opt/ai-music-playlist-generator/.render-worker --poll-seconds 20'
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
