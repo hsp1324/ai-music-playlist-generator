@@ -39,7 +39,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 
 - The same passage range.
 - The same New Testament scene, such as genealogy, Bethlehem, baptism, wilderness, Galilee road, parable field, stormy sea, table fellowship, cross, empty tomb, upper room, church letters, or Revelation vision.
-- The same worship palette, such as piano worship, acoustic guitar ballad, warm gospel choir pads, soft drums, synth worship, strings, or intimate prayer music.
+- The same release-level music lane or worship palette, such as gospel R&B/soul, scripture jazz, modern worship pop, piano worship, acoustic guitar ballad, warm gospel choir pads, soft drums, synth worship, strings, neo-soul prayer songs, or intimate prayer music.
 - The same emotional direction, such as grace, surrender, hope, repentance, healing, joy, discipleship, resurrection, or comfort.
 - The same thumbnail phrase, such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, or `WORSHIP POP`.
 
@@ -60,7 +60,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 - Do not make instrumental/no-vocal New Verse releases unless the human explicitly asks for BGM or instrumental prayer music.
 - Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The New Verse unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and worshipful. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
-- Choose one primary style family for each release and write it in the private plan before creating songs. Good lanes include modern worship pop, warm gospel ballads, acoustic prayer songs, cinematic worship, or intimate piano worship. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- Choose one primary style family for each release and write it in the private plan before creating songs. Rotate this lane across uploads instead of defaulting to generic holy worship. Good lanes include gospel R&B/soul, modern worship pop, scripture jazz, acoustic gospel, piano worship ballads, choir-backed gospel, neo-soul prayer songs, cinematic Gospel worship, or intimate prayer songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- If the chosen lane is jazz, all tracks should be jazz-based. If it is R&B/soul, all tracks should stay R&B/soul-based. The lane must be specific enough that the final title can truthfully name it.
 - Metadata must tell viewers both the selected passage/theme and the broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - For worship pop, use natural modern song structure: verse, pre-chorus, chorus, bridge, final chorus when appropriate.

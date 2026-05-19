@@ -39,7 +39,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 
 - The same passage range.
 - The same biblical scene, such as creation light, Eden garden, flood water, desert road, covenant stars, Exodus sea, tabernacle, temple, psalm lament, or prophetic vision.
-- The same instrument palette, such as cinematic strings, ancient harp/lyre, frame drums, piano worship ballad, low choir pads, flute, or desert percussion.
+- The same release-level music lane or instrument palette, such as scripture jazz, gospel R&B/soul, acoustic scripture folk, cinematic strings, ancient harp/lyre, frame drums, piano worship ballad, choir-backed worship, flute, or desert percussion.
 - The same emotional direction, such as awe, repentance, covenant hope, lament, wilderness trust, deliverance, wisdom, or prophetic warning.
 - The same thumbnail phrase, such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, or `SCRIPTURE SONGS`.
 
@@ -60,7 +60,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` re
 - Do not make instrumental/no-vocal Old Verse releases unless the human explicitly asks for BGM or instrumental meditation.
 - Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The Old Verse unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
-- Choose one primary style family for each release and write it in the private plan before creating songs. Good lanes include cinematic scripture worship, acoustic folk prayer songs, ancient-worship ballads, psalm-like piano worship, or gentle desert-road story songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- Choose one primary style family for each release and write it in the private plan before creating songs. Rotate this lane across uploads instead of defaulting to generic holy worship. Good lanes include scripture jazz, gospel R&B/soul, acoustic scripture folk, cinematic orchestral scripture music, psalm-like prayer ballads, piano worship, choir-backed worship, ancient-folk worship, or gentle desert-road story songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- If the chosen lane is jazz, all tracks should be jazz-based. If it is R&B/soul, all tracks should stay R&B/soul-based. The lane must be specific enough that the final title can truthfully name it.
 - Metadata must tell viewers both the selected passage/theme and the broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
 - Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.

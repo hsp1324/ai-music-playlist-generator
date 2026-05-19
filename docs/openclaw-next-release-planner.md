@@ -204,6 +204,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Read the returned concept_doc to choose a fresh concept.
 - Read the returned profile_doc before making cover, thumbnail, and loop video assets.
 - If the selected channel is The Old Verse or The New Verse, read docs/openclaw-scripture-sequence.md, create the app release first, reserve the next canonical passage from the web app with scripts/openclaw-release openclaw-scripture-reserve before Suno, include the returned passage range in every YouTube title, and mark it scheduled/published after upload with scripts/openclaw-release openclaw-scripture-complete. Do not use or compare a local scripture ledger.
+- For The Old Verse and The New Verse, choose one release-level music lane before Suno generation and rotate it across uploads, such as scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. Keep the whole release in that lane so the title can truthfully name the genre.
 - If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
