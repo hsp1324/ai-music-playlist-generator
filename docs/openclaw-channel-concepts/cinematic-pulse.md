@@ -52,9 +52,11 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 
 ## Visual Direction
 
-- Poster-like, cinematic, high contrast, illustrated/anime/stylized, not live-action.
+- Photorealistic cinematic film-still / premium movie-poster realism. Use realistic lighting, depth of field, cinematic lensing, atmospheric haze, believable materials, and strong high-contrast composition.
+- Do not use anime, cartoon, flat illustration, painterly fantasy art, game UI art, documentary footage, real war footage, real flags, political symbols, celebrity likenesses, protected IP, or exact franchise references.
 - Visuals may include castles, dragons, knights, armies, spacecraft, robots, storm skies, cities, portals, lonely roads, vast oceans, mountain horizons, ruins, or emotional movie-poster silhouettes when conceptually relevant.
 - Avoid gore, graphic violence, real war footage, real flags, political symbols, protected IP, and exact franchise references.
+- App-rendered visualizer should be `bars` for every Cinematic Pulse render. Keep the bar spectrum clean and restrained; do not use radial, multiwave, small dots/particles, or busy waveform presets.
 - Thumbnail text should be bold and clickable: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`. Use `FINAL BOSS` only if the human explicitly asks for game-combat packaging; do not use it as the default Cinematic Pulse hook.
 
 ## Good Fresh Concept Shapes

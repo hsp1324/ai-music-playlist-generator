@@ -659,6 +659,8 @@ class BackgroundJobWorker:
             or meta.get("video_spectrum_overlay_style")
             or "bars"
         )
+        if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+            video_spectrum_overlay_style = "bars"
         if loop_video_path and Path(loop_video_path).exists():
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
@@ -1526,6 +1528,7 @@ class BackgroundJobWorker:
         channel_title = str(meta.get("youtube_channel_title") or "").strip()
         if not channel_title:
             channel_title = "Tokyo Daydream Radio" if is_tokyo_visual else "Soft Hour Radio"
+        is_cinematic_pulse = channel_title.strip().lower() == "cinematic pulse"
         channel_label_prompt = (
             f'The uploaded first-frame image contains the exact large, readable lower-left channel brand label "{channel_title}". '
             "It should be the same visual scale as the channel-brand line used on the YouTube thumbnail, roughly 18-24% of image width or 5-6% of image height for text cap height. "
@@ -1552,6 +1555,23 @@ class BackgroundJobWorker:
             "No repeated segment, no hard cuts, no subtitles, no logos, no UI. "
             f"{channel_label_prompt}"
         )
+        cinematic_pulse_prompt = (
+            "Cinematic Pulse visual system: photorealistic cinematic film-still / premium movie-poster realism, "
+            "with realistic lighting, depth of field, cinematic lensing, atmospheric haze, believable materials, "
+            "bold contrast, and one strong focal scene. "
+            "Animate powerful but controlled cinematic motion already present or naturally implied by the first frame: "
+            "storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, distant silhouettes, "
+            "or atmospheric light movement. "
+            "Keep the final moment close to the opening composition, with stable framing and no repeated segment. "
+            "Do not turn the image into anime, cartoon, illustration, painterly fantasy art, or game UI art. "
+            "No gore, real war footage, real political imagery, celebrity likenesses, protected characters, franchise references, subtitles, extra text, logos, or UI. "
+            f"{channel_label_prompt}"
+        )
+        visual_system_prompt = cinematic_pulse_prompt if is_cinematic_pulse else (
+            "Use animated, anime, illustrated, or stylized visual language. "
+            "Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
+            f"{signature_prompt if is_tokyo_visual else soft_hour_prompt}"
+        )
         if tracks:
             track = tracks[0]
             track_meta = track.metadata_json or {}
@@ -1569,8 +1589,12 @@ class BackgroundJobWorker:
                 f"{style_context}"
                 f"{exclude_style_context}"
                 f"Visual style tags: {tags or 'electronic, atmospheric, neon'}. "
-                "Use animated, anime, illustrated, or stylized visual language. Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
-                f"{signature_prompt if is_tokyo_visual else soft_hour_prompt}"
+                f"{visual_system_prompt}"
+            )
+        if is_cinematic_pulse:
+            return (
+                "Cinematic music visualizer shot for Cinematic Pulse. "
+                f"{cinematic_pulse_prompt}"
             )
         if is_tokyo_visual:
             return (

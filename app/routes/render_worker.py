@@ -253,6 +253,8 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_spectrum_overlay_style")
         or "bars"
     )
+    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+        style = "bars"
     return {
         "id": job.id,
         "type": job.type.value,
@@ -358,6 +360,11 @@ def claim_render_job(
                 worker.pop("nickname", None)
             result["external_render_worker"] = worker
             job.result_json = result
+            meta = dict(playlist.metadata_json or {})
+            if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+                meta["video_spectrum_overlay_style"] = "bars"
+                playlist.metadata_json = meta
+                db.add(playlist)
             db.add(job)
             db.commit()
             _update_video_progress(
@@ -410,6 +417,8 @@ def claim_render_job(
     result["external_render_worker"] = worker_meta
     job.result_json = result
     meta = dict(playlist.metadata_json or {})
+    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+        meta["video_spectrum_overlay_style"] = "bars"
     meta["workflow_state"] = "video_rendering"
     worker_label = render_worker_display_name(worker_meta)
     meta["note"] = f"External render worker claimed the video job: {worker_label}."

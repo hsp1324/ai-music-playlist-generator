@@ -11,9 +11,12 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 ## Visual Identity
 
 - Mood: cinematic, dramatic, large-scale, orchestral, emotional, tense, heroic, mysterious, or high-stakes.
-- Style must be animated, anime, illustrated, poster-art, concept-art, or stylized. Avoid photorealistic/live-action looks.
+- Style should be photorealistic cinematic film-still / high-end movie-poster realism, not anime, cartoon, flat illustration, or game UI art.
+- The cover, thumbnail base, and loop video should feel like a dramatic movie frame or premium trailer shot with realistic lighting, depth of field, cinematic lensing, atmosphere, and believable materials.
+- Do not use documentary-looking real war footage, news footage, real political imagery, celebrity likenesses, protected film/game characters, or exact franchise references. Photorealistic means original cinematic realism, not copied real media.
 - Composition should read quickly on mobile: one strong focal scene, bold lighting, clear silhouettes, and high contrast.
 - Visuals can be intense, but avoid gore, real-world political symbols, real war footage, and protected IP.
+- App-rendered spectrum must use `bars` for Cinematic Pulse. Do not use `radial`, `multiwave`, small dots/particles, or busy waveform presets for this channel unless the human explicitly asks. Keep the bar spectrum clean, restrained, and non-cluttered.
 
 ## Cover
 
@@ -42,18 +45,20 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Preserve the large, readable lower-left `Cinematic Pulse` text exactly for the full clip.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
 - Do not add blood, gore, real war footage, protected characters, franchise references, subtitles, UI, or extra text.
+- Keep the loop video photorealistic and cinematic. Do not turn the first frame into anime, cartoon, illustration, game-art, or painterly fantasy art.
+- When queuing final render, pass `--video-spectrum-overlay-style bars`. The spectrum should be a simple clean bar visualizer; do not use radial/pulse/multiwave/dot styles for Cinematic Pulse.
 
 Prompt shape:
 
 ```text
 Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Cinematic Pulse".
 Create one continuous animated cinematic music visualizer shot for a Cinematic Pulse instrumental release.
-Preserve the opening composition, lighting, palette, illustrated/stylized poster-art visual language, and the specific cinematic scene from the first frame.
+Preserve the opening composition, lighting, palette, photorealistic cinematic film-still visual language, realistic depth, atmosphere, and the specific cinematic scene from the first frame.
 Preserve the large, readable lower-left "Cinematic Pulse" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 Animate powerful but controlled cinematic motion already present or naturally implied by the scene: storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, distant silhouettes, or atmospheric light movement when appropriate.
 The motion must progress naturally for the full clip. Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only atmospheric details may differ.
-Stable composition, no hard cuts, no photorealism, no live action, no gore, no real war footage, no protected characters, no franchise references, no other text, no subtitles, no logos, no UI.
+Stable composition, no hard cuts, no anime, no cartoon, no illustration, no game UI art, no gore, no real war footage, no protected characters, no franchise references, no celebrity likenesses, no other text, no subtitles, no logos, no UI.
 ```
 
 ## Metadata

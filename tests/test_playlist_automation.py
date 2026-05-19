@@ -195,6 +195,31 @@ def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> N
     assert "exactly three people seen from behind" not in prompt
 
 
+def test_dreamina_prompt_uses_cinematic_pulse_photorealistic_style() -> None:
+    playlist = Playlist(
+        title="Cinematic Pulse Release",
+        metadata_json={"youtube_channel_title": "Cinematic Pulse"},
+    )
+    track = Track(
+        title="Dark Horizon",
+        prompt="dark fantasy cinematic orchestra",
+        metadata_json={
+            "style": "cinematic orchestra, brass, strings",
+            "tags": "dark fantasy, trailer music",
+        },
+    )
+
+    prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
+
+    assert "photorealistic cinematic film-still" in prompt
+    assert "premium movie-poster realism" in prompt
+    assert 'lower-left channel brand label "Cinematic Pulse"' in prompt
+    assert "Do not turn the image into anime" in prompt
+    assert "Do not use photorealistic" not in prompt
+    assert "exactly three people seen from behind" not in prompt
+    assert "Soft Hour Radio/background-music visual system" not in prompt
+
+
 def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_path) -> None:
     os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
     os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
@@ -2047,6 +2072,75 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
                 select(Job).where(Job.playlist_id == workspace_id, Job.type == JobType.build_video)
             ).first()
             assert job.result_json["ops_video_queued_notification"]["ok"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        playlist_dir = settings.playlists_dir
+        track_dir = settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "cinematic-audio.mp3"
+        cover_path = playlist_dir / "cinematic-cover.png"
+        loop_path = playlist_dir / "cinematic-loop.mp4"
+        track_path = track_dir / "cinematic-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Cinematic Pulse Track",
+                prompt="cinematic orchestra",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "cinematic orchestra"},
+            )
+            playlist = Playlist(
+                title="Cinematic Pulse Render",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "Cinematic Pulse",
+                    "workflow_state": "audio_ready",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "loop_video_smooth": True,
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            db.commit()
+            playlist_id = playlist.id
+
+        response = client.post(
+            f"/api/playlists/{playlist_id}/video/render",
+            json={
+                "actor": "test-suite",
+                "video_spectrum_overlay_style": "radial",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["video_spectrum_overlay_style"] == "bars"
+        with SessionLocal() as db:
+            job = db.scalars(
+                select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_video)
+            ).one()
+            playlist = db.get(Playlist, playlist_id)
+            assert playlist.metadata_json["video_spectrum_overlay_style"] == "bars"
+            assert job.payload_json["video_spectrum_overlay_style"] == "bars"
     finally:
         clear_isolated_client_env()
 

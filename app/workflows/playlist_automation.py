@@ -1823,6 +1823,8 @@ def queue_workspace_video_render(
 
     active_job = _find_active_video_job(db, playlist)
     visualizer_style = _normalize_video_spectrum_overlay_style(video_spectrum_overlay_style)
+    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+        visualizer_style = "bars"
     meta["workflow_state"] = "video_queued"
     meta["metadata_approved"] = False
     meta["publish_approved"] = False

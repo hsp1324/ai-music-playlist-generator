@@ -106,7 +106,7 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
 8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
-9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset.
+9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset. For `Cinematic Pulse`, use `--video-spectrum-overlay-style bars` unless a human explicitly asks otherwise.
 10. Do not pass `--wait` in normal automation. Do not approve metadata or publish until the app later asks again after external render completion.
 11. Release the OpenClaw lock and report the queued release id.
 
