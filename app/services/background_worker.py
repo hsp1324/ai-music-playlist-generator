@@ -1039,15 +1039,25 @@ class BackgroundJobWorker:
                 try:
                     from app.workflows.playlist_automation import (
                         next_youtube_scheduled_publish_at,
+                        scripture_youtube_playlist_titles,
                         youtube_schedule_metadata,
+                        youtube_schedule_options_for_playlist,
                     )
 
                     thumbnail_path = str(meta.get("youtube_thumbnail_path") or "").strip() or cover_image_path
-                    scheduled_publish_at = next_youtube_scheduled_publish_at(
-                        db,
-                        self.services,
-                        youtube_channel_id=youtube_channel_id,
-                        youtube_channel_title=meta.get("youtube_channel_title"),
+                    schedule_options = youtube_schedule_options_for_playlist(playlist)
+                    scheduled_publish_at = (
+                        None
+                        if schedule_options.get("schedule_disabled")
+                        else next_youtube_scheduled_publish_at(
+                            db,
+                            self.services,
+                            youtube_channel_id=youtube_channel_id,
+                            youtube_channel_title=meta.get("youtube_channel_title"),
+                            schedule_hour=schedule_options.get("schedule_hour"),
+                            schedule_minute=schedule_options.get("schedule_minute"),
+                            schedule_scope=str(schedule_options.get("schedule_scope") or "date"),
+                        )
                     )
                     result = self.services.youtube.upload_playlist_video(
                         playlist,
@@ -1059,13 +1069,27 @@ class BackgroundJobWorker:
                         localizations=localizations,
                         default_language=default_language,
                         scheduled_publish_at=scheduled_publish_at,
+                        privacy_status="private" if schedule_options.get("schedule_disabled") else None,
                     )
                     uploaded_video_path = playlist.output_video_path
                     playlist.youtube_video_id = result.video_id
                     playlist.status = PlaylistStatus.uploaded
                     meta["workflow_state"] = "uploaded"
                     meta["youtube_response"] = result.response
-                    meta.update(youtube_schedule_metadata(self.services, scheduled_publish_at))
+                    meta.update(
+                        youtube_schedule_metadata(
+                            self.services,
+                            scheduled_publish_at,
+                            schedule_hour=schedule_options.get("schedule_hour"),
+                            schedule_minute=schedule_options.get("schedule_minute"),
+                            schedule_label=schedule_options.get("schedule_label"),
+                        )
+                    )
+                    if schedule_options.get("schedule_disabled"):
+                        meta["youtube_schedule_disabled"] = True
+                        meta["youtube_schedule_disabled_reason"] = str(
+                            schedule_options.get("schedule_label") or "schedule_disabled"
+                        )
                     response_snippet = result.response.get("snippet") if isinstance(result.response, dict) else {}
                     meta["youtube_published_at"] = (
                         response_snippet.get("publishedAt")
@@ -1083,6 +1107,19 @@ class BackgroundJobWorker:
                     if result.response.get("upload_channel"):
                         meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
                         meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
+                    managed_playlist_titles = scripture_youtube_playlist_titles(meta, title=playlist.title)
+                    if managed_playlist_titles and playlist.youtube_video_id and meta.get("youtube_channel_id"):
+                        try:
+                            assignments = self.services.youtube.ensure_video_in_playlists(
+                                youtube_channel_id=str(meta["youtube_channel_id"]),
+                                video_id=playlist.youtube_video_id,
+                                playlist_titles=managed_playlist_titles,
+                            )
+                            if assignments:
+                                meta["youtube_playlist_assignments"] = assignments
+                                meta.pop("youtube_playlist_assignment_error", None)
+                        except Exception as exc:  # noqa: BLE001
+                            meta["youtube_playlist_assignment_error"] = str(exc)
                     meta.pop("youtube_upload_error", None)
                     if result.response.get("thumbnail_upload_error"):
                         meta["youtube_thumbnail_upload_error"] = result.response["thumbnail_upload_error"]

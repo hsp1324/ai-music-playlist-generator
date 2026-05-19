@@ -237,7 +237,7 @@ Our direction:
 - Thumbnail text: passage-aware Bible/worship wording, not only a broad genre tag. Use the selected book, passage theme, or worship/reflection lane when it improves clarity; `GENESIS SONGS`, `PSALMS WORSHIP`, `OLD TESTAMENT`, or `SCRIPTURE SONGS` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: skipping canonical sequence, vague worship titles without passage reference, or copying long Bible text.
 
-## The New Verse
+## The Old Verse New Testament Branch
 
 Reference set:
 
@@ -264,6 +264,28 @@ Our direction:
 - Description direction: first paragraph states the passage and Gospel theme; second paragraph or style line names the music style family in natural language.
 - Thumbnail text: passage-aware Gospel/worship wording, not only a broad genre tag. Use the selected passage, Gospel theme, or prayer/worship lane when it improves clarity; `GOSPEL SONGS`, `GRACE WORSHIP`, `NEW TESTAMENT`, or `SCRIPTURE WORSHIP` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: generic `Christian music`, Old Testament passage confusion, or worship titles without the passage reference.
+
+## The New Verse Buddhist Scripture
+
+Reference set:
+
+- Dharma Talks and Buddhist teaching channels: clear source/theme naming matters more than vague meditation wording.
+- Buddhist chant/meditation channels: viewers respond to calm, respectful visuals and practical promises such as peace, letting go, mindfulness, compassion, and release from anxiety.
+- Modern spiritual music channels: genre clarity helps discovery when the title names the lane, such as jazz, R&B, hip-hop, soul, or acoustic meditation songs.
+
+What gets views:
+
+- Buddhist scripture-inspired releases should name the teaching source or theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, compassion, mindfulness, impermanence, or non-attachment.
+- The channel should not look like generic meditation BGM. It should be modern vocal music with one coherent style lane per release.
+- Korean default titles can be more clickable than literal English translations. Localized titles should be natural transcreations for each language.
+
+Our direction:
+
+- Title shape: Korean default title that combines source/theme plus genre lane, for example Buddhist hip-hop, dharma R&B, Buddhist jazz, or neo-soul meditation songs.
+- Song direction: original Korean lyrics inspired by Buddhist teaching, not direct scripture recitation or chanting. Keep one lane per release and rotate lanes across uploads.
+- Description direction: first paragraph states the Buddhist source/theme; second paragraph names the music lane and notes that lyrics are original paraphrases inspired by Buddhist teaching.
+- Thumbnail text: source or lane-aware wording such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`.
+- Avoid: claiming exact chapter/verse coverage without verification, copying long sutra passages, sermon/chant format, disrespectful religious imagery, or public scheduling before human review.
 
 ## Source Index
 

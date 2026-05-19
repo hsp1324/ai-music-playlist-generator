@@ -32,19 +32,31 @@ CHANNELS = {
     },
     "the new verse": {
         "key": "the_new_verse",
-        "title": "The New Verse",
+        "title": "New Testament",
+        "default_next_start": "Matthew 1:1",
+        "default_first_range": "Matthew 1:1-17",
+    },
+    "new testament": {
+        "key": "the_new_verse",
+        "title": "New Testament",
         "default_next_start": "Matthew 1:1",
         "default_first_range": "Matthew 1:1-17",
     },
     "new": {
         "key": "the_new_verse",
-        "title": "The New Verse",
+        "title": "New Testament",
+        "default_next_start": "Matthew 1:1",
+        "default_first_range": "Matthew 1:1-17",
+    },
+    "new_testament": {
+        "key": "the_new_verse",
+        "title": "New Testament",
         "default_next_start": "Matthew 1:1",
         "default_first_range": "Matthew 1:1-17",
     },
     "the_new_verse": {
         "key": "the_new_verse",
-        "title": "The New Verse",
+        "title": "New Testament",
         "default_next_start": "Matthew 1:1",
         "default_first_range": "Matthew 1:1-17",
     },
@@ -112,7 +124,7 @@ def _empty_state() -> dict[str, Any]:
         "version": 1,
         "updated_at": _utcnow(),
         "the_old_verse": _empty_channel_state(channel_info("The Old Verse")),
-        "the_new_verse": _empty_channel_state(channel_info("The New Verse")),
+        "the_new_verse": _empty_channel_state(channel_info("New Testament")),
     }
 
 

@@ -1,93 +1,81 @@
 # OpenClaw Channel Concept Planner: The New Verse
 
-Use this after the selected channel is `The New Verse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/the-new-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
+Use this after the selected channel is `The New Verse`. The channel title may be renamed later; until then, `The New Verse` is the Buddhist scripture music channel.
 
 ## Channel Promise
 
-The New Verse is a New Testament scripture-inspired worship music channel.
+The New Verse is for modern Buddhist scripture-inspired vocal music. It turns Buddhist teachings, sutra themes, Dhammapada-style wisdom, mindfulness, compassion, impermanence, non-attachment, suffering and release, and awakening imagery into original modern songs.
 
-It follows the New Testament in canonical order, starting from Matthew 1:1, and turns each passage's message, scene, parable, prayer, grace, cross, resurrection hope, apostolic teaching, or Revelation imagery into original songs.
+This is not a chanting archive, sermon channel, or literal scripture-reading channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language, using one clear release-level music lane such as Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, neo-soul meditation songs, acoustic dharma songs, or cinematic meditation pop.
 
-This is not a Bible-reading channel. Do not simply narrate verses. Reinterpret the passage as modern worship pop, prayer songs, warm gospel-influenced songs, scripture ballads, and Bible-based praise music.
+The audience should immediately understand: Buddhist wisdom and sutra-inspired teachings reworked as modern songs.
 
-The audience should immediately understand: New Testament messages turned into original worship songs.
+## Overnight Privacy Rule
 
-Public titles must include the passage or Gospel theme, but they should not become generic worship keyword piles. Before finalizing metadata, check every localized title in its own language and reject vague tails such as `Grace Energy`, `Prayer Focus Music`, `Worship Music`, or literal equivalents without a clear passage/theme/style. The title should tell viewers what New Testament section inspired the release and what kind of worship music they are getting in natural local wording.
+Until the human changes this tomorrow, publish The New Verse uploads as private only. Do not schedule them public. The app is configured to skip scheduled-public slots for `The New Verse`, so publish through the app normally and let the app upload private.
 
-## Sequence Rule
+## Source Material Direction
 
-- Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. The deployed web app ledger is mandatory, not optional.
-- Always inspect recent `The New Verse` releases in `scripts/openclaw-release list-releases`, then reserve the next passage from the web app with `scripts/openclaw-release openclaw-scripture-reserve`.
-- Continue from the app-returned passage. Do not jump randomly to John, Romans, Revelation, or famous Jesus sayings unless the app sequence has reached them or the human explicitly asks and the app ledger is updated.
-- If there is no prior app catalog history, the app starts with `Matthew 1:1-17`.
-- Create the release first, then reserve the chosen passage as `in_progress` with `scripts/openclaw-release openclaw-scripture-reserve` before opening Suno.
-- Put the passage reference in the private plan, title, and description, for example `Matthew 1:1-17`.
-- For a 40-minute playlist, choose a coherent passage block, usually one scene, teaching section, parable, or short chapter section. Do not cover too much scripture at once.
-- After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-release openclaw-scripture-complete`.
-- Do not compare against a local ledger and do not stop because title wording differs. The web app rejects duplicate active passages; use its response as the source of truth.
+OpenClaw does not need to quote long scripture passages. Use short references, themes, and original paraphrase.
 
-## Scripture Handling
+Good starting source lanes:
 
-- Do not copy long passages from modern copyrighted Bible translations into lyrics or public descriptions.
-- Use brief references and original paraphrase. If a direct quote is needed, keep it very short or use public-domain wording only when you are sure.
-- Keep the tone broadly Christian, worshipful, gracious, and non-argumentative.
-- Be respectful with depictions of Jesus. Prefer symbolic light, road, table, empty tomb, sea, bread, lamp, cross silhouette, hands, doorway, hillside, or disciples-from-behind imagery over realistic face-focused portraits.
+- Dhammapada / 법구경 style wisdom: mind, heedfulness, anger, self-mastery, compassion, peace.
+- Heart Sutra / 반야심경 themes: emptiness, form, perception, release from fear, wisdom beyond attachment.
+- Lotus Sutra / 묘법연화경 themes: compassion, skillful means, persistence, universal awakening.
+- Diamond Sutra / 금강경 themes: non-attachment, illusion of fixed self, generosity without clinging.
+- General Buddhist teaching themes: four noble truths, eightfold path, impermanence, karma, mindfulness, loving-kindness, letting go.
+
+If unsure where to start, use a Dhammapada-style sequence. Pick one compact theme section per 40-minute release, not a whole scripture. Do not pretend to quote exact chapters if you did not verify the structure; title it as `Dhammapada-Inspired`, `Heart Sutra-Inspired`, or `Buddhist Wisdom Songs` when appropriate.
 
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` releases and avoid repeating:
 
-- The same passage range.
-- The same New Testament scene, such as genealogy, Bethlehem, baptism, wilderness, Galilee road, parable field, stormy sea, table fellowship, cross, empty tomb, upper room, church letters, or Revelation vision.
-- The same release-level music lane or worship palette, such as gospel R&B/soul, scripture jazz, modern worship pop, piano worship, acoustic guitar ballad, warm gospel choir pads, soft drums, synth worship, strings, neo-soul prayer songs, or intimate prayer music.
-- The same emotional direction, such as grace, surrender, hope, repentance, healing, joy, discipleship, resurrection, or comfort.
-- The same thumbnail phrase, such as `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, or `WORSHIP POP`.
+- The same scripture/theme section.
+- The same release-level music lane.
+- The same thumbnail phrase.
+- The same visual scene.
 
 ## Concept Lanes
 
-- Gospel beginning: promise, lineage, waiting, arrival, fulfillment.
-- Jesus birth and early life: gentle worship ballads, light, family, promise, wonder.
-- Kingdom teaching: modern worship pop, parables, mercy, forgiveness, discipleship.
-- Miracles and healing: hopeful praise, prayer, restoration, trust.
-- Cross and resurrection: reverent ballads, cinematic worship, grace, victory, hope.
-- Acts and early church: movement, courage, Spirit, mission, community.
-- Epistles: prayer songs, grace, love, endurance, wisdom, church encouragement.
-- Revelation: awe, hope, worship, restoration, symbolic cinematic worship.
+- Dhammapada-inspired mindful hip-hop: clear rhythm, spoken/sung hooks, wisdom about the mind and choices.
+- Buddhist jazz prayer songs: warm jazz chords, soft drums, reflective vocal melodies.
+- Buddhist R&B/soul: gentle groove, compassion, healing, letting go.
+- Neo-soul meditation songs: intimate vocals, spacious keys, inward reflection.
+- Acoustic dharma songs: guitar/piano, simple chorus, calm teaching tone.
+- Cinematic meditation pop: soft strings, pads, emotional release, broad accessible melody.
 
 ## Music Direction
 
-- Vocal worship songs with original lyrics are the default and expected output.
-- Do not make instrumental/no-vocal New Verse releases unless the human explicitly asks for BGM or instrumental prayer music.
-- Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The New Verse unless the human explicitly asks for that language.
-- Lyrics must be original, song-first, and worshipful. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
-- Choose one primary style family for each release and write it in the private plan before creating songs. Rotate this lane across uploads instead of defaulting to generic holy worship. Good lanes include gospel R&B/soul, modern worship pop, scripture jazz, acoustic gospel, piano worship ballads, choir-backed gospel, neo-soul prayer songs, cinematic Gospel worship, or intimate prayer songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
-- If the chosen lane is jazz, all tracks should be jazz-based. If it is R&B/soul, all tracks should stay R&B/soul-based. The lane must be specific enough that the final title can truthfully name it.
-- Metadata must tell viewers both the selected passage/theme and the broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
-- Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
-- For worship pop, use natural modern song structure: verse, pre-chorus, chorus, bridge, final chorus when appropriate.
-- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
-- Avoid producer tags, specific artist references, protected worship brands, church names, celebrity pastors, and modern Bible translation names.
+- Vocal songs with original lyrics are the default.
+- Korean lyrics are the default unless the human explicitly asks for another language.
+- Every track in one release must stay inside one coherent style family. If the title says Buddhist hip-hop, all tracks should be hip-hop/rap-based. If it says Buddhist R&B, all tracks should stay R&B/soul-based.
+- Lyrics should sound like real songs, not a lecture. Use images, hooks, and emotional arcs while keeping the teaching clear.
+- Do not copy long scripture text, modern translations, temple liturgy, or chants.
+- Avoid naming living teachers, temples, sectarian claims, protected songs, or specific artist styles.
+- Keep the tone respectful, contemplative, modern, and broadly accessible.
 
 ## Visual Direction
 
-- Illustrated, anime, painterly, warm worship-art, cinematic Gospel scene, or stylized biblical landscape.
-- Visuals can include a road at sunrise, candlelit table, hillside, Galilee shoreline, open doorway, empty tomb light, bread and cup symbolism, hands in prayer, scroll, lamp, or a cross silhouette.
-- Avoid photorealistic/live-action Jesus reenactment footage.
-- Do not use protected film/TV designs.
-- Thumbnail text should be clear and searchable: `GOSPEL SONGS`, `NEW TESTAMENT`, `JESUS MUSIC`, `GRACE MUSIC`, `SCRIPTURE SONGS`, or `WORSHIP POP`.
+- Calm modern Buddhist visual identity: temple path, lanterns, lotus, moonlit water, incense smoke, mountain dawn, rain on stone, meditation room, forest path, candlelight, paper lanterns, or abstract mindful city-night visuals.
+- Illustrated, cinematic, painterly, anime/stylized, or tasteful modern graphic style is allowed. Avoid parody, caricature, or exoticized religious imagery.
+- Do not depict the Buddha disrespectfully or as a face-focused photorealistic idol. Symbolic imagery is safer.
+- Cover first-frame should contain only the large lower-left channel brand label `The New Verse` until the channel is renamed.
+- Thumbnail should use clear click text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, or a natural Korean title tied to the selected theme.
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Matthew 1:1-17 Gospel Songs | New Testament Worship Music for Prayer`
-- `[playlist] Matthew 2:1-12 Star of Bethlehem Songs | Gospel Music for Hope and Wonder`
-- `[playlist] Matthew 5:1-12 Beatitudes Worship | New Testament Songs for Prayer`
-- `[playlist] Matthew 28:1-10 Resurrection Hope Songs | New Testament Worship for Faith`
+- `[playlist] 마음을 다스리는 불경 힙합 | 법구경에서 영감을 받은 한국어 랩`
+- `[playlist] Buddhist Jazz for Letting Go | Dhammapada-Inspired Songs`
+- `[playlist] 반야심경 R&B | 집착을 내려놓는 불교 노래`
+- `[playlist] Dharma Soul Songs | Compassion, Mindfulness and Quiet Strength`
 
 ## Bad Directions
 
-- Randomly selecting famous New Testament passages out of order.
-- Long copied Bible passages as lyrics.
-- Sermon/apologetics/debate content instead of music.
-- Generic church piano BGM with no clear passage reference.
-- Old Testament-focused concepts that belong on The Old Verse.
-- Vague worship titles that omit the passage/theme or read like abstract keyword tags instead of New Testament music.
+- Generic meditation BGM with no lyrics or teaching.
+- Literal scripture reading, chanting, or sermon format.
+- Randomly mixing jazz, hip-hop, R&B, folk, and cinematic pop in one release.
+- Copying long translated sutra passages.
+- Using Buddhist words as decoration while the lyrics say nothing about the teaching.
+- Public scheduling before the human reviews the new channel direction.

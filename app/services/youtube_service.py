@@ -298,6 +298,136 @@ class YouTubeService:
             )
         return uploads
 
+    def find_or_create_playlist(
+        self,
+        *,
+        youtube_channel_id: str,
+        title: str,
+        description: str = "",
+        privacy_status: str = "public",
+    ) -> dict[str, Any]:
+        normalized_title = sanitize_youtube_copy(title).strip()
+        if not normalized_title:
+            raise ValueError("YouTube playlist title is required.")
+
+        credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+
+        request = youtube.playlists().list(part="snippet,status", mine=True, maxResults=50)
+        while request is not None:
+            response = request.execute()
+            for item in response.get("items") or []:
+                snippet = item.get("snippet") or {}
+                if str(snippet.get("title") or "").strip().casefold() == normalized_title.casefold():
+                    return {
+                        "id": item.get("id"),
+                        "title": snippet.get("title") or normalized_title,
+                        "created": False,
+                    }
+            request = youtube.playlists().list_next(request, response)
+
+        body = {
+            "snippet": {
+                "title": normalized_title[:150],
+                "description": sanitize_youtube_copy(description).strip(),
+            },
+            "status": {"privacyStatus": privacy_status},
+        }
+        result = youtube.playlists().insert(part="snippet,status", body=body).execute()
+        snippet = result.get("snippet") or {}
+        return {
+            "id": result.get("id"),
+            "title": snippet.get("title") or normalized_title,
+            "created": True,
+        }
+
+    def add_video_to_playlist(
+        self,
+        *,
+        youtube_channel_id: str,
+        playlist_id: str,
+        video_id: str,
+    ) -> dict[str, Any]:
+        normalized_playlist_id = str(playlist_id or "").strip()
+        normalized_video_id = str(video_id or "").strip()
+        if not normalized_playlist_id or not normalized_video_id:
+            raise ValueError("YouTube playlist id and video id are required.")
+
+        credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+
+        existing = youtube.playlistItems().list(
+            part="id,contentDetails",
+            playlistId=normalized_playlist_id,
+            videoId=normalized_video_id,
+            maxResults=1,
+        ).execute()
+        items = existing.get("items") or []
+        if items:
+            return {
+                "id": items[0].get("id"),
+                "playlist_id": normalized_playlist_id,
+                "video_id": normalized_video_id,
+                "created": False,
+            }
+
+        result = youtube.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": normalized_playlist_id,
+                    "resourceId": {
+                        "kind": "youtube#video",
+                        "videoId": normalized_video_id,
+                    },
+                },
+            },
+        ).execute()
+        return {
+            "id": result.get("id"),
+            "playlist_id": normalized_playlist_id,
+            "video_id": normalized_video_id,
+            "created": True,
+        }
+
+    def ensure_video_in_playlists(
+        self,
+        *,
+        youtube_channel_id: str,
+        video_id: str,
+        playlist_titles: list[str],
+    ) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        seen_titles: set[str] = set()
+        for title in playlist_titles:
+            normalized_title = sanitize_youtube_copy(title).strip()
+            if not normalized_title:
+                continue
+            title_key = normalized_title.casefold()
+            if title_key in seen_titles:
+                continue
+            seen_titles.add(title_key)
+            playlist = self.find_or_create_playlist(
+                youtube_channel_id=youtube_channel_id,
+                title=normalized_title,
+                description=f"Curated {normalized_title} releases.",
+            )
+            item = self.add_video_to_playlist(
+                youtube_channel_id=youtube_channel_id,
+                playlist_id=str(playlist.get("id") or ""),
+                video_id=video_id,
+            )
+            results.append(
+                {
+                    "playlist_id": playlist.get("id"),
+                    "playlist_title": playlist.get("title") or normalized_title,
+                    "playlist_created": bool(playlist.get("created")),
+                    "playlist_item_id": item.get("id"),
+                    "playlist_item_created": bool(item.get("created")),
+                }
+            )
+        return results
+
     def update_video_metadata(
         self,
         *,
@@ -370,6 +500,7 @@ class YouTubeService:
         localizations: dict[str, dict[str, str]] | None = None,
         default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
         scheduled_publish_at: datetime | None = None,
+        privacy_status: str | None = None,
     ) -> YouTubeUploadResult:
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
         if not playlist.output_video_path:
@@ -394,7 +525,7 @@ class YouTubeService:
             default_language=default_language,
         )
         status = {
-            "privacyStatus": self.settings.youtube_privacy_status,
+            "privacyStatus": privacy_status or self.settings.youtube_privacy_status,
             "containsSyntheticMedia": self.settings.youtube_contains_synthetic_media,
             "selfDeclaredMadeForKids": False,
         }

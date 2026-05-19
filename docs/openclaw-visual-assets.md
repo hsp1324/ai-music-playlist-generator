@@ -178,25 +178,25 @@ Use this for `Club Bloom`, no-vocal EDM, house, techno, trance, festival EDM, wo
 
 ## The Old Verse Visual Skill
 
-Use this for `The Old Verse`, Old Testament songs, Genesis songs, Psalms music, Bible verse music, scripture-inspired worship, or ancient biblical music releases.
+Use this for `The Old Verse`, Old Testament songs, New Testament songs, Genesis songs, Matthew/Gospel songs, Psalms music, Bible verse music, scripture-inspired worship, or ancient biblical music releases.
 
 - Follow `docs/openclaw-channel-profiles/the-old-verse.md`.
 - The cover must contain only the large lower-left `The Old Verse` brand label.
 - The thumbnail should use short passage-aware Bible click text that connects to the selected book, passage, theme, or worship lane, plus `THE OLD VERSE`. Do not rely on a generic `BIBLE MUSIC` / `SCRIPTURE SONGS` headline alone when the passage can make the thumbnail more specific and trustworthy.
 - Keep `THE OLD VERSE` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
-- The loop video should animate the selected Old Testament passage scene with reverent symbolic motion and preserve the `The Old Verse` label.
+- The loop video should animate the selected Old Testament or New Testament passage scene with reverent symbolic motion and preserve the `The Old Verse` label.
 - Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
 
 ## The New Verse Visual Skill
 
-Use this for `The New Verse`, New Testament songs, Gospel songs, Jesus words, grace music, scripture worship, Bible verse songs, or worship pop releases.
+Use this for `The New Verse`, Buddhist scripture-inspired songs, Dhammapada/법구경-inspired songs, Heart Sutra/반야심경-inspired songs, Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, dharma songs, mindfulness songs, and modern sutra-inspired music.
 
 - Follow `docs/openclaw-channel-profiles/the-new-verse.md`.
 - The cover must contain only the large lower-left `The New Verse` brand label.
-- The thumbnail should use short passage-aware worship click text that connects to the selected Gospel/New Testament passage, theme, or prayer/worship lane, plus `THE NEW VERSE`. Do not use a generic `GOSPEL SONGS` headline by itself when the passage/theme can make the thumbnail clearer and less like an unrelated compilation.
+- The thumbnail should use short Buddhist teaching or lane-aware click text that connects to the selected source/theme, such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`, plus `THE NEW VERSE` until the channel is renamed.
 - Keep `THE NEW VERSE` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
-- The loop video should animate the selected New Testament/Gospel passage scene with warm worshipful motion and preserve the `The New Verse` label.
-- Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
+- The loop video should animate a respectful Buddhist/dharma atmosphere with calm environmental motion and preserve the `The New Verse` label.
+- Do not paste long scripture text onto visuals. Use symbolic Buddhist imagery such as lotus, lanterns, temple paths, incense smoke, moonlit water, mountains, rain on stone, candlelight, or meditation-room light.
 
 ## Other Channels Or Explicit Requests
 

@@ -36,6 +36,8 @@ from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import (
     next_youtube_scheduled_publish_at,
     reconcile_due_scheduled_youtube_public_states,
+    scripture_youtube_playlist_titles,
+    youtube_schedule_options_for_playlist,
 )
 from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
@@ -724,7 +726,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
             "/api/openclaw/scripture/reserve",
             headers=headers,
             json={
-                "channel_title": "The New Verse",
+                "channel_title": "New Testament",
                 "release_id": release_id,
                 "title": "[playlist] Matthew 1:1-17 Gospel Worship",
             },
@@ -739,7 +741,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
             "/api/openclaw/scripture/reserve",
             headers=headers,
             json={
-                "channel_title": "The New Verse",
+                "channel_title": "New Testament",
                 "release_id": release_id,
                 "title": "[playlist] Matthew 1:1-17 Gospel Worship",
             },
@@ -749,7 +751,8 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
 
         with SessionLocal() as db:
             playlist = db.get(Playlist, release_id)
-            assert playlist.metadata_json["target_youtube_channel_title"] == "The New Verse"
+            assert playlist.metadata_json["target_youtube_channel_title"] == "The Old Verse"
+            assert playlist.metadata_json["scripture_channel_title"] == "New Testament"
             assert playlist.metadata_json["scripture_passage_range"] == "Matthew 1:1-17"
             assert playlist.metadata_json["scripture_sequence_status"] == "in_progress"
 
@@ -5661,6 +5664,104 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channe
         assert other_channel_scheduled == datetime(2026, 5, 11, 22, 0, tzinfo=timezone.utc)
     finally:
         clear_isolated_client_env()
+
+
+def test_next_youtube_scheduled_publish_at_allows_distinct_daily_slots(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.youtube_schedule_public_enabled = True
+        services.settings.youtube_schedule_timezone = "Asia/Seoul"
+        services.settings.youtube_schedule_min_lead_minutes = 30
+
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Old Testament Slot",
+                    metadata_json={
+                        "youtube_channel_id": "UC-OLD",
+                        "youtube_channel_title": "The Old Verse",
+                        "youtube_scheduled_publish_at": "2026-05-11T22:00:00+00:00",
+                    },
+                )
+            )
+            db.commit()
+
+            old_slot = next_youtube_scheduled_publish_at(
+                db,
+                services,
+                youtube_channel_id="UC-OLD",
+                youtube_channel_title="The Old Verse",
+                now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
+                schedule_hour=7,
+                schedule_minute=0,
+                schedule_scope="slot",
+            )
+            new_slot = next_youtube_scheduled_publish_at(
+                db,
+                services,
+                youtube_channel_id="UC-OLD",
+                youtube_channel_title="The Old Verse",
+                now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
+                schedule_hour=16,
+                schedule_minute=0,
+                schedule_scope="slot",
+            )
+
+        assert old_slot == datetime(2026, 5, 12, 22, 0, tzinfo=timezone.utc)
+        assert new_slot == datetime(2026, 5, 12, 7, 0, tzinfo=timezone.utc)
+    finally:
+        clear_isolated_client_env()
+
+
+def test_scripture_schedule_options_and_playlist_titles() -> None:
+    old_playlist = Playlist(
+        title="[playlist] Genesis Scripture Jazz",
+        metadata_json={
+            "target_youtube_channel_title": "The Old Verse",
+            "scripture_channel_title": "The Old Verse",
+            "scripture_passage_range": "Genesis 1:1-5",
+            "scripture_music_lane": "scripture jazz",
+        },
+    )
+    new_playlist = Playlist(
+        title="[playlist] Matthew Gospel Soul Songs",
+        metadata_json={
+            "target_youtube_channel_title": "The Old Verse",
+            "scripture_channel_title": "New Testament",
+            "scripture_passage_range": "Matthew 1:18-25",
+            "scripture_music_lane": "gospel R&B soul",
+        },
+    )
+    buddhist_playlist = Playlist(
+        title="[playlist] 마음을 다스리는 불경 힙합",
+        metadata_json={"target_youtube_channel_title": "The New Verse"},
+    )
+
+    assert youtube_schedule_options_for_playlist(old_playlist) == {
+        "schedule_hour": 7,
+        "schedule_minute": 0,
+        "schedule_scope": "slot",
+        "schedule_label": "old_testament",
+    }
+    assert youtube_schedule_options_for_playlist(new_playlist) == {
+        "schedule_hour": 16,
+        "schedule_minute": 0,
+        "schedule_scope": "slot",
+        "schedule_label": "new_testament",
+    }
+    assert youtube_schedule_options_for_playlist(buddhist_playlist) == {
+        "schedule_disabled": True,
+        "schedule_label": "private_buddhist_scripture",
+    }
+    assert scripture_youtube_playlist_titles(old_playlist.metadata_json, title=old_playlist.title) == [
+        "Old Testament Songs",
+        "Scripture Jazz Songs",
+    ]
+    assert scripture_youtube_playlist_titles(new_playlist.metadata_json, title=new_playlist.title) == [
+        "New Testament Songs",
+        "Scripture R&B Songs",
+    ]
 
 
 def test_youtube_upload_audio_language_inference_marks_pop_vocals(tmp_path) -> None:

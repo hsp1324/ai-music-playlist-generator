@@ -38,10 +38,97 @@ FAILED_WORKFLOW_STATES = {
 FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
 SUNDAZE_CHANNEL_ID = "UCQh5O10XfZLLNZqdGuQR7Jw"
 SUNDAZE_CHANNEL_TITLE = "sundaze"
+SCRIPTURE_UPLOAD_CHANNEL_TITLE = "The Old Verse"
+SCRIPTURE_OLD_BRANCH_TITLE = "The Old Verse"
+SCRIPTURE_NEW_BRANCH_TITLE = "New Testament"
+NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "The New Verse"
+SCRIPTURE_OLD_TESTAMENT_PLAYLIST_TITLE = "Old Testament Songs"
+SCRIPTURE_NEW_TESTAMENT_PLAYLIST_TITLE = "New Testament Songs"
+SCRIPTURE_OLD_TESTAMENT_SCHEDULE = (7, 0)
+SCRIPTURE_NEW_TESTAMENT_SCHEDULE = (16, 0)
+NEW_TESTAMENT_BOOKS = {
+    "matthew",
+    "mark",
+    "luke",
+    "john",
+    "acts",
+    "romans",
+    "1 corinthians",
+    "2 corinthians",
+    "galatians",
+    "ephesians",
+    "philippians",
+    "colossians",
+    "1 thessalonians",
+    "2 thessalonians",
+    "1 timothy",
+    "2 timothy",
+    "titus",
+    "philemon",
+    "hebrews",
+    "james",
+    "1 peter",
+    "2 peter",
+    "1 john",
+    "2 john",
+    "3 john",
+    "jude",
+    "revelation",
+}
+OLD_TESTAMENT_BOOKS = {
+    "genesis",
+    "exodus",
+    "leviticus",
+    "numbers",
+    "deuteronomy",
+    "joshua",
+    "judges",
+    "ruth",
+    "1 samuel",
+    "2 samuel",
+    "1 kings",
+    "2 kings",
+    "1 chronicles",
+    "2 chronicles",
+    "ezra",
+    "nehemiah",
+    "esther",
+    "job",
+    "psalms",
+    "proverbs",
+    "ecclesiastes",
+    "song of songs",
+    "isaiah",
+    "jeremiah",
+    "lamentations",
+    "ezekiel",
+    "daniel",
+    "hosea",
+    "joel",
+    "amos",
+    "obadiah",
+    "jonah",
+    "micah",
+    "nahum",
+    "habakkuk",
+    "zephaniah",
+    "haggai",
+    "zechariah",
+    "malachi",
+}
 LEGACY_YOUTUBE_CHANNEL_TITLES = {
     "ai썰전": "Club Bloom",
     "ai sseoljeon": "Club Bloom",
 }
+SCRIPTURE_GENRE_PLAYLIST_RULES = (
+    ("Scripture Jazz Songs", ("jazz",)),
+    ("Scripture R&B Songs", ("r&b", "rnb", "neo soul", "neo-soul", "soul")),
+    ("Gospel Worship Songs", ("gospel", "choir")),
+    ("Acoustic Scripture Songs", ("acoustic", "folk")),
+    ("Piano Worship Songs", ("piano", "ballad")),
+    ("Cinematic Worship Songs", ("cinematic", "orchestral", "film score")),
+    ("Modern Worship Pop Songs", ("modern worship", "worship pop", "pop worship")),
+)
 REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "ko",
     "ja",
@@ -173,6 +260,114 @@ def _canonical_youtube_channel_title(title: str | None) -> str | None:
     if not clean:
         return None
     return LEGACY_YOUTUBE_CHANNEL_TITLES.get(clean.lower(), clean)
+
+
+def _first_scripture_book(passage_range: str) -> str:
+    normalized = re.sub(r"\s+", " ", str(passage_range or "").strip().lower())
+    match = re.match(r"^(?:(?:1|2|3)\s+)?[a-z]+(?:\s+of\s+[a-z]+|(?:\s+[a-z]+)*)", normalized)
+    if not match:
+        return ""
+    return match.group(0).strip()
+
+
+def scripture_branch_from_metadata(meta: dict, *, title: str = "") -> str | None:
+    channel_title = str(meta.get("scripture_channel_title") or "").strip().lower()
+    if channel_title in {"the old verse", "old testament", "old"}:
+        return "old_testament"
+    if channel_title in {"the new verse", "new testament", "new"}:
+        return "new_testament"
+
+    passage = str(meta.get("scripture_passage_range") or "").strip()
+    book = _first_scripture_book(passage)
+    if book in OLD_TESTAMENT_BOOKS:
+        return "old_testament"
+    if book in NEW_TESTAMENT_BOOKS:
+        return "new_testament"
+
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            title,
+            meta.get("youtube_title"),
+            meta.get("description"),
+            meta.get("youtube_description"),
+        )
+    ).lower()
+    if "old testament" in haystack or "genesis" in haystack:
+        return "old_testament"
+    if "new testament" in haystack or "gospel" in haystack or "matthew" in haystack:
+        return "new_testament"
+    return None
+
+
+def _scripture_upload_channel_selected(meta: dict) -> bool:
+    channel_titles = {
+        _canonical_youtube_channel_title(meta.get("target_youtube_channel_title")),
+        _canonical_youtube_channel_title(meta.get("youtube_channel_title")),
+    }
+    return SCRIPTURE_UPLOAD_CHANNEL_TITLE in channel_titles or bool(scripture_branch_from_metadata(meta))
+
+
+def scripture_youtube_playlist_titles(meta: dict, *, title: str = "") -> list[str]:
+    branch = scripture_branch_from_metadata(meta, title=title)
+    if not branch:
+        return []
+
+    playlist_titles = [
+        SCRIPTURE_OLD_TESTAMENT_PLAYLIST_TITLE
+        if branch == "old_testament"
+        else SCRIPTURE_NEW_TESTAMENT_PLAYLIST_TITLE
+    ]
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            title,
+            meta.get("youtube_title"),
+            meta.get("youtube_description"),
+            meta.get("description"),
+            " ".join(str(tag) for tag in meta.get("youtube_tags") or []),
+            meta.get("scripture_music_lane"),
+            meta.get("music_lane"),
+        )
+    ).lower()
+    for playlist_title, needles in SCRIPTURE_GENRE_PLAYLIST_RULES:
+        if any(needle in haystack for needle in needles):
+            playlist_titles.append(playlist_title)
+            break
+    return playlist_titles
+
+
+def youtube_schedule_options_for_playlist(playlist: Playlist) -> dict:
+    meta = _playlist_meta(playlist)
+    channel_titles = {
+        _canonical_youtube_channel_title(meta.get("target_youtube_channel_title")),
+        _canonical_youtube_channel_title(meta.get("youtube_channel_title")),
+    }
+    if NEW_VERSE_YOUTUBE_CHANNEL_TITLE in channel_titles:
+        return {
+            "schedule_disabled": True,
+            "schedule_label": "private_buddhist_scripture",
+        }
+    if not _scripture_upload_channel_selected(meta):
+        return {}
+    branch = scripture_branch_from_metadata(meta, title=playlist.title)
+    if branch == "old_testament":
+        hour, minute = SCRIPTURE_OLD_TESTAMENT_SCHEDULE
+        return {
+            "schedule_hour": hour,
+            "schedule_minute": minute,
+            "schedule_scope": "slot",
+            "schedule_label": "old_testament",
+        }
+    if branch == "new_testament":
+        hour, minute = SCRIPTURE_NEW_TESTAMENT_SCHEDULE
+        return {
+            "schedule_hour": hour,
+            "schedule_minute": minute,
+            "schedule_scope": "slot",
+            "schedule_label": "new_testament",
+        }
+    return {}
 
 
 def _resolve_youtube_channel_title(services: ServiceRegistry, channel_id: str | None) -> str | None:
@@ -379,6 +574,9 @@ def next_youtube_scheduled_publish_at(
     youtube_channel_id: str | None = None,
     youtube_channel_title: str | None = None,
     now: datetime | None = None,
+    schedule_hour: int | None = None,
+    schedule_minute: int | None = None,
+    schedule_scope: str = "date",
 ) -> datetime | None:
     if not services.settings.youtube_schedule_public_enabled:
         return None
@@ -392,8 +590,8 @@ def next_youtube_scheduled_publish_at(
             pass
 
     schedule_tz = _youtube_schedule_timezone(services)
-    hour = min(max(int(services.settings.youtube_schedule_hour), 0), 23)
-    minute = min(max(int(services.settings.youtube_schedule_minute), 0), 59)
+    hour = min(max(int(services.settings.youtube_schedule_hour if schedule_hour is None else schedule_hour), 0), 23)
+    minute = min(max(int(services.settings.youtube_schedule_minute if schedule_minute is None else schedule_minute), 0), 59)
     lead_minutes = max(int(services.settings.youtube_schedule_min_lead_minutes), 0)
     now_utc = _parse_metadata_datetime(now) or _utcnow()
     now_local = now_utc.astimezone(schedule_tz)
@@ -401,7 +599,9 @@ def next_youtube_scheduled_publish_at(
     if candidate <= now_local + timedelta(minutes=lead_minutes):
         candidate += timedelta(days=1)
 
+    use_slot_scope = str(schedule_scope or "").strip().lower() == "slot"
     occupied_local_dates = set()
+    occupied_local_slots = set()
     for playlist in db.scalars(select(Playlist)).all():
         if not _playlist_matches_youtube_channel(
             playlist,
@@ -413,26 +613,47 @@ def next_youtube_scheduled_publish_at(
         meta = _playlist_meta(playlist)
         for scheduled_at in _scheduled_publish_values_from_meta(meta):
             if scheduled_at >= now_utc - timedelta(days=1):
-                occupied_local_dates.add(scheduled_at.astimezone(schedule_tz).date())
+                scheduled_local = scheduled_at.astimezone(schedule_tz)
+                occupied_local_dates.add(scheduled_local.date())
+                occupied_local_slots.add(
+                    (scheduled_local.date(), scheduled_local.hour, scheduled_local.minute)
+                )
 
-    while candidate.date() in occupied_local_dates:
+    def occupied(value: datetime) -> bool:
+        if use_slot_scope:
+            return (value.date(), value.hour, value.minute) in occupied_local_slots
+        return value.date() in occupied_local_dates
+
+    while occupied(candidate):
         candidate += timedelta(days=1)
     return candidate.astimezone(timezone.utc)
 
 
-def youtube_schedule_metadata(services: ServiceRegistry, scheduled_publish_at: datetime | None) -> dict:
+def youtube_schedule_metadata(
+    services: ServiceRegistry,
+    scheduled_publish_at: datetime | None,
+    *,
+    schedule_hour: int | None = None,
+    schedule_minute: int | None = None,
+    schedule_label: str | None = None,
+) -> dict:
     if scheduled_publish_at is None:
         return {}
     schedule_tz = _youtube_schedule_timezone(services)
     scheduled_utc = scheduled_publish_at.astimezone(timezone.utc).replace(microsecond=0)
     scheduled_local = scheduled_utc.astimezone(schedule_tz)
-    return {
+    metadata = {
         "youtube_scheduled_publish_at": scheduled_utc.isoformat(),
         "youtube_schedule_local_time": scheduled_local.isoformat(),
         "youtube_schedule_timezone": str(services.settings.youtube_schedule_timezone or "Asia/Seoul"),
-        "youtube_schedule_hour": int(services.settings.youtube_schedule_hour),
-        "youtube_schedule_minute": int(services.settings.youtube_schedule_minute),
+        "youtube_schedule_hour": int(services.settings.youtube_schedule_hour if schedule_hour is None else schedule_hour),
+        "youtube_schedule_minute": int(
+            services.settings.youtube_schedule_minute if schedule_minute is None else schedule_minute
+        ),
     }
+    if schedule_label:
+        metadata["youtube_schedule_label"] = schedule_label
+    return metadata
 
 
 def _archive_purge_after(archived_at: datetime) -> datetime:

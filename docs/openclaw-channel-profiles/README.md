@@ -255,21 +255,21 @@ YouTube thumbnail:
 
 Cover / first frame:
 
-- 16:9 illustrated/anime/stylized Gospel/worship image for New Testament scripture-inspired music.
-- Follow the selected New Testament passage in sequence from Matthew onward.
+- 16:9 respectful Buddhist scripture-inspired image for modern vocal music.
+- Follow the selected Buddhist source/theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, mindfulness, compassion, impermanence, or non-attachment.
 - Only text allowed is the large lower-left `The New Verse` brand label.
 
 Loop video:
 
-- Animate the cover/first-frame with warm worshipful motion such as sunrise light, candle glow, dust in light, gentle wind, sea shimmer, doorway light, fabric movement, lamp flame, or cloud movement.
+- Animate the cover/first-frame with calm environmental motion such as lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
 - Preserve the large lower-left `The New Verse` brand label exactly for the whole clip.
-- Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
+- Do not add sutra text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
 YouTube thumbnail:
 
 - Start from the final cover as an image-to-image/reference edit.
-- Preserve the same passage scene, lighting, palette, props, and camera angle.
-- Add large readable worship text that connects to the selected passage, Gospel/New Testament theme, or prayer/worship lane. A generic headline like `GOSPEL SONGS` by itself is too broad for this channel unless it is paired with a passage-aware hook or the release truly needs broad Gospel packaging.
+- Preserve the same Buddhist/dharma scene, lighting, palette, props, and camera angle.
+- Add large readable teaching or lane-aware text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`.
 - Add `THE NEW VERSE` brand line, visually consistent with the large cover channel label.
 - Keep `THE NEW VERSE` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
 

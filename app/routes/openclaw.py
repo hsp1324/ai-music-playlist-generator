@@ -30,6 +30,23 @@ from app.workflows.scripture_sequence import (
 
 router = APIRouter(prefix="/openclaw", tags=["openclaw"])
 
+BIBLE_SCRIPTURE_UPLOAD_CHANNEL_TITLE = "The Old Verse"
+
+
+def _canonical_scripture_branch_title(channel_title: str) -> str:
+    normalized = str(channel_title or "").strip().lower().replace("-", "_")
+    if normalized in {"the old verse", "the_old_verse", "old testament", "old"}:
+        return "The Old Verse"
+    if normalized in {"the new verse", "the_new_verse", "new testament", "new_testament", "new"}:
+        return "New Testament"
+    return str(channel_title or "").strip()
+
+
+def _scripture_upload_target_title(branch_title: str) -> str:
+    if _canonical_scripture_branch_title(branch_title) in {"The Old Verse", "New Testament"}:
+        return BIBLE_SCRIPTURE_UPLOAD_CHANNEL_TITLE
+    return str(branch_title or "").strip()
+
 
 class OpenClawLockRequest(BaseModel):
     owner: str = "openclaw"
@@ -145,10 +162,12 @@ def _record_release_scripture_hint(
 
     meta = dict(playlist.metadata_json or {})
     changed = False
-    normalized_channel_title = channel_title.strip()
+    normalized_channel_title = _canonical_scripture_branch_title(channel_title)
     normalized_passage_range = passage_range.strip()
-    if normalized_channel_title and not str(meta.get("target_youtube_channel_title") or "").strip():
-        meta["target_youtube_channel_title"] = normalized_channel_title
+    target_channel_title = _scripture_upload_target_title(normalized_channel_title)
+    current_target = str(meta.get("target_youtube_channel_title") or "").strip()
+    if target_channel_title and current_target != target_channel_title:
+        meta["target_youtube_channel_title"] = target_channel_title
         changed = True
     scripture_updates = {
         "scripture_channel_title": normalized_channel_title,
