@@ -800,9 +800,10 @@ def test_openclaw_backlog_scheduler_does_not_prioritize_auth_blocked_upload_fail
         assert summary["channels"]["Solwave Radio"]["finishable"] == 0
         assert summary["channels"]["Solwave Radio"]["deferred"] == 1
         assert summary["channels"]["Solwave Radio"]["auth_blocked"] == 1
-        assert evaluation["reason"] == "underfilled_backlog"
+        assert evaluation["reason"] == "zero_scheduled_public_backlog"
         assert "Solwave Radio" not in evaluation["underfilled_channels"]
         assert "Solwave Radio" in evaluation["auth_blocked_channels"]
+        assert evaluation["zero_scheduled_public_channels"] == ["The New Verse"]
         assert "The New Verse" in evaluation["underfilled_channels"]
     finally:
         clear_isolated_client_env()
@@ -890,6 +891,47 @@ def test_openclaw_backlog_scheduler_retries_failed_publish_after_channel_reconne
         assert evaluation["should_request"] is True
         assert evaluation["reason"] == "finishable_releases"
         assert evaluation["finishable_channels"] == ["Solwave Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_prioritizes_zero_scheduled_channels_before_finishable(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [
+                {"id": "UC_SOFT", "title": "Soft Hour Radio"},
+                {"id": "UC_NEW", "title": "The New Verse"},
+                {"id": "UC_OLD", "title": "The Old Verse"},
+            ],
+        }
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Ready Metadata Release",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "metadata_review",
+                        "youtube_channel_title": "Soft Hour Radio",
+                    },
+                )
+            )
+            db.commit()
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "zero_scheduled_public_backlog"
+        assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
+        assert evaluation["zero_scheduled_public_channels"] == ["The New Verse", "The Old Verse"]
+        assert "The New Verse" in evaluation["underfilled_channels"]
+        assert "The Old Verse" in evaluation["underfilled_channels"]
     finally:
         clear_isolated_client_env()
 

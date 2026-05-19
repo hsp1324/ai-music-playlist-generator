@@ -378,7 +378,12 @@ def build_backlog_queue_request_message(
         "",
         "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
         "필요하면 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-youtube-metadata.md도 참고해줘.",
-        "새 workspace를 만들기 전에 기존 미완성 workspace와 로컬 OpenClaw 산출물을 먼저 확인하고 이어서 복구/업로드해줘.",
+        (
+            "이번 요청은 future scheduled-public YouTube 업로드가 0개인 채널을 먼저 채우는 것이 우선이야. "
+            "다른 채널의 metadata/publish finishable 항목만 처리하고 새 release 생성을 건너뛰지 말아줘."
+            if reason == "zero_scheduled_public_backlog"
+            else "새 workspace를 만들기 전에 기존 미완성 workspace와 로컬 OpenClaw 산출물을 먼저 확인하고 이어서 복구/업로드해줘."
+        ),
         "새 release를 만들 때는 future scheduled-public YouTube 업로드가 0개인 자동화 채널을 먼저 채워줘.",
         "채널별 unfinished Playlist Release가 target에 도달할 때까지 계속 만들되 max를 넘기지 말아줘.",
         "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",

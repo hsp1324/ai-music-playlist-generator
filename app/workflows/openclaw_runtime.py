@@ -604,6 +604,13 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         for title in raw_underfilled_channels
         if int(channel_data.get(title, {}).get("auth_blocked") or 0) <= 0
     ]
+    zero_scheduled_public_channels = [
+        title
+        for title, payload in channel_data.items()
+        if int(payload.get("count") or 0) == 0
+        and int(payload.get("youtube_scheduled_public_count") or 0) == 0
+        and int(payload.get("auth_blocked") or 0) <= 0
+    ]
     overfull_channels = [
         title for title, payload in channel_data.items() if int(payload.get("count") or 0) >= maximum
     ]
@@ -615,7 +622,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     if manual_blocker:
         summary = {**summary, "manual_blocker": manual_blocker}
 
-    if finishable_channels:
+    if manual_blocker and finishable_channels:
         return {
             "should_request": True,
             "reason": "finishable_releases",
@@ -624,6 +631,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
             "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
         }
@@ -636,6 +644,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
             "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
             **manual_blocker,
@@ -649,9 +658,36 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
             "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
             **manual_blocker,
+        }
+    if zero_scheduled_public_channels:
+        return {
+            "should_request": True,
+            "reason": "zero_scheduled_public_backlog",
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+        }
+    if finishable_channels:
+        return {
+            "should_request": True,
+            "reason": "finishable_releases",
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
         }
     if underfilled_channels:
         return {
@@ -662,6 +698,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
             "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
         }
@@ -674,6 +711,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
             "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
         }
@@ -683,6 +721,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         "target_per_channel": target,
         "max_per_channel": maximum,
         "auth_blocked_channels": auth_blocked_channels,
+        "zero_scheduled_public_channels": zero_scheduled_public_channels,
         "summary": summary,
     }
 
