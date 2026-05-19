@@ -12,8 +12,8 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 ## Visual Identity
 
 - Music identity: popular J-pop first. Keep the sound accessible, hook-driven, vocal, and playlist-friendly. Do not make every release feel like anime OST.
-- Default signature: exactly three people seen from behind, walking forward away from the viewer into the scene.
-- The camera/viewer sees backs and backs of heads, not front-facing faces.
+- Default signature: exactly three people walking toward the viewer in a front-view composition.
+- The camera/viewer sees the people from the front, preferably a medium-wide or full-body view rather than a close-up face shot.
 - The three people stay centered and visually important.
 - Text must fit around the centered three-person silhouette, usually lower-left or lower negative space. Do not push people sideways.
 - Background adapts to the release: Tokyo street, forest path, beach, rainy city, night park, station road, fantasy forest, seaside walk, neon alley, or similar Japan-themed scene.
@@ -43,9 +43,10 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 - Use Dreamina/Seedance or Gemini only for the moving clip.
 - For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
-- The loop video should keep the three people walking forward away from the camera with subtle camera-follow motion and environmental motion. The camera may follow at the same distance, but it must not push in, zoom in, pull back, or make the three people grow larger in frame.
+- The loop video should keep the three people walking toward the camera while the camera dollies backward at the same pace. The people must not grow larger or smaller in frame.
 - Keep the three-person silhouette at roughly the same screen size and centered placement throughout the clip. Reject/regenerate if the people noticeably scale up, the frame feels like a dolly-in, or the camera zooms into the subjects.
-- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
+- Let the side/background environment provide most of the motion: street lights, signs, rain, water, trees, reflections, people far in the background, or parallax should move naturally around the centered subjects.
+- The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion, so the app's loop crossfade does not feel like a jump.
 - If Dreamina rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared 10-attempt retry rule in `README.md` and `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and stop before render/publish after 10 failures.
 
 Prompt shape:
@@ -53,16 +54,16 @@ Prompt shape:
 ```text
 Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Tokyo Daydream Radio".
 Create one continuous forward-moving animated music visualizer shot for Tokyo Daydream Radio.
-Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, walking away from the camera into the scene.
-The viewer should see backs and backs of heads, not front-facing faces.
-The motion must progress forward naturally for the full clip.
+Keep the Tokyo Daydream Radio signature: exactly three people walking toward the viewer in a front-view composition.
+The viewer should see the people from the front, preferably medium-wide or full-body rather than close-up faces.
+The people walk forward naturally while the camera moves backward at the same speed, keeping the same distance from them.
 Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
 Preserve the large, readable lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 Adapt the background and atmosphere to the release concept.
-Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
-Keep the camera at the same distance from the three people while following them; no zoom in, no push-in, no pull-back, no camera breathing, no changing lens scale. The three people must stay roughly the same size in frame.
+Add gentle environmental motion, side-background parallax, reflections, rain shimmer, particles, or soft light motion around the walking subjects.
+Keep the camera at the same distance from the three people while moving backward; no zoom in, no push-in, no pull-back, no camera breathing, no changing lens scale. The three people must stay roughly the same size in frame.
 Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI, no extra people or characters.
 ```
 

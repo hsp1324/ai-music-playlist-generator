@@ -53,9 +53,10 @@ Use one lane, then vary substyle and lyric premise:
 
 ## Visual Direction
 
-- Default visual signature remains exactly three people seen from behind, walking forward away from the viewer.
+- Default visual signature is exactly three people walking toward the viewer in a front-view composition.
 - The setting should match the selected concept, not a generic Tokyo scene.
 - Keep the three people centered and visually important.
+- For moving clips, keep the camera moving backward at the same pace as the people so the subjects stay the same size; let the side/background motion carry the loop instead of zooming into the people.
 - Thumbnail text usually uses large `J-POP` plus `TOKYO DAYDREAM RADIO`.
 
 ## Good Fresh Concept Shapes

@@ -74,14 +74,15 @@ Cover / first frame:
 
 - 16:9 illustrated/anime/stylized image for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar releases.
 - Anime/OST-like music is included, but the channel is broader mainstream J-pop/pop and should not feel anime OST-only.
-- Default signature is exactly three people seen from behind, walking forward away from the viewer.
+- Default signature is exactly three people walking toward the viewer in a front-view composition.
 - Keep the three people centered and visually important unless the human explicitly requested a different visual concept.
 - Only text allowed is the large lower-left `Tokyo Daydream Radio` brand label.
 
 Loop video:
 
 - Animate the cover/first-frame as one continuous forward-moving shot.
-- Keep the three people walking away from the camera with subtle camera-follow and environmental motion.
+- Keep the three people walking toward the camera while the camera moves backward at the same speed, so the people stay the same size in frame.
+- Let the side/background environment provide most of the loopable motion through parallax, lights, rain, reflections, trees, water, signs, or distant background activity.
 - Preserve the large lower-left `Tokyo Daydream Radio` brand label exactly for the whole clip; do not shrink it.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 
