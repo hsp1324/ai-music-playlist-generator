@@ -30,6 +30,29 @@ COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
 ACTIVE_JOB_MARKER = ".render-worker-active.json"
 
 
+def infer_worker_profile(worker_id: str, hostname: str) -> str:
+    explicit = os.environ.get("AIMP_RENDER_WORKER_PROFILE", "").strip().lower()
+    if explicit:
+        return explicit
+    haystack = f"{worker_id} {hostname} {os.uname().machine}".lower()
+    if any(token in haystack for token in ("desktop", "gpu", "rtx", "workstation", "home")):
+        return "desktop"
+    if any(token in haystack for token in ("oracle", "instance", "oci", "arm", "aarch64")):
+        return "oracle"
+    return "standard"
+
+
+def max_render_height_for_profile(profile: str) -> int:
+    explicit = os.environ.get("AIMP_RENDER_WORKER_MAX_RENDER_HEIGHT", "").strip()
+    if explicit.isdigit():
+        return int(explicit)
+    if profile == "desktop":
+        return 1440
+    if profile == "oracle":
+        return 720
+    return 1080
+
+
 def normalize_api_base(value: str | None) -> str:
     base = (value or os.environ.get("AIMP_RENDER_WORKER_API_BASE") or os.environ.get("AIMP_LOCAL_API_BASE") or DEFAULT_API_BASE).rstrip("/")
     if not base.endswith("/api"):
@@ -380,6 +403,7 @@ def render_job(
     output_path = job_dir / render["output_filename"]
     total_duration_seconds = render.get("total_duration_seconds")
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
+    render_resolution = render.get("video_render_resolution") or "720p"
 
     def callback(progress: dict[str, Any]) -> None:
         post_progress(
@@ -398,6 +422,7 @@ def render_job(
             audio_path,
             output_path,
             smooth_loop=bool(render.get("smooth_loop", True)),
+            render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
@@ -407,6 +432,7 @@ def render_job(
             audio_path,
             cover_path,
             output_path,
+            render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
@@ -479,6 +505,9 @@ def upload_rendered_video(
 
 
 def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
+    hostname = socket.gethostname()
+    worker_profile = args.worker_profile or infer_worker_profile(args.worker_id, hostname)
+    max_render_height = max_render_height_for_profile(worker_profile)
     claim = request_json(
         client,
         "POST",
@@ -486,10 +515,12 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         token=args.token,
         json={
             "worker_id": args.worker_id,
-            "hostname": socket.gethostname(),
+            "hostname": hostname,
             "capabilities": {
                 "ffmpeg": args.ffmpeg,
                 "chunk_size_bytes": args.chunk_size_bytes,
+                "worker_profile": worker_profile,
+                "max_render_height": max_render_height,
             },
         },
     )
@@ -508,6 +539,8 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "title": job["title"],
                 "mode": job["render"]["mode"],
                 "spectrum": job["render"].get("video_spectrum_overlay_style"),
+                "render_resolution": job["render"].get("video_render_resolution"),
+                "worker_profile": worker_profile,
             },
         }
     )
@@ -551,6 +584,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--worker-id", default=f"{socket.gethostname()}-{os.getpid()}", help="Stable worker id. Reuse it to resume a claimed job.")
     parser.add_argument("--cache-dir", type=Path, default=Path(".render-worker"), help="Local cache/work directory.")
     parser.add_argument("--ffmpeg", default=os.environ.get("AIMP_FFMPEG_BINARY", "ffmpeg"), help="ffmpeg executable.")
+    parser.add_argument(
+        "--worker-profile",
+        default=os.environ.get("AIMP_RENDER_WORKER_PROFILE", ""),
+        help="Render worker profile. Default auto-detects from worker id / hostname; desktop prefers 1080p/2k jobs, oracle prefers 720p jobs.",
+    )
     parser.add_argument("--chunk-size-bytes", type=int, default=int(os.environ.get("AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES", 8 * 1024 * 1024)))
     parser.add_argument(
         "--cache-cleanup-threshold-percent",

@@ -153,6 +153,97 @@ def _file_info(path: Path) -> dict[str, Any]:
     }
 
 
+def _normalize_render_resolution(value: Any) -> str:
+    normalized = str(value or "720p").strip().lower().replace("_", "-").replace(" ", "")
+    aliases = {
+        "720": "720p",
+        "720p": "720p",
+        "hd": "720p",
+        "1080": "1080p",
+        "1080p": "1080p",
+        "fullhd": "1080p",
+        "full-hd": "1080p",
+        "fhd": "1080p",
+        "2k": "2k",
+        "1440": "2k",
+        "1440p": "2k",
+        "qhd": "2k",
+    }
+    return aliases.get(normalized, "720p")
+
+
+def _render_resolution_height(value: Any) -> int:
+    resolution = _normalize_render_resolution(value)
+    if resolution == "2k":
+        return 1440
+    if resolution == "1080p":
+        return 1080
+    return 720
+
+
+def _normalize_render_source_mode(value: Any) -> str:
+    normalized = str(value or "auto").strip().lower().replace(" ", "-")
+    aliases = {
+        "auto": "auto",
+        "default": "auto",
+        "loop": "loop_video",
+        "loop-video": "loop_video",
+        "loop_video": "loop_video",
+        "video": "loop_video",
+        "still": "still_image",
+        "still-image": "still_image",
+        "still_image": "still_image",
+        "image": "still_image",
+        "cover": "still_image",
+    }
+    return aliases.get(normalized, "auto")
+
+
+def _job_render_resolution(job: Job, playlist: Playlist) -> str:
+    meta = dict(playlist.metadata_json or {})
+    resolution = _normalize_render_resolution(
+        (job.payload_json or {}).get("video_render_resolution")
+        or meta.get("video_render_resolution")
+        or "720p"
+    )
+    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse" and resolution == "720p":
+        return "2k"
+    return resolution
+
+
+def _worker_profile(capabilities: dict[str, Any], worker_id: str, hostname: str) -> str:
+    explicit = str(capabilities.get("worker_profile") or capabilities.get("device_profile") or "").strip().lower()
+    if explicit:
+        return explicit
+    max_height_raw = capabilities.get("max_render_height")
+    try:
+        max_height = int(max_height_raw)
+    except (TypeError, ValueError):
+        max_height = 0
+    if max_height:
+        if max_height >= 1080:
+            return "desktop"
+        if max_height <= 720:
+            return "oracle"
+    haystack = f"{worker_id} {hostname}".lower()
+    if any(token in haystack for token in ("desktop", "gpu", "rtx", "workstation", "home")):
+        return "desktop"
+    if any(token in haystack for token in ("oracle", "instance", "oci", "arm", "aarch64")):
+        return "oracle"
+    return "standard"
+
+
+def _render_job_sort_key(job: Job, playlist: Playlist, profile: str) -> tuple[int, datetime]:
+    height = _render_resolution_height(_job_render_resolution(job, playlist))
+    is_high_resolution = height >= 1080
+    created_at = job.created_at or _utcnow()
+    if profile == "desktop":
+        return (0 if is_high_resolution else 1, created_at)
+    if profile == "oracle":
+        return (0 if not is_high_resolution else 1, created_at)
+    return (0, created_at)
+
+
 def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) -> int:
     timeout_seconds = max(int(services.settings.render_worker_claim_timeout_seconds or 0), 60)
     cutoff = _utcnow() - timedelta(seconds=timeout_seconds)
@@ -229,8 +320,23 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     loop_video_path = Path(str(meta.get("loop_video_path") or "")) if meta.get("loop_video_path") else None
     has_loop_video = bool(loop_video_path and loop_video_path.exists())
     allow_still_image_fallback = bool((job.payload_json or {}).get("allow_still_image_fallback"))
-    if not has_loop_video and not allow_still_image_fallback:
+    source_mode = _normalize_render_source_mode(
+        (job.payload_json or {}).get("video_render_source_mode")
+        or meta.get("video_render_source_mode")
+        or "auto"
+    )
+    is_cinematic_pulse = str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse"
+    if is_cinematic_pulse:
+        source_mode = "still_image"
+    if source_mode == "still_image":
+        allow_still_image_fallback = True
+        has_loop_video = False
+    if source_mode == "loop_video" and not has_loop_video:
         raise HTTPException(status_code=409, detail="Loop video is required before external video render.")
+    if source_mode == "auto" and not has_loop_video and not allow_still_image_fallback:
+        raise HTTPException(status_code=409, detail="Loop video is required before external video render.")
+    render_mode = "loop_video" if has_loop_video and source_mode != "still_image" else "still_image"
+    effective_source_mode = render_mode
 
     assets = {
         "audio": {
@@ -253,8 +359,9 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_spectrum_overlay_style")
         or "bars"
     )
-    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+    if is_cinematic_pulse:
         style = "bars"
+    render_resolution = _job_render_resolution(job, playlist)
     return {
         "id": job.id,
         "type": job.type.value,
@@ -263,10 +370,12 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         "title": playlist.title,
         "assets": assets,
         "render": {
-            "mode": "loop_video" if has_loop_video else "still_image",
+            "mode": render_mode,
             "smooth_loop": bool(meta.get("loop_video_smooth", True)),
             "allow_still_image_fallback": allow_still_image_fallback,
             "video_spectrum_overlay_style": style,
+            "video_render_resolution": render_resolution,
+            "video_render_source_mode": effective_source_mode,
             "total_duration_seconds": int(playlist.actual_duration_seconds or 0) or None,
             "track_ids": _playlist_track_ids(playlist),
             "output_filename": f"{playlist.id}.mp4",
@@ -340,6 +449,7 @@ def claim_render_job(
         claimed_at=now.isoformat(),
     )
     server_nickname = str(registry_worker.get("nickname") or "").strip()
+    profile = _worker_profile(payload.capabilities or {}, payload.worker_id, payload.hostname)
 
     existing = db.scalars(
         select(Job)
@@ -354,6 +464,7 @@ def claim_render_job(
             worker = dict(worker)
             worker["hostname"] = payload.hostname or worker.get("hostname") or ""
             worker["capabilities"] = payload.capabilities or worker.get("capabilities") or {}
+            worker["worker_profile"] = profile
             if server_nickname:
                 worker["nickname"] = server_nickname
             else:
@@ -363,6 +474,9 @@ def claim_render_job(
             meta = dict(playlist.metadata_json or {})
             if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
                 meta["video_spectrum_overlay_style"] = "bars"
+                meta["video_render_source_mode"] = "still_image"
+                current_resolution = _normalize_render_resolution(meta.get("video_render_resolution"))
+                meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
                 playlist.metadata_json = meta
                 db.add(playlist)
             db.add(job)
@@ -380,22 +494,27 @@ def claim_render_job(
             )
             return {"ok": True, "job": _render_job_payload(job, playlist, services), "recovered_stale_jobs": recovered}
 
-    candidate_ids = db.scalars(
-        select(Job.id)
+    candidate_jobs = db.scalars(
+        select(Job)
+        .options(selectinload(Job.playlist))
         .where(Job.type == JobType.build_video, Job.status == JobStatus.queued)
         .order_by(Job.created_at.asc())
-        .limit(10)
+        .limit(50)
     ).all()
+    candidate_jobs = sorted(
+        [job for job in candidate_jobs if job.playlist is not None],
+        key=lambda job: _render_job_sort_key(job, job.playlist, profile),
+    )
     claimed_id = None
-    for candidate_id in candidate_ids:
+    for candidate in candidate_jobs:
         update_result = db.execute(
             update(Job)
-            .where(Job.id == candidate_id, Job.status == JobStatus.queued)
+            .where(Job.id == candidate.id, Job.status == JobStatus.queued)
             .values(status=JobStatus.running, started_at=now)
         )
         db.commit()
         if update_result.rowcount == 1:
-            claimed_id = candidate_id
+            claimed_id = candidate.id
             break
 
     if not claimed_id:
@@ -408,6 +527,7 @@ def claim_render_job(
         "worker_id": payload.worker_id,
         "hostname": payload.hostname,
         "capabilities": payload.capabilities,
+        "worker_profile": profile,
         "claimed_at": now.isoformat(),
         "heartbeat_at": now.isoformat(),
         "rendered_track_ids": track_ids,
@@ -419,6 +539,9 @@ def claim_render_job(
     meta = dict(playlist.metadata_json or {})
     if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
         meta["video_spectrum_overlay_style"] = "bars"
+        meta["video_render_source_mode"] = "still_image"
+        current_resolution = _normalize_render_resolution(meta.get("video_render_resolution"))
+        meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
     meta["workflow_state"] = "video_rendering"
     worker_label = render_worker_display_name(worker_meta)
     meta["note"] = f"External render worker claimed the video job: {worker_label}."
@@ -657,6 +780,8 @@ def complete_render_job(
         "loop_video_smooth",
         "loop_video_source",
         "video_spectrum_overlay_style",
+        "video_render_resolution",
+        "video_render_source_mode",
     ):
         if key in render_meta:
             meta[key] = render_meta[key]

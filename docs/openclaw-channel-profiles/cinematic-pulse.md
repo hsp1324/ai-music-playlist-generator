@@ -36,29 +36,32 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Add `CINEMATIC PULSE` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
-## Loop Video
+## Render Visual
 
-- Use Dreamina/Seedance or Gemini only for the moving clip.
-- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
-- Animate the selected cover concept with visible cinematic motion: storm clouds, banners, sparks, energy pulses, engine glow, portal light, dust, rain, embers, distant silhouettes, or weapon/armor light when appropriate.
-- Preserve the large, readable lower-left `Cinematic Pulse` text exactly for the full clip.
-- The final moment should stay close to the opening composition so the app can repeat it smoothly.
-- Do not add blood, gore, real war footage, protected characters, franchise references, subtitles, UI, or extra text.
-- Keep the loop video photorealistic and cinematic. Do not turn the first frame into anime, cartoon, illustration, game-art, or painterly fantasy art.
-- When queuing final render, pass `--video-spectrum-overlay-style bars`. The spectrum should be a simple clean bar visualizer; do not use radial/pulse/multiwave/dot styles for Cinematic Pulse.
+- Do not create or upload a Gemini/Dreamina/Seedance loop video for normal Cinematic Pulse releases. Those providers usually reduce the moving clip to 720p, which weakens the channel's premium film-score look.
+- Instead, create a very high quality 16:9 photorealistic cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080. Use that still image as the final video source.
+- Queue final render with:
 
-Prompt shape:
+```bash
+scripts/openclaw-release render-video \
+  --release-id RELEASE_ID \
+  --allow-still-image-video \
+  --video-render-source-mode still_image \
+  --video-render-resolution 2k \
+  --video-spectrum-overlay-style bars
+```
+
+- The app/render worker will render from the high-resolution image and add only the clean bar spectrum overlay. Do not bake spectrum graphics into the image itself.
+- If a human explicitly asks for a moving Cinematic Pulse clip, follow the request, but default automation should prefer the high-resolution still-image render.
+
+Still-image prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Cinematic Pulse".
-Create one continuous animated cinematic music visualizer shot for a Cinematic Pulse instrumental release.
-Preserve the opening composition, lighting, palette, photorealistic cinematic film-still visual language, realistic depth, atmosphere, and the specific cinematic scene from the first frame.
-Preserve the large, readable lower-left "Cinematic Pulse" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
-Animate powerful but controlled cinematic motion already present or naturally implied by the scene: storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, distant silhouettes, or atmospheric light movement when appropriate.
-The motion must progress naturally for the full clip. Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only atmospheric details may differ.
-Stable composition, no hard cuts, no anime, no cartoon, no illustration, no game UI art, no gore, no real war footage, no protected characters, no franchise references, no celebrity likenesses, no other text, no subtitles, no logos, no UI.
+Create a 16:9 original photorealistic cinematic film-still / premium movie-poster image for a Cinematic Pulse instrumental film-score release.
+Use realistic lighting, cinematic lensing, depth of field, atmosphere, believable materials, strong silhouettes, and one clear focal scene.
+Make it high resolution, preferably 2560x1440 or at least 1920x1080.
+Include only the large, readable lower-left channel brand label "Cinematic Pulse". Do not add title text, genre text, subtitles, logos, UI, or any other words.
+No anime, no cartoon, no illustration, no game UI art, no gore, no real war footage, no protected characters, no franchise references, no celebrity likenesses.
 ```
 
 ## Metadata

@@ -70,6 +70,9 @@ def _auto_publish_args(audio_path: str, **overrides):
         "hard_loop_video": False,
         "allow_still_image_video": False,
         "allow_short_loop_video": False,
+        "video_spectrum_overlay_style": "bars",
+        "video_render_resolution": "720p",
+        "video_render_source_mode": "auto",
     }
     values.update(overrides)
     return SimpleNamespace(**values)

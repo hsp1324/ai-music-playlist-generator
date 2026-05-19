@@ -654,6 +654,24 @@ class BackgroundJobWorker:
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
         loop_video_path = str(meta.get("loop_video_path") or "").strip()
         allow_still_image_fallback = bool((job.payload_json or {}).get("allow_still_image_fallback"))
+        video_render_resolution = str(
+            (job.payload_json or {}).get("video_render_resolution")
+            or meta.get("video_render_resolution")
+            or "720p"
+        )
+        video_render_source_mode = str(
+            (job.payload_json or {}).get("video_render_source_mode")
+            or meta.get("video_render_source_mode")
+            or "auto"
+        ).strip().lower().replace("-", "_")
+        if video_render_source_mode in {"still", "image", "cover"}:
+            video_render_source_mode = "still_image"
+        elif video_render_source_mode in {"loop", "video"}:
+            video_render_source_mode = "loop_video"
+        elif video_render_source_mode not in {"auto", "loop_video", "still_image"}:
+            video_render_source_mode = "auto"
+        if video_render_source_mode == "still_image":
+            allow_still_image_fallback = True
         video_spectrum_overlay_style = str(
             (job.payload_json or {}).get("video_spectrum_overlay_style")
             or meta.get("video_spectrum_overlay_style")
@@ -661,7 +679,11 @@ class BackgroundJobWorker:
         )
         if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
             video_spectrum_overlay_style = "bars"
-        if loop_video_path and Path(loop_video_path).exists():
+            video_render_source_mode = "still_image"
+            allow_still_image_fallback = True
+            if not video_render_resolution or video_render_resolution == "720p":
+                video_render_resolution = "2k"
+        if video_render_source_mode != "still_image" and loop_video_path and Path(loop_video_path).exists():
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
                     self.services.playlist_builder.build_looped_video,
@@ -669,6 +691,7 @@ class BackgroundJobWorker:
                     audio_path,
                     video_path,
                     smooth_loop=bool(meta.get("loop_video_smooth", True)),
+                    render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
@@ -682,6 +705,7 @@ class BackgroundJobWorker:
                     audio_path,
                     Path(cover_image_path),
                     video_path,
+                    render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
@@ -730,6 +754,8 @@ class BackgroundJobWorker:
 
         playlist.output_video_path = rendered_video_path
         meta["video_spectrum_overlay_style"] = video_spectrum_overlay_style
+        meta["video_render_resolution"] = video_render_resolution
+        meta["video_render_source_mode"] = video_render_source_mode
         tracks = [
             item.track
             for item in sorted(playlist.items, key=lambda item: item.order_index)
@@ -745,6 +771,8 @@ class BackgroundJobWorker:
             "loop_video_smooth",
             "loop_video_source",
             "video_spectrum_overlay_style",
+            "video_render_resolution",
+            "video_render_source_mode",
         ):
             if key in render_meta:
                 meta[key] = render_meta[key]

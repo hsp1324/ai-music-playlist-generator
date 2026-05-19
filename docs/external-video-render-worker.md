@@ -52,6 +52,17 @@ Run continuously:
 scripts/render-worker --worker-id "$(hostname)-render" --poll-seconds 20
 ```
 
+Worker profile controls claim priority. It is auto-detected from `worker_id` / hostname, but can be set explicitly:
+
+```bash
+scripts/render-worker --worker-id "desktop-render" --worker-profile desktop --poll-seconds 20
+scripts/render-worker --worker-id "oracle-render" --worker-profile oracle --poll-seconds 20
+```
+
+- `desktop` workers prefer queued 1080p/2k jobs first, then take 720p jobs if no high-resolution job is waiting.
+- `oracle` workers prefer queued 720p jobs first, then take high-resolution jobs only when no 720p job is waiting.
+- `standard` workers take oldest queued jobs.
+
 Keep `--worker-id` stable. If the worker disconnects during upload, restarting with the same worker id lets it resume the same claimed job and continue the chunked upload from the server's current byte offset.
 
 After the final MP4 is successfully uploaded back to the web app, the worker writes a completion marker in that job cache directory. When disk usage for the worker cache filesystem rises above `AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT` (default `50`), the worker deletes completed job cache directories oldest first. It also deletes unmarked stale job cache directories older than `AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS` (default `24`) because older workers may have left successful renders without markers. The active job writes `.render-worker-active.json`; fresh in-progress job directories are not deleted by cache cleanup.
@@ -117,6 +128,6 @@ If you deploy a new VM or change Nginx manually, keep this block.
 
 - Multiple render workers can run at the same time. Each worker claims only one queued video job at a time.
 - The main VM remains the only machine that uploads to YouTube.
-- OpenClaw should still call `scripts/openclaw-release render-video` after audio/cover/thumbnail/loop-video are ready. That creates the queued video job; render workers do the actual MP4 work.
+- OpenClaw should still call `scripts/openclaw-release render-video` after audio/cover/thumbnail/loop-video are ready. That creates the queued video job; render workers do the actual MP4 work. Cinematic Pulse is the still-image high-resolution exception: OpenClaw queues it with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`, so no loop-video asset is required.
 - Do not run `scripts/render-worker` on the main VM if the goal is to keep the main VM free from video rendering.
 - If a rendered release is stuck, check `/api/render-worker/status`, the workspace progress, and `storage/tmp/render-worker/` partial files.

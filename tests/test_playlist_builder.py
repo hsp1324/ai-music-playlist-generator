@@ -53,6 +53,46 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
     assert "scale=1280:720" in args[args.index("-vf") + 1]
 
 
+def test_build_video_accepts_2k_render_resolution(tmp_path) -> None:
+    args_path = tmp_path / "ffmpeg-args.json"
+    ffmpeg_path = tmp_path / "fake-ffmpeg.py"
+    ffmpeg_path.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env python3",
+                "import json",
+                "import pathlib",
+                "import sys",
+                f"pathlib.Path({str(args_path)!r}).write_text(json.dumps(sys.argv[1:]), encoding='utf-8')",
+                "pathlib.Path(sys.argv[-1]).write_bytes(b'fake-video')",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    ffmpeg_path.chmod(0o755)
+
+    audio_path = tmp_path / "source.mp3"
+    cover_path = tmp_path / "cinematic-cover.png"
+    output_path = tmp_path / "release.mp4"
+    audio_path.write_bytes(b"fake-audio")
+    cover_path.write_bytes(b"fake-cover")
+
+    builder = FFMpegPlaylistBuilder(
+        Settings(
+            storage_root=tmp_path / "storage",
+            ffmpeg_binary=str(ffmpeg_path),
+            video_spectrum_overlay_enabled=False,
+        )
+    )
+
+    result = builder.build_video(audio_path, cover_path, output_path, render_resolution="2k")
+
+    assert result == output_path
+    args = json.loads(args_path.read_text(encoding="utf-8"))
+    assert "scale=2560:1440" in args[args.index("-vf") + 1]
+    assert args[args.index("-crf") + 1] == "18"
+
+
 def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
     audio_path = tmp_path / "empty.mp3"
     output_path = tmp_path / "release.mp3"

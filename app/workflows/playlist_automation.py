@@ -80,6 +80,33 @@ LOOP_VIDEO_PROVIDER_ALIASES = {
     "human": "manual",
     "unknown": "unknown",
 }
+VIDEO_RENDER_RESOLUTION_ALIASES = {
+    "720": "720p",
+    "720p": "720p",
+    "hd": "720p",
+    "1080": "1080p",
+    "1080p": "1080p",
+    "fullhd": "1080p",
+    "full-hd": "1080p",
+    "fhd": "1080p",
+    "2k": "2k",
+    "1440": "2k",
+    "1440p": "2k",
+    "qhd": "2k",
+}
+VIDEO_RENDER_SOURCE_MODE_ALIASES = {
+    "auto": "auto",
+    "default": "auto",
+    "loop": "loop_video",
+    "loop-video": "loop_video",
+    "loop_video": "loop_video",
+    "video": "loop_video",
+    "still": "still_image",
+    "still-image": "still_image",
+    "still_image": "still_image",
+    "image": "still_image",
+    "cover": "still_image",
+}
 
 
 def _utcnow() -> datetime:
@@ -736,6 +763,8 @@ def serialize_playlist_workspace(
         loop_video_provider=_loop_video_provider(meta),
         loop_video_smooth=bool(meta.get("loop_video_smooth", True)),
         video_spectrum_overlay_style=str(meta.get("video_spectrum_overlay_style") or "bars"),
+        video_render_resolution=_normalize_video_render_resolution(meta.get("video_render_resolution")),
+        video_render_source_mode=_normalize_video_render_source_mode(meta.get("video_render_source_mode")),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
@@ -1802,6 +1831,8 @@ def queue_workspace_video_render(
     actor: str,
     allow_still_image_fallback: bool = False,
     video_spectrum_overlay_style: str | None = None,
+    video_render_resolution: str | None = None,
+    video_render_source_mode: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -1817,19 +1848,31 @@ def queue_workspace_video_render(
         raise ValueError("Approved cover image is required before rendering video.")
     if not meta.get("cover_approved"):
         raise ValueError("Cover image must be approved before rendering video.")
+    is_cinematic_pulse = str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse"
+    source_mode = _normalize_video_render_source_mode(video_render_source_mode)
+    render_resolution = _normalize_video_render_resolution(video_render_resolution)
+    if is_cinematic_pulse:
+        source_mode = "still_image"
+        if render_resolution == "720p":
+            render_resolution = "2k"
+        allow_still_image_fallback = True
+
     loop_video_path = str(meta.get("loop_video_path") or "").strip()
-    if not allow_still_image_fallback and (not loop_video_path or not Path(loop_video_path).exists()):
+    needs_loop_video = source_mode != "still_image" and not allow_still_image_fallback
+    if needs_loop_video and (not loop_video_path or not Path(loop_video_path).exists()):
         raise ValueError("Uploaded loop video is required before rendering video.")
 
     active_job = _find_active_video_job(db, playlist)
     visualizer_style = _normalize_video_spectrum_overlay_style(video_spectrum_overlay_style)
-    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+    if is_cinematic_pulse:
         visualizer_style = "bars"
     meta["workflow_state"] = "video_queued"
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
     meta["note"] = "Video render queued from the web dashboard."
     meta["video_spectrum_overlay_style"] = visualizer_style
+    meta["video_render_resolution"] = render_resolution
+    meta["video_render_source_mode"] = source_mode
     meta.pop("video_build_error", None)
     meta.pop("publish_approved_by", None)
     playlist.output_video_path = None
@@ -1850,6 +1893,8 @@ def queue_workspace_video_render(
                     "trigger": "manual-video-render",
                     "allow_still_image_fallback": allow_still_image_fallback,
                     "video_spectrum_overlay_style": visualizer_style,
+                    "video_render_resolution": render_resolution,
+                    "video_render_source_mode": source_mode,
                 },
                 result_json={},
                 playlist=playlist,
@@ -1895,6 +1940,16 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
     if normalized not in {"bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"}:
         return "bars"
     return normalized
+
+
+def _normalize_video_render_resolution(value: str | None) -> str:
+    normalized = str(value or "720p").strip().lower().replace("_", "-").replace(" ", "")
+    return VIDEO_RENDER_RESOLUTION_ALIASES.get(normalized, "720p")
+
+
+def _normalize_video_render_source_mode(value: str | None) -> str:
+    normalized = str(value or "auto").strip().lower().replace(" ", "-")
+    return VIDEO_RENDER_SOURCE_MODE_ALIASES.get(normalized, "auto")
 
 
 def generate_playlist_metadata(

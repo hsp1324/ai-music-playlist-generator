@@ -1851,7 +1851,8 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 args.youtube_channel_title,
             ],
         )
-    if not loop_video_path and not args.release_id and not args.allow_still_image_video:
+    still_image_render = bool(args.allow_still_image_video or args.video_render_source_mode == "still_image")
+    if not loop_video_path and not args.release_id and not still_image_render:
         raise RuntimeError(
             "auto-publish-playlist requires --loop-video when creating a new Playlist Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
@@ -1886,7 +1887,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first. "
             "Only pass --allow-cover-as-thumbnail if the human explicitly wants to reuse the video cover as the YouTube thumbnail."
         )
-    if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
+    if not loop_video_path and not release_has_uploaded_loop_video(release) and not still_image_render:
         raise RuntimeError(
             "auto-publish-playlist requires an uploaded loop video before video render. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
@@ -2065,8 +2066,10 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         f"/playlists/{release['id']}/video/render",
         json={
             "actor": args.actor,
-            "allow_still_image_fallback": bool(args.allow_still_image_video),
+            "allow_still_image_fallback": bool(args.allow_still_image_video or args.video_render_source_mode == "still_image"),
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
+            "video_render_resolution": args.video_render_resolution,
+            "video_render_source_mode": args.video_render_source_mode,
         },
     )
     release = wait_for_release(
@@ -2185,7 +2188,8 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 args.youtube_channel_title,
             ],
         )
-    if not loop_video_path and not args.release_id and not args.allow_still_image_video:
+    still_image_render = bool(args.allow_still_image_video or args.video_render_source_mode == "still_image")
+    if not loop_video_path and not args.release_id and not still_image_render:
         raise RuntimeError(
             "auto-publish-single requires --loop-video when creating a new Single Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4."
@@ -2219,7 +2223,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "auto-publish-single requires a YouTube thumbnail image before YouTube upload. "
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first."
         )
-    if not loop_video_path and not release_has_uploaded_loop_video(release) and not args.allow_still_image_video:
+    if not loop_video_path and not release_has_uploaded_loop_video(release) and not still_image_render:
         raise RuntimeError(
             "auto-publish-single requires an uploaded loop video before video render. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
@@ -2378,8 +2382,10 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         f"/playlists/{release['id']}/video/render",
         json={
             "actor": args.actor,
-            "allow_still_image_fallback": bool(args.allow_still_image_video),
+            "allow_still_image_fallback": bool(args.allow_still_image_video or args.video_render_source_mode == "still_image"),
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
+            "video_render_resolution": args.video_render_resolution,
+            "video_render_source_mode": args.video_render_source_mode,
         },
     )
     release = wait_for_release(
@@ -2644,8 +2650,10 @@ def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         f"/playlists/{release['id']}/video/render",
         json={
             "actor": args.actor,
-            "allow_still_image_fallback": bool(args.allow_still_image_video),
+            "allow_still_image_fallback": bool(args.allow_still_image_video or args.video_render_source_mode == "still_image"),
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
+            "video_render_resolution": args.video_render_resolution,
+            "video_render_source_mode": args.video_render_source_mode,
         },
     )
     if args.wait:
@@ -2664,6 +2672,8 @@ def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "id": release["id"],
             "title": release["title"],
             "workflow_state": release["workflow_state"],
+            "video_render_resolution": release.get("video_render_resolution"),
+            "video_render_source_mode": release.get("video_render_source_mode"),
             "output_video_path": release.get("output_video_path"),
             "youtube_title": release.get("youtube_title"),
         },
@@ -3051,6 +3061,18 @@ def build_parser() -> argparse.ArgumentParser:
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
+    auto_playlist_parser.add_argument(
+        "--video-render-resolution",
+        choices=["720p", "1080p", "2k"],
+        default="720p",
+        help="Final MP4 render resolution. Use 2k for Cinematic Pulse still-image renders.",
+    )
+    auto_playlist_parser.add_argument(
+        "--video-render-source-mode",
+        choices=["auto", "loop_video", "still_image"],
+        default="auto",
+        help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
+    )
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
@@ -3089,6 +3111,18 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
+    )
+    auto_single_parser.add_argument(
+        "--video-render-resolution",
+        choices=["720p", "1080p", "2k"],
+        default="720p",
+        help="Final MP4 render resolution. Use 2k for Cinematic Pulse still-image renders.",
+    )
+    auto_single_parser.add_argument(
+        "--video-render-source-mode",
+        choices=["auto", "loop_video", "still_image"],
+        default="auto",
+        help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
     )
     auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
@@ -3152,6 +3186,18 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release.",
+    )
+    render_video_parser.add_argument(
+        "--video-render-resolution",
+        choices=["720p", "1080p", "2k"],
+        default="720p",
+        help="Final MP4 render resolution. Use 2k for Cinematic Pulse still-image renders.",
+    )
+    render_video_parser.add_argument(
+        "--video-render-source-mode",
+        choices=["auto", "loop_video", "still_image"],
+        default="auto",
+        help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
     )
     render_video_parser.add_argument("--wait", action="store_true", help="Wait for VM video render completion before continuing to metadata/publish.")
     render_video_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for video render. Default: 6 hours.")

@@ -18,19 +18,34 @@ from app.config import Settings
 from app.models.track import Track
 
 
-YOUTUBE_STILL_IMAGE_FILTER = (
-    "scale=1280:720:force_original_aspect_ratio=decrease,"
-    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
-    "setsar=1,"
-    "format=yuv420p"
-)
-YOUTUBE_LOOP_VIDEO_FILTER = (
-    "scale=1280:720:force_original_aspect_ratio=decrease,"
-    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,"
-    "setsar=1,"
-    "fps=30,"
-    "format=yuv420p"
-)
+DEFAULT_VIDEO_FRAME_SIZE = (1280, 720)
+VIDEO_RENDER_RESOLUTION_SIZES = {
+    "720p": DEFAULT_VIDEO_FRAME_SIZE,
+    "hd": DEFAULT_VIDEO_FRAME_SIZE,
+    "1080p": (1920, 1080),
+    "fullhd": (1920, 1080),
+    "fhd": (1920, 1080),
+    "2k": (2560, 1440),
+    "1440p": (2560, 1440),
+    "qhd": (2560, 1440),
+}
+
+
+def youtube_video_filter(frame_size: tuple[int, int], *, fps: int | None = None) -> str:
+    width, height = frame_size
+    parts = [
+        f"scale={width}:{height}:force_original_aspect_ratio=decrease",
+        f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2",
+        "setsar=1",
+    ]
+    if fps:
+        parts.append(f"fps={fps}")
+    parts.append("format=yuv420p")
+    return ",".join(parts)
+
+
+YOUTUBE_STILL_IMAGE_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE)
+YOUTUBE_LOOP_VIDEO_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE, fps=30)
 DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 6
 DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 1.0
 SPECTRUM_OVERLAY_WIDTH = 560
@@ -331,6 +346,7 @@ class FFMpegPlaylistBuilder:
         cover_image_path: Path,
         output_path: Path,
         *,
+        render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
@@ -342,6 +358,7 @@ class FFMpegPlaylistBuilder:
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         image_mimetype = guess_type(str(cover_image_path))[0] or "image/png"
+        frame_size = self._render_frame_size(render_resolution)
         apply_spectrum_overlay = self._spectrum_overlay_enabled(spectrum_overlay_style)
         render_output_path = self._base_render_path(output_path) if apply_spectrum_overlay else output_path
 
@@ -367,7 +384,9 @@ class FFMpegPlaylistBuilder:
             "-tune",
             "stillimage",
             "-vf",
-            YOUTUBE_STILL_IMAGE_FILTER,
+            youtube_video_filter(frame_size),
+            "-crf",
+            self._x264_crf_for_frame_size(frame_size),
             "-c:a",
             "aac",
             "-b:a",
@@ -395,6 +414,7 @@ class FFMpegPlaylistBuilder:
                     cover_image_path,
                     output_path,
                     spectrum_overlay_style=spectrum_overlay_style,
+                    render_resolution=render_resolution,
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
                 )
@@ -410,6 +430,7 @@ class FFMpegPlaylistBuilder:
         output_path: Path,
         *,
         smooth_loop: bool = True,
+        render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
@@ -423,6 +444,7 @@ class FFMpegPlaylistBuilder:
         loop_source_path = clip_path
         loop_unit_path: Path | None = None
         concat_list_path: Path | None = None
+        frame_size = self._render_frame_size(render_resolution)
         apply_spectrum_overlay = self._spectrum_overlay_enabled(spectrum_overlay_style)
         render_output_path = self._base_render_path(output_path) if apply_spectrum_overlay else output_path
         command: list[str]
@@ -435,6 +457,7 @@ class FFMpegPlaylistBuilder:
                 output_path,
                 source_seconds=source_seconds,
                 transition_seconds=transition_seconds,
+                frame_size=frame_size,
             )
             concat_list_path = self._write_loop_concat_list(
                 intro_path,
@@ -498,6 +521,10 @@ class FFMpegPlaylistBuilder:
                 "veryfast",
                 "-pix_fmt",
                 "yuv420p",
+                "-vf",
+                youtube_video_filter(frame_size, fps=30),
+                "-crf",
+                self._x264_crf_for_frame_size(frame_size),
                 "-c:a",
                 "aac",
                 "-b:a",
@@ -523,6 +550,7 @@ class FFMpegPlaylistBuilder:
                     clip_path,
                     output_path,
                     spectrum_overlay_style=spectrum_overlay_style,
+                    render_resolution=render_resolution,
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
                 )
@@ -544,6 +572,16 @@ class FFMpegPlaylistBuilder:
 
     def _base_render_path(self, output_path: Path) -> Path:
         return output_path.with_name(f"{output_path.stem}-base-render{output_path.suffix}")
+
+    def _render_frame_size(self, render_resolution: str | None = None) -> tuple[int, int]:
+        normalized = str(render_resolution or "720p").strip().lower().replace("_", "-").replace(" ", "")
+        return VIDEO_RENDER_RESOLUTION_SIZES.get(normalized, DEFAULT_VIDEO_FRAME_SIZE)
+
+    def _x264_crf_for_frame_size(self, frame_size: tuple[int, int]) -> str:
+        width, height = frame_size
+        if width >= 1920 or height >= 1080:
+            return "18"
+        return "22"
 
     def _normalize_spectrum_overlay_style(self, style: str) -> str:
         normalized = str(style or "bars").strip().lower().replace("_", "-")
@@ -589,6 +627,7 @@ class FFMpegPlaylistBuilder:
         output_path: Path,
         *,
         spectrum_overlay_style: str | None,
+        render_resolution: str | None,
         total_duration_seconds: int | float | None,
         progress_callback: Callable[[dict[str, Any]], None] | None,
     ) -> None:
@@ -597,7 +636,8 @@ class FFMpegPlaylistBuilder:
         )
 
         output_path.unlink(missing_ok=True)
-        visual_frame = self._normalize_preview_frame(self._load_visual_source_frame(visual_source_path))
+        frame_size = self._render_frame_size(render_resolution)
+        visual_frame = self._normalize_preview_frame(self._load_visual_source_frame(visual_source_path), frame_size)
         primary, accent = self._extract_spectrum_palette(visual_frame)
         overlay_size = self._spectrum_overlay_size(style)
         x, y = self._choose_spectrum_overlay_position(
@@ -659,9 +699,9 @@ class FFMpegPlaylistBuilder:
                 "-c:v",
                 "libx264",
                 "-preset",
-                "ultrafast",
+                "veryfast",
                 "-crf",
-                "24",
+                self._x264_crf_for_frame_size(frame_size),
                 "-c:a",
                 "copy",
                 "-shortest",
@@ -1210,10 +1250,15 @@ class FFMpegPlaylistBuilder:
         except (OSError, subprocess.CalledProcessError):
             return Image.new("RGB", (1280, 720), "#10141d")
 
-    def _normalize_preview_frame(self, source: Image.Image) -> Image.Image:
-        image = ImageOps.contain(source.convert("RGB"), (1280, 720), Image.Resampling.LANCZOS)
-        canvas = Image.new("RGB", (1280, 720), "#000000")
-        canvas.paste(image, ((1280 - image.width) // 2, (720 - image.height) // 2))
+    def _normalize_preview_frame(
+        self,
+        source: Image.Image,
+        frame_size: tuple[int, int] = DEFAULT_VIDEO_FRAME_SIZE,
+    ) -> Image.Image:
+        width, height = frame_size
+        image = ImageOps.contain(source.convert("RGB"), frame_size, Image.Resampling.LANCZOS)
+        canvas = Image.new("RGB", frame_size, "#000000")
+        canvas.paste(image, ((width - image.width) // 2, (height - image.height) // 2))
         return canvas
 
     def _extract_spectrum_palette(self, image: Image.Image) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
@@ -1246,10 +1291,13 @@ class FFMpegPlaylistBuilder:
         accent = self._enhance_overlay_color(accent_rgb)
         return primary, accent
 
-    def _choose_spectrum_overlay_position(self, _image: Image.Image, size: tuple[int, int]) -> tuple[int, int]:
+    def _choose_spectrum_overlay_position(self, image: Image.Image, size: tuple[int, int]) -> tuple[int, int]:
         width, height = size
-        right_x = max(1280 - width - 55, 0)
-        lower_y = max(720 - height - 45, 0)
+        frame_width, frame_height = image.size
+        margin_x = max(55, int(round(frame_width * 0.043)))
+        margin_y = max(45, int(round(frame_height * 0.063)))
+        right_x = max(frame_width - width - margin_x, 0)
+        lower_y = max(frame_height - height - margin_y, 0)
         return right_x, lower_y
 
     def _average_rgb(self, values: list[tuple[int, int, int]]) -> tuple[int, int, int]:
@@ -1370,6 +1418,7 @@ class FFMpegPlaylistBuilder:
         *,
         source_seconds: float,
         transition_seconds: float,
+        frame_size: tuple[int, int],
     ) -> tuple[Path, Path]:
         intro_path = output_path.with_name(f"{output_path.stem}-loop-intro.mp4")
         loop_unit_path = output_path.with_name(f"{output_path.stem}-loop-unit.mp4")
@@ -1383,11 +1432,12 @@ class FFMpegPlaylistBuilder:
         transition_offset_arg = self._format_seconds(transition_offset)
         body_duration_arg = self._format_seconds(body_duration)
         normalized_filter = (
-            f"{YOUTUBE_LOOP_VIDEO_FILTER},"
+            f"{youtube_video_filter(frame_size, fps=30)},"
             f"tpad=stop_mode=clone:stop_duration={source_arg},"
             f"trim=duration={source_arg},"
             "setpts=PTS-STARTPTS"
         )
+        crf = self._x264_crf_for_frame_size(frame_size)
         transition_filter = (
             "[0:v]setpts=PTS-STARTPTS[tail];"
             "[1:v]setpts=PTS-STARTPTS[head];"
@@ -1420,6 +1470,8 @@ class FFMpegPlaylistBuilder:
                     "libx264",
                     "-preset",
                     "veryfast",
+                    "-crf",
+                    crf,
                     "-pix_fmt",
                     "yuv420p",
                     "-movflags",
@@ -1442,6 +1494,8 @@ class FFMpegPlaylistBuilder:
                     "libx264",
                     "-preset",
                     "veryfast",
+                    "-crf",
+                    crf,
                     "-pix_fmt",
                     "yuv420p",
                     "-movflags",
@@ -1476,6 +1530,8 @@ class FFMpegPlaylistBuilder:
                     "libx264",
                     "-preset",
                     "veryfast",
+                    "-crf",
+                    crf,
                     "-pix_fmt",
                     "yuv420p",
                     "-movflags",
@@ -1500,6 +1556,8 @@ class FFMpegPlaylistBuilder:
                     "libx264",
                     "-preset",
                     "veryfast",
+                    "-crf",
+                    crf,
                     "-pix_fmt",
                     "yuv420p",
                     "-movflags",
@@ -1526,6 +1584,8 @@ class FFMpegPlaylistBuilder:
                     "libx264",
                     "-preset",
                     "veryfast",
+                    "-crf",
+                    crf,
                     "-pix_fmt",
                     "yuv420p",
                     "-movflags",

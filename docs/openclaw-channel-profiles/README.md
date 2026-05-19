@@ -187,14 +187,14 @@ Cover / first frame:
 
 - 16:9 photorealistic cinematic film-still / premium movie-poster realism for cinematic orchestra, movie OST, trailer, heroic, sci-fi action, dark fantasy, emotional, mystery, or epic orchestral instrumental releases.
 - Strong focal scene, realistic lighting, depth of field, cinematic lensing, atmosphere, readable silhouettes, and high contrast.
+- Prefer 2560x1440 (`2k`) or at least 1920x1080 so the final still-image render stays crisp.
 - Only text allowed is the large lower-left `Cinematic Pulse` brand label.
 
-Loop video:
+Render visual:
 
-- Animate the cover/first-frame with controlled cinematic motion such as storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, or atmospheric light movement.
-- Preserve the large lower-left `Cinematic Pulse` brand label exactly for the whole clip.
-- Keep the clip photorealistic and cinematic; do not turn it into anime, cartoon, illustration, game UI art, or painterly fantasy art.
-- Queue final render with `--video-spectrum-overlay-style bars`; do not use radial, pulse, multiwave, dots/particles, or busy waveform styles unless the human explicitly asks.
+- Do not create a Gemini/Dreamina/Seedance loop video for normal Cinematic Pulse releases.
+- Queue final render from the still cover with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
+- The app/render worker adds only the clean bar spectrum overlay; do not use radial, pulse, multiwave, dots/particles, or busy waveform styles unless the human explicitly asks.
 - Do not add gore, real war footage, protected characters, franchise references, subtitles, title text, logos, UI, or unrelated words.
 
 YouTube thumbnail:

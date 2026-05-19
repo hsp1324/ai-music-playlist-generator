@@ -1770,6 +1770,130 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_prioritizes_resolution_by_worker_profile(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "priority-audio.mp3"
+        cover_path = playlist_dir / "priority-cover.png"
+        loop_path = playlist_dir / "priority-loop.mp4"
+        track_path = track_dir / "priority-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Priority Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={},
+            )
+            low = Playlist(
+                title="Low Resolution First",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            high = Playlist(
+                title="High Resolution Cinematic",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "Cinematic Pulse",
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "video_render_resolution": "2k",
+                    "video_render_source_mode": "still_image",
+                },
+            )
+            db.add_all([track, low, high])
+            db.flush()
+            db.add_all(
+                [
+                    PlaylistItem(playlist_id=low.id, track_id=track.id, order_index=1, included_duration_seconds=60),
+                    PlaylistItem(playlist_id=high.id, track_id=track.id, order_index=1, included_duration_seconds=60),
+                ]
+            )
+            low_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=low.id,
+                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                result_json={},
+            )
+            high_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=high.id,
+                payload_json={
+                    "allow_still_image_fallback": True,
+                    "video_render_resolution": "2k",
+                    "video_render_source_mode": "still_image",
+                },
+                result_json={},
+            )
+            db.add_all([low_job, high_job])
+            db.commit()
+            low_job_id = low_job.id
+            high_job_id = high_job.id
+
+        headers = {"X-Render-Worker-Token": "test-render-token"}
+        desktop_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "desktop-render",
+                "hostname": "home-desktop",
+                "capabilities": {"worker_profile": "desktop", "max_render_height": 1440},
+            },
+        )
+        assert desktop_claim.status_code == 200
+        assert desktop_claim.json()["job"]["id"] == high_job_id
+        assert desktop_claim.json()["job"]["render"]["video_render_resolution"] == "2k"
+        assert desktop_claim.json()["job"]["render"]["mode"] == "still_image"
+
+        oracle_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "oracle-render",
+                "hostname": "oracle-instance",
+                "capabilities": {"worker_profile": "oracle", "max_render_height": 720},
+            },
+        )
+        assert oracle_claim.status_code == 200
+        assert oracle_claim.json()["job"]["id"] == low_job_id
+        assert oracle_claim.json()["job"]["render"]["video_render_resolution"] == "720p"
+        assert oracle_claim.json()["job"]["render"]["mode"] == "loop_video"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -2087,10 +2211,8 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
 
         audio_path = playlist_dir / "cinematic-audio.mp3"
         cover_path = playlist_dir / "cinematic-cover.png"
-        loop_path = playlist_dir / "cinematic-loop.mp4"
         track_path = track_dir / "cinematic-track.mp3"
         audio_path.write_bytes(b"fake-audio")
-        loop_path.write_bytes(b"fake-loop")
         track_path.write_bytes(b"fake-track")
         Image.new("RGB", (1280, 720), "black").save(cover_path)
 
@@ -2114,8 +2236,6 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
                     "workflow_state": "audio_ready",
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
-                    "loop_video_path": str(loop_path),
-                    "loop_video_smooth": True,
                 },
             )
             db.add_all([track, playlist])
@@ -2134,13 +2254,20 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
 
         assert response.status_code == 200
         assert response.json()["video_spectrum_overlay_style"] == "bars"
+        assert response.json()["video_render_source_mode"] == "still_image"
+        assert response.json()["video_render_resolution"] == "2k"
         with SessionLocal() as db:
             job = db.scalars(
                 select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_video)
             ).one()
             playlist = db.get(Playlist, playlist_id)
             assert playlist.metadata_json["video_spectrum_overlay_style"] == "bars"
+            assert playlist.metadata_json["video_render_source_mode"] == "still_image"
+            assert playlist.metadata_json["video_render_resolution"] == "2k"
+            assert job.payload_json["allow_still_image_fallback"] is True
             assert job.payload_json["video_spectrum_overlay_style"] == "bars"
+            assert job.payload_json["video_render_source_mode"] == "still_image"
+            assert job.payload_json["video_render_resolution"] == "2k"
     finally:
         clear_isolated_client_env()
 
