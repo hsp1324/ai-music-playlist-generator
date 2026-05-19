@@ -353,11 +353,14 @@ def archive_workspace_playlist(
 def render_workspace_playlist_audio(
     playlist_id: str,
     payload: PlaylistRenderRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> PlaylistWorkspaceRead:
+    services = get_services(request)
     try:
         playlist = queue_workspace_audio_render(
             db,
+            services,
             playlist_id=playlist_id,
             actor=payload.actor,
             randomize_order=payload.effective_randomize_order(),

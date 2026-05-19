@@ -143,9 +143,9 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - In Korean YouTube titles/descriptions/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Prefer `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, and translated song titles in every other localized description. Keep the same timestamps and order in all languages.
 - In `sundaze` English/American pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In localized descriptions, timestamped tracklists should keep the English song/track titles in every language. Translate the intro, recommended-for line, and hashtags, but do not translate the song names after each timestamp.
-- For releases 60+ minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
+- For releases 60 minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
 - After audio render, metadata timestamps come from the release's saved `rendered_timeline` snapshot, which uses actual ffprobe source-file durations. Always call `scripts/openclaw-release metadata-context` after render and use its returned timeline; do not manually add rounded track durations.
-- If a 60+ minute playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release render-audio` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
+- If a playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release render-audio` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
 - Treat every playlist track as its own song title. If Suno returns two outputs from one prompt, rename both as independent editorial titles, not as variants of the same title.
 - Full playlist publishing needs two 16:9 images:
@@ -424,16 +424,16 @@ Use randomized audio render when Suno two-output pairs are adjacent and the huma
 
 Generate enough material before publishing:
 
-- Target at least `3600` seconds for every normal playlist on every channel.
-- A practical buffer of `3900` seconds is acceptable.
-- Do not publish under target unless the human explicitly says a shorter playlist is acceptable.
+- Target `2400` seconds / 40 minutes for every normal playlist on every channel.
+- Usually generate and upload at least 20 minutes of new approved audio, then queue audio render. The app will try to fill the remaining time from previous same-channel, similar-genre YouTube uploads by reusing tracks from the back half of those videos.
+- If no similar back-half reuse candidates exist, render proceeds with the uploaded new tracks instead of blocking. Do not keep making unrelated songs just to force reuse.
 - Every helper audio upload retries up to 3 times. If a track still fails, the helper posts a Slack warning, continues uploading the rest of the batch, and stops before render/publish. Re-download or re-export only the failed source files, upload them again, then render/publish after the full intended track set is present.
 - After every successful upload, use the returned JSON as the receipt: confirm `track.id`, `track.status`, and `duration_seconds`. The duration must be close to the actual local audio length.
 
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and publishing a 60+ minute Playlist Release through the AI Music app.
+You are creating and publishing a 40-minute Playlist Release through the AI Music app.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
@@ -441,7 +441,7 @@ Use scripts/openclaw-release only.
 Goal:
 - Create or select one Playlist Release workspace before opening Suno or generating audio.
 - Select Suno v5.5 for every new generation whenever it is available. If the UI/API shows a higher credit cost than v5 for the same request, stop and report the exact difference instead of silently using v5.
-- Generate songs in batches until the usable duration is at least 3600 seconds, preferably around 3900 seconds.
+- Generate songs in batches until the new approved audio duration is at least about 20 minutes. The app's audio render step will automatically try to fill the remaining time toward the 2400-second / 40-minute target from previous same-channel, similar-genre back-half tracks. If it cannot find suitable reuse candidates, it renders the uploaded new tracks instead of blocking.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
 - For lyric/vocal playlist requests, add vocal clarity exclusions in Suno Advanced Options so the lead voice stays close, intelligible, and dry enough for streaming: `muddy vocals, muffled vocals, washed-out vocals, distant vocals, buried vocals, unclear lyrics, heavy reverb, excessive reverb, long reverb tail, large echo, echoey vocals, concert hall echo, arena reverb, stadium reverb, live concert vocals, crowd ambience, room boom`.
@@ -494,7 +494,7 @@ First, before opening Suno or submitting the first playlist prompt, create the d
 scripts/openclaw-release create-release \
   --workspace-mode playlist \
   --release-title "PLAYLIST_TITLE" \
-  --target-seconds 3600 \
+  --target-seconds 2400 \
   --description "Short mood/use-case description for metadata generation."
 ```
 
@@ -503,7 +503,7 @@ scripts/openclaw-release create-release \
 If the human gives this instruction through Slack, interpret it as approval to run the full playlist automation:
 
 ```text
-카페 피아노 1시간 이상 플레이리스트 만들어서 Soft Hour Radio에 업로드까지 해줘.
+카페 피아노 40분 플레이리스트 만들어서 Soft Hour Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
 마지막 업로드/예약이 끝나면 YouTube video id와 예약 공개 시간을 알려줘.
 ```
@@ -511,7 +511,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B �
 Japan routing example:
 
 ```text
-도쿄 시티팝 1시간 이상 플레이리스트 만들어서 Tokyo Daydream Radio에 업로드까지 해줘.
+도쿄 시티팝 40분 플레이리스트 만들어서 Tokyo Daydream Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B 표시는 제목에서 빼줘.
 썸네일에는 큰 J-POP과 작은 TOKYO DAYDREAM RADIO를 같은 위치/스타일로 넣어줘.
 ```
@@ -519,7 +519,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 트랙별 A/B �
 English pop routing example:
 
 ```text
-Summer night drive English pop 1시간 이상 플레이리스트 만들어서 sundaze에 업로드까지 해줘.
+Summer night drive English pop 40분 플레이리스트 만들어서 sundaze에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 영어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
 커버, 썸네일, 짧은 loop video은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```
@@ -527,7 +527,7 @@ Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 영어 가사를
 Latin/Spanish routing example:
 
 ```text
-Verano latino reggaeton pop 1시간 이상 플레이리스트 만들어서 Solwave Radio에 업로드까지 해줘.
+Verano latino reggaeton pop 40분 플레이리스트 만들어서 Solwave Radio에 업로드까지 해줘.
 Suno가 두 곡씩 주면 둘 다 playlist 트랙으로 쓰고, 스페인어 가사를 각 곡마다 다르게 만들어서 같이 업로드해줘.
 커버, 썸네일, 짧은 loop video은 playlist 컨셉에 맞게 만들고 고정된 시그니처 구도는 쓰지 마.
 ```

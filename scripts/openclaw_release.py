@@ -1358,7 +1358,7 @@ def create_playlist_release(
     client: httpx.Client,
     *,
     title: str,
-    target_duration_seconds: int = 3600,
+    target_duration_seconds: int = 2400,
     description: str = "",
     youtube_channel_title: str = "",
 ) -> dict[str, Any]:
@@ -2958,7 +2958,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
     )
-    create_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600 seconds (60 minutes). Ignored for single releases.")
+    create_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes). Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
     create_parser.set_defaults(func=create_release)
@@ -3048,7 +3048,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_playlist_parser.add_argument("--target-seconds", type=int, default=3600, help="Playlist target duration. Default: 3600 seconds (60 minutes).")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes).")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 0 disables the lower bound.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")

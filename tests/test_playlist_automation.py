@@ -3552,6 +3552,210 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         clear_isolated_client_env()
 
 
+def test_workspace_audio_render_reuses_similar_youtube_back_half_tracks(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_tracks = []
+            for index in range(4):
+                audio_path = tmp_path / f"source-tech-house-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=f"Source Tech House {index + 1}",
+                    prompt="tech house instrumental groove",
+                    duration_seconds=600,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "tech house, club instrumental", "tags": "tech house"},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="Tech House Running Mix",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=2400,
+                actual_duration_seconds=2400,
+                youtube_video_id="yt-tech-house-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "Club Bloom",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 600,
+                            "duration_seconds": 600,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=600,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Tech House Workout Mix",
+                "target_duration_seconds": 2400,
+                "description": "Tech house workout and running energy.",
+                "target_youtube_channel_title": "Club Bloom",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        new_audio_path = tmp_path / "new-tech-house.mp3"
+        new_audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "New Tech House Lead",
+                "prompt": "tech house workout groove",
+                "duration_seconds": 1200,
+                "audio_path": str(new_audio_path),
+                "metadata": {"style": "tech house", "tags": "tech house"},
+            },
+        )
+        assert track_response.status_code == 201
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert queued["actual_duration_seconds"] == 2400
+        assert [track["title"] for track in queued["tracks"]] == [
+            "New Tech House Lead",
+            "Source Tech House 3",
+            "Source Tech House 4",
+        ]
+        assert "Added 2 reused back-half track(s)" in queued["note"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_workspace_audio_render_skips_reuse_when_genre_does_not_match(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_tracks = []
+            for index in range(2):
+                audio_path = tmp_path / f"source-trance-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=f"Source Trance {index + 1}",
+                    prompt="progressive trance night drive",
+                    duration_seconds=600,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "progressive trance", "tags": "trance"},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="Progressive Trance Night Drive",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=1200,
+                actual_duration_seconds=1200,
+                youtube_video_id="yt-trance-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "Club Bloom",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 600,
+                            "duration_seconds": 600,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=600,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Tech House Workout Mix",
+                "target_duration_seconds": 2400,
+                "description": "Tech house workout and running energy.",
+                "target_youtube_channel_title": "Club Bloom",
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        new_audio_path = tmp_path / "new-tech-house.mp3"
+        new_audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "New Tech House Lead",
+                "prompt": "tech house workout groove",
+                "duration_seconds": 1200,
+                "audio_path": str(new_audio_path),
+                "metadata": {"style": "tech house", "tags": "tech house"},
+            },
+        )
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert queued["actual_duration_seconds"] == 1200
+        assert [track["title"] for track in queued["tracks"]] == ["New Tech House Lead"]
+        assert "reused back-half" not in queued["note"]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_workspace_audio_render_can_randomize_track_order(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

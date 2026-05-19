@@ -22,7 +22,7 @@ Public titles must include the passage or passage theme, but they should not bec
 - If there is no prior app catalog history, the app starts with `Genesis 1:1-5`.
 - Create the release first, then reserve the chosen passage as `in_progress` with `scripts/openclaw-release openclaw-scripture-reserve` before opening Suno.
 - Put the passage reference in the private plan, title, and description, for example `Genesis 1:1-5`.
-- For a 60+ minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
+- For a 40-minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
 - After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-release openclaw-scripture-complete`.
 - Do not compare against a local ledger and do not stop because title wording differs. The web app rejects duplicate active passages; use its response as the source of truth.
 

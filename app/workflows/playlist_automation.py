@@ -107,6 +107,53 @@ VIDEO_RENDER_SOURCE_MODE_ALIASES = {
     "image": "still_image",
     "cover": "still_image",
 }
+REUSE_FALLBACK_CHANNEL_MATCH_TITLES = {
+    "cinematic pulse",
+    "soft hour radio",
+    "storylight ost",
+    "the old verse",
+    "the new verse",
+}
+REUSE_GENRE_PATTERNS = {
+    "afro-house": ("afro house", "afro-house"),
+    "anime": ("anime", "anime-pop", "anime pop"),
+    "bachata": ("bachata",),
+    "ballad": ("ballad",),
+    "bass-house": ("bass house", "bass-house"),
+    "bgm": ("bgm", "background music", "no-vocal", "no vocal", "instrumental"),
+    "cinematic": ("cinematic", "film score", "movie ost", "trailer", "epic", "heroic"),
+    "club": ("club", "party", "festival", "rave"),
+    "cumbia": ("cumbia",),
+    "dance-pop": ("dance pop", "dance-pop", "idol pop", "idol-pop"),
+    "deep-house": ("deep house", "deep-house"),
+    "dnb": ("dnb", "drum and bass", "drum & bass", "liquid dnb"),
+    "edm": ("edm", "electronic dance"),
+    "folk": ("folk", "acoustic"),
+    "game": ("game bgm", "game music", "arcade", "rpg", "gaming"),
+    "gospel": ("gospel",),
+    "hip-hop": ("hip hop", "hip-hop", "trap", "rap"),
+    "house": ("house",),
+    "jazz": ("jazz",),
+    "jpop": ("j-pop", "jpop", "japanese pop", "city pop"),
+    "kpop": ("k-pop", "kpop", "korean pop"),
+    "latin-pop": ("latin pop", "pop latino", "spanish pop"),
+    "lofi": ("lofi", "lo-fi"),
+    "melodic-techno": ("melodic techno", "melodic-techno"),
+    "orchestral": ("orchestra", "orchestral", "symphonic"),
+    "piano": ("piano", "keys"),
+    "pop": ("pop",),
+    "pop-rock": ("pop rock", "pop-rock"),
+    "reggaeton": ("reggaeton", "urbano"),
+    "rnb": ("r&b", "rnb", "neo soul", "neo-soul", "soul"),
+    "salsa": ("salsa",),
+    "scripture": ("scripture", "worship", "prayer", "bible"),
+    "synth-pop": ("synth pop", "synth-pop"),
+    "tech-house": ("tech house", "tech-house"),
+    "techno": ("techno",),
+    "trance": ("trance",),
+    "tropical-house": ("tropical house", "tropical-house"),
+    "uk-garage": ("uk garage", "uk-garage", "garage"),
+}
 
 
 def _utcnow() -> datetime:
@@ -1222,6 +1269,268 @@ def _playlist_track_ids(playlist: Playlist) -> list[str]:
         for item in sorted(playlist.items, key=lambda item: item.order_index)
         if item.track_id
     ]
+
+
+def _playlist_reuse_channel_title(playlist: Playlist) -> str:
+    meta = _playlist_meta(playlist)
+    return str(
+        _canonical_youtube_channel_title(
+            meta.get("youtube_channel_title") or meta.get("target_youtube_channel_title")
+        )
+        or ""
+    ).strip()
+
+
+def _reuse_text_values_for_playlist(playlist: Playlist) -> list[str]:
+    meta = _playlist_meta(playlist)
+    values = [
+        playlist.title,
+        str(meta.get("description") or ""),
+        str(meta.get("youtube_title") or ""),
+    ]
+    for track in _playlist_tracks(playlist):
+        track_meta = track.metadata_json or {}
+        values.extend(
+            [
+                track.title,
+                track.prompt,
+                str(track_meta.get("tags") or ""),
+                str(track_meta.get("style") or ""),
+                str(track_meta.get("lyrics") or ""),
+            ]
+        )
+    return values
+
+
+def _reuse_genre_tokens_from_values(values: list[str]) -> set[str]:
+    text = " " + re.sub(r"[^a-z0-9&+-]+", " ", " ".join(str(value or "").lower() for value in values)) + " "
+    tokens: set[str] = set()
+    for token, needles in REUSE_GENRE_PATTERNS.items():
+        if any(f" {needle.strip()} " in text for needle in needles):
+            tokens.add(token)
+    return tokens
+
+
+def _track_has_local_audio(track: Track | None) -> bool:
+    return bool(
+        track
+        and track.audio_path
+        and not track.audio_path.startswith(("http://", "https://"))
+        and Path(track.audio_path).exists()
+    )
+
+
+def _playlist_reuse_source_sort_key(playlist: Playlist) -> datetime:
+    meta = _playlist_meta(playlist)
+    for key in (
+        "youtube_public_at",
+        "youtube_published_at",
+        "youtube_scheduled_publish_at",
+        "youtube_uploaded_at",
+    ):
+        value = _parse_metadata_datetime(meta.get(key))
+        if value:
+            return value
+    return _parse_metadata_datetime(playlist.updated_at) or _utcnow()
+
+
+def _playlist_back_half_reuse_rows(playlist: Playlist) -> list[dict]:
+    tracks_by_id = {item.track_id: item.track for item in playlist.items if item.track is not None}
+    meta = _playlist_meta(playlist)
+    rendered_timeline = list(meta.get("rendered_timeline") or [])
+    rows: list[dict] = []
+    if rendered_timeline:
+        for row in rendered_timeline:
+            track_id = str(row.get("track_id") or "")
+            track = tracks_by_id.get(track_id)
+            if track is None:
+                continue
+            start_seconds = max(int(round(float(row.get("start_seconds") or 0))), 0)
+            duration_seconds = max(
+                int(round(float(row.get("duration_seconds") or track.duration_seconds or 0))),
+                0,
+            )
+            rows.append(
+                {
+                    "track": track,
+                    "track_id": track_id,
+                    "start_seconds": start_seconds,
+                    "duration_seconds": duration_seconds,
+                }
+            )
+    else:
+        offset = 0
+        for item in sorted(playlist.items, key=lambda playlist_item: playlist_item.order_index):
+            if item.track is None:
+                continue
+            duration_seconds = max(item.included_duration_seconds or item.track.duration_seconds or 0, 0)
+            rows.append(
+                {
+                    "track": item.track,
+                    "track_id": item.track_id,
+                    "start_seconds": offset,
+                    "duration_seconds": duration_seconds,
+                }
+            )
+            offset += duration_seconds
+
+    if not rows:
+        return []
+    total_seconds = max(row["start_seconds"] + row["duration_seconds"] for row in rows)
+    back_half_start = total_seconds / 2
+    return [row for row in rows if row["start_seconds"] >= back_half_start]
+
+
+def _reuse_candidate_is_similar(
+    *,
+    target_channel_title: str,
+    target_genre_tokens: set[str],
+    source_playlist: Playlist,
+    track: Track,
+) -> bool:
+    source_channel_title = _playlist_reuse_channel_title(source_playlist)
+    if target_channel_title and source_channel_title and target_channel_title.lower() != source_channel_title.lower():
+        return False
+
+    source_meta = source_playlist.metadata_json or {}
+    track_meta = track.metadata_json or {}
+    source_tokens = _reuse_genre_tokens_from_values(
+        [
+            source_playlist.title,
+            str(source_meta.get("description") or ""),
+            str(source_meta.get("youtube_title") or ""),
+            track.title,
+            track.prompt,
+            str(track_meta.get("tags") or ""),
+            str(track_meta.get("style") or ""),
+            str(track_meta.get("lyrics") or ""),
+        ]
+    )
+    if target_genre_tokens and source_tokens:
+        return bool(target_genre_tokens & source_tokens)
+
+    return bool(
+        target_channel_title
+        and source_channel_title
+        and target_channel_title.lower() == source_channel_title.lower()
+        and target_channel_title.lower() in REUSE_FALLBACK_CHANNEL_MATCH_TITLES
+    )
+
+
+def _maybe_add_reused_back_half_tracks(
+    db: Session,
+    services: ServiceRegistry,
+    playlist: Playlist,
+    *,
+    actor: str,
+) -> dict:
+    meta = _playlist_meta(playlist)
+    if _workspace_mode(playlist) != "playlist" or meta.get("auto_reuse_disabled"):
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "not_eligible"}
+    if not bool(getattr(services.settings, "playlist_reuse_back_half_enabled", True)):
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "disabled"}
+
+    target_duration_seconds = max(int(playlist.target_duration_seconds or 0), 0)
+    if target_duration_seconds <= 0:
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "no_target"}
+
+    _refresh_playlist_duration(playlist)
+    starting_duration_seconds = playlist.actual_duration_seconds
+    remaining_seconds = target_duration_seconds - starting_duration_seconds
+    if remaining_seconds <= 0:
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "target_reached"}
+
+    target_channel_title = _playlist_reuse_channel_title(playlist)
+    if not target_channel_title:
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "missing_channel"}
+
+    target_genre_tokens = _reuse_genre_tokens_from_values(_reuse_text_values_for_playlist(playlist))
+    existing_track_ids = set(_playlist_track_ids(playlist))
+    added_track_ids: list[str] = []
+    added_titles: list[str] = []
+    added_seconds = 0
+    next_order_index = max((item.order_index for item in playlist.items), default=0) + 1
+
+    source_playlists = db.scalars(
+        select(Playlist)
+        .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
+        .where(
+            Playlist.id != playlist.id,
+            Playlist.youtube_video_id.is_not(None),
+            Playlist.status != PlaylistStatus.failed,
+        )
+    ).all()
+    source_playlists = sorted(source_playlists, key=_playlist_reuse_source_sort_key, reverse=True)
+
+    for source_playlist in source_playlists:
+        source_meta = _playlist_meta(source_playlist)
+        if source_meta.get("hidden"):
+            continue
+        for row in _playlist_back_half_reuse_rows(source_playlist):
+            track = row["track"]
+            track_id = row["track_id"]
+            if not track_id or track_id in existing_track_ids or not _track_has_local_audio(track):
+                continue
+            if not _reuse_candidate_is_similar(
+                target_channel_title=target_channel_title,
+                target_genre_tokens=target_genre_tokens,
+                source_playlist=source_playlist,
+                track=track,
+            ):
+                continue
+            duration_seconds = max(int(track.duration_seconds or row.get("duration_seconds") or 0), 0)
+            if duration_seconds <= 0:
+                continue
+            db.add(
+                PlaylistItem(
+                    playlist=playlist,
+                    track=track,
+                    order_index=next_order_index,
+                    included_duration_seconds=duration_seconds,
+                )
+            )
+            existing_track_ids.add(track_id)
+            added_track_ids.append(track_id)
+            added_titles.append(track.title)
+            added_seconds += duration_seconds
+            next_order_index += 1
+            if added_seconds >= remaining_seconds:
+                break
+        if added_seconds >= remaining_seconds:
+            break
+
+    attempt = {
+        "actor": actor,
+        "attempted_at": _utcnow().isoformat(),
+        "source": "youtube_back_half",
+        "target_channel_title": target_channel_title,
+        "target_genre_tokens": sorted(target_genre_tokens),
+        "target_duration_seconds": target_duration_seconds,
+        "starting_duration_seconds": starting_duration_seconds,
+        "requested_reuse_seconds": remaining_seconds,
+        "minimum_preferred_reuse_seconds": max(
+            int(getattr(services.settings, "playlist_reuse_back_half_min_seconds", 20 * 60) or 0),
+            0,
+        ),
+        "added_seconds": added_seconds,
+        "added_track_ids": added_track_ids,
+        "added_titles": added_titles,
+        "reason": "added" if added_track_ids else "no_similar_back_half_tracks",
+    }
+    history = list(meta.get("auto_reuse_history") or [])
+    history.append(attempt)
+    meta["auto_reuse_history"] = history[-20:]
+    meta["auto_reuse_last_attempt"] = attempt
+    if added_track_ids:
+        reused = list(meta.get("auto_reused_track_ids") or [])
+        meta["auto_reused_track_ids"] = [*reused, *added_track_ids]
+        meta["auto_reused_seconds"] = int(meta.get("auto_reused_seconds") or 0) + added_seconds
+        playlist.metadata_json = meta
+        db.flush()
+        _refresh_playlist_duration(playlist)
+    else:
+        playlist.metadata_json = meta
+    return attempt
 
 
 def _rendered_audio_matches_current_tracks(playlist: Playlist) -> bool:
@@ -2504,6 +2813,7 @@ def _randomized_playlist_track_ids(playlist: Playlist) -> list[str]:
 
 def queue_workspace_audio_render(
     db: Session,
+    services: ServiceRegistry,
     *,
     playlist_id: str,
     actor: str,
@@ -2540,6 +2850,19 @@ def queue_workspace_audio_render(
         raise ValueError("Cannot randomize order while an audio render is already queued or running.")
 
     meta = _playlist_meta(playlist)
+    reuse_attempt = {"added_seconds": 0, "added_track_ids": []}
+    if active_job is None:
+        reuse_attempt = _maybe_add_reused_back_half_tracks(
+            db,
+            services,
+            playlist,
+            actor=actor,
+        )
+        meta = _playlist_meta(playlist)
+        if not _all_tracks_renderable(playlist):
+            raise ValueError("All approved tracks must be local audio files before rendering.")
+        _refresh_playlist_duration(playlist)
+
     should_randomize = bool(randomize_order and _workspace_mode(playlist) != "single_track_video")
     if should_randomize:
         track_ids = _randomized_playlist_track_ids(playlist)
@@ -2572,6 +2895,9 @@ def queue_workspace_audio_render(
         if should_randomize
         else "Playlist audio render queued from the web dashboard."
     )
+    if reuse_attempt.get("added_track_ids"):
+        added_minutes = max(int(round((reuse_attempt.get("added_seconds") or 0) / 60)), 1)
+        meta["note"] += f" Added {len(reuse_attempt['added_track_ids'])} reused back-half track(s), about {added_minutes} min."
     meta.pop("render_error", None)
     meta.pop("metadata_approved", None)
     meta.pop("youtube_title", None)

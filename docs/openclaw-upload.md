@@ -2,7 +2,7 @@
 
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
-For higher-level OpenClaw skill instructions, including "make one single", "build a 60+ minute playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
+For higher-level OpenClaw skill instructions, including "make one single", "build a 40-minute playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned `profile_doc` in [openclaw-channel-profiles](openclaw-channel-profiles/README.md). For next-release concept planning, read the returned `concept_doc` in [openclaw-channel-concepts](openclaw-channel-concepts/README.md).
 
@@ -122,7 +122,7 @@ If `--cover` is provided and this is a Single Release, approving the track autom
 
 ## Upload One Playlist Track
 
-When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a 60+ minute playlist does not spam Slack.
+When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a playlist batch does not spam Slack.
 
 Playlist track titles should look like final tracklist titles, not Suno alternatives. Do not upload names like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`. Give every playlist item a standalone title that fits the mood.
 
@@ -370,7 +370,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; localize displayed track-title text and surrounding description naturally unless a channel-specific rule says to preserve original song titles.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and every other localized description uses translated title text only.
 - For sundaze/English pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In timestamped tracklists, keep the English song title after each timestamp in every localized description. Translate only the surrounding description prose, use-case line, and hashtags.
-- If the release is 60+ minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
+- If the release is 60 minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
 - Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 
 Example localized metadata approval:
@@ -518,7 +518,7 @@ scripts/openclaw-release create-release --workspace-mode single --release-title 
 
 For a new playlist/mix, first create one Playlist Release:
 
-scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 3600 --description "CONCEPT"
+scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 2400 --description "CONCEPT"
 
 Keep the returned release.id. Do not create Suno songs before the release.id exists.
 For an existing release, use --release-id and keep all related Suno outputs in that same workspace.
@@ -590,7 +590,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Before pressing Create in Suno, remove producer tags and specific artist references from lyrics, bracketed metatags, style, prompt, tags, and excluded styles. If Suno rejects a word such as `lowlight` as a producer tag, rewrite it to a generic descriptor like `low-lit`, `dim`, `shadowy`, `muted night`, or `soft ambient`, then retry generation.
 - After every audio upload, confirm that the returned `duration_seconds` is close to the actual song length. If it is `0`, much shorter than expected, or the upload fails as unreadable, fix the source file and re-upload before moving on.
 - For playlist work, confirm every uploaded `duration_seconds` is at or below 260 unless the target channel is `Soft Hour Radio` or `Cinematic Pulse`, or the human explicitly approved a longer track.
-- For 60+ minute playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
+- For playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
 - If Suno style/settings are available, upload them in the same command with `--style`. If excluded styles/negative tags are available, upload them with `--exclude-style`.
 - Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.
 - For HaruHaru, sundaze, and Solwave Radio playlist releases, choose one explicit genre lane before Suno generation and keep the whole playlist in that lane. Name that lane in the public title/metadata when accurate instead of writing a generic mixed-pop title.

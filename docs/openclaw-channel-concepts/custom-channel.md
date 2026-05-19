@@ -4,7 +4,7 @@ Use this when `scripts/openclaw-release channel-profile` returns `custom-channel
 
 ## Goal
 
-Infer the channel identity from the connected channel title, the human request, and the channel's existing uploads. Then choose a fresh 60+ minute playlist concept that fits that inferred identity without copying recent releases.
+Infer the channel identity from the connected channel title, the human request, and the channel's existing uploads. Then choose a fresh 40-minute playlist concept that fits that inferred identity without copying recent releases.
 
 ## Required Checks
 
