@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir="/home/hong/ai-music-playlist-generator"
+session_name="ai_music_render_worker"
+ffmpeg_path="$repo_dir/tools/ffmpeg6/ffmpeg"
+worker_id="$(hostname)-video-render"
+
+cd "$repo_dir"
+mkdir -p .render-worker
+
+if [ ! -x "$ffmpeg_path" ]; then
+  echo "Missing ffmpeg binary: $ffmpeg_path" >&2
+  exit 1
+fi
+
+if tmux has-session -t "$session_name" 2>/dev/null; then
+  echo "Render worker tmux session already exists: $session_name"
+else
+  tmux new-session -d -s "$session_name" \
+    "cd '$repo_dir' && bash -ic 'source \"\$HOME/.local/bin/env\" >/dev/null 2>&1; scripts/render-worker --worker-id \"$worker_id\" --worker-profile desktop --ffmpeg \"$ffmpeg_path\" --poll-seconds 60 2>&1 | tee -a .render-worker/render-worker.log'"
+  echo "Render worker tmux session started: $session_name"
+fi
+
+if ! tmux list-windows -t "$session_name" -F "#{window_name}" | grep -qx "progress"; then
+  tmux new-window -t "$session_name" -n progress \
+    "cd '$repo_dir' && scripts/render-worker-progress-monitor '$worker_id'"
+fi
+tmux select-window -t "$session_name:progress"
+
+echo
+tmux list-sessions
+echo
+echo "Attach:"
+echo "  tmux attach -t $session_name"
+echo
+echo "Logs:"
+echo "  tail -f $repo_dir/.render-worker/render-worker.log"

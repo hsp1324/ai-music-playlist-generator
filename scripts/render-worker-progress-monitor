@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+worker_id="${1:-$(hostname)-video-render}"
+remote_host="${AIMP_RENDER_WORKER_MAIN_HOST:-ubuntu@168.107.34.175}"
+ssh_key="${AIMP_RENDER_WORKER_SSH_KEY:-$HOME/.ssh/id_ed25519_oracle_home}"
+interval="${AIMP_RENDER_WORKER_PROGRESS_INTERVAL:-5}"
+displayed=0
+last_job_id=""
+last_title=""
+last_line=""
+last_eta_key=""
+last_eta_percent=""
+last_eta_time=""
+
+printf 'AI Music Render Worker Progress\n'
+printf 'worker_id: %s\n\n' "$worker_id"
+printf 'Exit monitor: Ctrl+C   Worker keeps running in tmux.\n\n'
+printf '\n\n\n'
+
+while true; do
+  payload="$(
+    ssh -i "$ssh_key" -o BatchMode=yes -o ConnectTimeout=8 "$remote_host" \
+      "cd /opt/ai-music-playlist-generator && python3 - '$worker_id'" <<'PY' 2>/dev/null || true
+import json
+import sqlite3
+import sys
+
+worker_id = sys.argv[1]
+
+
+def duration(value):
+    if value is None:
+        return "--:--"
+    try:
+        seconds = max(int(float(value)), 0)
+    except (TypeError, ValueError):
+        return "--:--"
+    hours, rem = divmod(seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours:d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def bar(percent, width=24):
+    try:
+        value = max(0.0, min(float(percent), 100.0))
+    except (TypeError, ValueError):
+        value = 0.0
+    filled = round((value / 100.0) * width)
+    return f"[{'#' * filled}{'-' * (width - filled)}] {value:5.1f}%"
+
+
+def percent_value(percent):
+    try:
+        return max(0.0, min(float(percent), 100.0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def compact_title(title, limit=64):
+    title = title or "Untitled render"
+    return title if len(title) <= limit else title[: limit - 3] + "..."
+
+
+con = sqlite3.connect("storage/app.db")
+con.row_factory = sqlite3.Row
+rows = con.execute(
+    """
+    select j.id, j.status, p.title, j.result_json, p.metadata_json
+    from jobs j
+    left join playlists p on p.id = j.playlist_id
+    where j.type = ? and j.status in (?, ?)
+    order by j.started_at desc, j.created_at desc
+    """,
+    ("build_video", "queued", "running"),
+).fetchall()
+
+queued = 0
+running = 0
+for row in rows:
+    if row["status"] == "queued":
+        queued += 1
+        continue
+    if row["status"] == "running":
+        running += 1
+    result = json.loads(row["result_json"] or "{}")
+    meta = json.loads(row["metadata_json"] or "{}")
+    worker = result.get("external_render_worker") or {}
+    if worker.get("worker_id") != worker_id:
+        continue
+
+    progress = result.get("progress") or meta.get("video_render_progress") or {}
+    percent = progress.get("upload_percent")
+    if percent is None:
+        percent = progress.get("percent")
+    stage = progress.get("stage") or "video_render"
+    status = progress.get("status") or row["status"]
+    upload_complete_waiting_finalize = (
+        stage == "video_upload"
+        and progress.get("upload_percent") is not None
+        and float(progress.get("upload_percent") or 0) >= 100
+        and row["status"] == "running"
+    )
+    if progress.get("processed_seconds") is not None and progress.get("total_seconds") is not None:
+        clock = f"{duration(progress.get('processed_seconds'))}/{duration(progress.get('total_seconds'))}"
+    else:
+        clock = ""
+    stage_label = {
+        "video_render": "render",
+        "video_spectrum_prepare": "overlay",
+        "video_spectrum_overlay": "merge",
+        "video_upload": "upload",
+    }.get(stage, stage)
+    if upload_complete_waiting_finalize:
+        stage_label = "server finalize"
+    print(json.dumps({
+        "active": True,
+        "job_id": row["id"],
+        "title": row["title"] or row["id"],
+        "title_compact": compact_title(row["title"] or row["id"]),
+        "bar": bar(percent),
+        "percent": percent_value(percent),
+        "stage": stage_label,
+        "status": status,
+        "clock": clock,
+        "eta": "--:--" if upload_complete_waiting_finalize else duration(progress.get("eta_seconds")),
+        "message": "Server is finalizing uploaded video." if upload_complete_waiting_finalize else "",
+    }, ensure_ascii=False))
+    break
+else:
+    print(json.dumps({
+        "active": False,
+        "queued": queued,
+        "running": running,
+    }, ensure_ascii=False))
+PY
+  )"
+
+  if [[ -z "$payload" ]]; then
+    active=0
+    job_id=""
+    title="Progress unavailable"
+    line="Progress unavailable. Retrying..."
+    eta="--:--"
+  else
+    parsed="$(
+      PAYLOAD="$payload" python3 <<'PY' 2>/dev/null || true
+import json
+import os
+import sys
+
+payload = json.loads(os.environ.get("PAYLOAD", "{}"))
+if payload.get("active"):
+    job_id = payload.get("job_id", "")
+    title = payload.get("title_compact", "")
+    clock = f" {payload['clock']}" if payload.get("clock") else ""
+    line = f"{payload['bar']} {payload['stage']}{clock}"
+    eta = payload["eta"]
+    percent = payload.get("percent", 0)
+else:
+    job_id = ""
+    title = "No active render"
+    line = f"No active render for this worker. queued={payload.get('queued', 0)} running={payload.get('running', 0)}"
+    eta = "--:--"
+    percent = 0
+print(json.dumps({"active": bool(payload.get("active")), "job_id": job_id, "title": title, "line": line, "eta": eta, "percent": percent}, ensure_ascii=False))
+PY
+    )"
+    if [[ -z "$parsed" ]]; then
+      active=0
+      job_id=""
+      title="Progress unavailable"
+      line="Progress unavailable. Retrying..."
+    else
+      active="$(python3 -c 'import json,sys; print(1 if json.loads(sys.stdin.read()).get("active") else 0)' <<<"$parsed")"
+      job_id="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get("job_id",""))' <<<"$parsed")"
+      title="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get("title",""))' <<<"$parsed")"
+      line="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get("line",""))' <<<"$parsed")"
+      eta="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get("eta","--:--"))' <<<"$parsed")"
+      percent="$(python3 -c 'import json,sys; print(json.loads(sys.stdin.read()).get("percent",0))' <<<"$parsed")"
+    fi
+  fi
+  eta_key="$job_id:$line"
+  now="$(date +%s)"
+  if [[ "$active" == "1" && ( "$eta" == "00:00" || "$eta" == "--:--" ) ]]; then
+    estimated_eta="$(
+      python3 - "$percent" "$last_eta_percent" "$now" "$last_eta_time" <<'PY' 2>/dev/null || true
+import sys
+
+try:
+    percent = float(sys.argv[1])
+    last_percent = float(sys.argv[2])
+    now = float(sys.argv[3])
+    last_time = float(sys.argv[4])
+except (ValueError, IndexError):
+    raise SystemExit(0)
+
+if not (0 < last_percent < percent < 100) or now <= last_time:
+    raise SystemExit(0)
+rate = (percent - last_percent) / (now - last_time)
+if rate <= 0:
+    raise SystemExit(0)
+seconds = max(int(round((100 - percent) / rate)), 0)
+minutes, secs = divmod(seconds, 60)
+hours, minutes = divmod(minutes, 60)
+if hours:
+    print(f"{hours:d}:{minutes:02d}:{secs:02d}")
+else:
+    if seconds < 10:
+        print("<00:10")
+    else:
+        print(f"{minutes:02d}:{secs:02d}")
+PY
+    )"
+    if [[ -n "$estimated_eta" ]]; then
+      eta="$estimated_eta"
+    fi
+  fi
+  if [[ "$active" == "1" && "$eta" == "00:00" ]]; then
+    eta="$(
+      python3 - "$percent" <<'PY' 2>/dev/null || echo "00:00"
+import sys
+
+try:
+    percent = float(sys.argv[1])
+except (ValueError, IndexError):
+    percent = 100.0
+print("<00:10" if percent < 100 else "00:00")
+PY
+    )"
+  fi
+  if [[ "$active" == "1" ]]; then
+    if [[ "$eta_key" != "$last_eta_key" ]]; then
+      last_eta_key="$eta_key"
+      last_eta_percent="$percent"
+      last_eta_time="$now"
+    else
+      last_eta_percent="$percent"
+      last_eta_time="$now"
+    fi
+  fi
+  completion_line=""
+  if [[ -n "$last_job_id" && "$job_id" != "$last_job_id" ]]; then
+    if [[ "$last_line" == *"100.0%"* || "$last_line" == *"100%"* ]]; then
+      completion_line="Completed: $last_title 100%"
+    else
+      completion_line="Ended: $last_title"
+    fi
+  fi
+  if (( displayed )); then
+    printf '\033[3A'
+  fi
+  if [[ -n "$completion_line" ]]; then
+    printf '\r\033[2K%s\n' "$completion_line"
+  fi
+  printf '\r\033[2KTitle: %s\n' "$title"
+  printf '\r\033[2KProgress: %s ETA %s\n' "$line" "$eta"
+  displayed=1
+  if [[ "$active" == "1" ]]; then
+    last_job_id="$job_id"
+    last_title="$title"
+    last_line="$line"
+  else
+    last_job_id=""
+    last_title=""
+    last_line=""
+  fi
+  sleep "$interval"
+done

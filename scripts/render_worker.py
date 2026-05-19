@@ -126,6 +126,56 @@ def latest_mtime(path: Path) -> float:
     return latest
 
 
+def format_duration(seconds: Any) -> str:
+    if seconds is None:
+        return "--:--"
+    try:
+        remaining = max(int(float(seconds)), 0)
+    except (TypeError, ValueError):
+        return "--:--"
+    hours, remainder = divmod(remaining, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours:d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
+def progress_bar(percent: Any, *, width: int = 32) -> str:
+    try:
+        value = max(0.0, min(float(percent), 100.0))
+    except (TypeError, ValueError):
+        value = 0.0
+    filled = int(round((value / 100.0) * width))
+    return f"[{'#' * filled}{'-' * (width - filled)}]"
+
+
+def print_progress_line(progress: dict[str, Any]) -> None:
+    percent = progress.get("upload_percent")
+    if percent is None:
+        percent = progress.get("percent")
+    stage = str(progress.get("stage") or "video_render")
+    status = str(progress.get("status") or "running")
+    eta = format_duration(progress.get("eta_seconds"))
+    processed = progress.get("processed_seconds")
+    total = progress.get("total_seconds")
+    seconds = ""
+    if processed is not None and total is not None:
+        seconds = f" {format_duration(processed)}/{format_duration(total)}"
+    try:
+        percent_value = float(percent)
+        percent_text = f"{percent_value:5.1f}%"
+    except (TypeError, ValueError):
+        percent_value = 0.0
+        percent_text = "  0.0%"
+    print(
+        f"\r{progress_bar(percent)} {percent_text} {stage}:{status}{seconds} ETA {eta}",
+        end="",
+        flush=True,
+    )
+    if status == "end" or percent_value >= 100:
+        print(flush=True)
+
+
 def request_json(client: httpx.Client, method: str, url: str, *, token: str, **kwargs) -> Any:
     headers = dict(kwargs.pop("headers", {}) or {})
     headers.update(auth_headers(token))
@@ -413,6 +463,7 @@ def render_job(
             worker_id=worker_id,
             progress=progress,
         )
+        print_progress_line(progress)
 
     if render["mode"] == "loop_video":
         if loop_video_path is None:
@@ -450,6 +501,7 @@ def upload_rendered_video(
     chunk_size: int,
 ) -> None:
     total = video_path.stat().st_size
+    print(f"\nPreparing upload checksum for {video_path.name} ({total:,} bytes)...", flush=True)
     checksum = sha256_file(video_path)
     chunk_size = max(int(chunk_size), 1024 * 1024)
 
@@ -489,6 +541,15 @@ def upload_rendered_video(
         except RuntimeError as exc:
             print(f"chunk upload retrying after error: {exc}", file=sys.stderr, flush=True)
             time.sleep(3)
+        uploaded = end + 1
+        print_progress_line(
+            {
+                "stage": "video_upload",
+                "status": "uploading",
+                "upload_percent": round((uploaded / total) * 100, 1) if total else 100.0,
+                "eta_seconds": None,
+            }
+        )
 
     request_json(
         client,

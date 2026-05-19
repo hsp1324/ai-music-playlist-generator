@@ -1439,8 +1439,8 @@ class FFMpegPlaylistBuilder:
         )
         crf = self._x264_crf_for_frame_size(frame_size)
         transition_filter = (
-            "[0:v]setpts=PTS-STARTPTS[tail];"
-            "[1:v]setpts=PTS-STARTPTS[head];"
+            f"[0:v]fps={SPECTRUM_OVERLAY_FPS},setpts=PTS-STARTPTS[tail];"
+            f"[1:v]fps={SPECTRUM_OVERLAY_FPS},setpts=PTS-STARTPTS[head];"
             "[tail][head]"
             f"xfade=transition=fade:duration={transition_arg}:offset=0"
             ",format=yuv420p[transition]"
