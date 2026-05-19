@@ -3655,17 +3655,17 @@ function renderYouTubeStatus(youtubeStatus) {
       ? "YouTube not authenticated"
       : "YouTube client secrets missing";
   youtubeMessage.textContent = youtubeStatus.ready
-    ? `Uploads will use ${selectedChannelTitle}. Connect again to add another channel.`
+    ? `Uploads will use ${selectedChannelTitle}. Use Connect YouTube to add another channel or refresh authorization.`
     : youtubeStatus.error
       ? youtubeStatus.error
       : youtubeStatus.configured
         ? `Press Connect once and finish OAuth. Redirect URI: ${youtubeStatus.redirect_uri || "not set"}`
         : "Set AIMP_YOUTUBE_CLIENT_SECRETS_PATH in .env first.";
   if (youtubeConnectButton) {
-    youtubeConnectButton.textContent = youtubeStatus.ready ? "Add YouTube" : "Connect YouTube";
+    youtubeConnectButton.textContent = "Connect YouTube";
     youtubeConnectButton.disabled = !youtubeStatus.configured;
     youtubeConnectButton.title = youtubeStatus.ready
-      ? "Connect another YouTube channel for publishing."
+      ? "Connect another YouTube channel or refresh authorization."
       : "Connect a YouTube channel for publishing.";
   }
   if (youtubeChannelControls && youtubeChannelSelect) {
