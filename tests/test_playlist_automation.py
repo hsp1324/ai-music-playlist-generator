@@ -37,7 +37,11 @@ from app.workflows.playlist_automation import (
     next_youtube_scheduled_publish_at,
     reconcile_due_scheduled_youtube_public_states,
 )
-from app.workflows.openclaw_runtime import build_openclaw_backlog_summary, evaluate_openclaw_backlog_scheduler
+from app.workflows.openclaw_runtime import (
+    build_openclaw_backlog_summary,
+    evaluate_openclaw_backlog_scheduler,
+    record_openclaw_backlog_scheduler_request,
+)
 from scripts import render_worker as render_worker_script
 
 
@@ -895,7 +899,7 @@ def test_openclaw_backlog_scheduler_retries_failed_publish_after_channel_reconne
         clear_isolated_client_env()
 
 
-def test_openclaw_backlog_scheduler_prioritizes_zero_scheduled_channels_before_finishable(tmp_path) -> None:
+def test_openclaw_backlog_scheduler_prioritizes_finishable_before_zero_scheduled_channels(tmp_path) -> None:
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
     client = create_isolated_client(tmp_path)
@@ -927,11 +931,144 @@ def test_openclaw_backlog_scheduler_prioritizes_zero_scheduled_channels_before_f
             evaluation = evaluate_openclaw_backlog_scheduler(db, services)
 
         assert evaluation["should_request"] is True
-        assert evaluation["reason"] == "zero_scheduled_public_backlog"
+        assert evaluation["reason"] == "finishable_releases"
         assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
         assert evaluation["zero_scheduled_public_channels"] == ["The New Verse", "The Old Verse"]
         assert "The New Verse" in evaluation["underfilled_channels"]
         assert "The Old Verse" in evaluation["underfilled_channels"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_cooldown_blocks_unhandled_duplicate_finishable_request(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Ready Metadata Release",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "metadata_review",
+                        "youtube_channel_title": "Soft Hour Radio",
+                    },
+                )
+            )
+            db.commit()
+            record_openclaw_backlog_scheduler_request(
+                storage_root=services.settings.storage_root,
+                result={"reason": "finishable_releases"},
+            )
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is False
+        assert evaluation["reason"] == "backlog_request_cooldown"
+        assert evaluation["pending_reason"] == "finishable_releases"
+        assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_bypasses_cooldown_after_openclaw_finishes(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Ready Metadata Release",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "metadata_review",
+                        "youtube_channel_title": "Soft Hour Radio",
+                    },
+                )
+            )
+            db.commit()
+            record_openclaw_backlog_scheduler_request(
+                storage_root=services.settings.storage_root,
+                result={"reason": "underfilled_backlog"},
+            )
+
+        client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-finished", "operation": "backlog-pass"},
+        )
+        client.post(
+            "/api/openclaw/lock/finish",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-finished",
+                "status": "completed",
+                "message": "Queued video render and released lock.",
+            },
+        )
+
+        with SessionLocal() as db:
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "finishable_releases"
+        assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_bypasses_cooldown_for_new_finishable_release(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+        with SessionLocal() as db:
+            record_openclaw_backlog_scheduler_request(
+                storage_root=services.settings.storage_root,
+                result={"reason": "underfilled_backlog"},
+            )
+            db.add(
+                Playlist(
+                    title="Newly Rendered Release",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "metadata_review",
+                        "youtube_channel_title": "Soft Hour Radio",
+                    },
+                )
+            )
+            db.commit()
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "finishable_releases"
+        assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
     finally:
         clear_isolated_client_env()
 

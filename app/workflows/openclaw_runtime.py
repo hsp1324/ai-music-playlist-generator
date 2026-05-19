@@ -120,6 +120,32 @@ def _openclaw_manual_blocker(
     }
 
 
+def _last_finished_after_request(state: dict[str, Any], last_request_at: datetime | None) -> bool:
+    if not last_request_at:
+        return False
+    last_finished_lock = dict(state.get("last_finished_lock") or {})
+    finished_at = _parse_datetime(last_finished_lock.get("finished_at"))
+    return bool(finished_at and finished_at > last_request_at)
+
+
+def _channels_have_release_updated_after_request(
+    summary: dict[str, Any],
+    channel_titles: list[str],
+    last_request_at: datetime | None,
+) -> bool:
+    if not last_request_at:
+        return False
+    channels = summary.get("channels") if isinstance(summary.get("channels"), dict) else {}
+    for title in channel_titles:
+        payload = channels.get(title) if isinstance(channels, dict) else None
+        releases = payload.get("releases") if isinstance(payload, dict) else []
+        for release in releases or []:
+            updated_at = _parse_datetime((release or {}).get("updated_at"))
+            if updated_at and updated_at > last_request_at:
+                return True
+    return False
+
+
 def runtime_state_path(storage_root: Path) -> Path:
     return Path(storage_root) / OPENCLAW_RUNTIME_STATE_FILE
 
@@ -575,13 +601,10 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     scheduler_state = dict(state.get("scheduler") or {})
     last_request_at = _parse_datetime(scheduler_state.get("last_request_at"))
     cooldown_seconds = max(int(settings.openclaw_backlog_request_cooldown_seconds or 0), 0)
-    if last_request_at and cooldown_seconds and last_request_at + timedelta(seconds=cooldown_seconds) > now:
-        return {
-            "should_request": False,
-            "reason": "backlog_request_cooldown",
-            "last_request_at": last_request_at.isoformat(),
-            "cooldown_seconds": cooldown_seconds,
-        }
+    cooldown_active = bool(
+        last_request_at and cooldown_seconds and last_request_at + timedelta(seconds=cooldown_seconds) > now
+    )
+    cooldown_bypassed_by_finished_lock = _last_finished_after_request(state, last_request_at)
 
     summary = build_openclaw_backlog_summary(db, services)
     channel_data = summary["channels"]
@@ -622,7 +645,47 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     if manual_blocker:
         summary = {**summary, "manual_blocker": manual_blocker}
 
+    def cooldown_response(
+        *,
+        pending_reason: str,
+        pending_channels: list[str],
+        allow_release_update_bypass: bool = False,
+    ) -> dict[str, Any] | None:
+        if not cooldown_active:
+            return None
+        if cooldown_bypassed_by_finished_lock:
+            return None
+        if allow_release_update_bypass and _channels_have_release_updated_after_request(
+            summary,
+            pending_channels,
+            last_request_at,
+        ):
+            return None
+        return {
+            "should_request": False,
+            "reason": "backlog_request_cooldown",
+            "pending_reason": pending_reason,
+            "pending_channels": pending_channels,
+            "last_request_at": last_request_at.isoformat() if last_request_at else None,
+            "cooldown_seconds": cooldown_seconds,
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+        }
+
     if manual_blocker and finishable_channels:
+        cooldown = cooldown_response(
+            pending_reason="finishable_releases",
+            pending_channels=finishable_channels,
+            allow_release_update_bypass=True,
+        )
+        if cooldown:
+            return cooldown
         return {
             "should_request": True,
             "reason": "finishable_releases",
@@ -650,6 +713,12 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             **manual_blocker,
         }
     if manual_blocker and underfilled_channels:
+        cooldown = cooldown_response(
+            pending_reason="resume_openclaw_manual_blocker",
+            pending_channels=underfilled_channels,
+        )
+        if cooldown:
+            return cooldown
         return {
             "should_request": True,
             "reason": "resume_openclaw_manual_blocker",
@@ -663,20 +732,14 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "summary": summary,
             **manual_blocker,
         }
-    if zero_scheduled_public_channels:
-        return {
-            "should_request": True,
-            "reason": "zero_scheduled_public_backlog",
-            "target_per_channel": target,
-            "max_per_channel": maximum,
-            "finishable_channels": finishable_channels,
-            "underfilled_channels": underfilled_channels,
-            "auth_blocked_channels": auth_blocked_channels,
-            "zero_scheduled_public_channels": zero_scheduled_public_channels,
-            "overfull_channels": overfull_channels,
-            "summary": summary,
-        }
     if finishable_channels:
+        cooldown = cooldown_response(
+            pending_reason="finishable_releases",
+            pending_channels=finishable_channels,
+            allow_release_update_bypass=True,
+        )
+        if cooldown:
+            return cooldown
         return {
             "should_request": True,
             "reason": "finishable_releases",
@@ -689,7 +752,32 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "overfull_channels": overfull_channels,
             "summary": summary,
         }
+    if zero_scheduled_public_channels:
+        cooldown = cooldown_response(
+            pending_reason="zero_scheduled_public_backlog",
+            pending_channels=zero_scheduled_public_channels,
+        )
+        if cooldown:
+            return cooldown
+        return {
+            "should_request": True,
+            "reason": "zero_scheduled_public_backlog",
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+        }
     if underfilled_channels:
+        cooldown = cooldown_response(
+            pending_reason="underfilled_backlog",
+            pending_channels=underfilled_channels,
+        )
+        if cooldown:
+            return cooldown
         return {
             "should_request": True,
             "reason": "underfilled_backlog",
