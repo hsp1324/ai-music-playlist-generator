@@ -76,9 +76,20 @@ def _worker_label(worker: dict[str, Any] | None) -> str:
     nickname = str(payload.get("nickname") or "").strip()
     worker_id = str(payload.get("worker_id") or "").strip()
     hostname = str(payload.get("hostname") or "").strip()
-    if nickname and worker_id and nickname != worker_id:
-        return f"{nickname} ({worker_id})"
     return nickname or worker_id or hostname or "unknown-worker"
+
+
+def _release_title_label(value: Any) -> str:
+    text = _short(value, 260)
+    if text.lower().startswith("[playlist]"):
+        text = text[len("[playlist]") :].strip()
+    if "|" in text:
+        text = text.split("|", 1)[0].strip()
+    return text or "Untitled"
+
+
+def _artwork_title(value: Any) -> str:
+    return f"{_short(_release_title_label(value), 80)} artwork"
 
 
 def _local_asset_path(services, path_value: Any) -> str:
@@ -115,7 +126,7 @@ def _playlist_image_path(services, playlist: Playlist) -> str:
 
 
 def _ops_text(*, title: str, release_title: str, fields: list[tuple[str, Any]]) -> str:
-    lines = [f"*{title}*", _short(release_title, 260)]
+    lines = [f"*{title}*", f"제목: {_release_title_label(release_title)}"]
     details = [f"{label}: {_short(value, 180)}" for label, value in fields if str(value or "").strip()]
     if details:
         lines.append(" | ".join(details))
@@ -132,7 +143,7 @@ def _ops_blocks(
         "type": "section",
         "text": {
             "type": "mrkdwn",
-            "text": f"*{_mrkdwn(title)}*\n{_mrkdwn(_short(release_title, 260))}",
+            "text": f"*{_mrkdwn(title)}*\n제목: {_mrkdwn(_release_title_label(release_title))}",
         },
     }
 
@@ -246,7 +257,7 @@ def notify_video_render_queued(db: Session, services, *, playlist: Playlist, job
         text=text,
         blocks=blocks,
         image_path=_playlist_image_path(services, playlist),
-        image_title=f"{_short(playlist.title, 80)} artwork",
+        image_title=_artwork_title(playlist.title),
     )
     result_json["ops_video_queued_notification"] = {
         **result,
@@ -272,7 +283,7 @@ def notify_render_worker_claimed(
     worker_label = _worker_label(worker)
     title = "Render worker claimed"
     fields = [
-        ("Worker", worker_label),
+        ("작업자", worker_label),
         ("Queued for", queue_elapsed),
     ]
     text = _ops_text(title=title, release_title=playlist.title, fields=fields)
@@ -287,7 +298,7 @@ def notify_render_worker_claimed(
         text=text,
         blocks=blocks,
         image_path=_playlist_image_path(services, playlist),
-        image_title=f"{_short(playlist.title, 80)} artwork",
+        image_title=_artwork_title(playlist.title),
     )
 
 
@@ -305,7 +316,7 @@ def notify_render_worker_completed(
     worker_label = _worker_label(worker)
     title = "Render worker completed"
     fields = [
-        ("Worker", worker_label),
+        ("작업자", worker_label),
         ("Elapsed", elapsed),
         ("Result", "MP4 uploaded to main VM"),
     ]
@@ -321,7 +332,7 @@ def notify_render_worker_completed(
         text=text,
         blocks=blocks,
         image_path=_playlist_image_path(services, playlist),
-        image_title=f"{_short(playlist.title, 80)} artwork",
+        image_title=_artwork_title(playlist.title),
     )
 
 
@@ -342,7 +353,7 @@ def notify_render_worker_timeout_requeued(
     worker_label = _worker_label(worker)
     title = "Render worker timed out; job requeued"
     fields = [
-        ("Worker", worker_label),
+        ("작업자", worker_label),
         ("Timeout", _format_duration(timeout_seconds)),
         ("No heartbeat for", elapsed),
     ]
@@ -358,7 +369,7 @@ def notify_render_worker_timeout_requeued(
         text=text,
         blocks=blocks,
         image_path=_local_asset_path(services, cover_image_path),
-        image_title=f"{_short(playlist_title, 80)} artwork",
+        image_title=_artwork_title(playlist_title),
     )
 
 
@@ -392,5 +403,5 @@ def notify_youtube_publish_completed(
         text=text,
         blocks=blocks,
         image_path=_playlist_image_path(services, playlist),
-        image_title=f"{_short(playlist.title, 80)} artwork",
+        image_title=_artwork_title(playlist.title),
     )

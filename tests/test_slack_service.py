@@ -406,7 +406,7 @@ def test_upload_local_file_uses_compact_default_slack_preview_size(tmp_path) -> 
 
     assert result.ok is True
     uploaded_image = Image.open(BytesIO(upload_call["file_bytes"]))
-    assert uploaded_image.size == (240, 135)
+    assert uploaded_image.size == (120, 68)
 
 
 def test_upload_local_file_keeps_non_image_bytes(tmp_path) -> None:

@@ -1502,7 +1502,7 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
                 metadata_json={"style": "test"},
             )
             playlist = Playlist(
-                title="External Worker Release",
+                title="[playlist] External Worker Release | Long Render Subtitle",
                 status=PlaylistStatus.building,
                 target_duration_seconds=60,
                 actual_duration_seconds=60,
@@ -1543,8 +1543,9 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         assert claim_payload["job"]["id"] == job_id
         assert claim_payload["job"]["render"]["mode"] == "loop_video"
         assert "Render worker claimed" in ops_calls[-1]["text"]
-        assert "External Worker Release" in ops_calls[-1]["text"]
-        assert "Worker: test-worker" in ops_calls[-1]["text"]
+        assert "제목: External Worker Release" in ops_calls[-1]["text"]
+        assert "Long Render Subtitle" not in ops_calls[-1]["text"]
+        assert "작업자: test-worker" in ops_calls[-1]["text"]
         assert "Queued for:" in ops_calls[-1]["text"]
         assert job_id not in ops_calls[-1]["text"]
         assert ops_calls[-1]["file_path"] == str(cover_path)
@@ -1587,8 +1588,9 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         )
         assert complete.status_code == 200
         assert "Render worker completed" in ops_calls[-1]["text"]
-        assert "External Worker Release" in ops_calls[-1]["text"]
-        assert "Test Render Box (test-worker)" in ops_calls[-1]["text"]
+        assert "제목: External Worker Release" in ops_calls[-1]["text"]
+        assert "작업자: Test Render Box" in ops_calls[-1]["text"]
+        assert "(test-worker)" not in ops_calls[-1]["text"]
         assert "Elapsed:" in ops_calls[-1]["text"]
         assert job_id not in ops_calls[-1]["text"]
 
@@ -1690,12 +1692,12 @@ def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
         assert len(ops_calls) == 2
         assert "Render worker timed out" in ops_calls[0]["text"]
         assert "Stale Worker Release" in ops_calls[0]["text"]
-        assert "Worker: stale-worker" in ops_calls[0]["text"]
+        assert "작업자: stale-worker" in ops_calls[0]["text"]
         assert "Timeout: 6h 0m 0s" in ops_calls[0]["text"]
         assert job_id not in ops_calls[0]["text"]
         assert ops_calls[0]["file_path"] == str(cover_path)
         assert "Render worker claimed" in ops_calls[1]["text"]
-        assert "Worker: fresh-worker" in ops_calls[1]["text"]
+        assert "작업자: fresh-worker" in ops_calls[1]["text"]
         assert job_id not in ops_calls[1]["text"]
     finally:
         clear_isolated_client_env()
