@@ -682,6 +682,14 @@ def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads
                             "target_youtube_channel_title": "The New Verse",
                         },
                     ),
+                    Playlist(
+                        title="Cover Review New Verse",
+                        status=PlaylistStatus.ready,
+                        metadata_json={
+                            "workflow_state": "cover_review",
+                            "target_youtube_channel_title": "The New Verse",
+                        },
+                    ),
                 ]
             )
             db.commit()
@@ -692,7 +700,7 @@ def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads
         assert summary["channels"]["Club Bloom"]["youtube_scheduled_public_count"] == 1
         assert summary["channels"]["The New Verse"]["youtube_uploaded_count"] == 2
         assert summary["channels"]["The New Verse"]["youtube_scheduled_public_count"] == 0
-        assert summary["channels"]["The New Verse"]["count"] == 1
+        assert summary["channels"]["The New Verse"]["count"] == 2
     finally:
         clear_isolated_client_env()
 

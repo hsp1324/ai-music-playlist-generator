@@ -26,6 +26,8 @@ BACKLOG_WORKFLOW_STATES = {
     "rendering",
     "audio_ready",
     "rendered",
+    "cover_review",
+    "render_required",
     "video_required",
     "video_queued",
     "video_rendering",
