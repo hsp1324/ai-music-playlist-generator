@@ -43,6 +43,10 @@ NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "The New Verse"
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
+LONG_PLAYLIST_TRACK_ALLOWED_CHANNEL_TITLES = {
+    DEFAULT_YOUTUBE_CHANNEL_TITLE,
+    CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
+}
 CHANNEL_PROFILE_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/soft-hour-radio.md",
     JAPAN_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/tokyo-daydream-radio.md",
@@ -864,6 +868,33 @@ def max_playlist_track_seconds(args: argparse.Namespace) -> int:
     return max(int(getattr(args, "max_track_seconds", DEFAULT_MAX_PLAYLIST_TRACK_SECONDS) or 0), 0)
 
 
+def _release_channel_title(release: dict[str, Any] | None) -> str:
+    if not release:
+        return ""
+    meta = release.get("metadata_json") if isinstance(release.get("metadata_json"), dict) else {}
+    return str(
+        release.get("target_youtube_channel_title")
+        or release.get("youtube_channel_title")
+        or meta.get("target_youtube_channel_title")
+        or meta.get("youtube_channel_title")
+        or meta.get("openclaw_lock_channel_title")
+        or ""
+    ).strip()
+
+
+def playlist_track_max_duration_exempt(
+    args: argparse.Namespace,
+    *,
+    release: dict[str, Any] | None = None,
+) -> bool:
+    explicit_channel = str(getattr(args, "youtube_channel_title", "") or "").strip()
+    release_channel = _release_channel_title(release)
+    channel_title = explicit_channel or release_channel
+    if not channel_title and release is None:
+        channel_title = infer_youtube_channel_title(args)
+    return channel_title in LONG_PLAYLIST_TRACK_ALLOWED_CHANNEL_TITLES
+
+
 def min_playlist_track_seconds(args: argparse.Namespace) -> int:
     return max(int(getattr(args, "min_track_seconds", DEFAULT_MIN_PLAYLIST_TRACK_SECONDS) or 0), 0)
 
@@ -873,6 +904,7 @@ def require_playlist_track_duration(
     *,
     args: argparse.Namespace,
     context: str,
+    release: dict[str, Any] | None = None,
 ) -> None:
     duration_seconds = int(track.get("duration_seconds") or 0)
     if duration_seconds <= 0:
@@ -888,7 +920,12 @@ def require_playlist_track_duration(
         )
 
     max_seconds = max_playlist_track_seconds(args)
-    if not bool(getattr(args, "allow_long_track", False)) and max_seconds > 0 and duration_seconds > max_seconds:
+    if (
+        not playlist_track_max_duration_exempt(args, release=release)
+        and not bool(getattr(args, "allow_long_track", False))
+        and max_seconds > 0
+        and duration_seconds > max_seconds
+    ):
         raise RuntimeError(
             f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
             f"Playlist tracks must be {format_timestamp(max_seconds)} or shorter. "
@@ -903,7 +940,7 @@ def require_release_playlist_track_durations(
     context: str,
 ) -> None:
     for track in release.get("tracks") or []:
-        require_playlist_track_duration(track, args=args, context=context)
+        require_playlist_track_duration(track, args=args, context=context, release=release)
 
 
 def release_timeline(release: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1140,7 +1177,12 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             dispatch_review=not auto_approve_playlist,
         )
         if auto_approve_playlist:
-            require_playlist_track_duration(track, args=args, context="upload-audio playlist auto-approval")
+            require_playlist_track_duration(
+                track,
+                args=args,
+                context="upload-audio playlist auto-approval",
+                release=release,
+            )
             track = approve_track_to_playlist(
                 client,
                 track_id=track["id"],
@@ -1904,7 +1946,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 cover_path=None,
                 dispatch_review=False,
             )
-            require_playlist_track_duration(track, args=args, context="auto-publish-playlist")
+            require_playlist_track_duration(track, args=args, context="auto-publish-playlist", release=release)
             approved = approve_track_to_playlist(
                 client,
                 track_id=track["id"],

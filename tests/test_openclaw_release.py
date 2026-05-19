@@ -6,6 +6,7 @@ import pytest
 
 import scripts.openclaw_release as openclaw_release
 from scripts.openclaw_release import (
+    CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
@@ -103,6 +104,48 @@ def test_playlist_track_duration_allows_short_tracks_with_explicit_flag() -> Non
         args=args,
         context="duration check",
     )
+
+
+def test_playlist_track_duration_allows_long_tracks_for_soft_hour() -> None:
+    args = _auto_publish_args("song.mp3", youtube_channel_title=DEFAULT_YOUTUBE_CHANNEL_TITLE)
+
+    openclaw_release.require_playlist_track_duration(
+        {"title": "Long Ambient Cue", "duration_seconds": 286},
+        args=args,
+        context="duration check",
+    )
+
+
+def test_playlist_track_duration_allows_long_tracks_for_cinematic_pulse() -> None:
+    args = _auto_publish_args("song.mp3", youtube_channel_title=CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE)
+
+    openclaw_release.require_playlist_track_duration(
+        {"title": "Long Cinematic Cue", "duration_seconds": 286},
+        args=args,
+        context="duration check",
+    )
+
+
+def test_playlist_track_duration_uses_existing_release_channel_for_long_track_exemption() -> None:
+    args = _auto_publish_args("song.mp3", youtube_channel_title="")
+
+    openclaw_release.require_playlist_track_duration(
+        {"title": "Long Existing Cinematic Cue", "duration_seconds": 286},
+        args=args,
+        context="duration check",
+        release={"target_youtube_channel_title": CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE},
+    )
+
+
+def test_playlist_track_duration_rejects_long_tracks_for_non_exempt_channels() -> None:
+    args = _auto_publish_args("song.mp3", youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE)
+
+    with pytest.raises(RuntimeError, match="04:20 or shorter"):
+        openclaw_release.require_playlist_track_duration(
+            {"title": "Long J-pop Track", "duration_seconds": 286},
+            args=args,
+            context="duration check",
+        )
 
 
 def test_release_has_uploaded_cover_requires_manual_upload_source() -> None:
@@ -943,6 +986,7 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_allowed_limit(tmp_path
                 release_title="Cafe BGM Playlist",
                 description="instrumental cafe BGM",
                 tags="BGM,instrumental",
+                youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE,
             ),
         )
 

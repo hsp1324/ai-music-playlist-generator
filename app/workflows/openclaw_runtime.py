@@ -57,6 +57,14 @@ NON_RETRYABLE_YOUTUBE_AUTH_ERROR_PATTERNS = (
     "token has been expired or revoked",
     "token expired or was revoked",
 )
+OPENCLAW_MANUAL_BLOCKER_PATTERNS = (
+    "hcaptcha",
+    "captcha challenge",
+    "manual verification",
+    "stored youtube channel token expired",
+    "token expired or was revoked",
+    "connect this channel again",
+)
 
 _STATE_LOCK = threading.Lock()
 
@@ -79,6 +87,37 @@ def _parse_datetime(value: Any) -> datetime | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def _openclaw_manual_blocker(
+    state: dict[str, Any],
+    *,
+    now: datetime,
+    backoff_seconds: int,
+) -> dict[str, Any] | None:
+    last_finished_lock = dict(state.get("last_finished_lock") or {})
+    if str(last_finished_lock.get("finish_status") or "").strip().lower() != "blocked":
+        return None
+
+    finished_at = _parse_datetime(last_finished_lock.get("finished_at"))
+    if not finished_at:
+        return None
+    backoff = max(int(backoff_seconds or 0), 0)
+    retry_after = finished_at + timedelta(seconds=backoff)
+
+    blocker_text = " ".join(
+        str(last_finished_lock.get(key) or "")
+        for key in ("finish_message", "message", "operation", "channel_title")
+    ).lower()
+    if not any(pattern in blocker_text for pattern in OPENCLAW_MANUAL_BLOCKER_PATTERNS):
+        return None
+
+    return {
+        "last_finished_lock": last_finished_lock,
+        "manual_blocker_backoff_seconds": backoff,
+        "manual_blocker_within_backoff": retry_after > now,
+        "manual_blocker_retry_after": retry_after.isoformat(),
+    }
 
 
 def runtime_state_path(storage_root: Path) -> Path:
@@ -488,6 +527,13 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     overfull_channels = [
         title for title, payload in channel_data.items() if int(payload.get("count") or 0) >= maximum
     ]
+    manual_blocker = _openclaw_manual_blocker(
+        state,
+        now=now,
+        backoff_seconds=settings.openclaw_manual_blocker_backoff_seconds,
+    )
+    if manual_blocker:
+        summary = {**summary, "manual_blocker": manual_blocker}
 
     if finishable_channels:
         return {
@@ -499,6 +545,30 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "underfilled_channels": underfilled_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
+        }
+    if manual_blocker and manual_blocker.get("manual_blocker_within_backoff"):
+        return {
+            "should_request": False,
+            "reason": "recent_openclaw_manual_blocker",
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+            **manual_blocker,
+        }
+    if manual_blocker and underfilled_channels:
+        return {
+            "should_request": True,
+            "reason": "resume_openclaw_manual_blocker",
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+            **manual_blocker,
         }
     if underfilled_channels:
         return {

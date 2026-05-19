@@ -66,6 +66,7 @@ def clear_isolated_client_env() -> None:
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED", None)
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_SCHEDULER_INTERVAL_SECONDS", None)
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS", None)
+    os.environ.pop("AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS", None)
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_TARGET_PER_CHANNEL", None)
     os.environ.pop("AIMP_OPENCLAW_BACKLOG_MAX_PER_CHANNEL", None)
     os.environ.pop("AIMP_VIDEO_RENDER_EXECUTION_MODE", None)
@@ -521,6 +522,38 @@ def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() 
     assert "먼저 채울 채널 우선순위" in message
 
 
+def test_backlog_request_message_resumes_manual_blocker_instead_of_next_release() -> None:
+    message = build_backlog_queue_request_message(
+        reason="resume_openclaw_manual_blocker",
+        backlog_summary={
+            "manual_blocker": {
+                "last_finished_lock": {
+                    "release_id": "release-captcha",
+                    "channel_title": "Tokyo Daydream Radio",
+                    "operation": "backlog-pass",
+                    "run_id": "run-captcha",
+                    "finish_message": "Suno hCaptcha manual verification is required.",
+                }
+            },
+            "channels": {
+                "Tokyo Daydream Radio": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 17,
+                }
+            },
+        },
+    )
+
+    assert "blocked release resume" in message
+    assert "다음 곡을 만들지 말고" in message
+    assert "같은 작업을 계속 진행해줘" in message
+    assert "blocked_release_id: release-captcha" in message
+    assert "OpenClaw Next Release Publisher Skill" not in message
+
+
 def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads(tmp_path) -> None:
     client = create_isolated_client(tmp_path)
     try:
@@ -800,6 +833,150 @@ def test_openclaw_backlog_scheduler_skips_when_lock_is_active(tmp_path) -> None:
         services.worker._maybe_request_openclaw_backlog()
 
         assert calls == []
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_backs_off_after_manual_blocker(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_INTERVAL_SECONDS"] = "30"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
+    os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    os.environ["AIMP_SLACK_BOT_TOKEN"] = "xoxb-test"
+    client = create_isolated_client(tmp_path)
+    calls = []
+
+    async def fake_post_plain_message(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(ok=True, channel=kwargs["channel"], ts="123.456", raw={"ok": True})
+
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_TOKYO", "title": "Tokyo Daydream Radio"}],
+        }
+        services.slack.post_plain_message = fake_post_plain_message
+        client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-captcha", "operation": "backlog-pass"},
+        )
+        client.post(
+            "/api/openclaw/lock/finish",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-captcha",
+                "status": "blocked",
+                "message": "Suno hCaptcha manual verification is required at https://suno.com/create.",
+            },
+        )
+
+        with SessionLocal() as db:
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        services.worker._maybe_request_openclaw_backlog()
+
+        assert evaluation["should_request"] is False
+        assert evaluation["reason"] == "recent_openclaw_manual_blocker"
+        assert evaluation["manual_blocker_backoff_seconds"] == 1800
+        assert calls == []
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_allows_finishable_release_after_manual_blocker(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
+    os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+        client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-captcha", "operation": "backlog-pass"},
+        )
+        client.post(
+            "/api/openclaw/lock/finish",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-captcha",
+                "status": "blocked",
+                "message": "Suno hCaptcha manual verification is required at https://suno.com/create.",
+            },
+        )
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Ready Metadata Release",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "metadata_review",
+                        "youtube_channel_title": "Soft Hour Radio",
+                    },
+                )
+            )
+            db.commit()
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "finishable_releases"
+        assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_resumes_blocked_release_after_backoff(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
+    os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "0"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_TOKYO", "title": "Tokyo Daydream Radio"}],
+        }
+        client.post(
+            "/api/openclaw/lock/start",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-captcha",
+                "operation": "backlog-pass",
+                "channel_title": "Tokyo Daydream Radio",
+                "release_id": "release-captcha",
+            },
+        )
+        client.post(
+            "/api/openclaw/lock/finish",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-captcha",
+                "status": "blocked",
+                "message": "Suno hCaptcha manual verification is required at https://suno.com/create.",
+            },
+        )
+
+        with SessionLocal() as db:
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "resume_openclaw_manual_blocker"
+        assert evaluation["last_finished_lock"]["release_id"] == "release-captcha"
+        assert evaluation["summary"]["manual_blocker"]["last_finished_lock"]["release_id"] == "release-captcha"
     finally:
         clear_isolated_client_env()
 

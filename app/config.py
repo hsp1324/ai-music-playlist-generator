@@ -105,6 +105,7 @@ class Settings(BaseSettings):
     openclaw_backlog_scheduler_enabled: bool = False
     openclaw_backlog_scheduler_interval_seconds: int = 600
     openclaw_backlog_request_cooldown_seconds: int = 1800
+    openclaw_manual_blocker_backoff_seconds: int = 1800
     openclaw_backlog_target_per_channel: int = 10
     openclaw_backlog_max_per_channel: int = 10
 

@@ -345,6 +345,29 @@ def build_backlog_queue_request_message(
     unknown_releases = summary.get("unknown_channel_releases") if isinstance(summary, dict) else []
     target_per_channel = int(summary.get("target_per_channel") or 10) if isinstance(summary, dict) else 10
     max_per_channel = int(summary.get("max_per_channel") or target_per_channel) if isinstance(summary, dict) else target_per_channel
+    manual_blocker = summary.get("manual_blocker") if isinstance(summary, dict) else {}
+    if reason == "resume_openclaw_manual_blocker" and isinstance(manual_blocker, dict):
+        last_lock = manual_blocker.get("last_finished_lock") if isinstance(manual_blocker, dict) else {}
+        last_lock = last_lock if isinstance(last_lock, dict) else {}
+        lines = [
+            "OpenClaw blocked release resume를 실행해줘.",
+            f"scheduler_reason: {reason}",
+            "",
+            "중요: 새 workspace, 새 release, 다음 곡을 만들지 말고 방금 막힌 같은 작업을 계속 진행해줘.",
+            "Suno hCaptcha/manual verification이면 사람이 인증을 끝낸 뒤 같은 release에서 이어서 음악/이미지/loop video/upload를 진행해줘.",
+            "이미 로컬 산출물이 있으면 새로 만들지 말고 먼저 재사용하거나 누락분만 채워줘.",
+            "",
+            f"blocked_release_id: {last_lock.get('release_id') or 'unknown'}",
+            f"blocked_channel: {last_lock.get('channel_title') or 'unknown'}",
+            f"blocked_operation: {last_lock.get('operation') or 'unknown'}",
+            f"blocked_run_id: {last_lock.get('run_id') or 'unknown'}",
+            f"blocked_message: {last_lock.get('finish_message') or last_lock.get('message') or 'unknown'}",
+            "",
+            "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md와 해당 채널 profile/concept docs를 읽고 이어서 진행해줘.",
+            "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
+        ]
+        return _with_trigger_prefix("\n".join(lines), trigger_prefix)
+
     lines = [
         "OpenClaw Next Release Publisher Skill을 실행해줘.",
         f"scheduler_reason: {reason}",

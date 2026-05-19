@@ -89,6 +89,8 @@ scripts/openclaw-release openclaw-lock-finish \
 
 Use `--status blocked` if captcha, credits, login, missing API, or YouTube verification prevents progress.
 
+If the block is a Suno hCaptcha/manual verification or another human-verification gate, keep the same release/workspace as the next action. After the app's backoff, its Slack request will ask OpenClaw to resume the blocked release instead of making a new song. Do not abandon that release or start the next release unless the human explicitly says to skip it.
+
 ## Producer Mode
 
 When creating a new release, OpenClaw should produce assets and queue rendering in the VM app, then stop:
