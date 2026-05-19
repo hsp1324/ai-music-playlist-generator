@@ -26,19 +26,21 @@ If the latest sundaze title could be summarized by the same two nouns as the new
 
 ## Concept Lanes
 
-Use a vivid situation or emotion plus pop identity:
+Use a vivid situation or emotion plus one explicit English-pop genre lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
 
-- Sunset highway, windows down, road trip, open-road confidence.
-- City lights, night walk, late text, moving on, emotional synth-pop.
-- Rooftop evening, friends, party warmup, dance-pop.
-- Rooftop/club/high-energy dance-pop should target getting ready, workout, running, party warmup, driving, nightlife, and confidence. Do not label it as focus, study, or quiet work unless the actual rendered audio is clearly relaxed enough for that.
-- Summer beach, bright afternoon, first love, feel-good pop.
-- Gym or workout, confidence, upbeat pop-rock or dance-pop.
-- Rainy bedroom, heartbreak, acoustic-pop or emotional ballad.
+- Pop R&B / R&B pop: smooth vocals, late-night emotion, groove, romance, heartbreak.
+- Pop hip-hop / rap-pop: confident hooks, 808s, city/night drive, workout or getting ready.
+- Dance-pop: party warmup, rooftop, running, workout, bright hook energy.
+- Synth-pop: city lights, neon drive, emotional polish, moving on.
+- Pop-rock / guitar pop: road trip, weekend, confidence, friends, open-road energy.
+- Soul-pop / neo-soul pop: warm vocals, mature groove, romantic tension, Sunday mood.
+- Acoustic pop / ballad-pop: rainy bedroom, heartbreak, healing, late texts.
 
 ## Music Direction
 
 - Original English lyrics by default.
+- One release must stay in one clear genre lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, neo-soul pop, acoustic pop, or ballad-pop. Do not make one playlist a generic mixed English-pop sampler unless the human explicitly asks.
+- Put the selected genre lane in the YouTube title and metadata in natural English and localized equivalents. The title should make both the genre and the listening reason obvious.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for driving, getting ready, running, workout, night walk, work, or a party warmup, the beat, tempo, energy, and vocal attitude should fit that context, but the lyrics do not need to literally mention those activities.
 - Write each song like a real standalone English pop track: natural phrasing, strong hook, believable emotion, relationship tension, confidence, moving on, night-out, summer, heartbreak, or self-discovery. Avoid over-literal lyrics that repeat the YouTube title/use case.
@@ -57,14 +59,15 @@ Use a vivid situation or emotion plus pop identity:
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Late Night English Pop Mix | City Lights, Heartbreak and Drive Music`
-- `[playlist] Feel-Good American Pop Essentials | Summer Walk, Work and Drive Music`
-- `[playlist] Rooftop Dance Pop | Weekend Party Warmup and City Lights`
-- `[playlist] Rainy Bedroom Pop | Heartbreak, Late Texts and Moving On`
+- `[playlist] Late Night Pop R&B Mix | City Lights, Heartbreak and Drive Music`
+- `[playlist] Feel-Good Pop-Rock Essentials | Summer Drive, Walk and Good Days`
+- `[playlist] Rooftop Dance-Pop Mix | Weekend Party Warmup and City Lights`
+- `[playlist] Rainy Bedroom Acoustic Pop | Heartbreak, Late Texts and Moving On`
 
 ## Bad Directions
 
 - Short generic titles like `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
+- Titles that hide the genre lane. Avoid generic `English Pop Mix` when the release is specifically Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, or acoustic pop.
 - Titles that translate into awkward keyword piles instead of natural English-pop playlist copy.
 - Mismatched use cases, such as calling a club-like rooftop dance-pop playlist `focus`, `study`, or `quiet work` music.
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.

@@ -35,7 +35,7 @@ def test_cafe_piano_metadata_includes_timestamped_tracklist() -> None:
 
     metadata = service.build_youtube_metadata(playlist, tracks)
 
-    assert metadata.title == "[playlist] 조용한 카페 피아노 솔로 40분 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악"
+    assert metadata.title == "[playlist] 1시간 조용한 카페 피아노 솔로 | 공부, 작업, 휴식할 때 듣기 좋은 잔잔한 음악"
     assert "공부 / 작업 / 독서 / 휴식 / 카페 분위기 / 조용한 배경음악" in metadata.description
     assert "00:00 Cinnamon Pulse" in metadata.description
     assert "03:22 Cinnamon Bloom" in metadata.description

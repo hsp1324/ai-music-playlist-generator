@@ -26,18 +26,22 @@ If the latest Solwave releases all lean beach/sunset, choose a city, rain, dance
 
 ## Concept Lanes
 
-Use a vivid Latin scene plus substyle:
+Use a vivid Latin scene plus one explicit Latin/Spanish genre lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
 
-- Beach sunset, summer drive, warm pop latino, buenas vibras.
-- Night city, rooftop fiesta, urbano latino, dance-pop.
-- Tropical rain, late-night romance, bachata pop or Spanish pop.
-- Morning energy, workout, reggaeton pop, bright rhythm.
-- Plaza dancing, salsa pop, cumbia pop, festival mood.
-- Carretera, windows down, verano latino, open-road pop.
+- Pop Latino: warm vocal pop, beach, road trip, buenas vibras.
+- Reggaeton pop / reggaeton suave: bright rhythm, workout, morning energy, night drive.
+- Urbano latino: city night, rooftop fiesta, confidence, dance-pop edge.
+- Bachata pop: tropical rain, late-night romance, sensual but non-explicit mood.
+- Salsa pop: plaza dancing, party, festival, live percussion feel.
+- Cumbia pop: warm groove, friends, outdoor party, summer movement.
+- Latin R&B / Spanish R&B: smooth late-night vocals, romance, heartbreak, slow groove.
+- Latin soul / neo-soul pop: mature vocals, warm chords, romance, relaxed rhythm.
 
 ## Music Direction
 
 - Original Spanish lyrics by default.
+- One release must stay in one clear genre lane such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul. Do not make one playlist a vague mixed Latin sampler unless the human explicitly asks.
+- Put the selected genre lane in the YouTube title and metadata in natural Spanish and localized equivalents. The title should make both the genre and the listening reason obvious.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Rhythm should be clear and playlist-friendly.
 - Treat the playlist title/use case as packaging and rhythm direction, not as the required lyric topic. If the playlist is for carretera, playa, fiesta, workout, morning energy, or night drive, the groove, tempo, percussion, and vocal attitude should fit that context, but the lyrics do not need to literally describe that activity.
@@ -59,11 +63,12 @@ Use a vivid Latin scene plus substyle:
 - `[playlist] Pop Latino para Ruta al Atardecer | Carretera, Verano y Buenas Vibras`
 - `[playlist] Reggaeton Suave de Noche | Latin Pop para Playa, Drive y Fiesta`
 - `[playlist] Bachata Pop para Lluvia Tropical | Romance, Noche y Ventanas Abiertas`
-- `[playlist] Verano Latino Pop Mix | Música para Bailar, Manejar y Sentirse Bien`
+- `[playlist] Latin R&B de Noche | Romance, Drive y Buenas Vibras`
 
 ## Bad Directions
 
 - Generic titles like `Latin Pop`, `Spanish Pop`, or `Ruta Dorada Pop` by themselves.
+- Titles that hide the genre lane. Avoid generic `Pop Latino` when the release is specifically reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, or Latin soul.
 - Titles that sound like translated labels or mixed-language keyword piles instead of natural Spanish/Latin playlist copy.
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.
 - Forcing title/use-case words such as carretera, playa, fiesta, manejar, workout, morning energy, or night drive into lyrics unless they naturally belong in the song.

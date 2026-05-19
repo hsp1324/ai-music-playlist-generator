@@ -2,7 +2,7 @@
 
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
-For higher-level OpenClaw skill instructions, including "make one single", "build a 40+ minute playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
+For higher-level OpenClaw skill instructions, including "make one single", "build a 60+ minute playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned `profile_doc` in [openclaw-channel-profiles](openclaw-channel-profiles/README.md). For next-release concept planning, read the returned `concept_doc` in [openclaw-channel-concepts](openclaw-channel-concepts/README.md).
 
@@ -122,7 +122,7 @@ If `--cover` is provided and this is a Single Release, approving the track autom
 
 ## Upload One Playlist Track
 
-When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a 40+ minute playlist does not spam Slack.
+When `scripts/openclaw-release upload-audio` targets an existing Playlist Release, the helper now uploads the track and immediately approves it into the playlist. It also skips the per-track Slack review message so a 60+ minute playlist does not spam Slack.
 
 Playlist track titles should look like final tracklist titles, not Suno alternatives. Do not upload names like `Title A`, `Title B`, `Title 1`, `Title 2`, `Title - Morning`, or `Title - Evening`. Give every playlist item a standalone title that fits the mood.
 
@@ -247,13 +247,13 @@ Provider fallback and deferral rule:
 Dreamina website workflow for OpenClaw:
 
 - Use `https://dreamina.capcut.com/ai-tool/home/` for browser-based Dreamina/Seedance generation.
-- Use Dreamina/Seedance `2.0 Fast`.
+- Use Dreamina/Seedance `2.0 Fast` for normal releases. Exception: for HaruHaru photorealistic releases, use Seedance `2.0` instead of `2.0 Fast`.
 - Do not use Omni Reference.
 - Use the first/last-frame workflow if the UI asks which mode to use, but provide only the first-frame image.
 - Start from the cover image or a separate first-frame image that contains only the large lower-left selected-channel-name brand label. It should match the YouTube thumbnail scene and composition, including any explicit human visual request. It must not contain title text, genre text, duration text, or unrelated text.
 - Leave the last-frame input empty. Do not upload a last-frame reference; it makes the generated motion too static.
 - Set ratio to `16:9` when selectable.
-- Set quality to `720p` when selectable.
+- Set quality to `720p` when selectable. Exception: for HaruHaru photorealistic releases, set quality to `1080p` and later queue final render with `--video-render-resolution 1080p`.
 - Set duration to `6 seconds` and re-check this visible control immediately before clicking Generate.
 - Do not click Generate while the duration control is hidden, while it shows anything other than `6 seconds`, or while you are unsure. Do not create a draft/test clip first.
 - Generate exactly one `6 second` MP4.
@@ -370,7 +370,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; localize displayed track-title text and surrounding description naturally unless a channel-specific rule says to preserve original song titles.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and every other localized description uses translated title text only.
 - For sundaze/English pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In timestamped tracklists, keep the English song title after each timestamp in every localized description. Translate only the surrounding description prose, use-case line, and hashtags.
-- If the release is 40+ minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
+- If the release is 60+ minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
 - Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 
 Example localized metadata approval:
@@ -518,7 +518,7 @@ scripts/openclaw-release create-release --workspace-mode single --release-title 
 
 For a new playlist/mix, first create one Playlist Release:
 
-scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 2400 --description "CONCEPT"
+scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 3600 --description "CONCEPT"
 
 Keep the returned release.id. Do not create Suno songs before the release.id exists.
 For an existing release, use --release-id and keep all related Suno outputs in that same workspace.
@@ -590,9 +590,10 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Before pressing Create in Suno, remove producer tags and specific artist references from lyrics, bracketed metatags, style, prompt, tags, and excluded styles. If Suno rejects a word such as `lowlight` as a producer tag, rewrite it to a generic descriptor like `low-lit`, `dim`, `shadowy`, `muted night`, or `soft ambient`, then retry generation.
 - After every audio upload, confirm that the returned `duration_seconds` is close to the actual song length. If it is `0`, much shorter than expected, or the upload fails as unreadable, fix the source file and re-upload before moving on.
 - For playlist work, confirm every uploaded `duration_seconds` is at or below 260 unless the target channel is `Soft Hour Radio` or `Cinematic Pulse`, or the human explicitly approved a longer track.
-- For 40+ minute playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
+- For 60+ minute playlist automation, if a few songs fail after the 3 upload attempts, do not abandon the rest of the batch. Let the helper upload the remaining songs, read the Slack warning, then re-upload only the failed files and rerun render/publish after the release has the full intended track set.
 - If Suno style/settings are available, upload them in the same command with `--style`. If excluded styles/negative tags are available, upload them with `--exclude-style`.
 - Do not generate a batch by repeating one Suno prompt/style/lyric template. Each new Suno request should have a distinct prompt/style/lyrics plan while staying inside the requested release mood.
+- For HaruHaru, sundaze, and Solwave Radio playlist releases, choose one explicit genre lane before Suno generation and keep the whole playlist in that lane. Name that lane in the public title/metadata when accurate instead of writing a generic mixed-pop title.
 - Do not generate vocal songs by mechanically inserting the release title/use-case words into every verse or chorus. For example, a dance-practice, walking, driving, workout, study, or party playlist should get songs whose sound fits that context; the lyrics can be about love, confidence, heartbreak, freedom, youth, or another strong pop topic.
 - Treat generated draft covers in the web UI as replaceable placeholders, not final art.
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
@@ -604,7 +605,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - OpenClaw must create a Gemini/Dreamina/Seedance clip and pass the short MP4 as `--loop-video` before normal video render/publish. Try Gemini first unless its 24 hour cooldown is active; otherwise use Dreamina/Seedance. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if all 3 Gemini videos are already spent, defer this release until the 24 hour Gemini cooldown clears and process it before new loop-video work. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish. For `Cinematic Pulse`, skip loop-video work by default and render from the high-resolution still cover with `--video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
 - Keep `--cover`, `--thumbnail`, and `--loop-video` separate. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Gemini/Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. If the human requested a specific video visual, that visual request must be reflected consistently across all three assets.
 - A Gemini/Veo provider logo or watermark in the corner is allowed and is not a reason to regenerate the loop video.
-- For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, count only successful video generations toward the 3 videos per 24 hour quota, and upload with `--loop-video-provider gemini`. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls, then upload with `--loop-video-provider dreamina` or `--loop-video-provider seedance`. Do not put those settings in the prompt.
+- For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, count only successful video generations toward the 3 videos per 24 hour quota, and upload with `--loop-video-provider gemini`. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `6 seconds` through UI controls, then upload with `--loop-video-provider dreamina` or `--loop-video-provider seedance`. Exception: HaruHaru photorealistic releases use Seedance `2.0`, `1080p`, exactly `6 seconds`, and final render `--video-render-resolution 1080p`. Do not put those settings in the prompt.
 - For normal OpenClaw auto-publish work, verify the MP4 after download. If Seedance/Dreamina did not produce the requested 6 second clip, discard/regenerate unless the human explicitly accepts it and OpenClaw passes `--allow-short-loop-video`. For Gemini, inspect the generated MP4 and upload it as-is when text, framing, and motion are acceptable.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.

@@ -275,8 +275,8 @@ You can also create a `single_track_video` workspace:
 After release audio is ready, the workspace can accept a manual cover upload at any time before the YouTube upload completes.
 
 - `Upload Cover` stores a user-provided JPG, PNG, or WebP image and moves the release to cover review.
-- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name brand label and a separate 16:9 YouTube thumbnail with readable text. The cover label must be large and readable on mobile; match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height. Runs must include an 8 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
-- The web release detail view exposes separate upload/replace buttons for video cover, text YouTube thumbnail, and 8 second loop video.
+- OpenClaw full auto-publish runs require a final uploaded 16:9 video cover with only the lower-left channel-name brand label and a separate 16:9 YouTube thumbnail with readable text. The cover label must be large and readable on mobile; match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height. Runs must include a 6 second Dreamina/Seedance MP4 with `--loop-video`; the app repeats that short clip during final video render. The local draft cover is a manual placeholder and is not used for automatic YouTube publishing unless explicitly allowed.
+- The web release detail view exposes separate upload/replace buttons for video cover, text YouTube thumbnail, and 6 second loop video.
 - `Generate Draft Cover` creates a simple local PNG with Pillow. This is a placeholder draft, not Codex/OpenAI image generation.
 - If a generated draft is not good enough, press `Upload Cover` and replace it with the real cover file.
 - For best YouTube output, use a 16:9 image such as `1280x720` or `1920x1080`.
@@ -330,7 +330,7 @@ Runtime behavior:
 
 - If the playlist has a rendered local audio file and YouTube is connected, publish approval will queue a background job that:
   - uses the approved cover image as the still visual fallback
-  - uses the uploaded 8 second loop video as the moving visual when `--loop-video` is provided
+  - uses the uploaded 6 second loop video as the moving visual when `--loop-video` is provided
   - renders the final MP4 from audio plus either the loop video or the cover fallback
   - uploads the video to YouTube
   - uploads the separate text-based YouTube thumbnail as the custom thumbnail
@@ -380,7 +380,7 @@ When a `single_track_video` workspace is ready and auto-publish is enabled, the 
 
 OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Create the final cover first with only the large, readable lower-left channel-name brand label, then generate the YouTube thumbnail from that exact cover as a reference/edit derivative so characters, positions, outfit colors, lighting, palette, background, and channel-brand scale remain consistent while click text/branding is added. The default visual signature is three people walking away from the viewer for Tokyo Daydream Radio, but an explicit human request for a different scene, subject, action, or camera angle overrides that default and should be applied consistently to cover, thumbnail, and loop video. Dreamina is only for animating the cover or first-frame image into a moving visual, and it must preserve the lower-left channel label for the full clip.
 
-OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the cover or a separate first-frame image that contains only the large, readable lower-left channel-name brand label, set `16:9`, `720p`, and exactly `8 seconds` when selectable, download the MP4 locally, then upload it with the command below:
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the cover or a separate first-frame image that contains only the large, readable lower-left channel-name brand label, set `16:9`, `720p`, and exactly `6 seconds` when selectable, download the MP4 locally, then upload it with the command below. HaruHaru photorealistic releases are the exception: use Seedance `2.0`, `1080p`, exactly `6 seconds`, then queue final render with `--video-render-resolution 1080p`.
 
 ```bash
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
@@ -393,7 +393,7 @@ scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video 
 scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style bars
 ```
 
-The app repeats short clips internally, so OpenClaw should upload only the 8 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 8 seconds. Do not generate a 5 second draft/test clip first. Re-check the Dreamina duration control immediately before clicking Generate, and verify the downloaded MP4 duration before upload. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. The cover/first-frame must contain only the large, readable lower-left channel label such as `Tokyo Daydream Radio`; instruct Dreamina/Seedance to preserve that exact text for the full clip and reject/regenerate if the text flickers, morphs, disappears, changes spelling/style, shrinks, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage unless the selected channel profile explicitly says otherwise. `Cinematic Pulse` is the exception and should use original photorealistic cinematic film-still / premium movie-poster realism with clean `bars` spectrum renders.
+The app repeats short clips internally, so OpenClaw should upload only the 6 second source clip, not a one-hour rendered video. The renderer uses the actual uploaded clip length, normally 6 seconds. Do not generate a 5 second draft/test clip first. Re-check the Dreamina duration control immediately before clicking Generate, and verify the downloaded MP4 duration before upload. Do not force Dreamina to use a matching last-frame reference; first-frame-only input gives more natural motion. The cover/first-frame must contain only the large, readable lower-left channel label such as `Tokyo Daydream Radio`; instruct Dreamina/Seedance to preserve that exact text for the full clip and reject/regenerate if the text flickers, morphs, disappears, changes spelling/style, shrinks, or becomes unreadable. Use animated, anime, illustrated, or stylized visuals instead of photorealistic/live-action footage unless the selected channel profile explicitly says otherwise. `Cinematic Pulse` is the exception and should use original photorealistic cinematic film-still / premium movie-poster realism with clean `bars` spectrum renders.
 
 For `Cinematic Pulse`, do not create a provider loop video during normal automation. Generate a high-resolution photorealistic 16:9 cover image, preferably 2560x1440, then queue:
 
@@ -597,7 +597,7 @@ curl -X POST http://127.0.0.1:8000/api/playlists/build \
   -H 'content-type: application/json' \
   -d '{
     "title": "Night Drive Vol. 1",
-    "target_duration_seconds": 2400,
+    "target_duration_seconds": 3600,
     "execute_render": false
   }'
 ```

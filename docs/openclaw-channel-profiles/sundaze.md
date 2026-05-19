@@ -70,13 +70,14 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Localized YouTube titles may be natural adaptations in each language instead of exact English copies. If a literal translation is awkward or less clickable, rewrite the localized title while keeping the English-pop identity and actual listening use case truthful.
 - In every localized description, keep timestamped tracklist song titles in English exactly as the English description. Translate only the surrounding description prose, recommended use-case line, and hashtag line.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
-- Use an `Essential`-style title shape: a vivid situation or emotion + English/American pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Use an `Essential`-style title shape with the selected genre lane near the front: a vivid situation or emotion + Pop R&B / pop hip-hop / dance-pop / synth-pop / pop-rock / soul-pop / acoustic-pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Keep the whole release in one lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, neo-soul pop, acoustic pop, or ballad-pop, and name that lane in the title/description when accurate.
 - Make the title broad and public-facing first. The cover/video scene can be specific, but do not let a narrow scene name become the main hook unless it is the strongest searchable phrase.
 - Match listening use cases to the actual energy. For energetic rooftop, club, dance-pop, bass-heavy, or workout-feeling releases, prefer getting ready, workout, running, party warmup, driving, nightlife, and confidence. Avoid `focus`, `study`, or `quiet work` unless the rendered audio is genuinely calm enough for those uses.
 - Strong examples:
-  `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`
-  `[playlist] Feel-Good American Pop Essentials | Summer Drive, Walk and Work Music`
+  `[playlist] Sunset Highway Pop-Rock Drive | Windows Down Road Trip Music`
+  `[playlist] Feel-Good Pop R&B Essentials | Summer Drive, Walk and Good Days`
   `[playlist] Late Night English Pop Mix | City Lights, Heartbreak and Drive Music`
-  `[playlist] Golden Hour Road Trip Pop | Warm Vocals, Open Roads and Good Days`
+  `[playlist] Golden Hour Soul-Pop Drive | Warm Vocals, Open Roads and Good Days`
 - Every track should have original English lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.
 - Lyrics are judged by song quality first: melody fit, vocal tone, hook, emotional arc, and replay value. They do not need to mention the title/use case.

@@ -26,19 +26,21 @@ If the latest HaruHaru upload could be summarized by the same scene plus same em
 
 ## Concept Lanes
 
-Use one broad K-pop listening promise plus an optional visual/emotional flavor:
+Use one broad K-pop listening promise plus one explicit K-pop genre lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
 
-- Workout, running, getting ready, party warmup, confidence boost, bright dance-pop.
-- Night drive, city lights, late bus, emotional synth-pop.
-- Heartbreak recovery, rainy mood, Korean R&B pop or soft pop-rock.
-- Dance practice energy, performance confidence, idol-pop.
-- Feel-good weekend, friends, bright pop-rock.
-- Summer crush, campus mood, youthful idol-pop.
-- Reunion or moving-on mood, sentimental K-pop ballad-pop.
+- K-pop hip-hop / rap-pop: confident hooks, 808s, tight drums, cool night-out energy.
+- Korean R&B pop: smooth vocals, late-night romance, breakup recovery, warm bass.
+- K-pop dance-pop / idol-pop: bright hooks, performance energy, getting ready, party warmup.
+- Korean synth-pop: city lights, night drive, neon emotion, polished vocal layers.
+- Korean pop-rock: weekend, friends, confidence, guitar-driven uplift.
+- K-pop soul / neo-soul pop: warm chords, mature vocals, relaxed groove, romantic tension.
+- K-pop ballad-pop: emotional breakup, reunion, moving on, piano/guitar warmth.
 
 ## Music Direction
 
 - Original Korean lyrics are required by default.
+- One release must stay in one clear genre lane such as K-pop hip-hop, Korean R&B pop, dance-pop, synth-pop, pop-rock, soul/neo-soul pop, or ballad-pop. Do not make one playlist a vague mixed K-pop sampler unless the human explicitly asks.
+- Put the selected genre lane in the release title and metadata in natural Korean, English, and localized equivalents. Examples of genre words to use when accurate: `K-POP 힙합`, `Korean R&B`, `댄스팝`, `신스팝`, `팝록`, `K-POP Soul`, `감성 발라드팝`.
 - Every track needs a distinct Korean lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is `댄스 연습실 K-POP`, the beat, tempo, confidence, and performance energy should fit dance practice, but the lyrics do not need to mention dance practice, mirrors, choreography, or working out.
 - Write each song like a real standalone K-pop track: natural Korean phrasing, believable emotion, relationship tension, confidence, crush, breakup, comeback, night-out, youth, or self-belief. Avoid over-literal or cringe lyrics that repeat the YouTube title/use case.
@@ -53,16 +55,20 @@ Use one broad K-pop listening promise plus an optional visual/emotional flavor:
 
 - No fixed recurring visual signature yet.
 - Cover, thumbnail, and loop video should follow the specific playlist concept.
-- Keep visuals illustrated, anime/stylized, Korean pop-friendly, fashion-aware, bright, emotional, and readable at thumbnail size.
+- Rotate HaruHaru visual mode at roughly a 2:1 ratio: make two photorealistic adult fashion/lifestyle releases, then one illustrated/anime/stylized release, then repeat. Check recent HaruHaru releases before choosing so the channel does not drift away from this photorealistic-heavy pattern.
+- Illustrated mode should stay anime/stylized, Korean pop-friendly, fashion-aware, bright, emotional, and readable at thumbnail size.
+- Photorealistic mode should be high-quality, glossy, and click-stopping like a premium Korean pop/fashion thumbnail: clearly adult woman, face hidden or mostly obscured by side/back angle, hat, hair, sunglasses, phone, car frame, yacht railing, beach shade, or camera crop. Use fashion, beach, yacht, car, rooftop, night city, summer resort, or luxury lifestyle settings when they fit the music lane.
+- Photorealistic styling may be alluring and show skin through tasteful swimwear, summer tops, backless dresses, shorts, or light white beachwear, but keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no sexual acts, no minors or teen-looking subjects, and no school-uniform/childlike cues.
+- In photorealistic mode, the subject should feel adult, confident, pretty, stylish, and slightly mysterious rather than pornographic. The face can be unseen, side-profile, turned away, cropped, shaded by a hat, or blocked by props.
 - Seoul/Korean setting cues are good when they fit the concept, but do not force Seoul landmarks into every release.
-- Thumbnail text should be short and click-readable, such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`.
+- Thumbnail text should be short and click-readable, and should name the selected genre lane when possible: `K-POP HIPHOP`, `K-R&B`, `DANCE POP`, `SYNTH POP`, `K-POP SOUL`, `POP ROCK`, `HEARTBREAK`, `SUMMER KPOP`, or `K-POP DRIVE`.
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] 신나는 K-POP 믹스 | 운동, 러닝, 외출 준비, 파티 웜업`
-- `[playlist] 감성 K-POP 플레이리스트 | 이별, 늦은 밤, 혼자 듣는 노래`
-- `[playlist] 설레는 K-POP 믹스 | 여름, 첫사랑, 기분 좋아지는 노래`
-- `[playlist] K-POP 드라이브 믹스 | 밤길, 도시 불빛, 자신감 충전`
+- `[playlist] K-POP 힙합 믹스 | 운동, 러닝, 외출 준비, 자신감 충전`
+- `[playlist] Korean R&B 플레이리스트 | 이별, 늦은 밤, 혼자 듣는 노래`
+- `[playlist] 신나는 K-POP 댄스팝 | 여름, 첫사랑, 기분 좋아지는 노래`
+- `[playlist] K-POP 신스팝 드라이브 | 밤길, 도시 불빛, 자신감 충전`
 
 ## Bad Directions
 
@@ -71,6 +77,7 @@ Use one broad K-pop listening promise plus an optional visual/emotional flavor:
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.
 - Forcing title/use-case words such as `댄스 연습실`, `운동`, `산책`, `공부`, `드라이브`, or `외출 준비` into lyrics unless they naturally belong in the song.
 - Titles like `KPOP Playlist`, `Korean Pop`, or `Seoul Music` by themselves.
+- Titles that hide the genre lane. Avoid generic `K-POP 믹스` when the release is specifically hip-hop, R&B, dance-pop, synth-pop, soul, pop-rock, or ballad-pop.
 - Overly narrow visual-scene titles such as rooftop-after-rain, pottery-studio, exact street corners, or prop-first titles when the music is really a broad workout, running, getting-ready, party, heartbreak, or mood playlist.
 - Titles that sound machine-translated or keyword-stuffed instead of natural Korean K-pop playlist copy.
 - Concepts that sound like J-pop/Tokyo Daydream Radio or English pop/sundaze.

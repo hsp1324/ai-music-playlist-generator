@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     video_spectrum_overlay_style: Literal[
         "bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"
     ] = "bars"
-    playlist_target_minutes: int = 40
+    playlist_target_minutes: int = 60
     crossfade_seconds: float = 1.0
 
     slack_signing_secret: str = ""

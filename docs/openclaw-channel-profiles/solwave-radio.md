@@ -66,14 +66,15 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--es-title` / `--es-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Ruta Dorada Pop`, `Latin Pop`, `Spanish Pop`, or `Pop para manejar` by themselves.
-- Use an `Essential`-style title shape: a vivid situation or emotion + Latin/Spanish pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Use an `Essential`-style title shape with the selected genre lane near the front: a vivid situation or emotion + Pop Latino / reggaeton pop / urbano latino / bachata pop / salsa pop / cumbia pop / Latin R&B / Latin soul identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Keep the whole release in one lane such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul, and name that lane in the title/description when accurate.
 - Make the title broad and public-facing first. The cover/video scene can be specific, but do not let a narrow scene name become the main hook unless it is the strongest searchable phrase.
-- Good Solwave title ingredients: `Pop Latino`, `Spanish Pop`, `Reggaeton Suave`, `Verano Latino`, `Noche Latina`, `Ruta al Atardecer`, `Carretera`, `Playa`, `Fiesta`, `Baila`, `Drive`, `Caminar`, `Workout`, `Romance`, `Buenas Vibras`.
+- Good Solwave title ingredients: `Pop Latino`, `Spanish Pop`, `Reggaeton Suave`, `Urbano Latino`, `Bachata Pop`, `Salsa Pop`, `Cumbia Pop`, `Latin R&B`, `Latin Soul`, `Verano Latino`, `Noche Latina`, `Ruta al Atardecer`, `Carretera`, `Playa`, `Fiesta`, `Baila`, `Drive`, `Caminar`, `Workout`, `Romance`, `Buenas Vibras`.
 - Strong examples:
   `[playlist] Pop Latino para Ruta al Atardecer | Carretera, Verano y Buenas Vibras`
   `[playlist] Spanish Pop Essentials para Manejar | Sol, Ventanas Abajo y Road Trip`
   `[playlist] Reggaeton Suave de Noche | Latin Pop para Playa, Drive y Fiesta`
-  `[playlist] Verano Latino Pop Mix | Música para Bailar, Manejar y Sentirse Bien`
+  `[playlist] Latin R&B de Noche | Romance, Drive y Buenas Vibras`
 - Avoid repeating `lista de reproducción` after `[playlist]`; use `mix`, `music`, `música`, `radio`, or the use case instead.
 - Every track should have original Spanish lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.
 - Lyrics are judged by song quality first: melody fit, rhythm, vocal tone, hook, emotional arc, and replay value. They do not need to mention the title/use case.

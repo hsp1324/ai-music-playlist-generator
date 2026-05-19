@@ -101,7 +101,7 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
 3. Create the Playlist Release before Suno generation.
    - Pass `--youtube-channel-title "$CHANNEL_TITLE"` when using `scripts/openclaw-release create-release`.
    - This lets the web app count the release against the correct channel backlog before publish.
-4. Generate and upload enough approved audio for at least 40 minutes.
+4. Generate and upload enough approved audio for at least 60 minutes, preferably around 65 minutes.
 5. Upload final cover, YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if Gemini has already used all 3 successful videos in the current 24 hour window, defer this release and resume it first after cooldown. For Cinematic Pulse, skip loop-video creation and upload a high-resolution photorealistic cover instead.
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.

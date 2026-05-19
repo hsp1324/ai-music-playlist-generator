@@ -1,6 +1,6 @@
 # OpenClaw Next Release Planner Skill
 
-Use this skill when the AI Music web app asks OpenClaw to choose the next 40+ minute playlist concept for the backlog queue.
+Use this skill when the AI Music web app asks OpenClaw to choose the next 60+ minute playlist concept for the backlog queue.
 
 This is the channel/concept selection step inside the continuous automation loop. For queue sizing and producer/finisher behavior, read [openclaw-backlog-queue.md](openclaw-backlog-queue.md) first. This planner chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the production/publish instructions in [openclaw-skills.md](openclaw-skills.md).
 
@@ -20,7 +20,7 @@ The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MA
 
 ## Goal
 
-Choose the next channel and a fresh 40+ minute playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely.
+Choose the next channel and a fresh 60+ minute playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely.
 
 The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. `MusicSun` is manual-only and is excluded from automatic rotation. Current known active channels include:
 
@@ -191,7 +191,7 @@ scripts/openclaw-release youtube-status
 
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
-Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playlist Release using docs/openclaw-next-release-planner.md:
+Run docs/openclaw-backlog-queue.md first, then choose the next 60+ minute Playlist Release using docs/openclaw-next-release-planner.md:
 - Keep each active automated channel filled toward the configured unfinished Playlist Release target, currently 10 per channel.
 - Finish metadata_review/publish_ready releases before creating new ones.
 - If a video render job is queued/running, VM is handling it. If any channel is below target, prepare the next eligible release up to queued video render; do not wait idle.
@@ -209,7 +209,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40+ minute Playli
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create enough audio for at least 2400 seconds, generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create enough audio for at least 3600 seconds, preferably around 3900 seconds, generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel
