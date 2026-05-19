@@ -1106,6 +1106,7 @@ class BackgroundJobWorker:
                     meta["workflow_state"] = "youtube_upload_failed"
                     meta["note"] = f"Automatic YouTube upload failed: {exc}"
                     meta["youtube_upload_error"] = str(exc)
+                    meta["youtube_upload_failed_at"] = _utcnow().isoformat()
                     playlist.metadata_json = meta
                     db.add(playlist)
                     raise

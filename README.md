@@ -295,6 +295,8 @@ Required setup:
 5. Open the web UI and press `Connect YouTube` once
 6. Finish the OAuth flow in your browser
 
+If the Google Cloud OAuth consent screen is still `External` / `Testing`, Google issues refresh tokens that expire after 7 days for YouTube upload scopes. In that mode, reconnect each automated YouTube channel about once per week, or move the OAuth app to production/verification to avoid the weekly testing-token expiry.
+
 Environment variables:
 
 ```bash

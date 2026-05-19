@@ -308,6 +308,8 @@ def _backlog_priority_channel_lines(channel_payload: dict[str, Any], max_per_cha
         count = int(payload.get("count") or 0)
         if count >= max_per_channel:
             continue
+        if int(payload.get("auth_blocked") or 0) > 0:
+            continue
         scheduled_public = int(payload.get("youtube_scheduled_public_count") or 0)
         if scheduled_public != 0:
             continue
@@ -391,8 +393,22 @@ def build_backlog_queue_request_message(
                 f"- {title}: {payload.get('count', 0)} unfinished"
                 f", {payload.get('finishable', 0)} finishable"
                 f", {payload.get('deferred', 0)} deferred"
+                f", {payload.get('auth_blocked', 0)} YouTube reconnect needed"
                 f", {payload.get('youtube_scheduled_public_count', 0)} future scheduled-public YouTube uploads"
                 f", {payload.get('youtube_uploaded_count', 0)} total YouTube uploads"
+            )
+        reconnect_lines = [
+            f"- {title}: {payload.get('auth_blocked', 0)} failed publish item(s)"
+            for title, payload in sorted(channel_payload.items())
+            if int(payload.get("auth_blocked") or 0) > 0
+        ]
+        if reconnect_lines:
+            lines.extend(
+                [
+                    "",
+                    "YouTube 재연결 전까지 새 release를 만들지 말아야 할 채널:",
+                    *reconnect_lines,
+                ]
             )
     if isinstance(unknown_releases, list) and unknown_releases:
         lines.extend(["", "먼저 확인할 채널 미지정/미완성 workspace:"])

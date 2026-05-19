@@ -351,38 +351,90 @@ def _playlist_counts_as_backlog(playlist: Playlist) -> bool:
     return workflow_state in BACKLOG_WORKFLOW_STATES or not workflow_state
 
 
-def _youtube_upload_failure_needs_auth(meta: dict[str, Any]) -> bool:
+def _youtube_channel_reconnected_after_failure(
+    *,
+    channel_status: dict[str, Any] | None,
+    failed_at: datetime | None,
+) -> bool:
+    if not channel_status or not failed_at:
+        return False
+    if failed_at.tzinfo is None:
+        failed_at = failed_at.replace(tzinfo=timezone.utc)
+    reconnect_times = [
+        _parse_datetime(channel_status.get("connected_at")),
+        _parse_datetime(channel_status.get("refreshed_at")),
+    ]
+    latest_reconnect = max((value for value in reconnect_times if value), default=None)
+    return bool(latest_reconnect and latest_reconnect > failed_at)
+
+
+def _youtube_upload_failure_needs_auth(
+    meta: dict[str, Any],
+    *,
+    channel_status: dict[str, Any] | None = None,
+    failed_at: datetime | None = None,
+) -> bool:
     if str(meta.get("workflow_state") or "").strip() != "youtube_upload_failed":
         return False
     error_text = str(meta.get("youtube_upload_error") or meta.get("note") or "").lower()
-    return any(pattern in error_text for pattern in NON_RETRYABLE_YOUTUBE_AUTH_ERROR_PATTERNS)
+    if not any(pattern in error_text for pattern in NON_RETRYABLE_YOUTUBE_AUTH_ERROR_PATTERNS):
+        return False
+    return not _youtube_channel_reconnected_after_failure(
+        channel_status=channel_status,
+        failed_at=failed_at,
+    )
 
 
-def _playlist_is_finishable(workflow_state: str, meta: dict[str, Any]) -> bool:
-    if workflow_state == "youtube_upload_failed" and _youtube_upload_failure_needs_auth(meta):
+def _playlist_is_finishable(
+    workflow_state: str,
+    meta: dict[str, Any],
+    *,
+    channel_status: dict[str, Any] | None = None,
+    failed_at: datetime | None = None,
+) -> bool:
+    if workflow_state == "youtube_upload_failed" and _youtube_upload_failure_needs_auth(
+        meta,
+        channel_status=channel_status,
+        failed_at=failed_at,
+    ):
         return False
     return workflow_state in FINISHABLE_WORKFLOW_STATES
 
 
-def _playlist_is_deferred(workflow_state: str, meta: dict[str, Any]) -> bool:
-    return workflow_state in DEFERRED_WORKFLOW_STATES or _youtube_upload_failure_needs_auth(meta)
+def _playlist_is_deferred(
+    workflow_state: str,
+    meta: dict[str, Any],
+    *,
+    channel_status: dict[str, Any] | None = None,
+    failed_at: datetime | None = None,
+) -> bool:
+    return workflow_state in DEFERRED_WORKFLOW_STATES or _youtube_upload_failure_needs_auth(
+        meta,
+        channel_status=channel_status,
+        failed_at=failed_at,
+    )
 
 
-def _active_youtube_channel_titles(services) -> list[str]:
+def _active_youtube_channel_statuses(services) -> dict[str, dict[str, Any]]:
     status = services.youtube.get_status()
     if not status.get("ready"):
-        return []
-    titles = []
+        return {}
+    channels = {}
     for channel in status.get("channels") or []:
         title = str(channel.get("title") or "").strip()
         if not title or title in MANUAL_ONLY_CHANNEL_TITLES or title in RETIRED_CHANNEL_TITLES:
             continue
-        titles.append(title)
-    return sorted(set(titles), key=str.lower)
+        channels[title] = dict(channel)
+    return channels
+
+
+def _active_youtube_channel_titles(services) -> list[str]:
+    return sorted(_active_youtube_channel_statuses(services), key=str.lower)
 
 
 def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
-    channel_titles = _active_youtube_channel_titles(services)
+    channel_statuses = _active_youtube_channel_statuses(services)
+    channel_titles = sorted(channel_statuses, key=str.lower)
     target = max(1, int(services.settings.openclaw_backlog_target_per_channel or 1))
     maximum = max(target, int(services.settings.openclaw_backlog_max_per_channel or target))
     lock_status = get_openclaw_lock_status(services.settings.storage_root)
@@ -394,6 +446,7 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             "count": 0,
             "finishable": 0,
             "deferred": 0,
+            "auth_blocked": 0,
             "youtube_uploaded_count": 0,
             "youtube_scheduled_public_count": 0,
             "next_youtube_scheduled_public_at": None,
@@ -434,12 +487,31 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
         if channel_title not in channels:
             unknown_channel_releases.append({**release_payload, "channel_title": channel_title or None})
             continue
+        channel_status = channel_statuses.get(channel_title)
+        failure_at = _parse_datetime(meta.get("youtube_upload_failed_at")) or playlist.updated_at
+        auth_blocked = _youtube_upload_failure_needs_auth(
+            meta,
+            channel_status=channel_status,
+            failed_at=failure_at,
+        )
         channels[channel_title]["count"] += 1
         channels[channel_title]["releases"].append(release_payload)
-        if _playlist_is_finishable(workflow_state, meta):
+        if _playlist_is_finishable(
+            workflow_state,
+            meta,
+            channel_status=channel_status,
+            failed_at=failure_at,
+        ):
             channels[channel_title]["finishable"] += 1
-        if _playlist_is_deferred(workflow_state, meta):
+        if _playlist_is_deferred(
+            workflow_state,
+            meta,
+            channel_status=channel_status,
+            failed_at=failure_at,
+        ):
             channels[channel_title]["deferred"] += 1
+        if auth_blocked:
+            channels[channel_title]["auth_blocked"] += 1
 
     return {
         "channels": channels,
@@ -521,8 +593,16 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     finishable_channels = [
         title for title, payload in channel_data.items() if int(payload.get("finishable") or 0) > 0
     ]
-    underfilled_channels = [
+    raw_underfilled_channels = [
         title for title, payload in channel_data.items() if int(payload.get("count") or 0) < target
+    ]
+    auth_blocked_channels = [
+        title for title, payload in channel_data.items() if int(payload.get("auth_blocked") or 0) > 0
+    ]
+    underfilled_channels = [
+        title
+        for title in raw_underfilled_channels
+        if int(channel_data.get(title, {}).get("auth_blocked") or 0) <= 0
     ]
     overfull_channels = [
         title for title, payload in channel_data.items() if int(payload.get("count") or 0) >= maximum
@@ -543,6 +623,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "max_per_channel": maximum,
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
         }
@@ -554,6 +635,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "max_per_channel": maximum,
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
             **manual_blocker,
@@ -566,6 +648,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "max_per_channel": maximum,
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
             **manual_blocker,
@@ -578,6 +661,19 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "max_per_channel": maximum,
             "finishable_channels": finishable_channels,
             "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+        }
+    if raw_underfilled_channels and auth_blocked_channels:
+        return {
+            "should_request": False,
+            "reason": "underfilled_channels_need_youtube_reconnect",
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
             "overfull_channels": overfull_channels,
             "summary": summary,
         }
@@ -586,6 +682,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         "reason": "backlog_satisfied",
         "target_per_channel": target,
         "max_per_channel": maximum,
+        "auth_blocked_channels": auth_blocked_channels,
         "summary": summary,
     }
 

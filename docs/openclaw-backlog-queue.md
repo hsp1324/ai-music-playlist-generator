@@ -38,7 +38,7 @@ On each `OPENCLAW_RUN:` backlog request:
 6. First finish existing releases that are already past video render:
    - `metadata_review`: write/approve final YouTube metadata, then approve publish.
    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
-   - `youtube_upload_failed`: retry only if the error is transient or already fixed. If the error says the stored YouTube channel token expired/was revoked or asks to reconnect the channel, report it as a human-auth blocker and continue with backlog producer work instead of letting that failed upload monopolize the next-release queue.
+   - `youtube_upload_failed`: retry only if the error is transient or already fixed. If the error says the stored YouTube channel token expired/was revoked or asks to reconnect the channel, report it as a human-auth blocker. Do not make new releases for that same channel until the human reconnects it; continue only with other eligible channels.
    - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
    - loop-video deferred because Dreamina/Seedance failed and Gemini quota was exhausted: if the Gemini 24 hour cooldown has cleared, make/upload the Gemini loop video first and queue render before starting any new release. Do not replace the missing provider video with a local motion-loop workaround.
    - Gemini/Veo may add its own provider logo or watermark, usually in the bottom-right corner. This is acceptable and is not a reason to remake an otherwise valid loop video. The no-logo rule only forbids OpenClaw-requested/generated extra logos, UI, brand marks, or unrelated text.

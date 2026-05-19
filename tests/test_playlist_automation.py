@@ -465,8 +465,45 @@ def test_backlog_request_message_includes_future_scheduled_public_upload_counts(
     )
 
     assert "future scheduled-public YouTube 업로드가 0개인 자동화 채널을 먼저" in message
-    assert "The New Verse: 0 unfinished, 0 finishable, 0 deferred, 0 future scheduled-public YouTube uploads" in message
-    assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 2 future scheduled-public YouTube uploads" in message
+    assert "The New Verse: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 0 future scheduled-public YouTube uploads" in message
+    assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 2 future scheduled-public YouTube uploads" in message
+
+
+def test_backlog_request_message_skips_auth_blocked_channels_in_priority_list() -> None:
+    message = build_backlog_queue_request_message(
+        reason="underfilled_backlog",
+        backlog_summary={
+            "target_per_channel": 10,
+            "max_per_channel": 10,
+            "channels": {
+                "Solwave Radio": {
+                    "count": 1,
+                    "finishable": 0,
+                    "deferred": 1,
+                    "auth_blocked": 1,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 11,
+                    "releases": [],
+                },
+                "The New Verse": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "auth_blocked": 0,
+                    "youtube_scheduled_public_count": 0,
+                    "youtube_uploaded_count": 2,
+                    "releases": [],
+                },
+            },
+            "unknown_channel_releases": [],
+        },
+    )
+
+    priority_section = message.split("현재 웹앱 backlog snapshot:", 1)[0]
+    assert "The New Verse: 0 unfinished" in priority_section
+    assert "Solwave Radio: 1 unfinished" not in priority_section
+    assert "YouTube 재연결 전까지 새 release를 만들지 말아야 할 채널" in message
+    assert "Solwave Radio: 1 failed publish item(s)" in message
 
 
 def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() -> None:
@@ -759,8 +796,97 @@ def test_openclaw_backlog_scheduler_does_not_prioritize_auth_blocked_upload_fail
         assert summary["channels"]["Solwave Radio"]["count"] == 1
         assert summary["channels"]["Solwave Radio"]["finishable"] == 0
         assert summary["channels"]["Solwave Radio"]["deferred"] == 1
+        assert summary["channels"]["Solwave Radio"]["auth_blocked"] == 1
         assert evaluation["reason"] == "underfilled_backlog"
+        assert "Solwave Radio" not in evaluation["underfilled_channels"]
+        assert "Solwave Radio" in evaluation["auth_blocked_channels"]
         assert "The New Verse" in evaluation["underfilled_channels"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_pauses_when_only_underfilled_channel_needs_reconnect(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOL", "title": "Solwave Radio"}],
+        }
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Auth Blocked Solwave",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "youtube_upload_failed",
+                        "youtube_channel_title": "Solwave Radio",
+                        "target_youtube_channel_title": "Solwave Radio",
+                        "youtube_upload_error": "Stored YouTube channel token expired or was revoked. Connect this channel again.",
+                    },
+                )
+            )
+            db.commit()
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is False
+        assert evaluation["reason"] == "underfilled_channels_need_youtube_reconnect"
+        assert evaluation["underfilled_channels"] == []
+        assert evaluation["auth_blocked_channels"] == ["Solwave Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_retries_failed_publish_after_channel_reconnect(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    failed_at = datetime(2026, 5, 19, 0, 59)
+    reconnected_at = datetime(2026, 5, 19, 1, 31, tzinfo=timezone.utc)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [
+                {
+                    "id": "UC_SOL",
+                    "title": "Solwave Radio",
+                    "connected_at": reconnected_at.isoformat(),
+                }
+            ],
+        }
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Reconnected Solwave",
+                    status=PlaylistStatus.ready,
+                    updated_at=failed_at,
+                    metadata_json={
+                        "workflow_state": "youtube_upload_failed",
+                        "youtube_channel_title": "Solwave Radio",
+                        "target_youtube_channel_title": "Solwave Radio",
+                        "youtube_upload_error": "Stored YouTube channel token expired or was revoked. Connect this channel again.",
+                    },
+                )
+            )
+            db.commit()
+
+            summary = build_openclaw_backlog_summary(db, services)
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert summary["channels"]["Solwave Radio"]["finishable"] == 1
+        assert summary["channels"]["Solwave Radio"]["deferred"] == 0
+        assert summary["channels"]["Solwave Radio"]["auth_blocked"] == 0
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "finishable_releases"
+        assert evaluation["finishable_channels"] == ["Solwave Radio"]
     finally:
         clear_isolated_client_env()
 
