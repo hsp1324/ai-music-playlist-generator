@@ -5867,7 +5867,7 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channe
                 youtube_channel_title="Channel B",
                 now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
             )
-            every_other_day_scheduled = next_youtube_scheduled_publish_at(
+            two_day_interval_scheduled = next_youtube_scheduled_publish_at(
                 db,
                 services,
                 youtube_channel_id="UC-A",
@@ -5878,7 +5878,7 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channe
 
         assert scheduled == datetime(2026, 5, 13, 22, 0, tzinfo=timezone.utc)
         assert other_channel_scheduled == datetime(2026, 5, 11, 22, 0, tzinfo=timezone.utc)
-        assert every_other_day_scheduled == datetime(2026, 5, 14, 22, 0, tzinfo=timezone.utc)
+        assert two_day_interval_scheduled == datetime(2026, 5, 14, 22, 0, tzinfo=timezone.utc)
     finally:
         clear_isolated_client_env()
 
@@ -5970,7 +5970,7 @@ def test_scripture_schedule_options_and_playlist_titles() -> None:
     assert youtube_schedule_options_for_playlist(buddhist_playlist) == {
         "schedule_hour": 7,
         "schedule_minute": 0,
-        "schedule_interval_days": 2,
+        "schedule_interval_days": 1,
         "schedule_scope": "date",
         "schedule_label": "buddhist_scripture",
     }

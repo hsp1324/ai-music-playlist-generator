@@ -161,7 +161,7 @@ Return this compact plan before generating audio:
 - `recent_releases_checked`
 - `why_this_is_fresh`
 - For `BibliaCanto` Bible releases: `scripture_source=web_app`, `selected_passage_range`, `scripture_next_start_after_completion`, and `why_this_passage_is_next`
-- For `불송` Buddhist releases: selected Buddhist source/theme, release-level music lane, `schedule=every_other_day_07:00_Asia/Seoul`, `visual_background=photorealistic_or_occasional_cute_animation_when_music_fits`, `thumbnail=cover_reuse`, and `spectrum=calm-bars`
+- For `불송` Buddhist releases: selected Buddhist source/theme, release-level music lane, `schedule=daily_07:00_Asia/Seoul`, `visual_background=photorealistic_or_occasional_cute_animation_when_music_fits`, `thumbnail=cover_reuse`, and `spectrum=calm-bars`
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
@@ -205,7 +205,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40-minute Playlis
 - Read the returned concept_doc to choose a fresh concept.
 - Read the returned profile_doc before making cover, thumbnail, and loop video assets.
 - If the selected channel is BibliaCanto, read docs/openclaw-scripture-sequence.md, create the app release first, reserve the next canonical Old Testament or New Testament passage from the web app with scripts/openclaw-release openclaw-scripture-reserve before Suno, include the returned passage range in every YouTube title, and mark it scheduled/published after upload with scripts/openclaw-release openclaw-scripture-complete. Do not use or compare a local scripture ledger.
-- If the selected channel is 불송, use the Buddhist channel concept/profile docs instead of the Bible scripture ledger. Publish through the app normally; the app schedules 불송 public every other day at 07:00 Asia/Seoul.
+- If the selected channel is 불송, use the Buddhist channel concept/profile docs instead of the Bible scripture ledger. Publish through the app normally; the app schedules 불송 public daily at 07:00 Asia/Seoul.
 - For BibliaCanto, choose one Bible release-level music lane before Suno generation and rotate it across uploads, such as scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. For 불송, choose one Buddhist scripture-inspired lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. Keep the whole release in that lane so the title can truthfully name the genre.
 - If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.

@@ -261,21 +261,20 @@ Cover / first frame:
 - 16:9 respectful Buddhist scripture-inspired image for modern vocal music.
 - Follow the selected Buddhist source/theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, mindfulness, compassion, impermanence, or non-attachment.
 - Use photorealistic or premium cinematic-real Buddhist/dharma imagery by default. Cute/gentle animation is allowed occasionally only when the music lane also fits that softer visual direction, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
-- Only text allowed is the large lower-left `불송` brand label.
-- Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
+- The cover/first-frame must be textless for 불송. Do not add the `불송` channel label or any other words to the cover/first-frame.
 
 Loop video:
 
 - Animate the cover/first-frame with calm environmental motion such as lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
-- Preserve the large lower-left `불송` brand label exactly for the whole clip.
+- Keep the loop video textless for the whole clip. Do not add `불송`, title text, sutra text, captions, UI, logos, signs, or any other words.
 - Queue final render with `--video-spectrum-overlay-style calm-bars`; 불송 uses a very low-motion, low-opacity app spectrum instead of the normal bars.
 - Do not add sutra text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
 YouTube thumbnail:
 
-- Reuse the final cover as the thumbnail by default.
+- Make any thumbnail text as a separate derivative from the textless cover.
 - Do not add large headline text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B` unless the human explicitly asks for a text thumbnail.
-- Keep the integrated `불송` brand label clean and visually consistent with the cover.
+- Never use a text thumbnail as the loop-video first frame.
 
 Profiles:
 

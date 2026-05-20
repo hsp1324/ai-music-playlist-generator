@@ -12,7 +12,7 @@ The audience should immediately understand: Buddhist wisdom and sutra-inspired t
 
 ## Overnight Privacy Rule
 
-Publish 불송 through the app normally. The app schedules 불송 uploads as public every other day at 07:00 Asia/Seoul, unless the human explicitly pauses the channel.
+Publish 불송 through the app normally. The app schedules 불송 uploads as public daily at 07:00 Asia/Seoul, unless the human explicitly pauses the channel.
 
 ## Source Material Direction
 
@@ -64,8 +64,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Cute/gentle animation visuals are allowed occasionally only when the release music lane also fits that softer image, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
 - Avoid parody, caricature, or exoticized religious imagery.
 - Do not depict the Buddha disrespectfully or as a face-focused photorealistic idol. Symbolic imagery is safer.
-- Cover first-frame should contain only the large lower-left channel brand label `불송`.
-- Use the clean cover as the thumbnail by default. Do not add large click text or extra headline typography unless the human explicitly asks.
+- Cover first-frame and loop video must be textless for 불송. Do not add the `불송` channel label or any other words to the video visual.
+- If thumbnail text is needed, create a separate thumbnail derivative from the textless cover. Never use a text thumbnail as the loop-video first frame.
 
 ## Good Fresh Concept Shapes
 
@@ -81,4 +81,4 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Randomly mixing jazz, hip-hop, R&B, folk, and cinematic pop in one release.
 - Copying long translated sutra passages.
 - Using Buddhist words as decoration while the lyrics say nothing about the teaching.
-- Forcing private visibility or bypassing the app's every-other-day 07:00 Asia/Seoul schedule without an explicit human pause.
+- Forcing private visibility or bypassing the app's daily 07:00 Asia/Seoul schedule without an explicit human pause.
