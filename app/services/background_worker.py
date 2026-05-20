@@ -31,7 +31,7 @@ from app.utils.openclaw_slack_loop import (
 )
 from app.utils.ops_notifications import notify_youtube_publish_completed
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
-from app.utils.lyric_subtitles import build_line_lyric_cues
+from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_line_lyric_cues
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.utils.video_render_policy import apply_video_spectrum_channel_policy, is_cinematic_pulse_release
 from app.workflows.openclaw_runtime import (
@@ -657,17 +657,14 @@ class BackgroundJobWorker:
                 meta.get("video_lyrics_overlay_enabled", self.settings.video_lyrics_overlay_enabled),
             )
         )
+        total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
         lyric_cues = (
-            build_line_lyric_cues(
-                [_track_timeline_dict(track) for track in tracks],
-                list(meta.get("rendered_timeline") or []),
-            )
+            self._build_video_lyric_cues(job, meta, tracks, audio_path, total_duration_seconds)
             if lyrics_overlay_enabled
             else []
         )
         video_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp4"
         progress_callback = self._build_video_progress_callback(db, job, playlist)
-        total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
         loop_video_path = str(meta.get("loop_video_path") or "").strip()
         allow_still_image_fallback = bool((job.payload_json or {}).get("allow_still_image_fallback"))
         video_render_resolution = str(
@@ -781,6 +778,13 @@ class BackgroundJobWorker:
         meta["video_render_resolution"] = video_render_resolution
         meta["video_render_source_mode"] = video_render_source_mode
         meta["video_lyrics_overlay_enabled"] = lyrics_overlay_enabled
+        meta["video_lyrics_alignment_mode"] = str(
+            (job.payload_json or {}).get(
+                "video_lyrics_alignment_mode",
+                meta.get("video_lyrics_alignment_mode", self.settings.video_lyrics_alignment_mode),
+            )
+            or "whisper"
+        )
         meta["video_lyrics_overlay_cue_count"] = len(lyric_cues)
         tracks = [
             item.track
@@ -854,6 +858,39 @@ class BackgroundJobWorker:
             job_id=job.id,
             event="video_render_completed",
             reason="video_render_completed",
+        )
+
+    def _build_video_lyric_cues(
+        self,
+        job: Job,
+        meta: dict,
+        tracks: list[Track],
+        audio_path: Path,
+        total_duration_seconds: int | float | None,
+    ) -> list[dict]:
+        track_dicts = [_track_timeline_dict(track) for track in tracks]
+        rendered_timeline = list(meta.get("rendered_timeline") or [])
+        mode = str(
+            (job.payload_json or {}).get(
+                "video_lyrics_alignment_mode",
+                meta.get("video_lyrics_alignment_mode", self.settings.video_lyrics_alignment_mode),
+            )
+            or "whisper"
+        ).strip().lower().replace("-", "_")
+        if mode == "timeline":
+            return build_line_lyric_cues(
+                track_dicts,
+                rendered_timeline,
+                max_end_seconds=total_duration_seconds,
+            )
+        return build_word_aligned_line_lyric_cues(
+            track_dicts,
+            rendered_timeline,
+            audio_path=audio_path,
+            model_size=self.settings.video_lyrics_alignment_model,
+            language=self.settings.video_lyrics_alignment_language or None,
+            min_score=self.settings.video_lyrics_alignment_min_score,
+            max_end_seconds=total_duration_seconds,
         )
 
     @staticmethod

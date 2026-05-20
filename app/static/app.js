@@ -3151,6 +3151,7 @@ function renderWorkspaceDetail() {
               actor: "web-ui",
               video_spectrum_overlay_style: videoSpectrumOverlayStyle,
               video_lyrics_overlay_enabled: videoLyricsOverlayEnabled,
+              video_lyrics_alignment_mode: videoLyricsOverlayEnabled ? "whisper" : "timeline",
             }),
           });
         })

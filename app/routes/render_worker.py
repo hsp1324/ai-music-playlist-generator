@@ -388,12 +388,21 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             meta.get("video_lyrics_overlay_enabled", services.settings.video_lyrics_overlay_enabled),
         )
     )
+    lyric_tracks = [_track_timeline_dict(item) for item in sorted(playlist.items, key=lambda row: row.order_index)]
+    rendered_timeline = list(meta.get("rendered_timeline") or [])
+    lyrics_alignment_mode = str(
+        (job.payload_json or {}).get(
+            "video_lyrics_alignment_mode",
+            meta.get("video_lyrics_alignment_mode", services.settings.video_lyrics_alignment_mode),
+        )
+        or "whisper"
+    ).strip().lower().replace("-", "_")
     lyric_cues = (
         build_line_lyric_cues(
-            [_track_timeline_dict(item) for item in sorted(playlist.items, key=lambda row: row.order_index)],
-            list(meta.get("rendered_timeline") or []),
+            lyric_tracks,
+            rendered_timeline,
         )
-        if lyrics_overlay_enabled
+        if lyrics_overlay_enabled and lyrics_alignment_mode == "timeline"
         else []
     )
     return {
@@ -411,6 +420,12 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             "video_render_resolution": render_resolution,
             "video_render_source_mode": effective_source_mode,
             "video_lyrics_overlay_enabled": lyrics_overlay_enabled,
+            "video_lyrics_alignment_mode": lyrics_alignment_mode,
+            "video_lyrics_alignment_model": services.settings.video_lyrics_alignment_model,
+            "video_lyrics_alignment_language": services.settings.video_lyrics_alignment_language,
+            "video_lyrics_alignment_min_score": services.settings.video_lyrics_alignment_min_score,
+            "lyric_tracks": lyric_tracks,
+            "rendered_timeline": rendered_timeline,
             "lyric_cues": lyric_cues,
             "total_duration_seconds": int(playlist.actual_duration_seconds or 0) or None,
             "track_ids": _playlist_track_ids(playlist),

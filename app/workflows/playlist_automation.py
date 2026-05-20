@@ -2381,6 +2381,7 @@ def queue_workspace_video_render(
     video_render_resolution: str | None = None,
     video_render_source_mode: str | None = None,
     video_lyrics_overlay_enabled: bool | None = None,
+    video_lyrics_alignment_mode: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -2422,6 +2423,11 @@ def queue_workspace_video_render(
     meta["video_render_source_mode"] = source_mode
     if video_lyrics_overlay_enabled is not None:
         meta["video_lyrics_overlay_enabled"] = bool(video_lyrics_overlay_enabled)
+    if video_lyrics_alignment_mode is not None:
+        mode = str(video_lyrics_alignment_mode or "").strip().lower().replace("-", "_")
+        if mode not in {"whisper", "timeline"}:
+            raise ValueError("video_lyrics_alignment_mode must be whisper or timeline.")
+        meta["video_lyrics_alignment_mode"] = mode
     meta.pop("video_build_error", None)
     meta.pop("publish_approved_by", None)
     playlist.output_video_path = None
@@ -2445,6 +2451,7 @@ def queue_workspace_video_render(
                     "video_render_resolution": render_resolution,
                     "video_render_source_mode": source_mode,
                     "video_lyrics_overlay_enabled": bool(meta.get("video_lyrics_overlay_enabled")),
+                    "video_lyrics_alignment_mode": str(meta.get("video_lyrics_alignment_mode") or "whisper"),
                 },
                 result_json={},
                 playlist=playlist,

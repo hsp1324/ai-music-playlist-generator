@@ -49,6 +49,7 @@ class PlaylistVideoRenderRequest(BaseModel):
     video_render_resolution: str | None = None
     video_render_source_mode: str | None = None
     video_lyrics_overlay_enabled: bool | None = None
+    video_lyrics_alignment_mode: str | None = None
 
 
 class PlaylistMetadataGenerateRequest(BaseModel):

@@ -24,6 +24,7 @@ import httpx
 
 from app.config import Settings
 from app.services.playlist_builder import FFMpegPlaylistBuilder
+from app.utils.lyric_subtitles import build_word_aligned_line_lyric_cues
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
@@ -455,6 +456,22 @@ def render_job(
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
     render_resolution = render.get("video_render_resolution") or "720p"
     lyric_cues = render.get("lyric_cues") or []
+    if (
+        render.get("video_lyrics_overlay_enabled")
+        and not lyric_cues
+        and str(render.get("video_lyrics_alignment_mode") or "whisper").lower().replace("-", "_") == "whisper"
+    ):
+        print("Building line lyric cues with faster-whisper alignment...", flush=True)
+        lyric_cues = build_word_aligned_line_lyric_cues(
+            list(render.get("lyric_tracks") or []),
+            list(render.get("rendered_timeline") or []),
+            audio_path=audio_path,
+            model_size=str(render.get("video_lyrics_alignment_model") or "tiny"),
+            language=str(render.get("video_lyrics_alignment_language") or "").strip() or None,
+            min_score=float(render.get("video_lyrics_alignment_min_score") or 0.34),
+            max_end_seconds=total_duration_seconds,
+        )
+        print(f"Built {len(lyric_cues)} aligned lyric cues.", flush=True)
 
     def callback(progress: dict[str, Any]) -> None:
         post_progress(
