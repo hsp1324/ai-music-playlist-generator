@@ -720,13 +720,25 @@ class FFMpegPlaylistBuilder:
             text = self._format_ass_lyric_text(str(cue.get("text") or ""), wrap_chars=wrap_chars)
             if not text:
                 continue
+            fade_tag = self._lyric_ass_fade_tag(float(cue["start"]), float(cue["end"]))
             lines.append(
                 "Dialogue: 0,"
                 f"{self._format_ass_timestamp(float(cue['start']))},"
                 f"{self._format_ass_timestamp(float(cue['end']))},"
-                f"Lyrics,,0,0,0,,{{\\fad(120,180)}}{text}"
+                f"Lyrics,,0,0,0,,{fade_tag}{text}"
             )
         output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def _lyric_ass_fade_tag(self, start_seconds: float, end_seconds: float) -> str:
+        duration_ms = max(int(round((end_seconds - start_seconds) * 1000)), 0)
+        if duration_ms <= 0:
+            return r"{\fad(0,0)}"
+        fade_in_ms = min(320, max(180, duration_ms // 8))
+        fade_out_ms = min(460, max(240, duration_ms // 6))
+        max_fade_ms = max(duration_ms // 3, 80)
+        fade_in_ms = min(fade_in_ms, max_fade_ms)
+        fade_out_ms = min(fade_out_ms, max_fade_ms)
+        return rf"{{\fad({fade_in_ms},{fade_out_ms})}}"
 
     def _valid_lyric_cues(
         self,

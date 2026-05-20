@@ -154,6 +154,13 @@ def test_ass_lyric_text_wraps_into_two_useful_lines(tmp_path) -> None:
     assert text == r"Gathered up the promise, took the child\Nand walked away"
 
 
+def test_ass_lyric_fade_scales_with_cue_duration(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+
+    assert builder._lyric_ass_fade_tag(1.0, 4.0) == r"{\fad(320,460)}"
+    assert builder._lyric_ass_fade_tag(1.0, 1.6) == r"{\fad(180,200)}"
+
+
 def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
     audio_path = tmp_path / "empty.mp3"
     output_path = tmp_path / "release.mp3"
