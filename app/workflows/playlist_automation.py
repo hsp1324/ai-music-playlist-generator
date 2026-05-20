@@ -50,6 +50,8 @@ SCRIPTURE_OLD_TESTAMENT_PLAYLIST_TITLE = "Old Testament Songs"
 SCRIPTURE_NEW_TESTAMENT_PLAYLIST_TITLE = "New Testament Songs"
 SCRIPTURE_OLD_TESTAMENT_SCHEDULE = (7, 0)
 SCRIPTURE_NEW_TESTAMENT_SCHEDULE = (16, 0)
+BUDDHIST_SCRIPTURE_SCHEDULE = (7, 0)
+BUDDHIST_SCRIPTURE_SCHEDULE_INTERVAL_DAYS = 2
 NEW_TESTAMENT_BOOKS = {
     "matthew",
     "mark",
@@ -356,9 +358,13 @@ def youtube_schedule_options_for_playlist(playlist: Playlist) -> dict:
         _canonical_youtube_channel_title(meta.get("youtube_channel_title")),
     }
     if NEW_VERSE_YOUTUBE_CHANNEL_TITLE in channel_titles:
+        hour, minute = BUDDHIST_SCRIPTURE_SCHEDULE
         return {
-            "schedule_disabled": True,
-            "schedule_label": "private_buddhist_scripture",
+            "schedule_hour": hour,
+            "schedule_minute": minute,
+            "schedule_interval_days": BUDDHIST_SCRIPTURE_SCHEDULE_INTERVAL_DAYS,
+            "schedule_scope": "date",
+            "schedule_label": "buddhist_scripture",
         }
     if not _scripture_upload_channel_selected(meta):
         return {}
@@ -589,6 +595,7 @@ def next_youtube_scheduled_publish_at(
     schedule_hour: int | None = None,
     schedule_minute: int | None = None,
     schedule_scope: str = "date",
+    schedule_interval_days: int | None = None,
 ) -> datetime | None:
     if not services.settings.youtube_schedule_public_enabled:
         return None
@@ -605,6 +612,7 @@ def next_youtube_scheduled_publish_at(
     hour = min(max(int(services.settings.youtube_schedule_hour if schedule_hour is None else schedule_hour), 0), 23)
     minute = min(max(int(services.settings.youtube_schedule_minute if schedule_minute is None else schedule_minute), 0), 59)
     lead_minutes = max(int(services.settings.youtube_schedule_min_lead_minutes), 0)
+    interval_days = max(int(schedule_interval_days or 1), 1)
     now_utc = _parse_metadata_datetime(now) or _utcnow()
     now_local = now_utc.astimezone(schedule_tz)
     candidate = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
@@ -632,6 +640,10 @@ def next_youtube_scheduled_publish_at(
                 )
 
     def occupied(value: datetime) -> bool:
+        if interval_days > 1:
+            value_date = value.date()
+            if any(abs((value_date - occupied_date).days) < interval_days for occupied_date in occupied_local_dates):
+                return True
         if use_slot_scope:
             return (value.date(), value.hour, value.minute) in occupied_local_slots
         return value.date() in occupied_local_dates
@@ -647,6 +659,7 @@ def youtube_schedule_metadata(
     *,
     schedule_hour: int | None = None,
     schedule_minute: int | None = None,
+    schedule_interval_days: int | None = None,
     schedule_label: str | None = None,
 ) -> dict:
     if scheduled_publish_at is None:
@@ -663,6 +676,8 @@ def youtube_schedule_metadata(
             services.settings.youtube_schedule_minute if schedule_minute is None else schedule_minute
         ),
     }
+    if schedule_interval_days:
+        metadata["youtube_schedule_interval_days"] = max(int(schedule_interval_days), 1)
     if schedule_label:
         metadata["youtube_schedule_label"] = schedule_label
     return metadata

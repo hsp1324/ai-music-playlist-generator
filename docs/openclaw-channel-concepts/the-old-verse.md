@@ -94,6 +94,7 @@ New Testament branch:
 - Old Testament branch videos go to `Old Testament Songs`.
 - New Testament branch videos go to `New Testament Songs`.
 - The app also adds each video to one style playlist when the release lane is clear, such as `Scripture Jazz Songs`, `Scripture R&B Songs`, `Gospel Worship Songs`, `Acoustic Scripture Songs`, `Piano Worship Songs`, `Cinematic Worship Songs`, or `Modern Worship Pop Songs`.
+- `Gospel Worship Songs` is a style playlist, not the New Testament branch playlist. Use it only when the release lane/title/description is clearly gospel or choir-based. Every Bible video still goes first into exactly one branch playlist: `Old Testament Songs` or `New Testament Songs`.
 - Make the release-level lane explicit in the plan, title, description, tags, or metadata text so the app and future operators can classify the video. A single video should normally land in two playlists: testament branch plus style.
 
 ## Visual Direction

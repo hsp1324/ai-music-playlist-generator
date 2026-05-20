@@ -5745,6 +5745,69 @@ def test_youtube_upload_can_schedule_public_release(tmp_path, monkeypatch) -> No
     assert result.response["scheduled_publish_at"] == "2026-05-12T22:00:00+00:00"
 
 
+def test_youtube_service_replaces_caption_track(tmp_path, monkeypatch) -> None:
+    caption_path = tmp_path / "lyrics.srt"
+    caption_path.write_text("1\n00:00:01,000 --> 00:00:02,000\nHello\n", encoding="utf-8")
+    captured = {"deleted": [], "insert": None}
+
+    class FakeRequest:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def execute(self):
+            return self.payload
+
+    class FakeCaptions:
+        def list(self, *, part, videoId):
+            captured["list"] = {"part": part, "videoId": videoId}
+            return FakeRequest(
+                {
+                    "items": [
+                        {"id": "old-caption", "snippet": {"language": "en", "name": "Lyrics"}},
+                        {"id": "other-caption", "snippet": {"language": "ko", "name": "Lyrics"}},
+                    ]
+                }
+            )
+
+        def list_next(self, _request, _response):
+            return None
+
+        def delete(self, *, id):
+            captured["deleted"].append(id)
+            return FakeRequest({})
+
+        def insert(self, *, part, body, media_body):
+            captured["insert"] = {"part": part, "body": body, "media_body": media_body}
+            return FakeRequest({"id": "new-caption", "snippet": {"language": "en", "name": "Lyrics"}})
+
+    class FakeYouTube:
+        def captions(self):
+            return FakeCaptions()
+
+    monkeypatch.setattr(youtube_service_module, "build", lambda *args, **kwargs: FakeYouTube())
+    monkeypatch.setattr(youtube_service_module, "MediaFileUpload", lambda *args, **kwargs: {"args": args, "kwargs": kwargs})
+
+    service = YouTubeService(Settings(storage_root=tmp_path / "storage"))
+    service._load_credentials = lambda youtube_channel_id=None: object()
+
+    result = service.replace_video_caption_track(
+        video_id="yt-caption-test",
+        language="en",
+        caption_path=caption_path,
+        youtube_channel_id="UC123",
+    )
+
+    assert result["id"] == "new-caption"
+    assert captured["deleted"] == ["old-caption"]
+    assert captured["insert"]["body"]["snippet"] == {
+        "videoId": "yt-caption-test",
+        "language": "en",
+        "name": "Lyrics",
+        "isDraft": False,
+    }
+    assert captured["insert"]["media_body"]["kwargs"]["mimetype"] == "application/x-subrip"
+
+
 def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channel(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -5804,9 +5867,18 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channe
                 youtube_channel_title="Channel B",
                 now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
             )
+            every_other_day_scheduled = next_youtube_scheduled_publish_at(
+                db,
+                services,
+                youtube_channel_id="UC-A",
+                youtube_channel_title="Channel A",
+                now=datetime(2026, 5, 11, 20, 0, tzinfo=timezone.utc),
+                schedule_interval_days=2,
+            )
 
         assert scheduled == datetime(2026, 5, 13, 22, 0, tzinfo=timezone.utc)
         assert other_channel_scheduled == datetime(2026, 5, 11, 22, 0, tzinfo=timezone.utc)
+        assert every_other_day_scheduled == datetime(2026, 5, 14, 22, 0, tzinfo=timezone.utc)
     finally:
         clear_isolated_client_env()
 
@@ -5896,8 +5968,11 @@ def test_scripture_schedule_options_and_playlist_titles() -> None:
         "schedule_label": "new_testament",
     }
     assert youtube_schedule_options_for_playlist(buddhist_playlist) == {
-        "schedule_disabled": True,
-        "schedule_label": "private_buddhist_scripture",
+        "schedule_hour": 7,
+        "schedule_minute": 0,
+        "schedule_interval_days": 2,
+        "schedule_scope": "date",
+        "schedule_label": "buddhist_scripture",
     }
     assert scripture_youtube_playlist_titles(old_playlist.metadata_json, title=old_playlist.title) == [
         "Old Testament Songs",

@@ -6,13 +6,13 @@ Use this after the selected channel is `불송`. `불송` is the Buddhist script
 
 불송 is for modern Buddhist scripture-inspired vocal music. It turns Buddhist teachings, sutra themes, Dhammapada-style wisdom, mindfulness, compassion, impermanence, non-attachment, suffering and release, and awakening imagery into original modern songs.
 
-This is not a chanting archive, sermon channel, or literal scripture-reading channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language, using one clear release-level music lane such as Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, neo-soul meditation songs, acoustic dharma songs, or cinematic meditation pop.
+This is not a chanting archive, sermon channel, or literal scripture-reading channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language, using one clear release-level music lane such as Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, neo-soul meditation songs, acoustic dharma songs, cinematic meditation pop, warm lo-fi, or gentle city-pop.
 
 The audience should immediately understand: Buddhist wisdom and sutra-inspired teachings reworked as modern songs.
 
 ## Overnight Privacy Rule
 
-Publish 불송 uploads as private only for now. Do not schedule them public. The app is configured to skip scheduled-public slots for `불송`, so publish through the app normally and let the app upload private.
+Publish 불송 through the app normally. The app schedules 불송 uploads as public every other day at 07:00 Asia/Seoul, unless the human explicitly pauses the channel.
 
 ## Source Material Direction
 
@@ -45,6 +45,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Neo-soul meditation songs: intimate vocals, spacious keys, inward reflection.
 - Acoustic dharma songs: guitar/piano, simple chorus, calm teaching tone.
 - Cinematic meditation pop: soft strings, pads, emotional release, broad accessible melody.
+- Cute acoustic dharma pop / gentle city-pop: bright, soft, friendly songs that can naturally fit occasional cute animation visuals.
 
 ## Music Direction
 
@@ -59,10 +60,12 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 ## Visual Direction
 
 - Calm modern Buddhist visual identity: temple path, lanterns, lotus, moonlit water, incense smoke, mountain dawn, rain on stone, meditation room, forest path, candlelight, paper lanterns, or abstract mindful city-night visuals.
-- Illustrated, cinematic, painterly, anime/stylized, or tasteful modern graphic style is allowed. Avoid parody, caricature, or exoticized religious imagery.
+- Photorealistic or premium cinematic-real Buddhist/dharma imagery is the default.
+- Cute/gentle animation visuals are allowed occasionally only when the release music lane also fits that softer image, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
+- Avoid parody, caricature, or exoticized religious imagery.
 - Do not depict the Buddha disrespectfully or as a face-focused photorealistic idol. Symbolic imagery is safer.
 - Cover first-frame should contain only the large lower-left channel brand label `불송`.
-- Thumbnail should use clear click text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, or a natural Korean title tied to the selected theme.
+- Use the clean cover as the thumbnail by default. Do not add large click text or extra headline typography unless the human explicitly asks.
 
 ## Good Fresh Concept Shapes
 
@@ -78,4 +81,4 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Randomly mixing jazz, hip-hop, R&B, folk, and cinematic pop in one release.
 - Copying long translated sutra passages.
 - Using Buddhist words as decoration while the lyrics say nothing about the teaching.
-- Public scheduling before the human reviews the new channel direction.
+- Forcing private visibility or bypassing the app's every-other-day 07:00 Asia/Seoul schedule without an explicit human pause.

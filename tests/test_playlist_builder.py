@@ -10,6 +10,7 @@ from app.services.playlist_builder import (
     SPECTRUM_OVERLAY_WIDTH,
     YOUTUBE_STILL_IMAGE_FILTER,
 )
+from app.utils.video_render_policy import apply_video_spectrum_channel_policy
 
 
 def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> None:
@@ -203,6 +204,19 @@ def test_removed_dot_visualizer_aliases_fall_back_to_bars(tmp_path) -> None:
     assert builder._normalize_spectrum_overlay_style("multiwave") == "bars"
     assert builder._normalize_spectrum_overlay_style("radial") == "bars"
     assert builder._normalize_spectrum_overlay_style("pulse") == "bars"
+    assert builder._normalize_spectrum_overlay_style("calm") == "calm-bars"
+    assert builder._normalize_spectrum_overlay_style("low-motion-bars") == "calm-bars"
+
+
+def test_buddhist_channel_uses_low_motion_spectrum() -> None:
+    assert (
+        apply_video_spectrum_channel_policy(
+            "bars",
+            {"target_youtube_channel_title": "불송"},
+            title="[playlist] 법구경 힙합",
+        )
+        == "calm-bars"
+    )
 
 
 def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
@@ -306,19 +320,19 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
     assert len(calls) == 6
 
     normalize_filter = calls[0][calls[0].index("-vf") + 1]
-    assert "trim=duration=6" in normalize_filter
+    assert "trim=duration=7" in normalize_filter
 
     intro_call = calls[1]
-    assert intro_call[intro_call.index("-t") + 1] == "5"
+    assert intro_call[intro_call.index("-t") + 1] == "5.5"
 
     transition_call = calls[2]
     transition_filter = transition_call[transition_call.index("-filter_complex") + 1]
     assert "reverse" not in transition_filter
-    assert "xfade=transition=fade:duration=1:offset=0" in transition_filter
-    assert transition_call[transition_call.index("-ss") + 1] == "5"
+    assert "xfade=transition=fade:duration=1.5:offset=0" in transition_filter
+    assert transition_call[transition_call.index("-ss") + 1] == "5.5"
 
     body_call = calls[3]
-    assert body_call[body_call.index("-ss") + 1] == "1"
+    assert body_call[body_call.index("-ss") + 1] == "1.5"
     assert body_call[body_call.index("-t") + 1] == "4"
 
     loop_unit_call = calls[4]

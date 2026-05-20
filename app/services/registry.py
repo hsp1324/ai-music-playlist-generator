@@ -5,6 +5,7 @@ from app.config import Settings
 from app.services.cover_art_service import CoverArtService
 from app.services.codex_metadata_service import CodexMetadataService
 from app.services.dreamina_service import DreaminaService
+from app.services.lyric_caption_service import LyricCaptionService
 from app.services.release_metadata_service import ReleaseMetadataService
 from app.services.slack_installation_store import SlackInstallationStore
 from app.services.mcp_orchestrator import MCPReadyDecisionEngine
@@ -27,6 +28,7 @@ class ServiceRegistry:
     decision_engine: MCPReadyDecisionEngine
     youtube: YouTubeService
     dreamina: DreaminaService
+    lyric_captions: LyricCaptionService
     release_metadata: ReleaseMetadataService
     worker: BackgroundJobWorker
 
@@ -44,6 +46,7 @@ def build_service_registry(settings: Settings) -> ServiceRegistry:
         decision_engine=MCPReadyDecisionEngine(settings),
         youtube=YouTubeService(settings),
         dreamina=DreaminaService(settings),
+        lyric_captions=LyricCaptionService(settings),
         release_metadata=CodexMetadataService(settings, ReleaseMetadataService(settings)),
         worker=worker,
     )

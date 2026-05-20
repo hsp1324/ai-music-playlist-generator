@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import tempfile
 import threading
 import time
 from dataclasses import dataclass
@@ -1120,6 +1121,7 @@ class BackgroundJobWorker:
                             schedule_hour=schedule_options.get("schedule_hour"),
                             schedule_minute=schedule_options.get("schedule_minute"),
                             schedule_scope=str(schedule_options.get("schedule_scope") or "date"),
+                            schedule_interval_days=schedule_options.get("schedule_interval_days"),
                         )
                     )
                     result = self.services.youtube.upload_playlist_video(
@@ -1145,6 +1147,7 @@ class BackgroundJobWorker:
                             scheduled_publish_at,
                             schedule_hour=schedule_options.get("schedule_hour"),
                             schedule_minute=schedule_options.get("schedule_minute"),
+                            schedule_interval_days=schedule_options.get("schedule_interval_days"),
                             schedule_label=schedule_options.get("schedule_label"),
                         )
                     )
@@ -1159,6 +1162,28 @@ class BackgroundJobWorker:
                         if isinstance(response_snippet, dict) and response_snippet.get("publishedAt")
                         else _utcnow().isoformat()
                     )
+                    if result.response.get("upload_channel"):
+                        meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
+                        meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
+                    caption_result = self._maybe_upload_youtube_lyrics_captions(
+                        playlist,
+                        [
+                            item.track
+                            for item in sorted(playlist.items, key=lambda item: item.order_index)
+                            if item.track is not None
+                        ],
+                        youtube_channel_id=str(meta.get("youtube_channel_id") or youtube_channel_id or ""),
+                        default_language=default_language,
+                    )
+                    if caption_result:
+                        meta["youtube_lyrics_captions"] = caption_result
+                        if caption_result.get("failed_languages") or caption_result.get("error"):
+                            meta["youtube_lyrics_captions_error"] = caption_result.get("error") or (
+                                "caption upload failed for: "
+                                + ", ".join(item["language"] for item in caption_result.get("failed_languages") or [])
+                            )
+                        else:
+                            meta.pop("youtube_lyrics_captions_error", None)
                     cleanup = self._delete_uploaded_video_file(uploaded_video_path)
                     if cleanup["deleted"]:
                         playlist.output_video_path = None
@@ -1167,9 +1192,6 @@ class BackgroundJobWorker:
                         meta.pop("local_video_cleanup_error", None)
                     elif cleanup.get("error"):
                         meta["local_video_cleanup_error"] = cleanup["error"]
-                    if result.response.get("upload_channel"):
-                        meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
-                        meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
                     managed_playlist_titles = scripture_youtube_playlist_titles(meta, title=playlist.title)
                     if managed_playlist_titles and playlist.youtube_video_id and meta.get("youtube_channel_id"):
                         try:
@@ -1264,6 +1286,80 @@ class BackgroundJobWorker:
         }
         db.add(playlist)
         db.add(job)
+
+    def _maybe_upload_youtube_lyrics_captions(
+        self,
+        playlist: Playlist,
+        tracks: list[Track],
+        *,
+        youtube_channel_id: str,
+        default_language: str,
+    ) -> dict:
+        if not self.settings.youtube_lyrics_captions_enabled:
+            return {}
+        if not playlist.youtube_video_id:
+            return {}
+        if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
+            return {
+                "uploaded_at": _utcnow().isoformat(),
+                "skipped_reason": "missing_output_audio",
+                "uploaded_languages": [],
+            }
+
+        try:
+            build_result = self.services.lyric_captions.build_youtube_caption_tracks(
+                playlist,
+                tracks,
+                audio_path=playlist.output_audio_path,
+                default_language=default_language,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "uploaded_at": _utcnow().isoformat(),
+                "uploaded_languages": [],
+                "failed_languages": [],
+                "error": str(exc),
+            }
+
+        if not build_result.caption_tracks:
+            return {
+                "uploaded_at": _utcnow().isoformat(),
+                "source_language": build_result.source_language,
+                "cue_count": build_result.cue_count,
+                "uploaded_languages": [],
+                "skipped_reason": build_result.skipped_reason or "no_caption_tracks",
+                **({"translation_error": build_result.translation_error} if build_result.translation_error else {}),
+            }
+
+        uploaded_languages: list[str] = []
+        failed_languages: list[dict[str, str]] = []
+        tmp_root = Path(self.settings.storage_root) / "tmp"
+        tmp_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="youtube-lyrics-captions-", dir=tmp_root) as temp_dir:
+            temp_path = Path(temp_dir)
+            for language, srt_text in build_result.caption_tracks.items():
+                srt_path = temp_path / f"lyrics-{language}.srt"
+                srt_path.write_text(srt_text, encoding="utf-8")
+                try:
+                    self.services.youtube.replace_video_caption_track(
+                        video_id=playlist.youtube_video_id,
+                        language=language,
+                        caption_path=srt_path,
+                        youtube_channel_id=youtube_channel_id or None,
+                        name="Lyrics",
+                    )
+                    uploaded_languages.append(language)
+                except Exception as exc:  # noqa: BLE001
+                    failed_languages.append({"language": language, "error": str(exc)})
+
+        return {
+            "uploaded_at": _utcnow().isoformat(),
+            "source_language": build_result.source_language,
+            "cue_count": build_result.cue_count,
+            "uploaded_languages": uploaded_languages,
+            "failed_languages": failed_languages,
+            **({"translation_error": build_result.translation_error} if build_result.translation_error else {}),
+        }
 
     @staticmethod
     def _delete_uploaded_video_file(video_path: str | None) -> dict:

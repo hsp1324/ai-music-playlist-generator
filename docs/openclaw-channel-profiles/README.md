@@ -30,7 +30,7 @@ Global branding rule for every channel:
 - Every final cover/first-frame image must include the selected channel name as a large, readable lower-left brand label. It should match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
 - The cover/first-frame should contain only that channel name. Do not add title text, genre text, duration text, lyrics, UI, logos, or unrelated words to the cover/first-frame.
 - The Gemini/Dreamina/Seedance loop video must preserve the exact lower-left channel name for the full clip. Reject/regenerate clips where the channel name disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
-- For normal OpenClaw work, try Gemini first for loop video generation. Count only successful Gemini video generations where a video is actually made; copyright/policy blocks before video output do not count. After the 3rd successful Gemini video, use Dreamina/Seedance until 24 hours have passed from that 3rd generation. If Dreamina/Seedance cannot create the clip and Gemini quota is exhausted, defer that release until the Gemini cooldown clears, then create/upload its Gemini loop video before starting new loop-video work. For Dreamina/Seedance, duration must be set to `6 seconds` before the Generate click. Do not create a draft/test clip first.
+- For normal OpenClaw work, try Gemini first for loop video generation. Count only successful Gemini video generations where a video is actually made; copyright/policy blocks before video output do not count. After the 3rd successful Gemini video, use Dreamina/Seedance until 24 hours have passed from that 3rd generation. If Dreamina/Seedance cannot create the clip and Gemini quota is exhausted, defer that release until the Gemini cooldown clears, then create/upload its Gemini loop video before starting new loop-video work. For Dreamina/Seedance, duration must be set to `7 seconds` before the Generate click. Do not create a draft/test clip first.
 - Do not replace a failed Gemini/Dreamina/Seedance generation with a local motion loop, app still-image animation, pan/zoom video, or other workaround. Use Gemini when quota is available; defer the release when quota is exhausted.
 - The YouTube thumbnail still needs large click text above or near a channel-brand line. Keep the channel-brand line size/style consistent with the large cover channel label.
 - Thumbnail channel branding should read as a clean text line, not a UI button. Do not put the channel name inside a rounded pill, capsule, badge, sticker, label tag, or floating plaque unless a human explicitly requests that treatment. Reject/regenerate thumbnails where the channel name looks clipped, cramped inside a shape, detached from the text layout, pasted on top of the art, too close to an edge, or outside the intended safe area.
@@ -243,7 +243,7 @@ Loop video:
 
 - Animate the cover/first-frame with reverent symbolic motion such as light over water, stars, oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, or temple light.
 - Preserve the large lower-left `BibliaCanto` brand label exactly for the whole clip.
-- Queue final render with `--video-spectrum-overlay-style none`; religious channels do not use app-rendered spectrum overlays.
+- Queue final render with `--video-spectrum-overlay-style none`; BibliaCanto does not use app-rendered spectrum overlays.
 - Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
 YouTube thumbnail:
@@ -260,6 +260,7 @@ Cover / first frame:
 
 - 16:9 respectful Buddhist scripture-inspired image for modern vocal music.
 - Follow the selected Buddhist source/theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, mindfulness, compassion, impermanence, or non-attachment.
+- Use photorealistic or premium cinematic-real Buddhist/dharma imagery by default. Cute/gentle animation is allowed occasionally only when the music lane also fits that softer visual direction, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
 - Only text allowed is the large lower-left `불송` brand label.
 - Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
 
@@ -267,16 +268,14 @@ Loop video:
 
 - Animate the cover/first-frame with calm environmental motion such as lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
 - Preserve the large lower-left `불송` brand label exactly for the whole clip.
-- Queue final render with `--video-spectrum-overlay-style none`; religious channels do not use app-rendered spectrum overlays.
+- Queue final render with `--video-spectrum-overlay-style calm-bars`; 불송 uses a very low-motion, low-opacity app spectrum instead of the normal bars.
 - Do not add sutra text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
 YouTube thumbnail:
 
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same Buddhist/dharma scene, lighting, palette, props, and camera angle.
-- Add large readable teaching or lane-aware text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`.
-- Add `불송` brand line, visually consistent with the large cover channel label.
-- Keep `불송` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
+- Reuse the final cover as the thumbnail by default.
+- Do not add large headline text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B` unless the human explicitly asks for a text thumbnail.
+- Keep the integrated `불송` brand label clean and visually consistent with the cover.
 
 Profiles:
 

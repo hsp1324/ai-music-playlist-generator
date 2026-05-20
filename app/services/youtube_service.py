@@ -19,6 +19,7 @@ from app.config import Settings
 from app.models.playlist import Playlist
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
+    YOUTUBE_LANGUAGE_ALIASES,
     localizations_for_youtube_api,
     normalize_youtube_language,
     normalize_youtube_localizations,
@@ -600,6 +601,69 @@ class YouTubeService:
                 response["thumbnail_upload_error"] = str(exc)
 
         return YouTubeUploadResult(video_id=video_id, response=response)
+
+    def replace_video_caption_track(
+        self,
+        *,
+        video_id: str,
+        language: str,
+        caption_path: str | Path,
+        youtube_channel_id: str | None = None,
+        name: str = "Lyrics",
+        is_draft: bool = False,
+    ) -> dict[str, Any]:
+        normalized_video_id = str(video_id or "").strip()
+        raw_language = str(language or "").strip()
+        raw_language_key = raw_language.lower().replace("_", "-")
+        normalized_language = YOUTUBE_LANGUAGE_ALIASES.get(raw_language_key, raw_language)
+        if not normalized_video_id:
+            raise ValueError("YouTube video id is required.")
+        if not normalized_language:
+            raise ValueError("Caption language is required.")
+        path = Path(caption_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Caption file does not exist: {path}")
+
+        credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        for caption in self._list_video_captions(youtube, normalized_video_id):
+            snippet = caption.get("snippet") or {}
+            if str(snippet.get("language") or "").strip().lower() != normalized_language.lower():
+                continue
+            if str(snippet.get("name") or "").strip() not in {"", name}:
+                continue
+            caption_id = str(caption.get("id") or "").strip()
+            if caption_id:
+                youtube.captions().delete(id=caption_id).execute()
+
+        body = {
+            "snippet": {
+                "videoId": normalized_video_id,
+                "language": normalized_language,
+                "name": name[:150],
+                "isDraft": bool(is_draft),
+            }
+        }
+        result = youtube.captions().insert(
+            part="snippet",
+            body=body,
+            media_body=MediaFileUpload(str(path), mimetype="application/x-subrip", resumable=True),
+        ).execute()
+        return {
+            "id": result.get("id"),
+            "language": normalized_language,
+            "name": (result.get("snippet") or {}).get("name") or name,
+            "is_draft": bool((result.get("snippet") or {}).get("isDraft", is_draft)),
+        }
+
+    def _list_video_captions(self, youtube: Any, video_id: str) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        request = youtube.captions().list(part="snippet", videoId=video_id)
+        while request is not None:
+            response = request.execute()
+            items.extend(response.get("items") or [])
+            request = youtube.captions().list_next(request, response)
+        return items
 
     def _execute_video_insert(
         self,

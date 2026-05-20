@@ -95,6 +95,7 @@ The app owns the configured passage blocks. If the app says the next block is mi
   - `Old Testament Songs`
   - `New Testament Songs`
 - After upload, each scripture video is also added to one style playlist when the release lane is clear, for example `Scripture Jazz Songs`, `Scripture R&B Songs`, `Gospel Worship Songs`, `Acoustic Scripture Songs`, `Piano Worship Songs`, `Cinematic Worship Songs`, or `Modern Worship Pop Songs`.
+- `Gospel Worship Songs` means the music lane is gospel or choir-based. It is not a replacement for `New Testament Songs`; New Testament uploads must also be in `New Testament Songs`, and Old Testament uploads must also be in `Old Testament Songs`.
 - A video can belong to two playlists: one testament playlist plus one style playlist.
 - Scheduled public upload times in `AIMP_YOUTUBE_SCHEDULE_TIMEZONE`:
   - Old Testament branch: 07:00

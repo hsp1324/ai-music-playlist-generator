@@ -4,11 +4,13 @@ from typing import Any
 
 
 CINEMATIC_PULSE_CHANNEL_TITLE = "cinematic pulse"
+LOW_MOTION_SPECTRUM_CHANNEL_TITLES = {
+    "불송",
+    "the new verse",
+}
 RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES = {
     "bibliacanto",
-    "불송",
     "the old verse",
-    "the new verse",
     "old testament",
     "new testament",
 }
@@ -87,6 +89,8 @@ def apply_video_spectrum_channel_policy(
     *,
     title: str = "",
 ) -> str:
+    if _release_channel_titles(meta) & LOW_MOTION_SPECTRUM_CHANNEL_TITLES:
+        return "calm-bars"
     if is_religious_no_spectrum_release(meta, title=title):
         return "none"
     if is_cinematic_pulse_release(meta):

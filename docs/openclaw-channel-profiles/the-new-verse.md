@@ -7,12 +7,14 @@ Use this profile only after channel selection returns `불송`, or when the huma
 - This profile is for Buddhist scripture-inspired vocal releases: Dhammapada/법구경-inspired songs, Heart Sutra/반야심경-inspired songs, Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, dharma songs, mindfulness songs, compassion songs, and modern sutra-inspired music.
 - Do not route Bible, Gospel, Old Testament, or New Testament worship here. Those now upload to `BibliaCanto`.
 - Do not route normal Korean pop/hip-hop here unless the lyrics are explicitly Buddhist scripture/teaching based. Normal Korean pop and hip-hop belong on `HaruHaru`.
-- Until the human reviews tomorrow, uploads to this channel should remain private, not scheduled public.
+- Publish through the app on the `불송` channel. The app schedules 불송 releases as public every other day at 07:00 Asia/Seoul. Do not force private visibility unless the human explicitly pauses public scheduling.
 
 ## Visual Identity
 
 - Mood: calm, modern, reflective, respectful, spacious, inward, quietly cinematic.
-- Style may be illustrated, anime/stylized, painterly, cinematic 2D, or modern editorial. Avoid goofy parody, cheap mystic clipart, and disrespectful religious imagery.
+- Use a photorealistic or premium cinematic-real background by default: temple path, lanterns, lotus pond, incense smoke, moonlit water, mountains, rain on stone, candlelight, meditation room, forest path, prayer beads, window light, or abstract mindful city-night scenes. It should feel like a tasteful real music visual, not clipart.
+- Cute, gentle animation/anime variants are allowed occasionally when the selected concept clearly fits them. Use them only with a matching soft music lane such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs. Do not pair cute animation with solemn cinematic meditation, heavy hip-hop, or serious sutra themes unless the human explicitly asks.
+- Avoid goofy parody, cheap mystic clipart, and disrespectful religious imagery.
 - Prefer symbolic Buddhist imagery: lotus, lantern, temple path, incense smoke, moonlit water, mountains, rain on stone, candlelight, meditation room, forest path, empty sandals, prayer beads, window light, or abstract mindful city-night scenes.
 - Avoid face-focused photorealistic Buddha depictions. Symbolic objects and atmosphere are safer.
 
@@ -27,22 +29,19 @@ Use this profile only after channel selection returns `불송`, or when the huma
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
-- Preserve the same scene, subject placement, lighting, palette, and camera angle from the cover.
-- Add short readable click text tied to the selected Buddhist teaching and music lane.
-- Good thumbnail wording can include `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, `반야심경 R&B`, or a natural Korean hook.
-- Add `불송` as the brand line.
-- Keep all thumbnail text inside safe margins. Do not add duration badges unless the human explicitly asks.
-- Do not use a black text box or hard rectangular background behind the channel name.
+- Do not create a separate heavy text thumbnail by default for 불송.
+- Use the final cover image as the thumbnail or a near-identical crop/export of it. Keep it clean and photorealistic with only the integrated `불송` brand label.
+- Do not add large click text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `불경 노래`, or headline blocks unless the human explicitly asks for a text thumbnail.
+- Do not use black text boxes, hard rectangles, stickers, badges, pills, capsules, or detached label shapes.
 
 ## Loop Video
 
 - Use Gemini, Dreamina, or Seedance only for the moving clip.
-- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
-- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Set those only through provider controls when available.
+- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
+- Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Set those only through provider controls when available.
 - Animate calm environmental motion: lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
 - Preserve the large lower-left `불송` text exactly for the full clip.
-- Queue final render with `--video-spectrum-overlay-style none`. 불송 must not use app-rendered spectrum bars, radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or equalizer graphics.
+- Queue final render with `--video-spectrum-overlay-style calm-bars`. The app enforces a very low-motion, low-opacity bar spectrum for 불송. Do not use radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or busy equalizer graphics.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
 - Do not add subtitles, scripture text, title text, duration text, UI, logos, disrespectful religious imagery, or photorealistic Buddha face reenactment.
 
@@ -67,6 +66,7 @@ Stable composition, no hard cuts, no disrespectful religious imagery, no photore
 - Include the selected Buddhist source/theme and release-level music lane in the title and first description paragraph.
 - If using a scripture source, name it carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired. Do not claim exact chapter/verse coverage unless verified.
 - The description must state that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation.
-- Keep each release in one coherent style family and name it naturally: Buddhist jazz, dharma R&B, mindful hip-hop, Buddhist neo-soul, acoustic dharma songs, or cinematic meditation pop.
+- Keep each release in one coherent style family and name it naturally: Buddhist jazz, dharma R&B, mindful hip-hop, Buddhist neo-soul, acoustic dharma songs, cinematic meditation pop, warm lo-fi, or gentle city-pop.
+- If choosing a cute/gentle animation visual direction, choose a compatible music lane and make that lane clear in the title/description. The visual style and music style must feel like one package.
 - Provide localized metadata for all configured languages, but keep Korean as the default top-level title/description.
-- Uploads should remain private for now; the human will decide public scheduling later.
+- Uploads should be app-scheduled public every other day at 07:00 Asia/Seoul unless the human explicitly pauses 불송 public scheduling.

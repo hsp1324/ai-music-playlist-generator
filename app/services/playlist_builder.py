@@ -46,8 +46,8 @@ def youtube_video_filter(frame_size: tuple[int, int], *, fps: int | None = None)
 
 YOUTUBE_STILL_IMAGE_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE)
 YOUTUBE_LOOP_VIDEO_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE, fps=30)
-DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 6
-DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 1.0
+DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 7
+DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 1.5
 SPECTRUM_OVERLAY_WIDTH = 560
 SPECTRUM_OVERLAY_HEIGHT = 90
 SPECTRUM_OVERLAY_FPS = 30
@@ -839,6 +839,14 @@ class FFMpegPlaylistBuilder:
             "mirror": "mirror-bars",
             "mirrorbars": "mirror-bars",
             "mirrored-bars": "mirror-bars",
+            "calm": "calm-bars",
+            "calm-bars": "calm-bars",
+            "soft-bars": "calm-bars",
+            "low": "calm-bars",
+            "low-motion": "calm-bars",
+            "low-motion-bars": "calm-bars",
+            "minimal": "calm-bars",
+            "minimal-bars": "calm-bars",
             "radial": "bars",
             "circle": "bars",
             "ring": "bars",
@@ -854,7 +862,7 @@ class FFMpegPlaylistBuilder:
             "fast": "none",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized not in {"bars", "mirror-bars", "none"}:
+        if normalized not in {"bars", "mirror-bars", "calm-bars", "none"}:
             return "bars"
         return normalized
 
@@ -1073,6 +1081,13 @@ class FFMpegPlaylistBuilder:
                         primary=primary,
                         accent=accent,
                     )
+                elif style == "calm-bars":
+                    frame = self._draw_calm_bar_spectrum_frame(
+                        frame_index,
+                        smoothed,
+                        primary=primary,
+                        accent=accent,
+                    )
                 elif style == "radial":
                     frame = self._draw_radial_spectrum_frame(
                         frame_index,
@@ -1261,6 +1276,47 @@ class FFMpegPlaylistBuilder:
                 [x, center_y - half_height, x + bar_width, center_y + half_height],
                 radius=4,
                 fill=(*color, min(alpha, 225)),
+            )
+        return image
+
+    def _draw_calm_bar_spectrum_frame(
+        self,
+        frame_index: int,
+        level: float,
+        *,
+        primary: tuple[int, int, int],
+        accent: tuple[int, int, int],
+    ) -> Image.Image:
+        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(image, "RGBA")
+        bottom = SPECTRUM_OVERLAY_HEIGHT - 14
+        max_height = int((SPECTRUM_OVERLAY_HEIGHT - 36) * 0.58)
+        bar_width = 7
+        total_gap = SPECTRUM_OVERLAY_WIDTH - (SPECTRUM_OVERLAY_BARS * bar_width)
+        gap = total_gap / max(SPECTRUM_OVERLAY_BARS - 1, 1)
+        center = 0.52 + (math.sin(frame_index * 0.018) * 0.035)
+        calm_level = min(level * 0.45, 0.38)
+
+        for index in range(SPECTRUM_OVERLAY_BARS):
+            ratio = index / max(SPECTRUM_OVERLAY_BARS - 1, 1)
+            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.28**2))
+            ripple = 0.92 + (0.08 * math.sin((frame_index * 0.075) + (index * 0.82)))
+            height = 6 + int(max_height * (0.10 + (calm_level * (0.22 + (0.55 * gaussian)) * ripple)))
+            height = max(4, min(height, max_height))
+            x = int(round(index * (bar_width + gap)))
+            y = bottom - height
+            color = self._mix_rgb(primary, accent, ratio)
+            glow_alpha = int(14 + (calm_level * 22) + (gaussian * 10))
+            fill_alpha = int(58 + (calm_level * 42) + (gaussian * 18))
+            draw.rounded_rectangle(
+                [x - 2, y - 2, x + bar_width + 2, bottom + 2],
+                radius=5,
+                fill=(*color, min(glow_alpha, 58)),
+            )
+            draw.rounded_rectangle(
+                [x, y, x + bar_width, bottom],
+                radius=4,
+                fill=(*color, min(fill_alpha, 128)),
             )
         return image
 

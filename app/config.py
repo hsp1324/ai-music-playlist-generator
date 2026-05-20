@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     playlist_target_minutes: int = 40
     playlist_reuse_back_half_enabled: bool = True
     playlist_reuse_back_half_min_seconds: int = 20 * 60
-    crossfade_seconds: float = 1.0
+    crossfade_seconds: float = 1.5
 
     slack_signing_secret: str = ""
     slack_bot_token: str = ""
@@ -94,6 +94,12 @@ class Settings(BaseSettings):
     youtube_schedule_min_lead_minutes: int = 30
     youtube_title_suffix: str = "Official AI Visualizer"
     youtube_default_hashtags: str = "#Music #Visualizer #BackgroundMusic"
+    youtube_lyrics_captions_enabled: bool = True
+    youtube_lyrics_captions_languages: str = (
+        "ko,ja,en,es,vi,th,hi,fil,id,pt-BR,pt-PT,fr,de,ar,zh-CN,zh-TW"
+    )
+    youtube_lyrics_captions_translate: bool = True
+    youtube_lyrics_captions_translation_timeout_seconds: int = 900
 
     codex_metadata_enabled: bool = False
     codex_metadata_command: str = "codex"
@@ -128,7 +134,7 @@ class Settings(BaseSettings):
     dreamina_api_token: str = ""
     dreamina_account: str = ""
     dreamina_video_model: str = "seedance-1.5-pro"
-    dreamina_video_duration_seconds: float = 6.0
+    dreamina_video_duration_seconds: float = 7.0
     dreamina_video_ratio: str = "16:9"
     dreamina_poll_interval_seconds: float = 10.0
     dreamina_timeout_seconds: float = 240.0
