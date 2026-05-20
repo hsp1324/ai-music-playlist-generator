@@ -50,9 +50,10 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
-- In photorealistic mode, keep motion subtle and realistic: light wind in hair or clothing, sunlight/water reflections, car/yacht movement, city lights, fabric movement, or gentle camera drift. Avoid exaggerated body motion or sexualized posing.
+- In photorealistic mode, keep motion subtle and realistic: light wind in hair or clothing, sunlight/water reflections, car/yacht movement, city lights, fabric movement, or gentle camera/subject tracking. Avoid exaggerated body motion or sexualized posing.
+- In photorealistic mode with an adult woman as the main subject, the subject must stay the same size in frame for the whole clip. If she walks, turns, rides in a car/yacht, or shifts position, the camera should track at the same speed/distance so her body scale, crop, and placement remain stable. Do not allow zoom-in, push-in, pull-back, lens breathing, camera drift toward/away from her, or subject scale growth/shrinkage. Let the background, side parallax, hair, clothing, light, water, city, or vehicle motion create the loop while the subject remains visually anchored.
 - Keep the `HaruHaru` brand label readable and unchanged for the full clip.
-- The final moment should stay close to the opening composition, crop, lighting, palette, and subject placement. The app handles smooth repetition with crossfade.
+- The final moment should stay close to the opening composition, crop, lighting, palette, camera distance, subject size, and subject placement. The app handles smooth repetition with crossfade. Reject/regenerate photorealistic clips where the subject noticeably becomes larger/smaller, drifts toward/away from camera, or ends in a different crop.
 
 Prompt shape:
 
@@ -61,10 +62,11 @@ Use the uploaded first-frame image as the exact starting frame. It contains the 
 Create one continuous animated music visualizer shot for an original Korean K-pop vocal release.
 Preserve the opening composition, lighting, palette, subject placement, fashion details, and selected visual language, whether illustrated/stylized or photorealistic.
 Animate natural motion that fits the specific playlist concept and K-pop mood.
+For photorealistic adult-woman shots, keep the main subject visually anchored at the same size and crop for the full clip. If she moves, the camera tracks with her at the same speed and distance; background/parallax/environment motion provides movement. No zoom-in, no push-in, no pull-back, no lens breathing, no camera drift toward or away from the subject, no subject scale change.
 Preserve the large, readable lower-left "HaruHaru" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
 The motion must progress naturally for the full clip.
 Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should remain close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
+The final moment should remain close to the opening composition, camera distance, lighting, palette, subject size, and subject placement without becoming frozen.
 Stable composition, no hard cuts, no unsafe minors, no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no sexual acts, no fetish framing, no celebrity likenesses, no other text, no subtitles, no logos, no UI.
 ```
 

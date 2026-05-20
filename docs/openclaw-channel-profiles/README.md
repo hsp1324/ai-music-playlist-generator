@@ -152,6 +152,7 @@ Loop video:
 
 - Animate the cover/first-frame according to the specific K-pop playlist concept.
 - Preserve the large lower-left `HaruHaru` brand label exactly for the whole clip.
+- For photorealistic adult-woman clips, keep the subject the same size/crop for the full clip. If she moves, the camera tracks with her at the same speed/distance; use background parallax and environmental motion instead of zooming, pushing in, pulling back, or changing subject scale.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 
 YouTube thumbnail:

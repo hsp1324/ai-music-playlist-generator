@@ -136,6 +136,7 @@ Use this for `HaruHaru`, K-pop, Korean pop, Korean dance-pop, Korean synth-pop, 
 - The cover must contain only the large lower-left `HaruHaru` brand label.
 - The thumbnail should use short K-pop click text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, plus `HARUHARU`.
 - The loop video should animate the selected cover concept, not borrow Tokyo Daydream, Soft Hour, HaruHaru, Storylight, Cinematic Pulse, Club Bloom, sundaze, or Solwave signatures.
+- For photorealistic HaruHaru clips with an adult woman as the main subject, keep the subject the same size, crop, and approximate placement for the full clip. If she moves, the camera tracks with her at the same speed/distance; use background parallax, wind, clothing, light, water, vehicle, or city motion for movement. Reject zoom-in, push-in, pull-back, lens breathing, camera drift toward/away from her, or subject scale changes because they make the loop feel awkward.
 
 ## Storylight OST Visual Skill
 
