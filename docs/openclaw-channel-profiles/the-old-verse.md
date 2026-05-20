@@ -22,6 +22,7 @@ Use this profile only after channel selection returns `The Old Verse`, or when t
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
 - The cover must include only a large lower-left `The Old Verse` channel brand label.
 - Make `The Old Verse` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
+- Keep the `The Old Verse` label as integrated typography. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached background shape. If readability needs help, use subtle shadow, thin outline, or gentle local contrast that still feels natural in the art.
 - Do not add title text, verse text, scripture paragraphs, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the selected passage and branch. Old Testament examples: creation waters, Eden, wilderness, covenant stars, ark, desert road, tabernacle, temple, psalm imagery, or prophetic landscape. New Testament examples: road, hillside, Galilee shore, table, lamp, doorway, empty tomb light, cross silhouette, prayer hands, scroll, or warm worship landscape.
 
@@ -33,6 +34,7 @@ Use this profile only after channel selection returns `The Old Verse`, or when t
 - Good thumbnail wording should feel like a natural YouTube Bible/worship thumbnail, not a raw genre tag. Prefer a passage/book cue, a clear theme cue, or a prayer/reflection cue when it helps viewers understand what this release is about.
 - Add `THE OLD VERSE` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
 - Keep `THE OLD VERSE` as plain integrated typography, preferably directly under or near the main click text. Do not put it inside a rounded yellow pill, capsule, button, sticker, badge, label tag, or detached floating plaque.
+- Do not use a black text box or hard rectangular background behind the channel name.
 - Keep all thumbnail text inside safe margins with breathing room. Reject/regenerate if the brand line is clipped, cramped inside a shape, too close to the edge, pasted over the art, or separated from the headline layout.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 - Do not paste long scripture text onto the thumbnail.
@@ -44,6 +46,7 @@ Use this profile only after channel selection returns `The Old Verse`, or when t
 - Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the selected cover concept with reverent environmental motion: slow light over water, drifting stars, candle or oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, leaves, or temple light when appropriate.
 - Preserve the large, readable lower-left `The Old Verse` text exactly for the full clip.
+- Queue final render with `--video-spectrum-overlay-style none`. The Old Verse must not use app-rendered spectrum bars, radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or equalizer graphics.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
 - Do not add subtitles, lyrics, verse text, title text, duration text, UI, logos, protected film imagery, or photorealistic reenactment footage.
 
@@ -54,6 +57,7 @@ Use the uploaded first-frame image as the exact starting frame. It contains the 
 Create one continuous animated scripture-inspired music visualizer shot for an Old Testament or New Testament Bible music release.
 Preserve the opening composition, lighting, palette, illustrated/stylized visual language, and the specific biblical scene from the first frame.
 Preserve the large, readable lower-left "The Old Verse" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
+The channel label must be integrated into the artwork; no solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background behind it.
 Animate reverent environmental motion naturally present in the scene: slow light movement, stars, candle or oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, leaves, temple light, sunrise, sea shimmer, open doorway light, or soft cloud movement when appropriate.
 The motion must progress naturally for the full clip. Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ.

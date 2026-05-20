@@ -589,10 +589,11 @@ class FFMpegPlaylistBuilder:
             "bar": "bars",
             "spectrum": "bars",
             "spectrum-bars": "bars",
-            "wave": "multiwave",
-            "waveform": "multiwave",
-            "waves": "multiwave",
-            "multi-wave": "multiwave",
+            "multiwave": "bars",
+            "wave": "bars",
+            "waveform": "bars",
+            "waves": "bars",
+            "multi-wave": "bars",
             "thinwave": "bars",
             "thin-wave": "bars",
             "clean-wave": "bars",
@@ -603,11 +604,13 @@ class FFMpegPlaylistBuilder:
             "mirror": "mirror-bars",
             "mirrorbars": "mirror-bars",
             "mirrored-bars": "mirror-bars",
-            "circle": "radial",
-            "ring": "radial",
-            "radial-bars": "radial",
-            "pulse-line": "pulse",
-            "pulses": "pulse",
+            "radial": "bars",
+            "circle": "bars",
+            "ring": "bars",
+            "radial-bars": "bars",
+            "pulse": "bars",
+            "pulse-line": "bars",
+            "pulses": "bars",
             "off": "none",
             "disabled": "none",
             "disable": "none",
@@ -616,7 +619,7 @@ class FFMpegPlaylistBuilder:
             "fast": "none",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized not in {"bars", "multiwave", "mirror-bars", "radial", "pulse", "none"}:
+        if normalized not in {"bars", "mirror-bars", "none"}:
             return "bars"
         return normalized
 

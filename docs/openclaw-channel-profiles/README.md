@@ -196,7 +196,7 @@ Render visual:
 
 - Do not create a Gemini/Dreamina/Seedance loop video for normal Cinematic Pulse releases.
 - Queue final render from the still cover with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
-- The app/render worker adds only the clean bar spectrum overlay; do not use radial, pulse, multiwave, dots/particles, or busy waveform styles unless the human explicitly asks.
+- The app/render worker adds only the clean bar spectrum overlay; do not use radial, pulse, multiwave, dots/particles, or busy waveform styles.
 - Do not add gore, real war footage, protected characters, franchise references, subtitles, title text, logos, UI, or unrelated words.
 
 YouTube thumbnail:
@@ -237,11 +237,13 @@ Cover / first frame:
 - 16:9 illustrated/anime/stylized biblical image for Old Testament scripture-inspired music.
 - Follow the selected Old Testament passage in sequence from Genesis onward.
 - Only text allowed is the large lower-left `The Old Verse` brand label.
+- Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
 
 Loop video:
 
 - Animate the cover/first-frame with reverent symbolic motion such as light over water, stars, oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, or temple light.
 - Preserve the large lower-left `The Old Verse` brand label exactly for the whole clip.
+- Queue final render with `--video-spectrum-overlay-style none`; religious channels do not use app-rendered spectrum overlays.
 - Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
 YouTube thumbnail:
@@ -259,11 +261,13 @@ Cover / first frame:
 - 16:9 respectful Buddhist scripture-inspired image for modern vocal music.
 - Follow the selected Buddhist source/theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, mindfulness, compassion, impermanence, or non-attachment.
 - Only text allowed is the large lower-left `The New Verse` brand label.
+- Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
 
 Loop video:
 
 - Animate the cover/first-frame with calm environmental motion such as lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
 - Preserve the large lower-left `The New Verse` brand label exactly for the whole clip.
+- Queue final render with `--video-spectrum-overlay-style none`; religious channels do not use app-rendered spectrum overlays.
 - Do not add sutra text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
 YouTube thumbnail:

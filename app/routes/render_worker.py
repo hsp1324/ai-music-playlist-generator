@@ -26,6 +26,11 @@ from app.utils.ops_notifications import (
     notify_render_worker_timeout_requeued,
 )
 from app.utils.render_worker_registry import record_render_worker_seen, render_worker_display_name
+from app.utils.video_render_policy import (
+    apply_video_spectrum_channel_policy,
+    is_cinematic_pulse_release,
+    is_religious_no_spectrum_release,
+)
 from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 from app.utils.youtube_localizations import ensure_playlist_title_prefix
 
@@ -206,7 +211,7 @@ def _job_render_resolution(job: Job, playlist: Playlist) -> str:
         or meta.get("video_render_resolution")
         or "720p"
     )
-    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse" and resolution == "720p":
+    if is_cinematic_pulse_release(meta) and resolution == "720p":
         return "2k"
     return resolution
 
@@ -325,7 +330,7 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_render_source_mode")
         or "auto"
     )
-    is_cinematic_pulse = str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse"
+    is_cinematic_pulse = is_cinematic_pulse_release(meta)
     if is_cinematic_pulse:
         source_mode = "still_image"
     if source_mode == "still_image":
@@ -359,8 +364,7 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_spectrum_overlay_style")
         or "bars"
     )
-    if is_cinematic_pulse:
-        style = "bars"
+    style = apply_video_spectrum_channel_policy(style, meta, title=playlist.title)
     render_resolution = _job_render_resolution(job, playlist)
     return {
         "id": job.id,
@@ -472,13 +476,15 @@ def claim_render_job(
             result["external_render_worker"] = worker
             job.result_json = result
             meta = dict(playlist.metadata_json or {})
-            if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+            if is_cinematic_pulse_release(meta):
                 meta["video_spectrum_overlay_style"] = "bars"
                 meta["video_render_source_mode"] = "still_image"
                 current_resolution = _normalize_render_resolution(meta.get("video_render_resolution"))
                 meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
-                playlist.metadata_json = meta
-                db.add(playlist)
+            elif is_religious_no_spectrum_release(meta, title=playlist.title):
+                meta["video_spectrum_overlay_style"] = "none"
+            playlist.metadata_json = meta
+            db.add(playlist)
             db.add(job)
             db.commit()
             _update_video_progress(
@@ -537,11 +543,13 @@ def claim_render_job(
     result["external_render_worker"] = worker_meta
     job.result_json = result
     meta = dict(playlist.metadata_json or {})
-    if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+    if is_cinematic_pulse_release(meta):
         meta["video_spectrum_overlay_style"] = "bars"
         meta["video_render_source_mode"] = "still_image"
         current_resolution = _normalize_render_resolution(meta.get("video_render_resolution"))
         meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
+    elif is_religious_no_spectrum_release(meta, title=playlist.title):
+        meta["video_spectrum_overlay_style"] = "none"
     meta["workflow_state"] = "video_rendering"
     worker_label = render_worker_display_name(worker_meta)
     meta["note"] = f"External render worker claimed the video job: {worker_label}."

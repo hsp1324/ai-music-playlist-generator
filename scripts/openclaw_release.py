@@ -3084,7 +3084,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "multiwave", "mirror-bars", "radial", "pulse", "none"],
+        choices=["bars", "mirror-bars", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
@@ -3135,7 +3135,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "multiwave", "mirror-bars", "radial", "pulse", "none"],
+        choices=["bars", "mirror-bars", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
@@ -3210,7 +3210,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "multiwave", "mirror-bars", "radial", "pulse", "none"],
+        choices=["bars", "mirror-bars", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release.",
     )

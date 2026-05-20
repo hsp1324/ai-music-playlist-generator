@@ -16,7 +16,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Do not use documentary-looking real war footage, news footage, real political imagery, celebrity likenesses, protected film/game characters, or exact franchise references. Photorealistic means original cinematic realism, not copied real media.
 - Composition should read quickly on mobile: one strong focal scene, bold lighting, clear silhouettes, and high contrast.
 - Visuals can be intense, but avoid gore, real-world political symbols, real war footage, and protected IP.
-- App-rendered spectrum must use `bars` for Cinematic Pulse. Do not use `radial`, `multiwave`, small dots/particles, or busy waveform presets for this channel unless the human explicitly asks. Keep the bar spectrum clean, restrained, and non-cluttered.
+- App-rendered spectrum must use `bars` for Cinematic Pulse. Do not use `radial`, `multiwave`, `pulse`, small dots/particles, or busy waveform presets for this channel. Keep the bar spectrum clean, restrained, and non-cluttered.
 
 ## Cover
 

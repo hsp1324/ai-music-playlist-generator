@@ -26,6 +26,10 @@ from app.utils.youtube_tags import (
     normalize_youtube_tags,
     sanitize_description_hashtags,
 )
+from app.utils.video_render_policy import (
+    apply_video_spectrum_channel_policy,
+    is_cinematic_pulse_release,
+)
 
 
 ARCHIVE_RETENTION_DAYS = 7
@@ -1030,7 +1034,11 @@ def serialize_playlist_workspace(
         loop_video_source=_loop_video_source(meta),
         loop_video_provider=_loop_video_provider(meta),
         loop_video_smooth=bool(meta.get("loop_video_smooth", True)),
-        video_spectrum_overlay_style=str(meta.get("video_spectrum_overlay_style") or "bars"),
+        video_spectrum_overlay_style=apply_video_spectrum_channel_policy(
+            str(meta.get("video_spectrum_overlay_style") or "bars"),
+            meta,
+            title=playlist.title,
+        ),
         video_render_resolution=_normalize_video_render_resolution(meta.get("video_render_resolution")),
         video_render_source_mode=_normalize_video_render_source_mode(meta.get("video_render_source_mode")),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
@@ -2378,7 +2386,7 @@ def queue_workspace_video_render(
         raise ValueError("Approved cover image is required before rendering video.")
     if not meta.get("cover_approved"):
         raise ValueError("Cover image must be approved before rendering video.")
-    is_cinematic_pulse = str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse"
+    is_cinematic_pulse = is_cinematic_pulse_release(meta)
     source_mode = _normalize_video_render_source_mode(video_render_source_mode)
     render_resolution = _normalize_video_render_resolution(video_render_resolution)
     if is_cinematic_pulse:
@@ -2394,8 +2402,7 @@ def queue_workspace_video_render(
 
     active_job = _find_active_video_job(db, playlist)
     visualizer_style = _normalize_video_spectrum_overlay_style(video_spectrum_overlay_style)
-    if is_cinematic_pulse:
-        visualizer_style = "bars"
+    visualizer_style = apply_video_spectrum_channel_policy(visualizer_style, meta, title=playlist.title)
     meta["workflow_state"] = "video_queued"
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
@@ -2441,10 +2448,11 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "bar": "bars",
         "spectrum": "bars",
         "spectrum-bars": "bars",
-        "waveform": "multiwave",
-        "wave": "multiwave",
-        "multi-wave": "multiwave",
-        "waves": "multiwave",
+        "multiwave": "bars",
+        "waveform": "bars",
+        "wave": "bars",
+        "multi-wave": "bars",
+        "waves": "bars",
         "thinwave": "bars",
         "thin-wave": "bars",
         "clean-wave": "bars",
@@ -2455,11 +2463,13 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "mirror": "mirror-bars",
         "mirrorbars": "mirror-bars",
         "mirrored-bars": "mirror-bars",
-        "circle": "radial",
-        "ring": "radial",
-        "radial-bars": "radial",
-        "pulse-line": "pulse",
-        "pulses": "pulse",
+        "radial": "bars",
+        "circle": "bars",
+        "ring": "bars",
+        "radial-bars": "bars",
+        "pulse": "bars",
+        "pulse-line": "bars",
+        "pulses": "bars",
         "off": "none",
         "disabled": "none",
         "disable": "none",
@@ -2468,7 +2478,7 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "fast": "none",
     }
     normalized = aliases.get(normalized, normalized)
-    if normalized not in {"bars", "multiwave", "mirror-bars", "radial", "pulse", "none"}:
+    if normalized not in {"bars", "mirror-bars", "none"}:
         return "bars"
     return normalized
 

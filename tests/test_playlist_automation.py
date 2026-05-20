@@ -1785,6 +1785,81 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_forces_no_spectrum_for_religious_channel(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        playlist_dir = settings.playlists_dir
+        track_dir = settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "scripture-audio.mp3"
+        cover_path = playlist_dir / "scripture-cover.png"
+        loop_path = playlist_dir / "scripture-loop.mp4"
+        track_path = track_dir / "scripture-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Scripture Track",
+                prompt="Genesis scripture",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "scripture jazz"},
+            )
+            playlist = Playlist(
+                title="[playlist] Genesis Creation Light",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "The Old Verse",
+                    "scripture_passage_range": "Genesis 1:1-5",
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_spectrum_overlay_style": "radial",
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={"video_spectrum_overlay_style": "pulse"},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            playlist_id = playlist.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={"worker_id": "test-worker", "hostname": "test-host"},
+        )
+
+        assert claim.status_code == 200
+        assert claim.json()["job"]["render"]["video_spectrum_overlay_style"] == "none"
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, playlist_id)
+            assert playlist.metadata_json["video_spectrum_overlay_style"] == "none"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_render_worker_claim_prioritizes_resolution_by_worker_profile(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -2283,6 +2358,76 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
             assert job.payload_json["video_spectrum_overlay_style"] == "bars"
             assert job.payload_json["video_render_source_mode"] == "still_image"
             assert job.payload_json["video_render_resolution"] == "2k"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_religious_channel_video_render_forces_no_spectrum(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        playlist_dir = settings.playlists_dir
+        track_dir = settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "genesis-audio.mp3"
+        cover_path = playlist_dir / "genesis-cover.png"
+        loop_path = playlist_dir / "genesis-loop.mp4"
+        track_path = track_dir / "genesis-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Genesis Track",
+                prompt="scripture worship",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "scripture jazz"},
+            )
+            playlist = Playlist(
+                title="[playlist] Genesis Creation Light",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "The Old Verse",
+                    "scripture_channel_title": "The Old Verse",
+                    "scripture_passage_range": "Genesis 1:1-5",
+                    "workflow_state": "audio_ready",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            db.commit()
+            playlist_id = playlist.id
+
+        response = client.post(
+            f"/api/playlists/{playlist_id}/video/render",
+            json={
+                "actor": "test-suite",
+                "video_spectrum_overlay_style": "radial",
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["video_spectrum_overlay_style"] == "none"
+        with SessionLocal() as db:
+            job = db.scalars(
+                select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_video)
+            ).one()
+            playlist = db.get(Playlist, playlist_id)
+            assert playlist.metadata_json["video_spectrum_overlay_style"] == "none"
+            assert job.payload_json["video_spectrum_overlay_style"] == "none"
     finally:
         clear_isolated_client_env()
 

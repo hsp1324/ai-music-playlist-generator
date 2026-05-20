@@ -1105,10 +1105,7 @@ function localActionButton(label, className, handler) {
 function chooseVisualizerStyle(workspace) {
   const styles = {
     bars: "20-bar spectrum, current default",
-    multiwave: "layered audio waveform",
     "mirror-bars": "center mirrored bars",
-    radial: "large circular spectrum",
-    pulse: "pulse line visualizer",
     none: "fast render, no spectrum overlay",
   };
   const current = workspace.video_spectrum_overlay_style || "bars";
@@ -1124,9 +1121,10 @@ function chooseVisualizerStyle(workspace) {
   const aliases = {
     bar: "bars",
     spectrum: "bars",
-    wave: "multiwave",
-    waveform: "multiwave",
-    waves: "multiwave",
+    multiwave: "bars",
+    wave: "bars",
+    waveform: "bars",
+    waves: "bars",
     thinwave: "bars",
     "thin-wave": "bars",
     "clean-wave": "bars",
@@ -1136,11 +1134,13 @@ function chooseVisualizerStyle(workspace) {
     particles: "bars",
     mirror: "mirror-bars",
     mirrorbars: "mirror-bars",
-    circle: "radial",
-    ring: "radial",
-    "radial-bars": "radial",
-    "pulse-line": "pulse",
-    pulses: "pulse",
+    radial: "bars",
+    circle: "bars",
+    ring: "bars",
+    "radial-bars": "bars",
+    pulse: "bars",
+    "pulse-line": "bars",
+    pulses: "bars",
     off: "none",
     disabled: "none",
     disable: "none",
@@ -1149,7 +1149,7 @@ function chooseVisualizerStyle(workspace) {
   };
   const style = aliases[normalized] || normalized || "bars";
   if (!Object.prototype.hasOwnProperty.call(styles, style)) {
-    window.alert("Unknown visualizer preset. Use bars, multiwave, mirror-bars, radial, pulse, or none.");
+    window.alert("Unknown visualizer preset. Use bars, mirror-bars, or none.");
     return null;
   }
   return style;

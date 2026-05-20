@@ -32,6 +32,7 @@ from app.utils.openclaw_slack_loop import (
 from app.utils.ops_notifications import notify_youtube_publish_completed
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
 from app.utils.timeline import build_rendered_timeline_snapshot
+from app.utils.video_render_policy import apply_video_spectrum_channel_policy, is_cinematic_pulse_release
 from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
     evaluate_openclaw_backlog_scheduler,
@@ -677,12 +678,18 @@ class BackgroundJobWorker:
             or meta.get("video_spectrum_overlay_style")
             or "bars"
         )
-        if str(meta.get("youtube_channel_title") or "").strip().lower() == "cinematic pulse":
+        if is_cinematic_pulse_release(meta):
             video_spectrum_overlay_style = "bars"
             video_render_source_mode = "still_image"
             allow_still_image_fallback = True
             if not video_render_resolution or video_render_resolution == "720p":
                 video_render_resolution = "2k"
+        else:
+            video_spectrum_overlay_style = apply_video_spectrum_channel_policy(
+                video_spectrum_overlay_style,
+                meta,
+                title=playlist.title,
+            )
         if video_render_source_mode != "still_image" and loop_video_path and Path(loop_video_path).exists():
             playlist.output_video_path = str(
                 self._call_builder_with_progress(
