@@ -23,9 +23,7 @@ class Settings(BaseSettings):
     ffmpeg_binary: str = "ffmpeg"
     ffmpeg_stall_timeout_seconds: int = 900
     video_spectrum_overlay_enabled: bool = True
-    video_spectrum_overlay_style: Literal[
-        "bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"
-    ] = "bars"
+    video_spectrum_overlay_style: str = "bars"
     playlist_target_minutes: int = 40
     playlist_reuse_back_half_enabled: bool = True
     playlist_reuse_back_half_min_seconds: int = 20 * 60

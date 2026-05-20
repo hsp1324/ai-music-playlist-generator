@@ -2203,7 +2203,7 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
         assert "Video render queued" in ops_calls[0]["text"]
         assert "Queued Video Alert Workspace" in ops_calls[0]["text"]
         assert "Mode: external" in ops_calls[0]["text"]
-        assert "Visualizer: thinwave" in ops_calls[0]["text"]
+        assert "Visualizer: bars" in ops_calls[0]["text"]
         assert "job_id" not in ops_calls[0]["text"]
         assert ops_calls[0]["file_path"].endswith(".png")
         with SessionLocal() as db:

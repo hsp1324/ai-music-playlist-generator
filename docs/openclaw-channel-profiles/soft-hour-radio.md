@@ -44,6 +44,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Write prompts with positive motion language: `calm but clearly visible natural motion across several environmental layers`.
 - The final moment should keep the same crop, framing, camera distance, lighting, palette, and subject placement. The app handles smooth repetition with crossfade, so do not force the model to zoom out or return the camera to the opening frame.
 - If Dreamina rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared 10-attempt retry rule in `README.md` and `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and stop before render/publish after 10 failures.
+- For very calm piano, greenhouse, cafe, reading, sleep, or quiet focus releases, prefer `--video-spectrum-overlay-style none` so the final video stays visually restful. Do not use the retired thin waveform style from `아침 온실 피아노 BGM`; it looked too busy for this channel.
 
 Prompt shape:
 
@@ -66,6 +67,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the BGM use case and calm channel identity truthful.
 - Titles should include listening use cases such as study, work, sleep, reading, rest, cafe, focus, or relaxation.
+- If the music lane is lofi / lo-fi, say lofi naturally in the title and description in every supported language instead of describing it only as generic BGM. The top-level title should make the lofi identity clear, for example `Lofi Study BGM`, `lofi work music`, or a natural local-language equivalent.
 - Keep titles and descriptions audience-friendly and searchable. If the visual is a niche scene, do not make that niche the main title unless the human asks. For example, use `조용히 집중할 때 듣는 따뜻한 BGM | 공부, 작업, 독서, 휴식 음악` instead of making `도자기 공방` the primary hook.
 - The description can mention the visual atmosphere lightly, but the first paragraph should explain how the music is useful: study, work, reading, writing, calm handwork, rest, sleep, cafe, or focus.
 - Korean copy must not use `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`; use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.

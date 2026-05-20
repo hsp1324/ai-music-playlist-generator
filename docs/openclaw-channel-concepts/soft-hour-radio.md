@@ -35,11 +35,14 @@ Combine one use case, one setting, and one instrument palette:
 - Cafe: afternoon counter, candle table, solo piano, upright bass, brush drums.
 - Relaxation: garden path, moonlit room, curtains, harp, soft synth textures.
 
+When the selected lane uses lofi / lo-fi textures, make that genre explicit throughout the release plan. Put `lofi` or `lo-fi` naturally in the Suno style/settings for every track, and carry the same identity into the public YouTube title, localized titles, and first description paragraph. Do not hide lofi only in internal prompts.
+
 ## Music Direction
 
 - Instrumental/no-vocal by default.
 - Follow `../suno-v55-instrumental-format.md`.
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
+- For lofi releases, include lofi / lo-fi as a real genre in Suno style/settings, for example alongside Rhodes, soft drums, mellow keys, cafe BGM, study BGM, or warm chillhop. Keep it clean and restful, not noisy or cluttered.
 - Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
 - Do not force Soft Hour Radio tracks under 4 minutes. Longer complete tracks are allowed, and OpenClaw should not reject a good track just because it exceeds the usual 4:20 playlist helper limit.
 - Prioritize low listener fatigue, smooth flow, and practical usefulness.
@@ -54,6 +57,7 @@ Combine one use case, one setting, and one instrument palette:
 ## Good Fresh Concept Shapes
 
 - `[playlist] Rainy Window Reading BGM | Calm Piano and Soft Room Ambience`
+- `[playlist] Lofi Study BGM | Soft Beats for Work, Reading and Focus`
 - `[playlist] Forest Morning Focus Music | Gentle Guitar, Air and Warm Light`
 - `[playlist] Ocean Room Sleep BGM | Slow Felt Piano and Deep Night Rest`
 - `[playlist] Fireplace Work BGM | Soft Acoustic, Warm Room and Focus`

@@ -1106,7 +1106,6 @@ function chooseVisualizerStyle(workspace) {
   const styles = {
     bars: "20-bar spectrum, current default",
     multiwave: "layered audio waveform",
-    thinwave: "clean thin waveform",
     "mirror-bars": "center mirrored bars",
     radial: "large circular spectrum",
     pulse: "pulse line visualizer",
@@ -1128,8 +1127,9 @@ function chooseVisualizerStyle(workspace) {
     wave: "multiwave",
     waveform: "multiwave",
     waves: "multiwave",
-    "thin-wave": "thinwave",
-    "clean-wave": "thinwave",
+    thinwave: "bars",
+    "thin-wave": "bars",
+    "clean-wave": "bars",
     dot: "bars",
     dots: "bars",
     particle: "bars",
@@ -1149,7 +1149,7 @@ function chooseVisualizerStyle(workspace) {
   };
   const style = aliases[normalized] || normalized || "bars";
   if (!Object.prototype.hasOwnProperty.call(styles, style)) {
-    window.alert("Unknown visualizer preset. Use bars, multiwave, thinwave, mirror-bars, radial, pulse, or none.");
+    window.alert("Unknown visualizer preset. Use bars, multiwave, mirror-bars, radial, pulse, or none.");
     return null;
   }
   return style;

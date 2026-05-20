@@ -593,8 +593,9 @@ class FFMpegPlaylistBuilder:
             "waveform": "multiwave",
             "waves": "multiwave",
             "multi-wave": "multiwave",
-            "thin-wave": "thinwave",
-            "clean-wave": "thinwave",
+            "thinwave": "bars",
+            "thin-wave": "bars",
+            "clean-wave": "bars",
             "dot": "bars",
             "dots": "bars",
             "particle": "bars",
@@ -615,7 +616,7 @@ class FFMpegPlaylistBuilder:
             "fast": "none",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized not in {"bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"}:
+        if normalized not in {"bars", "multiwave", "mirror-bars", "radial", "pulse", "none"}:
             return "bars"
         return normalized
 
@@ -819,16 +820,6 @@ class FFMpegPlaylistBuilder:
                     smoothed = (smoothed * 0.82) + (raw_level * 0.18)
                 if style == "multiwave":
                     frame = self._draw_wave_spectrum_frame(
-                        frame_index,
-                        smoothed,
-                        raw_level=raw_level,
-                        samples=samples,
-                        timestamp=timestamp,
-                        primary=primary,
-                        accent=accent,
-                    )
-                elif style == "thinwave":
-                    frame = self._draw_thin_wave_spectrum_frame(
                         frame_index,
                         smoothed,
                         raw_level=raw_level,
@@ -1111,40 +1102,6 @@ class FFMpegPlaylistBuilder:
         draw.line(points_top, fill=(*accent, 182), width=4, joint="curve")
         draw.line(points_bottom, fill=(*primary, 124), width=3, joint="curve")
         draw.line([(0, center_y), (SPECTRUM_OVERLAY_WIDTH, center_y)], fill=(*primary, 72), width=2)
-        return image
-
-    def _draw_thin_wave_spectrum_frame(
-        self,
-        frame_index: int,
-        level: float,
-        *,
-        raw_level: float,
-        samples: array,
-        timestamp: float,
-        primary: tuple[int, int, int],
-        accent: tuple[int, int, int],
-    ) -> Image.Image:
-        image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(image, "RGBA")
-        center_y = int(SPECTRUM_OVERLAY_HEIGHT * 0.56)
-        transient = max(raw_level - (level * 0.82), 0.0)
-        punch = min((raw_level * 1.05) + (transient * 4.2), 1.0)
-        amplitude = 18 + (level * 34) + (punch * 18)
-        window_seconds = 0.24
-        lines = [
-            (-10, -0.018, 0.70, primary, 94, 2),
-            (0, 0.000, 1.00, accent, 150, 3),
-            (10, 0.018, 0.70, self._mix_rgb(primary, accent, 0.62), 94, 2),
-        ]
-        for offset, time_shift, amp_scale, color, alpha, width in lines:
-            points: list[tuple[int, int]] = []
-            for x in range(0, SPECTRUM_OVERLAY_WIDTH, 4):
-                ratio = x / max(SPECTRUM_OVERLAY_WIDTH - 1, 1)
-                envelope = math.exp(-((ratio - 0.53) ** 2) / (2 * 0.31**2))
-                signal = self._audio_signal_at_time(samples, timestamp + time_shift + ((ratio - 0.5) * window_seconds))
-                y = center_y + offset + int(signal * amplitude * amp_scale * (0.35 + (0.82 * envelope)))
-                points.append((x, y))
-            draw.line(points, fill=(*color, min(alpha + int(punch * 36), 190)), width=width, joint="curve")
         return image
 
     def _draw_wave_spectrum_frame(

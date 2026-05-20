@@ -2445,8 +2445,9 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "wave": "multiwave",
         "multi-wave": "multiwave",
         "waves": "multiwave",
-        "thin-wave": "thinwave",
-        "clean-wave": "thinwave",
+        "thinwave": "bars",
+        "thin-wave": "bars",
+        "clean-wave": "bars",
         "dot": "bars",
         "dots": "bars",
         "particle": "bars",
@@ -2467,7 +2468,7 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "fast": "none",
     }
     normalized = aliases.get(normalized, normalized)
-    if normalized not in {"bars", "multiwave", "thinwave", "mirror-bars", "radial", "pulse", "none"}:
+    if normalized not in {"bars", "multiwave", "mirror-bars", "radial", "pulse", "none"}:
         return "bars"
     return normalized
 

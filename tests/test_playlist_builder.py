@@ -129,6 +129,9 @@ def test_removed_dot_visualizer_aliases_fall_back_to_bars(tmp_path) -> None:
     assert builder._normalize_spectrum_overlay_style("dots") == "bars"
     assert builder._normalize_spectrum_overlay_style("dot") == "bars"
     assert builder._normalize_spectrum_overlay_style("particles") == "bars"
+    assert builder._normalize_spectrum_overlay_style("thinwave") == "bars"
+    assert builder._normalize_spectrum_overlay_style("thin-wave") == "bars"
+    assert builder._normalize_spectrum_overlay_style("clean-wave") == "bars"
 
 
 def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
