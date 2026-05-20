@@ -2108,6 +2108,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
+            "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
         },
     )
     release = wait_for_release(
@@ -2424,6 +2425,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
+            "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
         },
     )
     release = wait_for_release(
@@ -2692,6 +2694,7 @@ def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
+            "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
         },
     )
     if args.wait:
@@ -3113,6 +3116,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="auto",
         help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
     )
+    auto_playlist_parser.add_argument(
+        "--lyrics-overlay",
+        action="store_true",
+        help="Burn approximate line-level lyric subtitles into the rendered video. Use for vocal lyric releases.",
+    )
     auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
@@ -3163,6 +3171,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["auto", "loop_video", "still_image"],
         default="auto",
         help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
+    )
+    auto_single_parser.add_argument(
+        "--lyrics-overlay",
+        action="store_true",
+        help="Burn approximate line-level lyric subtitles into the rendered video. Use for vocal lyric releases.",
     )
     auto_single_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_single_parser.add_argument("--actor", default="openclaw:auto-single", help="Actor name recorded in histories.")
@@ -3238,6 +3251,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["auto", "loop_video", "still_image"],
         default="auto",
         help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
+    )
+    render_video_parser.add_argument(
+        "--lyrics-overlay",
+        action="store_true",
+        help="Burn approximate line-level lyric subtitles into the rendered video. Use for vocal lyric releases.",
     )
     render_video_parser.add_argument("--wait", action="store_true", help="Wait for VM video render completion before continuing to metadata/publish.")
     render_video_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for video render. Default: 6 hours.")

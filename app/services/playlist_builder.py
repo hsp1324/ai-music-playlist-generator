@@ -3,8 +3,8 @@ import math
 import subprocess
 import time
 from array import array
-from io import BytesIO
 from dataclasses import dataclass
+from io import BytesIO
 from math import ceil
 from mimetypes import guess_type
 from pathlib import Path
@@ -348,6 +348,7 @@ class FFMpegPlaylistBuilder:
         *,
         render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
+        lyric_cues: list[dict[str, Any]] | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -360,7 +361,11 @@ class FFMpegPlaylistBuilder:
         image_mimetype = guess_type(str(cover_image_path))[0] or "image/png"
         frame_size = self._render_frame_size(render_resolution)
         apply_spectrum_overlay = self._spectrum_overlay_enabled(spectrum_overlay_style)
-        render_output_path = self._base_render_path(output_path) if apply_spectrum_overlay else output_path
+        apply_lyrics_overlay = bool(lyric_cues)
+        render_output_path = (
+            self._post_render_path(output_path, "base") if apply_spectrum_overlay or apply_lyrics_overlay else output_path
+        )
+        cleanup_paths = [render_output_path] if render_output_path != output_path else []
 
         command = [
             self.settings.ffmpeg_binary,
@@ -407,20 +412,36 @@ class FFMpegPlaylistBuilder:
                 total_duration_seconds=total_duration_seconds,
                 progress_callback=progress_callback,
             )
-            if apply_spectrum_overlay and render_output_path != output_path:
+            current_output_path = render_output_path
+            if apply_spectrum_overlay:
+                spectrum_output_path = (
+                    self._post_render_path(output_path, "spectrum") if apply_lyrics_overlay else output_path
+                )
+                if spectrum_output_path != output_path:
+                    cleanup_paths.append(spectrum_output_path)
                 self._apply_spectrum_overlay(
-                    render_output_path,
+                    current_output_path,
                     audio_path,
                     cover_image_path,
-                    output_path,
+                    spectrum_output_path,
                     spectrum_overlay_style=spectrum_overlay_style,
                     render_resolution=render_resolution,
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
                 )
+                current_output_path = spectrum_output_path
+            if apply_lyrics_overlay:
+                self._apply_lyric_subtitles(
+                    current_output_path,
+                    output_path,
+                    lyric_cues=lyric_cues or [],
+                    render_resolution=render_resolution,
+                    total_duration_seconds=total_duration_seconds,
+                    progress_callback=progress_callback,
+                )
         finally:
-            if render_output_path != output_path:
-                render_output_path.unlink(missing_ok=True)
+            for path in cleanup_paths:
+                path.unlink(missing_ok=True)
         return output_path
 
     def build_looped_video(
@@ -432,6 +453,7 @@ class FFMpegPlaylistBuilder:
         smooth_loop: bool = True,
         render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
+        lyric_cues: list[dict[str, Any]] | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -446,7 +468,11 @@ class FFMpegPlaylistBuilder:
         concat_list_path: Path | None = None
         frame_size = self._render_frame_size(render_resolution)
         apply_spectrum_overlay = self._spectrum_overlay_enabled(spectrum_overlay_style)
-        render_output_path = self._base_render_path(output_path) if apply_spectrum_overlay else output_path
+        apply_lyrics_overlay = bool(lyric_cues)
+        render_output_path = (
+            self._post_render_path(output_path, "base") if apply_spectrum_overlay or apply_lyrics_overlay else output_path
+        )
+        cleanup_paths = [render_output_path] if render_output_path != output_path else []
         command: list[str]
         if smooth_loop:
             source_seconds = self._resolve_loop_source_seconds(clip_path)
@@ -543,20 +569,36 @@ class FFMpegPlaylistBuilder:
                 total_duration_seconds=total_duration_seconds,
                 progress_callback=progress_callback,
             )
-            if apply_spectrum_overlay and render_output_path != output_path:
+            current_output_path = render_output_path
+            if apply_spectrum_overlay:
+                spectrum_output_path = (
+                    self._post_render_path(output_path, "spectrum") if apply_lyrics_overlay else output_path
+                )
+                if spectrum_output_path != output_path:
+                    cleanup_paths.append(spectrum_output_path)
                 self._apply_spectrum_overlay(
-                    render_output_path,
+                    current_output_path,
                     audio_path,
                     clip_path,
-                    output_path,
+                    spectrum_output_path,
                     spectrum_overlay_style=spectrum_overlay_style,
                     render_resolution=render_resolution,
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
                 )
+                current_output_path = spectrum_output_path
+            if apply_lyrics_overlay:
+                self._apply_lyric_subtitles(
+                    current_output_path,
+                    output_path,
+                    lyric_cues=lyric_cues or [],
+                    render_resolution=render_resolution,
+                    total_duration_seconds=total_duration_seconds,
+                    progress_callback=progress_callback,
+                )
         finally:
-            if render_output_path != output_path:
-                render_output_path.unlink(missing_ok=True)
+            for path in cleanup_paths:
+                path.unlink(missing_ok=True)
             if loop_unit_path:
                 loop_unit_path.unlink(missing_ok=True)
             if concat_list_path:
@@ -572,6 +614,187 @@ class FFMpegPlaylistBuilder:
 
     def _base_render_path(self, output_path: Path) -> Path:
         return output_path.with_name(f"{output_path.stem}-base-render{output_path.suffix}")
+
+    def _post_render_path(self, output_path: Path, suffix: str) -> Path:
+        return output_path.with_name(f"{output_path.stem}-{suffix}-render{output_path.suffix}")
+
+    def _apply_lyric_subtitles(
+        self,
+        base_video_path: Path,
+        output_path: Path,
+        *,
+        lyric_cues: list[dict[str, Any]],
+        render_resolution: str | None,
+        total_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None,
+    ) -> None:
+        cues = self._valid_lyric_cues(lyric_cues, total_duration_seconds=total_duration_seconds)
+        if not cues:
+            if base_video_path != output_path:
+                base_video_path.replace(output_path)
+            return
+
+        output_path.unlink(missing_ok=True)
+        frame_size = self._render_frame_size(render_resolution)
+        ass_path = output_path.with_name(f"{output_path.stem}-lyrics.ass")
+        self._write_lyric_ass_file(ass_path, cues, frame_size=frame_size)
+        ass_filter_path = self._escape_filter_path(ass_path)
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-hide_banner",
+            "-nostats",
+            "-progress",
+            "pipe:1",
+            "-i",
+            str(base_video_path),
+            "-vf",
+            f"ass={ass_filter_path}",
+            "-map",
+            "0:v:0",
+            "-map",
+            "0:a:0",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            self._x264_crf_for_frame_size(frame_size),
+            "-c:a",
+            "copy",
+            "-shortest",
+            "-movflags",
+            "+faststart",
+            str(output_path),
+        ]
+        try:
+            self._run_ffmpeg_with_progress(
+                command,
+                output_path=output_path,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+                stage="video_lyrics_overlay",
+            )
+        finally:
+            ass_path.unlink(missing_ok=True)
+
+    def _write_lyric_ass_file(
+        self,
+        output_path: Path,
+        lyric_cues: list[dict[str, Any]],
+        *,
+        frame_size: tuple[int, int],
+    ) -> None:
+        width, height = frame_size
+        font_size = max(int(round(height * 0.052)), 28)
+        margin_v = max(int(round(height * 0.16)), 76)
+        outline = max(round(height * 0.0045, 1), 2.2)
+        shadow = max(round(height * 0.0018, 1), 0.8)
+        wrap_chars = 42 if width <= 1280 else 54
+        font_name = str(getattr(self.settings, "video_lyrics_overlay_font", "") or "Noto Sans CJK KR")
+        font_name = font_name.replace(",", " ").replace("\n", " ").replace("\r", " ").strip() or "Noto Sans CJK KR"
+        lines = [
+            "[Script Info]",
+            "ScriptType: v4.00+",
+            f"PlayResX: {width}",
+            f"PlayResY: {height}",
+            "ScaledBorderAndShadow: yes",
+            "WrapStyle: 2",
+            "",
+            "[V4+ Styles]",
+            (
+                "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, "
+                "BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, "
+                "BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding"
+            ),
+            (
+                f"Style: Lyrics,{font_name},"
+                f"{font_size},&H00FFFFFF,&H00FFFFFF,&H9A000000,&H66000000,"
+                f"0,0,0,0,100,100,0,0,1,{outline},{shadow},2,80,80,{margin_v},1"
+            ),
+            "",
+            "[Events]",
+            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+        ]
+        for cue in lyric_cues:
+            text = self._format_ass_lyric_text(str(cue.get("text") or ""), wrap_chars=wrap_chars)
+            if not text:
+                continue
+            lines.append(
+                "Dialogue: 0,"
+                f"{self._format_ass_timestamp(float(cue['start']))},"
+                f"{self._format_ass_timestamp(float(cue['end']))},"
+                f"Lyrics,,0,0,0,,{{\\fad(120,180)}}{text}"
+            )
+        output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def _valid_lyric_cues(
+        self,
+        lyric_cues: list[dict[str, Any]],
+        *,
+        total_duration_seconds: int | float | None,
+    ) -> list[dict[str, Any]]:
+        max_end = float(total_duration_seconds or 0)
+        valid: list[dict[str, Any]] = []
+        for cue in lyric_cues:
+            try:
+                start = max(float(cue.get("start")), 0.0)
+                end = max(float(cue.get("end")), 0.0)
+            except (TypeError, ValueError):
+                continue
+            if max_end > 0:
+                if start >= max_end:
+                    continue
+                end = min(end, max_end)
+            text = str(cue.get("text") or "").strip()
+            if not text or end - start < 0.4:
+                continue
+            valid.append({**cue, "start": start, "end": end, "text": text})
+        return valid
+
+    @staticmethod
+    def _format_ass_timestamp(seconds: float) -> str:
+        total_centiseconds = max(int(round(seconds * 100)), 0)
+        centiseconds = total_centiseconds % 100
+        total_seconds = total_centiseconds // 100
+        secs = total_seconds % 60
+        total_minutes = total_seconds // 60
+        minutes = total_minutes % 60
+        hours = total_minutes // 60
+        return f"{hours}:{minutes:02d}:{secs:02d}.{centiseconds:02d}"
+
+    @staticmethod
+    def _format_ass_lyric_text(text: str, *, wrap_chars: int) -> str:
+        clean = " ".join(str(text or "").replace("\r", " ").replace("\n", " ").split())
+        if not clean:
+            return ""
+        clean = clean.replace("{", "(").replace("}", ")").replace("\\", "/")
+        words = clean.split(" ")
+        rows: list[str] = []
+        current = ""
+        for word in words:
+            candidate = word if not current else f"{current} {word}"
+            if len(candidate) <= wrap_chars:
+                current = candidate
+                continue
+            if current:
+                rows.append(current)
+                if len(rows) >= 2:
+                    current = ""
+                    break
+            current = word
+            if len(current) > wrap_chars:
+                rows.append(current[:wrap_chars])
+                current = ""
+            if len(rows) >= 2:
+                break
+        if current and len(rows) < 2:
+            rows.append(current)
+        return r"\N".join(rows[:2])
+
+    @staticmethod
+    def _escape_filter_path(path: Path) -> str:
+        return str(path).replace("\\", "\\\\").replace(":", "\\:")
 
     def _render_frame_size(self, render_resolution: str | None = None) -> tuple[int, int]:
         normalized = str(render_resolution or "720p").strip().lower().replace("_", "-").replace(" ", "")

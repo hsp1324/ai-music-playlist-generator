@@ -1155,6 +1155,19 @@ function chooseVisualizerStyle(workspace) {
   return style;
 }
 
+function workspaceHasSavedLyrics(workspace) {
+  return (workspace.tracks || []).some((track) => {
+    const lyrics = String(track.lyrics || track.metadata_json?.lyrics || "").trim();
+    if (!lyrics) return false;
+    return !/^\[?\s*(instrumental|instrumental only|no vocals?|without lyrics)\s*\]?$/i.test(lyrics);
+  });
+}
+
+function chooseLyricsOverlay(workspace) {
+  if (!workspaceHasSavedLyrics(workspace)) return false;
+  return window.confirm("Saved lyrics were found. Burn line-level lyric subtitles into this video?");
+}
+
 function openTextModal(title, text) {
   if (!textModal || !textModalTitle || !textModalBody) {
     alert(text || "");
@@ -3131,11 +3144,13 @@ function renderWorkspaceDetail() {
           }
           const videoSpectrumOverlayStyle = chooseVisualizerStyle(workspace);
           if (!videoSpectrumOverlayStyle) return;
+          const videoLyricsOverlayEnabled = chooseLyricsOverlay(workspace);
           await api(`/api/playlists/${workspace.id}/video/render`, {
             method: "POST",
             body: JSON.stringify({
               actor: "web-ui",
               video_spectrum_overlay_style: videoSpectrumOverlayStyle,
+              video_lyrics_overlay_enabled: videoLyricsOverlayEnabled,
             }),
           });
         })

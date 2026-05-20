@@ -534,6 +534,7 @@ def render_workspace_video(
             video_spectrum_overlay_style=payload.video_spectrum_overlay_style,
             video_render_resolution=payload.video_render_resolution,
             video_render_source_mode=payload.video_render_source_mode,
+            video_lyrics_overlay_enabled=payload.video_lyrics_overlay_enabled,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

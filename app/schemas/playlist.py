@@ -48,6 +48,7 @@ class PlaylistVideoRenderRequest(BaseModel):
     video_spectrum_overlay_style: str | None = None
     video_render_resolution: str | None = None
     video_render_source_mode: str | None = None
+    video_lyrics_overlay_enabled: bool | None = None
 
 
 class PlaylistMetadataGenerateRequest(BaseModel):
@@ -169,6 +170,7 @@ class PlaylistWorkspaceRead(BaseModel):
     video_spectrum_overlay_style: str = "bars"
     video_render_resolution: str = "720p"
     video_render_source_mode: str = "auto"
+    video_lyrics_overlay_enabled: bool = False
     youtube_thumbnail_path: str | None = None
     youtube_thumbnail_source: str | None = None
     youtube_title: str | None = None

@@ -93,6 +93,67 @@ def test_build_video_accepts_2k_render_resolution(tmp_path) -> None:
     assert args[args.index("-crf") + 1] == "18"
 
 
+def test_build_video_can_burn_line_lyric_subtitles(tmp_path, monkeypatch) -> None:
+    audio_path = tmp_path / "source.mp3"
+    cover_path = tmp_path / "cover.png"
+    output_path = tmp_path / "release.mp4"
+    audio_path.write_bytes(b"fake-audio")
+    cover_path.write_bytes(b"fake-cover")
+
+    builder = FFMpegPlaylistBuilder(
+        Settings(
+            storage_root=tmp_path / "storage",
+            video_spectrum_overlay_enabled=False,
+        )
+    )
+    calls = []
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        calls.append(
+            {
+                "command": command,
+                "output_path": output_path,
+                "total_duration_seconds": total_duration_seconds,
+                "stage": stage,
+            }
+        )
+        output_path.write_bytes(f"fake-{stage}".encode("utf-8"))
+
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    result = builder.build_video(
+        audio_path,
+        cover_path,
+        output_path,
+        lyric_cues=[
+            {"start": 1.0, "end": 4.0, "text": "First line"},
+            {"start": 4.2, "end": 7.0, "text": "Second line"},
+        ],
+        total_duration_seconds=10,
+    )
+
+    assert result == output_path
+    assert output_path.read_bytes() == b"fake-video_lyrics_overlay"
+    assert [call["stage"] for call in calls] == ["video_render", "video_lyrics_overlay"]
+    assert calls[0]["output_path"].name == "release-base-render.mp4"
+    subtitle_command = calls[1]["command"]
+    assert subtitle_command[subtitle_command.index("-vf") + 1].startswith("ass=")
+    assert subtitle_command[subtitle_command.index("-c:a") + 1] == "copy"
+    assert not (tmp_path / "release-base-render.mp4").exists()
+    assert not (tmp_path / "release-lyrics.ass").exists()
+
+
+def test_ass_lyric_text_wraps_into_two_useful_lines(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+
+    text = builder._format_ass_lyric_text(
+        "Gathered up the promise, took the child and walked away",
+        wrap_chars=42,
+    )
+
+    assert text == r"Gathered up the promise, took the child\Nand walked away"
+
+
 def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
     audio_path = tmp_path / "empty.mp3"
     output_path = tmp_path / "release.mp3"

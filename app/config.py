@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     ffmpeg_stall_timeout_seconds: int = 900
     video_spectrum_overlay_enabled: bool = True
     video_spectrum_overlay_style: str = "bars"
+    video_lyrics_overlay_enabled: bool = False
+    video_lyrics_overlay_font: str = "Noto Sans CJK KR"
     playlist_target_minutes: int = 40
     playlist_reuse_back_half_enabled: bool = True
     playlist_reuse_back_half_min_seconds: int = 20 * 60

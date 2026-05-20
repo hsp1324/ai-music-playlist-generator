@@ -454,6 +454,7 @@ def render_job(
     total_duration_seconds = render.get("total_duration_seconds")
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
     render_resolution = render.get("video_render_resolution") or "720p"
+    lyric_cues = render.get("lyric_cues") or []
 
     def callback(progress: dict[str, Any]) -> None:
         post_progress(
@@ -475,6 +476,7 @@ def render_job(
             smooth_loop=bool(render.get("smooth_loop", True)),
             render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
+            lyric_cues=lyric_cues,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
         )
@@ -485,6 +487,7 @@ def render_job(
             output_path,
             render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
+            lyric_cues=lyric_cues,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
         )

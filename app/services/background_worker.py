@@ -31,6 +31,7 @@ from app.utils.openclaw_slack_loop import (
 )
 from app.utils.ops_notifications import notify_youtube_publish_completed
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
+from app.utils.lyric_subtitles import build_line_lyric_cues
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.utils.video_render_policy import apply_video_spectrum_channel_policy, is_cinematic_pulse_release
 from app.workflows.openclaw_runtime import (
@@ -650,6 +651,20 @@ class BackgroundJobWorker:
             for item in sorted(playlist.items, key=lambda item: item.order_index)
             if item.track is not None
         ]
+        lyrics_overlay_enabled = bool(
+            (job.payload_json or {}).get(
+                "video_lyrics_overlay_enabled",
+                meta.get("video_lyrics_overlay_enabled", self.settings.video_lyrics_overlay_enabled),
+            )
+        )
+        lyric_cues = (
+            build_line_lyric_cues(
+                [_track_timeline_dict(track) for track in tracks],
+                list(meta.get("rendered_timeline") or []),
+            )
+            if lyrics_overlay_enabled
+            else []
+        )
         video_path = Path(self.settings.playlists_dir) / f"{playlist.id}.mp4"
         progress_callback = self._build_video_progress_callback(db, job, playlist)
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
@@ -700,6 +715,7 @@ class BackgroundJobWorker:
                     smooth_loop=bool(meta.get("loop_video_smooth", True)),
                     render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
+                    lyric_cues=lyric_cues,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -714,6 +730,7 @@ class BackgroundJobWorker:
                     video_path,
                     render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
+                    lyric_cues=lyric_cues,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -763,6 +780,8 @@ class BackgroundJobWorker:
         meta["video_spectrum_overlay_style"] = video_spectrum_overlay_style
         meta["video_render_resolution"] = video_render_resolution
         meta["video_render_source_mode"] = video_render_source_mode
+        meta["video_lyrics_overlay_enabled"] = lyrics_overlay_enabled
+        meta["video_lyrics_overlay_cue_count"] = len(lyric_cues)
         tracks = [
             item.track
             for item in sorted(playlist.items, key=lambda item: item.order_index)

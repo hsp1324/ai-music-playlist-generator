@@ -1049,6 +1049,7 @@ def serialize_playlist_workspace(
         ),
         video_render_resolution=_normalize_video_render_resolution(meta.get("video_render_resolution")),
         video_render_source_mode=_normalize_video_render_source_mode(meta.get("video_render_source_mode")),
+        video_lyrics_overlay_enabled=bool(meta.get("video_lyrics_overlay_enabled")),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
@@ -2379,6 +2380,7 @@ def queue_workspace_video_render(
     video_spectrum_overlay_style: str | None = None,
     video_render_resolution: str | None = None,
     video_render_source_mode: str | None = None,
+    video_lyrics_overlay_enabled: bool | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -2418,6 +2420,8 @@ def queue_workspace_video_render(
     meta["video_spectrum_overlay_style"] = visualizer_style
     meta["video_render_resolution"] = render_resolution
     meta["video_render_source_mode"] = source_mode
+    if video_lyrics_overlay_enabled is not None:
+        meta["video_lyrics_overlay_enabled"] = bool(video_lyrics_overlay_enabled)
     meta.pop("video_build_error", None)
     meta.pop("publish_approved_by", None)
     playlist.output_video_path = None
@@ -2440,6 +2444,7 @@ def queue_workspace_video_render(
                     "video_spectrum_overlay_style": visualizer_style,
                     "video_render_resolution": render_resolution,
                     "video_render_source_mode": source_mode,
+                    "video_lyrics_overlay_enabled": bool(meta.get("video_lyrics_overlay_enabled")),
                 },
                 result_json={},
                 playlist=playlist,

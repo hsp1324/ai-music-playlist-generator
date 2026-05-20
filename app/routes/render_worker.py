@@ -20,6 +20,7 @@ from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
+from app.utils.lyric_subtitles import build_line_lyric_cues
 from app.utils.ops_notifications import (
     notify_render_worker_claimed,
     notify_render_worker_completed,
@@ -103,6 +104,21 @@ def _playlist_track_ids(playlist: Playlist) -> list[str]:
         for item in sorted(playlist.items, key=lambda item: item.order_index)
         if item.track_id
     ]
+
+
+def _track_timeline_dict(item: PlaylistItem) -> dict[str, Any]:
+    track = item.track
+    meta = dict(track.metadata_json or {}) if track else {}
+    return {
+        "id": item.track_id,
+        "title": track.title if track else f"Track {item.order_index}",
+        "duration_seconds": track.duration_seconds if track else item.included_duration_seconds,
+        "lyrics": str(meta.get("lyrics") or ""),
+        "style": str(meta.get("style") or ""),
+        "exclude_style": str(meta.get("exclude_style") or ""),
+        "prompt": track.prompt if track else "",
+        "tags": meta.get("tags") or "",
+    }
 
 
 def _load_render_job(db: Session, job_id: str) -> tuple[Job, Playlist]:
@@ -366,6 +382,20 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     )
     style = apply_video_spectrum_channel_policy(style, meta, title=playlist.title)
     render_resolution = _job_render_resolution(job, playlist)
+    lyrics_overlay_enabled = bool(
+        (job.payload_json or {}).get(
+            "video_lyrics_overlay_enabled",
+            meta.get("video_lyrics_overlay_enabled", services.settings.video_lyrics_overlay_enabled),
+        )
+    )
+    lyric_cues = (
+        build_line_lyric_cues(
+            [_track_timeline_dict(item) for item in sorted(playlist.items, key=lambda row: row.order_index)],
+            list(meta.get("rendered_timeline") or []),
+        )
+        if lyrics_overlay_enabled
+        else []
+    )
     return {
         "id": job.id,
         "type": job.type.value,
@@ -380,6 +410,8 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             "video_spectrum_overlay_style": style,
             "video_render_resolution": render_resolution,
             "video_render_source_mode": effective_source_mode,
+            "video_lyrics_overlay_enabled": lyrics_overlay_enabled,
+            "lyric_cues": lyric_cues,
             "total_duration_seconds": int(playlist.actual_duration_seconds or 0) or None,
             "track_ids": _playlist_track_ids(playlist),
             "output_filename": f"{playlist.id}.mp4",
