@@ -30,12 +30,12 @@ from app.workflows.scripture_sequence import (
 
 router = APIRouter(prefix="/openclaw", tags=["openclaw"])
 
-BIBLE_SCRIPTURE_UPLOAD_CHANNEL_TITLE = "The Old Verse"
+BIBLE_SCRIPTURE_UPLOAD_CHANNEL_TITLE = "BibliaCanto"
 
 
 def _canonical_scripture_branch_title(channel_title: str) -> str:
     normalized = str(channel_title or "").strip().lower().replace("-", "_")
-    if normalized in {"the old verse", "the_old_verse", "old testament", "old"}:
+    if normalized in {"bibliacanto", "biblia canto", "the old verse", "the_old_verse", "old testament", "old"}:
         return "The Old Verse"
     if normalized in {"the new verse", "the_new_verse", "new testament", "new_testament", "new"}:
         return "New Testament"

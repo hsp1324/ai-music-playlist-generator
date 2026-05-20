@@ -38,8 +38,8 @@ HARUHARU_YOUTUBE_CHANNEL_TITLE = "HaruHaru"
 STORYLIGHT_YOUTUBE_CHANNEL_TITLE = "Storylight OST"
 CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
 CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE = "Club Bloom"
-OLD_VERSE_YOUTUBE_CHANNEL_TITLE = "The Old Verse"
-NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "The New Verse"
+OLD_VERSE_YOUTUBE_CHANNEL_TITLE = "BibliaCanto"
+NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "불송"
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
@@ -93,6 +93,16 @@ CHANNEL_PROFILE_NAMES = {
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "storylight-ost",
 }
 CHANNEL_TITLE_ALIASES = {
+    OLD_VERSE_YOUTUBE_CHANNEL_TITLE: (
+        "The Old Verse",
+        "Old Verse",
+        "Biblia Canto",
+    ),
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: (
+        "The New Verse",
+        "New Verse",
+        "Bulsong",
+    ),
     STORYLIGHT_YOUTUBE_CHANNEL_TITLE: (
         SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
@@ -1446,6 +1456,9 @@ def wait_for_release(
 def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     explicit_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
     if explicit_title:
+        for canonical_title, aliases in CHANNEL_TITLE_ALIASES.items():
+            if explicit_title == canonical_title or explicit_title.lower() in {alias.lower() for alias in aliases}:
+                return canonical_title
         if explicit_title in {
             SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
             SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
@@ -2744,12 +2757,12 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Solwave Radio releases, write Spanish default metadata and name one clear release-level genre lane when accurate, such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul, instead of generic Latin pop wording. "
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
             "For Cinematic Pulse releases, write English default metadata and position it as no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, final battle scene, orchestral battle, emotional film score, mystery-tension, dark fantasy, sci-fi, heroic, or epic scene music. Do not use juvenile game-menu title wording such as Boss BGM, Final Boss Music, Final Boss Focus Music, 보스, 보스전, or bare BGM. Rotate among varied cinematic title lanes such as final battle, dark fantasy, heroic trailer, emotional score, sci-fi action, mystery tension, grand journey, orchestral battle, writing music, and movie OST focus; examples are style references, not fixed templates to repeat. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. Club Bloom titles must put the exact genre, subgenre, or genre fusion immediately after [playlist] using mainstream mix language such as Progressive Trance x EDM Mix, Tech House Workout Mix, Hype Trap x EDM Mix, Melodic Techno Night Drive, Bass House Club Mix, or Festival EDM Mix; put only one or two public use cases after the separator and avoid awkward lists like Progressive Trance for Night Roads, Gaming Focus and Club Drive. "
-            "For The Old Verse scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament/Gospel/worship music from Matthew onward. New Testament scripture releases now upload to The Old Verse too, not The New Verse. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent lane, rotating across uploads instead of defaulting to generic holy worship every time; lanes can include scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. "
-            "For The New Verse Buddhist releases, write Korean default metadata and position it as modern Buddhist scripture-inspired vocal music. Name the Buddhist source or theme carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired, and do not claim exact chapter/verse coverage unless verified. Name one coherent release-level lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. State that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation. "
+            "For BibliaCanto scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament/Gospel/worship music from Matthew onward. New Testament scripture releases now upload to BibliaCanto too, not 불송. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent lane, rotating across uploads instead of defaulting to generic holy worship every time; lanes can include scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. "
+            "For 불송 Buddhist releases, write Korean default metadata and position it as modern Buddhist scripture-inspired vocal music. Name the Buddhist source or theme carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired, and do not claim exact chapter/verse coverage unless verified. Name one coherent release-level lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. State that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation. "
             "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, The Old Verse/Bible scripture, The New Verse/Buddhist scripture, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
-            "Use --default-language ko for HaruHaru and The New Verse, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, Club Bloom, and The Old Verse."
+            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/Buddhist scripture, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "Use --default-language ko for HaruHaru and 불송, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, Club Bloom, and BibliaCanto."
         ),
     }
 
@@ -3080,7 +3093,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use The Old Verse, Buddhist scripture music uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3131,7 +3144,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use The Old Verse, Buddhist scripture music uses The New Verse, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3352,11 +3365,11 @@ def build_parser() -> argparse.ArgumentParser:
     backlog_status_parser = subparsers.add_parser("openclaw-backlog-status", help="Show app-side backlog scheduler evaluation.")
     backlog_status_parser.set_defaults(func=openclaw_backlog_status)
 
-    scripture_status_parser = subparsers.add_parser("openclaw-scripture-status", help="Show app-side Old/New Verse scripture sequence state.")
+    scripture_status_parser = subparsers.add_parser("openclaw-scripture-status", help="Show app-side BibliaCanto scripture sequence state.")
     scripture_status_parser.set_defaults(func=openclaw_scripture_status)
 
-    scripture_reserve_parser = subparsers.add_parser("openclaw-scripture-reserve", help="Reserve the next app-owned Bible scripture passage for The Old Verse.")
-    scripture_reserve_parser.add_argument("--channel-title", required=True, help='Use "The Old Verse" for Old Testament or "New Testament" for the New Testament branch.')
+    scripture_reserve_parser = subparsers.add_parser("openclaw-scripture-reserve", help="Reserve the next app-owned Bible scripture passage for BibliaCanto.")
+    scripture_reserve_parser.add_argument("--channel-title", required=True, help='Use "BibliaCanto" for Old Testament or "New Testament" for the New Testament branch.')
     scripture_reserve_parser.add_argument("--release-id", default="", help="Release id to associate with the reserved passage.")
     scripture_reserve_parser.add_argument("--title", default="", help="Release title to store on the passage ledger.")
     scripture_reserve_parser.add_argument("--notes", default="", help="Optional ledger notes.")
@@ -3364,7 +3377,7 @@ def build_parser() -> argparse.ArgumentParser:
     scripture_reserve_parser.set_defaults(func=openclaw_scripture_reserve)
 
     scripture_complete_parser = subparsers.add_parser("openclaw-scripture-complete", help="Mark an app-owned scripture passage scheduled or published.")
-    scripture_complete_parser.add_argument("--channel-title", required=True, help='Use "The Old Verse" for Old Testament or "New Testament" for the New Testament branch.')
+    scripture_complete_parser.add_argument("--channel-title", required=True, help='Use "BibliaCanto" for Old Testament or "New Testament" for the New Testament branch.')
     scripture_complete_parser.add_argument("--passage-range", required=True, help="Passage range returned by openclaw-scripture-reserve.")
     scripture_complete_parser.add_argument("--status", choices=["scheduled", "published"], default="scheduled")
     scripture_complete_parser.add_argument("--release-id", default="", help="Release id associated with this passage.")
@@ -3375,7 +3388,7 @@ def build_parser() -> argparse.ArgumentParser:
     scripture_complete_parser.set_defaults(func=openclaw_scripture_complete)
 
     scripture_fail_parser = subparsers.add_parser("openclaw-scripture-fail", help="Mark a reserved scripture passage failed so it can be retried later.")
-    scripture_fail_parser.add_argument("--channel-title", required=True, help='Use "The Old Verse" for Old Testament or "New Testament" for the New Testament branch.')
+    scripture_fail_parser.add_argument("--channel-title", required=True, help='Use "BibliaCanto" for Old Testament or "New Testament" for the New Testament branch.')
     scripture_fail_parser.add_argument("--passage-range", required=True, help="Passage range returned by openclaw-scripture-reserve.")
     scripture_fail_parser.add_argument("--release-id", default="", help="Release id associated with this passage.")
     scripture_fail_parser.add_argument("--title", default="", help="Release title to store on the ledger.")

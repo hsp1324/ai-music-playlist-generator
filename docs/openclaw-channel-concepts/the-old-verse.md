@@ -1,10 +1,10 @@
-# OpenClaw Channel Concept Planner: The Old Verse
+# OpenClaw Channel Concept Planner: BibliaCanto
 
-Use this after the selected upload channel is `The Old Verse`. This document decides the next scripture playlist concept for either the Old Testament branch or the New Testament branch. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
+Use this after the selected upload channel is `BibliaCanto`. This document decides the next scripture playlist concept for either the Old Testament branch or the New Testament branch. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
 
-The Old Verse is the combined scripture-inspired music channel for both Old Testament and New Testament releases.
+BibliaCanto is the combined scripture-inspired music channel for both Old Testament and New Testament releases.
 
 It follows two canonical app-managed branches:
 
@@ -22,13 +22,14 @@ Public titles must include the passage or passage theme and must say Old Testame
 ## Sequence Rule
 
 - Follow [../openclaw-scripture-sequence.md](../openclaw-scripture-sequence.md) before choosing the passage. The deployed web app ledger is mandatory, not optional.
-- Always inspect recent `The Old Verse` releases in `scripts/openclaw-release list-releases`, then reserve the next passage from the web app with `scripts/openclaw-release openclaw-scripture-reserve`.
-- For Old Testament, reserve with `--channel-title "The Old Verse"`.
-- For New Testament, reserve with `--channel-title "New Testament"`, but still create/publish the release with `--youtube-channel-title "The Old Verse"`.
+- Always inspect recent `BibliaCanto` releases in `scripts/openclaw-release list-releases`, then reserve the next passage from the web app with `scripts/openclaw-release openclaw-scripture-reserve`.
+- For Old Testament, reserve with `--channel-title "BibliaCanto"`.
+- For New Testament, reserve with `--channel-title "New Testament"`, but still create/publish the release with `--youtube-channel-title "BibliaCanto"`.
 - Continue from the app-returned passage. Do not jump randomly to Psalms, Exodus, prophets, or famous stories unless the app sequence has reached them or the human explicitly asks and the app ledger is updated.
 - If there is no prior app catalog history, the Old Testament branch starts with `Genesis 1:1-5` and the New Testament branch starts with `Matthew 1:1-17`.
 - Create the release first, then reserve the chosen passage as `in_progress` with `scripts/openclaw-release openclaw-scripture-reserve` before opening Suno.
 - Put the passage reference in the private plan, title, and description, for example `Genesis 1:1-5`.
+- For cover, thumbnail, and loop-video planning, never use `Old Verse`, `New Verse`, `The Old Verse`, or `The New Verse` as visible text. Use the exact selected passage range from the title, such as `Genesis 1:1-5` or `Matthew 1:18-25`, plus `BibliaCanto` branding instead.
 - For a 40-minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
 - After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-release openclaw-scripture-complete`.
 - Do not compare against a local ledger and do not stop because title wording differs. The web app rejects duplicate active passages; use its response as the source of truth.
@@ -42,7 +43,7 @@ Public titles must include the passage or passage theme and must say Old Testame
 
 ## Recent Release Check
 
-From `scripts/openclaw-release list-releases`, inspect recent `The Old Verse` releases and avoid repeating:
+From `scripts/openclaw-release list-releases`, inspect recent `BibliaCanto` releases and avoid repeating:
 
 - The same passage range.
 - The same biblical scene, such as creation light, Eden garden, flood water, desert road, covenant stars, Exodus sea, tabernacle, temple, psalm lament, or prophetic vision.
@@ -77,8 +78,8 @@ New Testament branch:
 ## Music Direction
 
 - Vocal songs with original lyrics are the default and expected output.
-- Do not make instrumental/no-vocal Old Verse releases unless the human explicitly asks for BGM or instrumental meditation.
-- Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for The Old Verse scripture releases unless the human explicitly asks for that language.
+- Do not make instrumental/no-vocal BibliaCanto releases unless the human explicitly asks for BGM or instrumental meditation.
+- Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for BibliaCanto scripture releases unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
 - Choose one primary style family for each release and write it in the private plan before creating songs. Rotate this lane across uploads instead of defaulting to generic holy worship. Good lanes include scripture jazz, gospel R&B/soul, acoustic scripture folk, cinematic orchestral scripture music, psalm-like prayer ballads, piano worship, choir-backed worship, ancient-folk worship, or gentle desert-road story songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
 - If the chosen lane is jazz, all tracks should be jazz-based. If it is R&B/soul, all tracks should stay R&B/soul-based. The lane must be specific enough that the final title can truthfully name it.
@@ -89,7 +90,7 @@ New Testament branch:
 
 ## YouTube Playlist Assignment
 
-- The app automatically adds uploaded scripture videos to testament playlists on `The Old Verse`.
+- The app automatically adds uploaded scripture videos to testament playlists on `BibliaCanto`.
 - Old Testament branch videos go to `Old Testament Songs`.
 - New Testament branch videos go to `New Testament Songs`.
 - The app also adds each video to one style playlist when the release lane is clear, such as `Scripture Jazz Songs`, `Scripture R&B Songs`, `Gospel Worship Songs`, `Acoustic Scripture Songs`, `Piano Worship Songs`, `Cinematic Worship Songs`, or `Modern Worship Pop Songs`.

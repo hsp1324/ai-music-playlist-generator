@@ -32,8 +32,8 @@ The active channel roster is dynamic. Always read `/youtube/status` and use ever
 - `Storylight OST`
 - `Cinematic Pulse`
 - `Club Bloom`
-- `The Old Verse`
-- `The New Verse`
+- `BibliaCanto`
+- `불송`
 
 Current known connected channels excluded from automatic playlist rotation:
 
@@ -101,7 +101,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 
 ## Channel Concept Delegation
 
-After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. If the selected channel is `The Old Verse`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md). Create the release, then reserve the next app-owned canonical Old Testament or New Testament passage with `scripts/openclaw-release openclaw-scripture-reserve` before generating audio. If the selected channel is `The New Verse`, use its Buddhist concept/profile docs and do not use the Bible scripture ledger. Read both returned docs:
+After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title. If the selected channel is `BibliaCanto`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md). Create the release, then reserve the next app-owned canonical Old Testament or New Testament passage with `scripts/openclaw-release openclaw-scripture-reserve` before generating audio. If the selected channel is `불송`, use its Buddhist concept/profile docs and do not use the Bible scripture ledger. Read both returned docs:
 
 - `concept_doc`: choose the next playlist concept and avoid recent repetition.
 - `profile_doc`: generate cover, thumbnail, and short loop video without mixing channel visual signatures.
@@ -160,8 +160,8 @@ Return this compact plan before generating audio:
 - `metadata_language_plan`
 - `recent_releases_checked`
 - `why_this_is_fresh`
-- For `The Old Verse` Bible releases: `scripture_source=web_app`, `selected_passage_range`, `scripture_next_start_after_completion`, and `why_this_passage_is_next`
-- For `The New Verse` Buddhist releases: selected Buddhist source/theme, release-level music lane, and `privacy=private`
+- For `BibliaCanto` Bible releases: `scripture_source=web_app`, `selected_passage_range`, `scripture_next_start_after_completion`, and `why_this_passage_is_next`
+- For `불송` Buddhist releases: selected Buddhist source/theme, release-level music lane, and `privacy=private`
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
@@ -198,15 +198,15 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40-minute Playlis
 - If a video render job is queued/running, VM is handling it. If any channel is below target, prepare the next eligible release up to queued video render; do not wait idle.
 - When choosing a new release channel, prioritize connected automated channels with `0` future scheduled-public YouTube uploads before channels that already have at least one upcoming scheduled public video.
 - Rotate active channels instead of repeating the same channel.
-- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, The Old Verse, and The New Verse. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
+- Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, BibliaCanto, and 불송. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
 - Treat scripts/openclaw-release list-releases as the app's known YouTube upload catalog.
 - Select the channel, then run scripts/openclaw-release channel-profile with that channel.
 - Read the returned concept_doc to choose a fresh concept.
 - Read the returned profile_doc before making cover, thumbnail, and loop video assets.
-- If the selected channel is The Old Verse, read docs/openclaw-scripture-sequence.md, create the app release first, reserve the next canonical Old Testament or New Testament passage from the web app with scripts/openclaw-release openclaw-scripture-reserve before Suno, include the returned passage range in every YouTube title, and mark it scheduled/published after upload with scripts/openclaw-release openclaw-scripture-complete. Do not use or compare a local scripture ledger.
-- If the selected channel is The New Verse, use the Buddhist channel concept/profile docs instead of the Bible scripture ledger. Keep uploads private for now.
-- For The Old Verse, choose one Bible release-level music lane before Suno generation and rotate it across uploads, such as scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. For The New Verse, choose one Buddhist scripture-inspired lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. Keep the whole release in that lane so the title can truthfully name the genre.
+- If the selected channel is BibliaCanto, read docs/openclaw-scripture-sequence.md, create the app release first, reserve the next canonical Old Testament or New Testament passage from the web app with scripts/openclaw-release openclaw-scripture-reserve before Suno, include the returned passage range in every YouTube title, and mark it scheduled/published after upload with scripts/openclaw-release openclaw-scripture-complete. Do not use or compare a local scripture ledger.
+- If the selected channel is 불송, use the Buddhist channel concept/profile docs instead of the Bible scripture ledger. Keep uploads private for now.
+- For BibliaCanto, choose one Bible release-level music lane before Suno generation and rotate it across uploads, such as scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. For 불송, choose one Buddhist scripture-inspired lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. Keep the whole release in that lane so the title can truthfully name the genre.
 - If the returned docs are custom-channel docs, infer the channel identity from the channel title, local app history, and human instructions instead of copying another channel's signature.
 - Pick a concept not used recently while keeping the selected channel identity clear.
 

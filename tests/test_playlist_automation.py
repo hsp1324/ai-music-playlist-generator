@@ -700,9 +700,9 @@ def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads
 
         assert summary["channels"]["Club Bloom"]["youtube_uploaded_count"] == 1
         assert summary["channels"]["Club Bloom"]["youtube_scheduled_public_count"] == 1
-        assert summary["channels"]["The New Verse"]["youtube_uploaded_count"] == 2
-        assert summary["channels"]["The New Verse"]["youtube_scheduled_public_count"] == 0
-        assert summary["channels"]["The New Verse"]["count"] == 2
+        assert summary["channels"]["불송"]["youtube_uploaded_count"] == 2
+        assert summary["channels"]["불송"]["youtube_scheduled_public_count"] == 0
+        assert summary["channels"]["불송"]["count"] == 2
     finally:
         clear_isolated_client_env()
 
@@ -751,7 +751,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
 
         with SessionLocal() as db:
             playlist = db.get(Playlist, release_id)
-            assert playlist.metadata_json["target_youtube_channel_title"] == "The Old Verse"
+            assert playlist.metadata_json["target_youtube_channel_title"] == "BibliaCanto"
             assert playlist.metadata_json["scripture_channel_title"] == "New Testament"
             assert playlist.metadata_json["scripture_passage_range"] == "Matthew 1:1-17"
             assert playlist.metadata_json["scripture_sequence_status"] == "in_progress"
@@ -847,8 +847,8 @@ def test_openclaw_backlog_scheduler_does_not_prioritize_auth_blocked_upload_fail
         assert evaluation["reason"] == "zero_scheduled_public_backlog"
         assert "Solwave Radio" not in evaluation["underfilled_channels"]
         assert "Solwave Radio" in evaluation["auth_blocked_channels"]
-        assert evaluation["zero_scheduled_public_channels"] == ["The New Verse"]
-        assert "The New Verse" in evaluation["underfilled_channels"]
+        assert evaluation["zero_scheduled_public_channels"] == ["불송"]
+        assert "불송" in evaluation["underfilled_channels"]
     finally:
         clear_isolated_client_env()
 
@@ -973,9 +973,9 @@ def test_openclaw_backlog_scheduler_prioritizes_finishable_before_zero_scheduled
         assert evaluation["should_request"] is True
         assert evaluation["reason"] == "finishable_releases"
         assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
-        assert evaluation["zero_scheduled_public_channels"] == ["The New Verse", "The Old Verse"]
-        assert "The New Verse" in evaluation["underfilled_channels"]
-        assert "The Old Verse" in evaluation["underfilled_channels"]
+        assert evaluation["zero_scheduled_public_channels"] == ["BibliaCanto", "불송"]
+        assert "불송" in evaluation["underfilled_channels"]
+        assert "BibliaCanto" in evaluation["underfilled_channels"]
     finally:
         clear_isolated_client_env()
 
@@ -1235,7 +1235,7 @@ def test_openclaw_backlog_scheduler_backs_off_after_manual_blocker(tmp_path) -> 
         clear_isolated_client_env()
 
 
-def test_openclaw_backlog_scheduler_allows_finishable_release_after_manual_blocker(tmp_path) -> None:
+def test_openclaw_backlog_scheduler_backs_off_finishable_release_after_manual_blocker(tmp_path) -> None:
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
     os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "1800"
@@ -1277,8 +1277,8 @@ def test_openclaw_backlog_scheduler_allows_finishable_release_after_manual_block
 
             evaluation = evaluate_openclaw_backlog_scheduler(db, services)
 
-        assert evaluation["should_request"] is True
-        assert evaluation["reason"] == "finishable_releases"
+        assert evaluation["should_request"] is False
+        assert evaluation["reason"] == "recent_openclaw_manual_blocker"
         assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
     finally:
         clear_isolated_client_env()

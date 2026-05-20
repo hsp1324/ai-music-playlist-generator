@@ -18,6 +18,14 @@ OPENCLAW_AUTO_LOOP_STATE_FILE = "openclaw-auto-loop-state.json"
 
 MANUAL_ONLY_CHANNEL_TITLES = {"MusicSun"}
 RETIRED_CHANNEL_TITLES = {"Signal Room Radio", "Signal Desk Radio", "Midnight Cue Radio", "AI썰전", "AnimeMix"}
+YOUTUBE_CHANNEL_TITLE_ALIASES = {
+    "the old verse": "BibliaCanto",
+    "old verse": "BibliaCanto",
+    "biblia canto": "BibliaCanto",
+    "the new verse": "불송",
+    "new verse": "불송",
+    "bulsong": "불송",
+}
 
 BACKLOG_WORKFLOW_STATES = {
     "collecting",
@@ -63,9 +71,17 @@ OPENCLAW_MANUAL_BLOCKER_PATTERNS = (
     "hcaptcha",
     "captcha challenge",
     "manual verification",
+    "manual repair",
+    "repair/archive",
+    "repair or archive",
+    "archive required",
+    "must not be auto-published",
     "stored youtube channel token expired",
     "token expired or was revoked",
     "connect this channel again",
+    "사람이",
+    "수동",
+    "자동 게시 중단",
 )
 
 _STATE_LOCK = threading.Lock()
@@ -325,22 +341,27 @@ def finish_openclaw_lock(
 
 def _playlist_channel_title(playlist: Playlist) -> str:
     meta = dict(playlist.metadata_json or {})
-    return str(
+    return _canonical_youtube_channel_title(
         meta.get("target_youtube_channel_title")
         or meta.get("youtube_channel_title")
         or meta.get("youtube_channel_id")
         or ""
-    ).strip()
+    )
 
 
 def _playlist_uploaded_channel_title(playlist: Playlist) -> str:
     meta = dict(playlist.metadata_json or {})
-    return str(
+    return _canonical_youtube_channel_title(
         meta.get("youtube_channel_title")
         or meta.get("target_youtube_channel_title")
         or meta.get("youtube_channel_id")
         or ""
-    ).strip()
+    )
+
+
+def _canonical_youtube_channel_title(title: Any) -> str:
+    clean = str(title or "").strip()
+    return YOUTUBE_CHANNEL_TITLE_ALIASES.get(clean.lower(), clean)
 
 
 def _playlist_is_archived(meta: dict[str, Any]) -> bool:
@@ -449,10 +470,10 @@ def _active_youtube_channel_statuses(services) -> dict[str, dict[str, Any]]:
         return {}
     channels = {}
     for channel in status.get("channels") or []:
-        title = str(channel.get("title") or "").strip()
+        title = _canonical_youtube_channel_title(channel.get("title"))
         if not title or title in MANUAL_ONLY_CHANNEL_TITLES or title in RETIRED_CHANNEL_TITLES:
             continue
-        channels[title] = dict(channel)
+        channels[title] = {**dict(channel), "title": title}
     return channels
 
 
@@ -680,26 +701,6 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             "summary": summary,
         }
 
-    if manual_blocker and finishable_channels:
-        cooldown = cooldown_response(
-            pending_reason="finishable_releases",
-            pending_channels=finishable_channels,
-            allow_release_update_bypass=True,
-        )
-        if cooldown:
-            return cooldown
-        return {
-            "should_request": True,
-            "reason": "finishable_releases",
-            "target_per_channel": target,
-            "max_per_channel": maximum,
-            "finishable_channels": finishable_channels,
-            "underfilled_channels": underfilled_channels,
-            "auth_blocked_channels": auth_blocked_channels,
-            "zero_scheduled_public_channels": zero_scheduled_public_channels,
-            "overfull_channels": overfull_channels,
-            "summary": summary,
-        }
     if manual_blocker and manual_blocker.get("manual_blocker_within_backoff"):
         return {
             "should_request": False,

@@ -22,7 +22,7 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 - The thumbnail channel-brand line should be plain, integrated typography. Do not put the channel name inside a rounded pill, capsule, button, sticker, badge, label tag, or floating plaque unless the human explicitly asks for that graphic treatment.
 - Keep every cover and thumbnail text block comfortably inside safe margins, with about 5% image-width horizontal padding and 5% image-height vertical padding on 16:9 assets. Reject/regenerate assets where text is clipped, crowded against image edges, cramped inside a shape, visually detached from the layout, or overlapping the main subject.
 - Do not include spectrum bars, waveform graphics, equalizers, or other audio-reactive overlays in generated assets. The app adds an audio-reactive visualizer during final video render, chooses colors from the cover/loop-video palette, and positions it away from channel text when possible.
-- Available app-rendered visualizer presets are `bars`, `mirror-bars`, and `none`. Do not blindly use the default. Choose only a clean, natural-moving spectrum: `bars` / `mirror-bars` for clean pop, EDM, and dance energy, or `none` when the overlay would distract. Do not use removed busy/fast presets: small dots/particles, thin waveform, multiwave, radial, pulse, or the spectrum style used on `창세기 창조의 빛`; legacy values fall back to `bars`. Cinematic Pulse must use `bars` unless the human explicitly asks otherwise. `The Old Verse` and `The New Verse` must use `none` with no app spectrum.
+- Available app-rendered visualizer presets are `bars`, `mirror-bars`, and `none`. Do not blindly use the default. Choose only a clean, natural-moving spectrum: `bars` / `mirror-bars` for clean pop, EDM, and dance energy, or `none` when the overlay would distract. Do not use removed busy/fast presets: small dots/particles, thin waveform, multiwave, radial, pulse, or the spectrum style used on `창세기 창조의 빛`; legacy values fall back to `bars`. Cinematic Pulse must use `bars` unless the human explicitly asks otherwise. `BibliaCanto` and `불송` must use `none` with no app spectrum.
 - Human visual requests override the channel default. If the human asks for a specific scene, subject, action, camera angle, animal, object, or character type, apply that concept consistently to the cover, thumbnail, and loop video.
 - All generated visuals should look animated, anime, illustrated, or stylized unless a channel profile says otherwise. Cinematic Pulse is the explicit exception: use original photorealistic cinematic film-still / movie-poster realism for its cover and thumbnail base, and normally render from that high-resolution still cover instead of a provider loop video. Do not use documentary footage, real war footage, celebrity likenesses, protected IP, or copied real media.
 - Try Gemini before Dreamina/Seedance for each loop video unless Gemini is in its 24 hour cooldown window. The cooldown starts when the 3rd successful Gemini video generation is made, not at midnight.
@@ -177,26 +177,27 @@ Use this for `Club Bloom`, no-vocal EDM, house, techno, trance, festival EDM, wo
 - Reject weak loop videos where only tiny particles move or the result feels static. The clip should look like an active club visual, not a still cover with minor shimmer.
 - Bold adult nightlife subjects are allowed when the concept fits, but do not use full nudity, sexual acts, unsafe minors, fetish framing, protected brands, photorealistic club footage, or UI overlays.
 
-## The Old Verse Visual Skill
+## BibliaCanto Visual Skill
 
-Use this for `The Old Verse`, Old Testament songs, New Testament songs, Genesis songs, Matthew/Gospel songs, Psalms music, Bible verse music, scripture-inspired worship, or ancient biblical music releases.
+Use this for `BibliaCanto`, Old Testament songs, New Testament songs, Genesis songs, Matthew/Gospel songs, Psalms music, Bible verse music, scripture-inspired worship, or ancient biblical music releases.
 
 - Follow `docs/openclaw-channel-profiles/the-old-verse.md`.
-- The cover must contain only the large lower-left `The Old Verse` brand label.
-- The thumbnail should use short passage-aware Bible click text that connects to the selected book, passage, theme, or worship lane, plus `THE OLD VERSE`. Do not rely on a generic `BIBLE MUSIC` / `SCRIPTURE SONGS` headline alone when the passage can make the thumbnail more specific and trustworthy.
-- Keep `THE OLD VERSE` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
-- The loop video should animate the selected Old Testament or New Testament passage scene with reverent symbolic motion and preserve the `The Old Verse` label.
+- The cover must contain the large lower-left `BibliaCanto` brand label and may include the exact selected passage range from the public title, such as `Genesis 1:1-5` or `Matthew 1:18-25`, as the only non-brand text.
+- The thumbnail should use the exact selected passage range from the public title plus short passage-aware Bible click text that connects to the selected book, theme, or worship lane, plus `BIBLIACANTO`. Do not rely on a generic `BIBLE MUSIC` / `SCRIPTURE SONGS` headline alone when the passage can make the thumbnail more specific and trustworthy.
+- Do not put `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, `OLD VERSE`, or `NEW VERSE` on any BibliaCanto cover, thumbnail, or loop video. Avoid making `OLD TESTAMENT` or `NEW TESTAMENT` the largest visual headline when an exact passage range is available.
+- Keep `BIBLIACANTO` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
+- The loop video should animate the selected Old Testament or New Testament passage scene with reverent symbolic motion and preserve the `BibliaCanto` label.
 - Do not paste long scripture text onto visuals. Use passage-inspired symbolic imagery.
 
-## The New Verse Visual Skill
+## 불송 Visual Skill
 
-Use this for `The New Verse`, Buddhist scripture-inspired songs, Dhammapada/법구경-inspired songs, Heart Sutra/반야심경-inspired songs, Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, dharma songs, mindfulness songs, and modern sutra-inspired music.
+Use this for `불송`, Buddhist scripture-inspired songs, Dhammapada/법구경-inspired songs, Heart Sutra/반야심경-inspired songs, Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, dharma songs, mindfulness songs, and modern sutra-inspired music.
 
 - Follow `docs/openclaw-channel-profiles/the-new-verse.md`.
-- The cover must contain only the large lower-left `The New Verse` brand label.
-- The thumbnail should use short Buddhist teaching or lane-aware click text that connects to the selected source/theme, such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`, plus `THE NEW VERSE` until the channel is renamed.
-- Keep `THE NEW VERSE` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
-- The loop video should animate a respectful Buddhist/dharma atmosphere with calm environmental motion and preserve the `The New Verse` label.
+- The cover must contain only the large lower-left `불송` brand label.
+- The thumbnail should use short Buddhist teaching or lane-aware click text that connects to the selected source/theme, such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`, plus `불송`.
+- Keep `불송` as plain typography, not a pill, capsule, badge, sticker, label tag, or floating plaque.
+- The loop video should animate a respectful Buddhist/dharma atmosphere with calm environmental motion and preserve the `불송` label.
 - Do not paste long scripture text onto visuals. Use symbolic Buddhist imagery such as lotus, lanterns, temple paths, incense smoke, moonlit water, mountains, rain on stone, candlelight, or meditation-room light.
 
 ## Other Channels Or Explicit Requests

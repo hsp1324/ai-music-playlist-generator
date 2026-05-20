@@ -209,7 +209,7 @@ Our direction:
 - Thumbnail text: `EPIC ORCHESTRA`, `FILM SCORE`, `DARK FANTASY`, `BATTLE MUSIC`.
 - Avoid: `Boss BGM`, `Final Boss Focus Music`, bare `BGM`, or titles that sound like a game settings menu.
 
-## The Old Verse
+## BibliaCanto
 
 Reference set:
 
@@ -237,7 +237,7 @@ Our direction:
 - Thumbnail text: passage-aware Bible/worship wording, not only a broad genre tag. Use the selected book, passage theme, or worship/reflection lane when it improves clarity; `GENESIS SONGS`, `PSALMS WORSHIP`, `OLD TESTAMENT`, or `SCRIPTURE SONGS` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: skipping canonical sequence, vague worship titles without passage reference, or copying long Bible text.
 
-## The Old Verse New Testament Branch
+## BibliaCanto New Testament Branch
 
 Reference set:
 
@@ -265,7 +265,7 @@ Our direction:
 - Thumbnail text: passage-aware Gospel/worship wording, not only a broad genre tag. Use the selected passage, Gospel theme, or prayer/worship lane when it improves clarity; `GOSPEL SONGS`, `GRACE WORSHIP`, `NEW TESTAMENT`, or `SCRIPTURE WORSHIP` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: generic `Christian music`, Old Testament passage confusion, or worship titles without the passage reference.
 
-## The New Verse Buddhist Scripture
+## 불송 Buddhist Scripture
 
 Reference set:
 

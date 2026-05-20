@@ -230,19 +230,19 @@ YouTube thumbnail:
 - Add large readable style-specific dance text such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
 - Add `CLUB BLOOM` brand line, visually consistent with the large cover channel label.
 
-### The Old Verse
+### BibliaCanto
 
 Cover / first frame:
 
 - 16:9 illustrated/anime/stylized biblical image for Old Testament scripture-inspired music.
 - Follow the selected Old Testament passage in sequence from Genesis onward.
-- Only text allowed is the large lower-left `The Old Verse` brand label.
+- Only text allowed is the large lower-left `BibliaCanto` brand label.
 - Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
 
 Loop video:
 
 - Animate the cover/first-frame with reverent symbolic motion such as light over water, stars, oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, or temple light.
-- Preserve the large lower-left `The Old Verse` brand label exactly for the whole clip.
+- Preserve the large lower-left `BibliaCanto` brand label exactly for the whole clip.
 - Queue final render with `--video-spectrum-overlay-style none`; religious channels do not use app-rendered spectrum overlays.
 - Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
@@ -251,22 +251,22 @@ YouTube thumbnail:
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same passage scene, lighting, palette, props, and camera angle.
 - Add large readable Bible text that connects to the selected passage, book, theme, or worship lane. Generic labels such as `OLD TESTAMENT`, `BIBLE MUSIC`, or `SCRIPTURE SONGS` are allowed only when they are paired with a passage-aware hook or are clearly the most clickable summary.
-- Add `THE OLD VERSE` brand line, visually consistent with the large cover channel label.
-- Keep `THE OLD VERSE` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
+- Add `BIBLIACANTO` brand line, visually consistent with the large cover channel label.
+- Keep `BIBLIACANTO` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
 
-### The New Verse
+### 불송
 
 Cover / first frame:
 
 - 16:9 respectful Buddhist scripture-inspired image for modern vocal music.
 - Follow the selected Buddhist source/theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, mindfulness, compassion, impermanence, or non-attachment.
-- Only text allowed is the large lower-left `The New Verse` brand label.
+- Only text allowed is the large lower-left `불송` brand label.
 - Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
 
 Loop video:
 
 - Animate the cover/first-frame with calm environmental motion such as lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
-- Preserve the large lower-left `The New Verse` brand label exactly for the whole clip.
+- Preserve the large lower-left `불송` brand label exactly for the whole clip.
 - Queue final render with `--video-spectrum-overlay-style none`; religious channels do not use app-rendered spectrum overlays.
 - Do not add sutra text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
 
@@ -275,8 +275,8 @@ YouTube thumbnail:
 - Start from the final cover as an image-to-image/reference edit.
 - Preserve the same Buddhist/dharma scene, lighting, palette, props, and camera angle.
 - Add large readable teaching or lane-aware text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`.
-- Add `THE NEW VERSE` brand line, visually consistent with the large cover channel label.
-- Keep `THE NEW VERSE` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
+- Add `불송` brand line, visually consistent with the large cover channel label.
+- Keep `불송` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
 
 Profiles:
 
@@ -288,8 +288,8 @@ Profiles:
 - [Storylight OST](storylight-ost.md)
 - [Cinematic Pulse](cinematic-pulse.md)
 - [Club Bloom](club-bloom.md)
-- [The Old Verse](the-old-verse.md)
-- [The New Verse](the-new-verse.md)
+- [BibliaCanto](the-old-verse.md)
+- [불송](the-new-verse.md)
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.

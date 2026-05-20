@@ -5,6 +5,8 @@ from typing import Any
 
 CINEMATIC_PULSE_CHANNEL_TITLE = "cinematic pulse"
 RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES = {
+    "bibliacanto",
+    "불송",
     "the old verse",
     "the new verse",
     "old testament",

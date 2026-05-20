@@ -1,10 +1,10 @@
-# OpenClaw Channel Concept Planner: The New Verse
+# OpenClaw Channel Concept Planner: 불송
 
-Use this after the selected channel is `The New Verse`. The channel title may be renamed later; until then, `The New Verse` is the Buddhist scripture music channel.
+Use this after the selected channel is `불송`. `불송` is the Buddhist scripture music channel.
 
 ## Channel Promise
 
-The New Verse is for modern Buddhist scripture-inspired vocal music. It turns Buddhist teachings, sutra themes, Dhammapada-style wisdom, mindfulness, compassion, impermanence, non-attachment, suffering and release, and awakening imagery into original modern songs.
+불송 is for modern Buddhist scripture-inspired vocal music. It turns Buddhist teachings, sutra themes, Dhammapada-style wisdom, mindfulness, compassion, impermanence, non-attachment, suffering and release, and awakening imagery into original modern songs.
 
 This is not a chanting archive, sermon channel, or literal scripture-reading channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language, using one clear release-level music lane such as Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, neo-soul meditation songs, acoustic dharma songs, or cinematic meditation pop.
 
@@ -12,7 +12,7 @@ The audience should immediately understand: Buddhist wisdom and sutra-inspired t
 
 ## Overnight Privacy Rule
 
-Until the human changes this tomorrow, publish The New Verse uploads as private only. Do not schedule them public. The app is configured to skip scheduled-public slots for `The New Verse`, so publish through the app normally and let the app upload private.
+Publish 불송 uploads as private only for now. Do not schedule them public. The app is configured to skip scheduled-public slots for `불송`, so publish through the app normally and let the app upload private.
 
 ## Source Material Direction
 
@@ -30,7 +30,7 @@ If unsure where to start, use a Dhammapada-style sequence. Pick one compact them
 
 ## Recent Release Check
 
-From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` releases and avoid repeating:
+From `scripts/openclaw-release list-releases`, inspect recent `불송` releases and avoid repeating:
 
 - The same scripture/theme section.
 - The same release-level music lane.
@@ -61,7 +61,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `The New Verse` re
 - Calm modern Buddhist visual identity: temple path, lanterns, lotus, moonlit water, incense smoke, mountain dawn, rain on stone, meditation room, forest path, candlelight, paper lanterns, or abstract mindful city-night visuals.
 - Illustrated, cinematic, painterly, anime/stylized, or tasteful modern graphic style is allowed. Avoid parody, caricature, or exoticized religious imagery.
 - Do not depict the Buddha disrespectfully or as a face-focused photorealistic idol. Symbolic imagery is safer.
-- Cover first-frame should contain only the large lower-left channel brand label `The New Verse` until the channel is renamed.
+- Cover first-frame should contain only the large lower-left channel brand label `불송`.
 - Thumbnail should use clear click text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, or a natural Korean title tied to the selected theme.
 
 ## Good Fresh Concept Shapes
