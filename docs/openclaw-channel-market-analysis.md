@@ -284,7 +284,7 @@ Our direction:
 - Title shape: Korean default title that combines source/theme plus genre lane, for example Buddhist hip-hop, dharma R&B, Buddhist jazz, or neo-soul meditation songs.
 - Song direction: original Korean lyrics inspired by Buddhist teaching, not direct scripture recitation or chanting. Keep one lane per release and rotate lanes across uploads.
 - Description direction: first paragraph states the Buddhist source/theme; second paragraph names the music lane and notes that lyrics are original paraphrases inspired by Buddhist teaching.
-- Thumbnail direction: use a clean photorealistic/premium cinematic-real Buddhist or dharma cover as the thumbnail by default. Do not add large headline text unless the human explicitly asks for a text thumbnail.
+- Thumbnail direction: use the same clean textless photorealistic/premium cinematic-real Buddhist or dharma cover as the thumbnail. Do not add headline text, channel labels, badges, or separate thumbnail typography.
 - Avoid: claiming exact chapter/verse coverage without verification, copying long sutra passages, sermon/chant format, disrespectful religious imagery, or public scheduling before human review.
 
 ## Source Index

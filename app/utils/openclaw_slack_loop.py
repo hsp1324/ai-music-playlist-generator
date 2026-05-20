@@ -301,7 +301,7 @@ def build_next_playlist_request_message(
 
 
 def _backlog_priority_channel_lines(channel_payload: dict[str, Any], max_per_channel: int) -> list[str]:
-    candidates: list[tuple[int, int, int, str, dict[str, Any]]] = []
+    candidates: list[tuple[float, int, int, int, str, dict[str, Any]]] = []
     for title, payload in channel_payload.items():
         if not isinstance(payload, dict):
             continue
@@ -311,23 +311,30 @@ def _backlog_priority_channel_lines(channel_payload: dict[str, Any], max_per_cha
         if int(payload.get("auth_blocked") or 0) > 0:
             continue
         scheduled_public = int(payload.get("youtube_scheduled_public_count") or 0)
-        if scheduled_public != 0:
-            continue
+        last_scheduled_at = str(payload.get("last_youtube_scheduled_public_at") or "").strip()
+        if last_scheduled_at:
+            try:
+                horizon = datetime.fromisoformat(last_scheduled_at.replace("Z", "+00:00")).timestamp()
+            except ValueError:
+                horizon = float("inf")
+        else:
+            horizon = 0.0
         deferred = int(payload.get("deferred") or 0)
-        uploaded = int(payload.get("youtube_uploaded_count") or 0)
-        candidates.append((count, deferred, uploaded, str(title), payload))
+        candidates.append((horizon, scheduled_public, count, deferred, str(title), payload))
 
     if not candidates:
         return []
 
     lines = [
-        "먼저 채울 채널 우선순위(0 future scheduled-public, unfinished 적은 순):",
+        "먼저 채울 채널 우선순위(예약 horizon 짧은 순, 모든 채널 날짜 균등):",
     ]
-    for count, deferred, _uploaded, title, payload in sorted(candidates)[:10]:
+    for _horizon, scheduled_public, count, deferred, title, payload in sorted(candidates)[:10]:
+        last_date = payload.get("last_youtube_scheduled_public_local_date") or "none"
         lines.append(
             f"- {title}: {count} unfinished"
             f", {deferred} deferred"
-            f", {payload.get('youtube_scheduled_public_count', 0)} future scheduled-public YouTube uploads"
+            f", {scheduled_public} future scheduled-public YouTube uploads"
+            f", scheduled-through {last_date}"
         )
     return lines
 
@@ -379,12 +386,13 @@ def build_backlog_queue_request_message(
         "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
         "필요하면 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-youtube-metadata.md도 참고해줘.",
         (
-            "이번 요청은 future scheduled-public YouTube 업로드가 0개인 채널을 먼저 채우는 것이 우선이야. "
+            "이번 요청은 예약 horizon이 가장 짧은 채널을 먼저 채우는 것이 우선이야. "
             "다른 채널의 metadata/publish finishable 항목만 처리하고 새 release 생성을 건너뛰지 말아줘."
             if reason == "zero_scheduled_public_backlog"
             else "새 workspace를 만들기 전에 기존 미완성 workspace와 로컬 OpenClaw 산출물을 먼저 확인하고 이어서 복구/업로드해줘."
         ),
-        "새 release를 만들 때는 future scheduled-public YouTube 업로드가 0개인 자동화 채널을 먼저 채워줘.",
+        "새 release를 만들 때는 모든 자동화 채널의 scheduled-through 날짜가 균등해지게 가장 짧은 채널부터 채워줘.",
+        "예: 모든 채널이 21일 예약을 가진 뒤 22일, 그다음 23일 순서로 채우고, 이미 27일까지 찬 채널은 뒤로 미뤄줘.",
         "채널별 unfinished Playlist Release가 target에 도달할 때까지 계속 만들되 max를 넘기지 말아줘.",
         "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
     ]
@@ -400,6 +408,7 @@ def build_backlog_queue_request_message(
                 f", {payload.get('deferred', 0)} deferred"
                 f", {payload.get('auth_blocked', 0)} YouTube reconnect needed"
                 f", {payload.get('youtube_scheduled_public_count', 0)} future scheduled-public YouTube uploads"
+                f", scheduled-through {payload.get('last_youtube_scheduled_public_local_date') or 'none'}"
                 f", {payload.get('youtube_uploaded_count', 0)} total YouTube uploads"
             )
         reconnect_lines = [

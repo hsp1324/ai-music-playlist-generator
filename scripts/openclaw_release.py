@@ -1500,6 +1500,27 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     return DEFAULT_YOUTUBE_CHANNEL_TITLE
 
 
+def is_bulsong_channel_title(value: str | None) -> bool:
+    title = str(value or "").strip()
+    if not title:
+        return False
+    aliases = {NEW_VERSE_YOUTUBE_CHANNEL_TITLE.lower()}
+    aliases.update(alias.lower() for alias in CHANNEL_TITLE_ALIASES.get(NEW_VERSE_YOUTUBE_CHANNEL_TITLE, ()))
+    return title.lower() in aliases
+
+
+def release_youtube_channel_title(release: dict[str, Any], fallback: str = "") -> str:
+    meta = release.get("metadata_json") if isinstance(release.get("metadata_json"), dict) else {}
+    return str(
+        release.get("target_youtube_channel_title")
+        or release.get("youtube_channel_title")
+        or meta.get("target_youtube_channel_title")
+        or meta.get("youtube_channel_title")
+        or fallback
+        or ""
+    ).strip()
+
+
 def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
     title = infer_youtube_channel_title(args)
     profile_doc = CHANNEL_PROFILE_DOCS.get(title, "docs/openclaw-channel-profiles/custom-channel.md")
@@ -1864,12 +1885,14 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         len(audio_paths),
         exclude_styles=getattr(args, "exclude_style", []) or [],
     )
+    youtube_channel_title = infer_youtube_channel_title(args)
+    allow_cover_as_thumbnail = bool(args.allow_cover_as_thumbnail or is_bulsong_channel_title(youtube_channel_title))
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-playlist requires --cover when creating a new Playlist Release. "
             "Generate a final 16:9 cover image first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
         )
-    if not thumbnail_path and not args.release_id and not args.allow_cover_as_thumbnail:
+    if not thumbnail_path and not args.release_id and not allow_cover_as_thumbnail:
         raise RuntimeError(
             "auto-publish-playlist requires --thumbnail when creating a new Playlist Release. "
             "Generate a YouTube thumbnail with readable text first, then pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH. "
@@ -1898,7 +1921,6 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
 
-    youtube_channel_title = infer_youtube_channel_title(args)
     release = (
         get_release(client, args.release_id)
         if args.release_id
@@ -1912,6 +1934,8 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     )
     if release["workspace_mode"] != "playlist":
         raise RuntimeError("auto-publish-playlist requires a Playlist Release, not a Single Release.")
+    release_channel_title = release_youtube_channel_title(release, fallback=youtube_channel_title)
+    allow_cover_as_thumbnail = bool(allow_cover_as_thumbnail or is_bulsong_channel_title(release_channel_title))
     require_reupload_confirmation(args, release, action="auto-publish-playlist")
     if not cover_path and not release_has_uploaded_cover(release) and not args.allow_generated_draft_cover:
         raise RuntimeError(
@@ -1919,7 +1943,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "Pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH, or upload a final cover to the release first. "
             "Only pass --allow-generated-draft-cover if the human explicitly accepts a placeholder cover."
         )
-    if not thumbnail_path and not release_has_uploaded_thumbnail(release) and not args.allow_cover_as_thumbnail:
+    if not thumbnail_path and not release_has_uploaded_thumbnail(release) and not allow_cover_as_thumbnail:
         raise RuntimeError(
             "auto-publish-playlist requires a YouTube thumbnail image before YouTube upload. "
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first. "
@@ -2083,7 +2107,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             )
     elif release_has_uploaded_thumbnail(release):
         release = get_release(client, release["id"])
-    elif args.allow_cover_as_thumbnail:
+    elif allow_cover_as_thumbnail:
         release = get_release(client, release["id"])
     else:
         raise RuntimeError("Final YouTube thumbnail image is required before cover approval.")
@@ -2204,12 +2228,14 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         len(audio_paths),
         exclude_styles=getattr(args, "exclude_style", []) or [],
     )
+    youtube_channel_title = infer_youtube_channel_title(args)
+    allow_cover_as_thumbnail = bool(args.allow_cover_as_thumbnail or is_bulsong_channel_title(youtube_channel_title))
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-single requires --cover when creating a new Single Release. "
             "Generate a final 16:9 cover image with only the large, readable lower-left channel-name brand label first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
         )
-    if not thumbnail_path and not args.release_id and not args.allow_cover_as_thumbnail:
+    if not thumbnail_path and not args.release_id and not allow_cover_as_thumbnail:
         raise RuntimeError(
             "auto-publish-single requires --thumbnail when creating a new Single Release. "
             "Generate a YouTube thumbnail with readable text first, then pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH."
@@ -2247,6 +2273,8 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     )
     if release["workspace_mode"] != "single_track_video":
         raise RuntimeError("auto-publish-single requires a Single Release, not a Playlist Release.")
+    release_channel_title = release_youtube_channel_title(release, fallback=youtube_channel_title)
+    allow_cover_as_thumbnail = bool(allow_cover_as_thumbnail or is_bulsong_channel_title(release_channel_title))
     require_reupload_confirmation(args, release, action="auto-publish-single")
     if release.get("tracks"):
         raise RuntimeError(
@@ -2258,7 +2286,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "auto-publish-single requires a final 16:9 cover image before YouTube upload. "
             "Pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH, or upload a final cover to the release first."
         )
-    if not thumbnail_path and not release_has_uploaded_thumbnail(release) and not args.allow_cover_as_thumbnail:
+    if not thumbnail_path and not release_has_uploaded_thumbnail(release) and not allow_cover_as_thumbnail:
         raise RuntimeError(
             "auto-publish-single requires a YouTube thumbnail image before YouTube upload. "
             "Pass --thumbnail ABSOLUTE_THUMBNAIL_IMAGE_PATH, or upload a final thumbnail to the release first."
@@ -2401,7 +2429,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             )
     elif release_has_uploaded_thumbnail(release):
         release = get_release(client, release["id"])
-    elif args.allow_cover_as_thumbnail:
+    elif allow_cover_as_thumbnail:
         release = get_release(client, release["id"])
     else:
         raise RuntimeError("Final YouTube thumbnail image is required before cover approval.")
@@ -2448,7 +2476,6 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         )
     release = approve_generated_metadata(client, release=release, actor=args.actor)
 
-    youtube_channel_title = infer_youtube_channel_title(args)
     channel_id = resolve_youtube_channel_id(
         client,
         title=youtube_channel_title,
@@ -3076,14 +3103,14 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
-    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release.")
+    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release. For 불송, omit this to reuse the clean textless cover.")
     auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
-    auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
+    auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 uses this clean textless cover behavior by default.")
     auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
     auto_playlist_parser.add_argument("--release-title", default="", help="New Playlist Release title. Defaults to first audio filename stem.")
     auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
@@ -3144,14 +3171,14 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Use exactly one; run this command again for a second good Suno output.")
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover image with only the large, readable lower-left channel-name brand label unless an uploaded final cover already exists on the release.")
-    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release.")
+    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release. For 불송, omit this to reuse the clean textless cover.")
     auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
-    auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles.")
+    auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 uses this clean textless cover behavior by default.")
     auto_single_parser.add_argument("--release-id", default="", help="Existing Single Release id. If omitted, a new release is created.")
     auto_single_parser.add_argument("--release-title", default="", help="New Single Release title. Defaults to first audio filename stem.")
     auto_single_parser.add_argument("--description", default="", help="Release description used for metadata generation.")

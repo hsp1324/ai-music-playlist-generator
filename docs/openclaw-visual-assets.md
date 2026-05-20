@@ -12,11 +12,11 @@ The visual rules are channel-specific. Do not apply one channel's visual signatu
 - Always create a final clean 16:9 cover first.
 - Create the YouTube thumbnail from that final cover as an image-to-image edit/reference derivative, not as a fresh unrelated scene.
 - Keep cover, thumbnail, and loop video visually continuous: same subject count, subject placement, silhouettes, clothing colors, props, background landmarks, lighting, palette, and camera angle.
-- The thumbnail is usually the click image and should contain short readable text plus channel branding. Exception: `불송` uses a textless cover/first-frame/loop video; if thumbnail text is needed, create it as a separate derivative and never feed that text thumbnail into video generation.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini. It must include only a large, readable lower-left selected-channel-name brand label. Match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
+- The thumbnail is usually the click image and should contain short readable text plus channel branding. Exception: `불송` uses the same clean textless image for cover, YouTube thumbnail, first-frame, and loop-video reference.
+- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini. For non-불송 channels, it must include only a large, readable lower-left selected-channel-name brand label. Match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height. For `불송`, keep the cover fully textless.
 - Do not use the text thumbnail as the video-generation first-frame reference.
-- The cover/first-frame channel brand label is mandatory for every channel. Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words.
-- The Dreamina/Seedance/Gemini loop video must preserve the exact lower-left channel label for the full clip. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
+- The cover/first-frame channel brand label is mandatory for every non-불송 channel. `불송` is the exception and must stay fully textless. Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words.
+- The Dreamina/Seedance/Gemini loop video must preserve the exact lower-left channel label for the full clip on non-불송 channels. Reject/regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable. For `불송`, reject/regenerate if any text appears.
 - If Gemini/Veo adds its own provider logo or watermark, usually in the bottom-right corner, accept it as an unavoidable provider artifact. Do not regenerate a loop video only because that Gemini/Veo logo or watermark is present. The "no logos" rule means OpenClaw must not ask for, create, or add in-scene logos, brand marks, UI, or unrelated text.
 - The thumbnail should use larger click text plus a channel-brand line whose size/style matches the cover channel label.
 - The thumbnail channel-brand line should be plain, integrated typography. Do not put the channel name inside a rounded pill, capsule, button, sticker, badge, label tag, or floating plaque unless the human explicitly asks for that graphic treatment.
@@ -196,8 +196,8 @@ Use this for `불송`, Buddhist scripture-inspired songs, Dhammapada/법구경-i
 - Follow `docs/openclaw-channel-profiles/the-new-verse.md`.
 - Use a photorealistic or premium cinematic-real Buddhist/dharma background by default, not cartoon clipart.
 - Occasionally use cute/gentle animation only when the release music lane fits that visual style, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
-- The cover/first-frame must be textless: no `불송` label, no title, no sutra text, no UI, no logo, and no other words.
-- If the YouTube thumbnail needs text, make a separate thumbnail derivative from the textless cover. Do not use that thumbnail as the loop-video first frame.
+- The cover/first-frame and YouTube thumbnail must be the same textless image: no `불송` label, no title, no sutra text, no UI, no logo, and no other words.
+- Do not make a separate text thumbnail for 불송. Reuse the textless cover as the thumbnail with `--allow-cover-as-thumbnail`.
 - The loop video should animate a respectful Buddhist/dharma atmosphere with calm environmental motion and remain textless for the full clip.
 - Queue the final render with `--video-spectrum-overlay-style calm-bars` for a very low-motion, low-opacity app spectrum.
 - Do not paste long scripture text onto visuals. Use symbolic Buddhist imagery such as lotus, lanterns, temple paths, incense smoke, moonlit water, mountains, rain on stone, candlelight, or meditation-room light.

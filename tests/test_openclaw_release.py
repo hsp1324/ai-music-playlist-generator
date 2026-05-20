@@ -10,6 +10,7 @@ from scripts.openclaw_release import (
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
@@ -21,6 +22,7 @@ from scripts.openclaw_release import (
     build_channel_profile,
     create_release,
     infer_youtube_channel_title,
+    is_bulsong_channel_title,
     is_pop_family_vocal_request,
     release_has_uploaded_cover,
     release_has_uploaded_loop_video,
@@ -73,6 +75,8 @@ def _auto_publish_args(audio_path: str, **overrides):
         "video_spectrum_overlay_style": "bars",
         "video_render_resolution": "720p",
         "video_render_source_mode": "auto",
+        "lyrics_overlay": False,
+        "lyrics_alignment_mode": "whisper",
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -175,6 +179,13 @@ def test_release_has_uploaded_thumbnail_requires_manual_upload_source() -> None:
         }
     )
     assert not release_has_uploaded_thumbnail({"youtube_thumbnail_path": "/tmp/thumb.png"})
+
+
+def test_bulsong_channel_title_matches_current_and_legacy_names() -> None:
+    assert is_bulsong_channel_title(NEW_VERSE_YOUTUBE_CHANNEL_TITLE)
+    assert is_bulsong_channel_title("Bulsong")
+    assert is_bulsong_channel_title("The New Verse")
+    assert not is_bulsong_channel_title(DEFAULT_YOUTUBE_CHANNEL_TITLE)
 
 
 def test_release_has_uploaded_loop_video_requires_manual_upload_source() -> None:
@@ -854,6 +865,34 @@ def test_auto_publish_playlist_requires_thumbnail_before_creating_new_release(tm
     assert requested_paths == []
 
 
+def test_auto_publish_playlist_allows_bulsong_cover_as_thumbnail_before_creating_new_release(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    cover_path = tmp_path / "cover.png"
+    cover_path.write_bytes(b"fake cover")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires --loop-video"):
+        auto_publish_playlist(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="자비 명상 트립합",
+                cover=str(cover_path),
+                youtube_channel_title=NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
+            ),
+        )
+
+    assert requested_paths == []
+
+
 def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_failed_track(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(openclaw_release.time, "sleep", lambda _seconds: None)
     failed_audio = tmp_path / "failed.mp3"
@@ -1064,6 +1103,35 @@ def test_auto_publish_single_requires_thumbnail_before_side_effects(tmp_path) ->
                 release_title="J-pop Single",
                 cover=str(cover_path),
                 actor="openclaw:auto-single",
+            ),
+        )
+
+    assert requested_paths == []
+
+
+def test_auto_publish_single_allows_bulsong_cover_as_thumbnail_before_side_effects(tmp_path) -> None:
+    audio_path = tmp_path / "track.mp3"
+    audio_path.write_bytes(b"fake mp3")
+    cover_path = tmp_path / "cover.png"
+    cover_path.write_bytes(b"fake cover")
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append(request.url.path)
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    with pytest.raises(RuntimeError, match="requires --loop-video"):
+        auto_publish_single(
+            client,
+            _auto_publish_args(
+                str(audio_path),
+                release_id="",
+                release_title="자비 명상 트립합",
+                cover=str(cover_path),
+                actor="openclaw:auto-single",
+                youtube_channel_title=NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
             ),
         )
 

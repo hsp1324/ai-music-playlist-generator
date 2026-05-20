@@ -494,6 +494,8 @@ def test_backlog_request_message_includes_future_scheduled_public_upload_counts(
                     "finishable": 0,
                     "deferred": 0,
                     "youtube_scheduled_public_count": 2,
+                    "last_youtube_scheduled_public_local_date": "2099-05-20",
+                    "last_youtube_scheduled_public_at": "2099-05-19T22:00:00+00:00",
                     "youtube_uploaded_count": 2,
                     "releases": [],
                 },
@@ -502,9 +504,9 @@ def test_backlog_request_message_includes_future_scheduled_public_upload_counts(
         },
     )
 
-    assert "future scheduled-public YouTube 업로드가 0개인 자동화 채널을 먼저" in message
-    assert "The New Verse: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 0 future scheduled-public YouTube uploads" in message
-    assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 2 future scheduled-public YouTube uploads" in message
+    assert "scheduled-through 날짜가 균등해지게 가장 짧은 채널부터" in message
+    assert "The New Verse: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 0 future scheduled-public YouTube uploads, scheduled-through none" in message
+    assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 2 future scheduled-public YouTube uploads, scheduled-through 2099-05-20" in message
 
 
 def test_backlog_request_message_skips_auth_blocked_channels_in_priority_list() -> None:
@@ -580,6 +582,8 @@ def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() 
                     "finishable": 0,
                     "deferred": 0,
                     "youtube_scheduled_public_count": 2,
+                    "last_youtube_scheduled_public_local_date": "2099-05-20",
+                    "last_youtube_scheduled_public_at": "2099-05-19T22:00:00+00:00",
                     "youtube_uploaded_count": 4,
                     "releases": [],
                 },
@@ -594,7 +598,58 @@ def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() 
     sundaze_index = message.index("- sundaze: 2 unfinished", priority_header)
     assert new_index < sundaze_index
     assert old_index < sundaze_index
-    assert "먼저 채울 채널 우선순위" in message
+    assert "먼저 채울 채널 우선순위(예약 horizon 짧은 순, 모든 채널 날짜 균등)" in message
+
+
+def test_backlog_request_message_prioritizes_shortest_schedule_horizon() -> None:
+    message = build_backlog_queue_request_message(
+        reason="underfilled_backlog",
+        backlog_summary={
+            "target_per_channel": 10,
+            "max_per_channel": 10,
+            "channels": {
+                "불송": {
+                    "count": 2,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 7,
+                    "last_youtube_scheduled_public_local_date": "2026-05-27",
+                    "last_youtube_scheduled_public_at": "2026-05-26T22:00:00+00:00",
+                    "youtube_uploaded_count": 7,
+                    "releases": [],
+                },
+                "Storylight OST": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 1,
+                    "last_youtube_scheduled_public_local_date": "2026-05-21",
+                    "last_youtube_scheduled_public_at": "2026-05-20T22:00:00+00:00",
+                    "youtube_uploaded_count": 6,
+                    "releases": [],
+                },
+                "Club Bloom": {
+                    "count": 0,
+                    "finishable": 0,
+                    "deferred": 0,
+                    "youtube_scheduled_public_count": 2,
+                    "last_youtube_scheduled_public_local_date": "2026-05-22",
+                    "last_youtube_scheduled_public_at": "2026-05-21T22:00:00+00:00",
+                    "youtube_uploaded_count": 6,
+                    "releases": [],
+                },
+            },
+            "unknown_channel_releases": [],
+        },
+    )
+
+    priority_header = message.index("먼저 채울 채널 우선순위")
+    storylight_index = message.index("- Storylight OST: 0 unfinished", priority_header)
+    club_index = message.index("- Club Bloom: 0 unfinished", priority_header)
+    bulsong_index = message.index("- 불송: 2 unfinished", priority_header)
+    assert storylight_index < club_index < bulsong_index
+    assert "Storylight OST: 0 unfinished, 0 deferred, 1 future scheduled-public YouTube uploads, scheduled-through 2026-05-21" in message
+    assert "불송: 2 unfinished, 0 deferred, 7 future scheduled-public YouTube uploads, scheduled-through 2026-05-27" in message
 
 
 def test_backlog_request_message_resumes_manual_blocker_instead_of_next_release() -> None:
@@ -700,8 +755,11 @@ def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads
 
         assert summary["channels"]["Club Bloom"]["youtube_uploaded_count"] == 1
         assert summary["channels"]["Club Bloom"]["youtube_scheduled_public_count"] == 1
+        assert summary["channels"]["Club Bloom"]["last_youtube_scheduled_public_local_date"] == "2099-05-19"
+        assert summary["channels"]["Club Bloom"]["youtube_scheduled_public_local_dates"] == ["2099-05-19"]
         assert summary["channels"]["불송"]["youtube_uploaded_count"] == 2
         assert summary["channels"]["불송"]["youtube_scheduled_public_count"] == 0
+        assert summary["channels"]["불송"]["last_youtube_scheduled_public_local_date"] is None
         assert summary["channels"]["불송"]["count"] == 2
     finally:
         clear_isolated_client_env()

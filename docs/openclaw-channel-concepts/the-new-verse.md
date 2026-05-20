@@ -64,8 +64,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Cute/gentle animation visuals are allowed occasionally only when the release music lane also fits that softer image, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
 - Avoid parody, caricature, or exoticized religious imagery.
 - Do not depict the Buddha disrespectfully or as a face-focused photorealistic idol. Symbolic imagery is safer.
-- Cover first-frame and loop video must be textless for 불송. Do not add the `불송` channel label or any other words to the video visual.
-- If thumbnail text is needed, create a separate thumbnail derivative from the textless cover. Never use a text thumbnail as the loop-video first frame.
+- Cover, YouTube thumbnail, first-frame, and loop video must all use the same clean textless image package for 불송. Do not add the `불송` channel label or any other words.
+- Do not create a separate text thumbnail for 불송. Reuse the textless cover as the YouTube thumbnail and pass `--allow-cover-as-thumbnail` when using the helper.
 
 ## Good Fresh Concept Shapes
 

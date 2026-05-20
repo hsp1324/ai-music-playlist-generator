@@ -272,9 +272,9 @@ Loop video:
 
 YouTube thumbnail:
 
-- Make any thumbnail text as a separate derivative from the textless cover.
-- Do not add large headline text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B` unless the human explicitly asks for a text thumbnail.
-- Never use a text thumbnail as the loop-video first frame.
+- Use the exact same clean textless image as both the cover and YouTube thumbnail.
+- Do not add large headline text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`.
+- When using `scripts/openclaw-release`, omit `--thumbnail` for 불송 and let the helper reuse the textless cover, or pass `--allow-cover-as-thumbnail` explicitly.
 
 Profiles:
 

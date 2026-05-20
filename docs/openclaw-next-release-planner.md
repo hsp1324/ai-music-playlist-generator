@@ -91,8 +91,8 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 
 1. Inspect recent Playlist Releases from `scripts/openclaw-release list-releases`.
 2. Apply `docs/openclaw-backlog-queue.md` first: finish ready releases, then fill channels with backlog below target.
-3. Prefer active automated channels that have `0` future scheduled-public YouTube uploads in the app's backlog snapshot. Future scheduled-public means the release has a YouTube video id and a scheduled public publish time or YouTube `publishAt` that is still in the future. Fill these zero-future-scheduled channels before adding more releases to channels that already have at least one upcoming scheduled public video.
-4. Within the remaining eligible channels, prefer the active channel with the lowest unfinished backlog count. Do not create a new release for a channel with backlog `10` or more.
+3. Prefer active automated channels with the shortest future scheduled-public horizon in the app's backlog snapshot. Future scheduled-public means the release has a YouTube video id and a scheduled public publish time or YouTube `publishAt` that is still in the future. Fill channels by date evenly: every channel should have a release for the earliest upcoming date before any channel is pushed further out to the next date. A channel scheduled through May 21 comes before a channel already scheduled through May 27.
+4. Within channels with the same scheduled-through horizon, prefer the active channel with the lowest unfinished backlog count. Do not create a new release for a channel with backlog `10` or more.
 5. If multiple eligible channels are tied, prefer the channel with the oldest recent scheduled/public playlist unless the human explicitly asks for a channel.
 6. Do not pick the same channel twice in a row unless other channels are blocked, already at backlog max, not connected, unavailable, or explicitly requested.
 7. Confirm the selected YouTube channel is connected in `/youtube/status` before running publish automation.
@@ -161,7 +161,7 @@ Return this compact plan before generating audio:
 - `recent_releases_checked`
 - `why_this_is_fresh`
 - For `BibliaCanto` Bible releases: `scripture_source=web_app`, `selected_passage_range`, `scripture_next_start_after_completion`, and `why_this_passage_is_next`
-- For `불송` Buddhist releases: selected Buddhist source/theme, release-level music lane, `schedule=daily_07:00_Asia/Seoul`, `visual_background=photorealistic_or_occasional_cute_animation_when_music_fits`, `thumbnail=cover_reuse`, and `spectrum=calm-bars`
+- For `불송` Buddhist releases: selected Buddhist source/theme, release-level music lane, `schedule=daily_07:00_Asia/Seoul`, `visual_background=photorealistic_or_occasional_cute_animation_when_music_fits`, `thumbnail=same_textless_cover_reuse`, and `spectrum=calm-bars`
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
@@ -196,7 +196,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40-minute Playlis
 - Keep each active automated channel filled toward the configured unfinished Playlist Release target, currently 10 per channel.
 - Finish metadata_review/publish_ready releases before creating new ones.
 - If a video render job is queued/running, VM is handling it. If any channel is below target, prepare the next eligible release up to queued video render; do not wait idle.
-- When choosing a new release channel, prioritize connected automated channels with `0` future scheduled-public YouTube uploads before channels that already have at least one upcoming scheduled public video.
+- When choosing a new release channel, prioritize connected automated channels with the shortest scheduled-through horizon. Keep scheduled public dates balanced across channels before pushing any one channel further into later dates.
 - Rotate active channels instead of repeating the same channel.
 - Use `/youtube/status` `channels` as the source for the active channel roster. Known channels include Tokyo Daydream Radio, Soft Hour Radio, sundaze, Solwave Radio, HaruHaru, Storylight OST, Cinematic Pulse, Club Bloom, BibliaCanto, and 불송. Newly connected non-excluded channels must also enter rotation. MusicSun is the only manual-only connected channel and must be skipped unless the human explicitly requests it.
 - Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.
@@ -211,7 +211,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40-minute Playlis
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create roughly 20+ minutes of new approved audio for a 2400-second / 40-minute target, then let the app fill the remaining time from previous same-channel, similar-genre back-half tracks when available. Generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. If no similar reuse candidates exist, the app renders the uploaded new tracks instead of blocking. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create roughly 20+ minutes of new approved audio for a 2400-second / 40-minute target, then let the app fill the remaining time from previous same-channel, similar-genre back-half tracks when available. Generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. Exception: for `불송`, use one clean textless cover as the cover, YouTube thumbnail, and loop-video first-frame visual; do not create a separate text thumbnail. If no similar reuse candidates exist, the app renders the uploaded new tracks instead of blocking. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

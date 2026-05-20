@@ -27,10 +27,9 @@ Use this profile only after channel selection returns `불송`, or when the huma
 
 ## YouTube Thumbnail
 
-- Keep the thumbnail separate from the video cover/first-frame when text is needed.
-- Create the thumbnail as a derivative of the clean textless cover; never use the text thumbnail as the loop-video first frame.
-- Keep thumbnail text restrained. Do not add large click text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `불경 노래`, or headline blocks unless the human explicitly asks for a text thumbnail.
-- Do not use black text boxes, hard rectangles, stickers, badges, pills, capsules, or detached label shapes.
+- Use the exact same clean textless image as both `--cover` and the YouTube thumbnail.
+- Do not create a separate text thumbnail for 불송. Do not add `BUDDHIST JAZZ`, `DHARMA R&B`, `불경 노래`, channel labels, headline blocks, black text boxes, hard rectangles, stickers, badges, pills, capsules, or detached label shapes.
+- When using `scripts/openclaw-release auto-publish-playlist` or `auto-publish-single`, omit `--thumbnail` and let the helper reuse the 불송 cover as the thumbnail, or pass `--allow-cover-as-thumbnail` explicitly.
 
 ## Loop Video
 

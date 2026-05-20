@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -386,6 +387,14 @@ def _playlist_scheduled_public_at(playlist: Playlist, *, now: datetime) -> datet
     return future_values[0] if future_values else None
 
 
+def _youtube_schedule_timezone(services) -> ZoneInfo:
+    timezone_name = str(getattr(services.settings, "youtube_schedule_timezone", "") or "Asia/Seoul").strip()
+    try:
+        return ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        return ZoneInfo("UTC")
+
+
 def _playlist_counts_as_backlog(playlist: Playlist) -> bool:
     meta = dict(playlist.metadata_json or {})
     workflow_state = str(meta.get("workflow_state") or "").strip()
@@ -499,6 +508,9 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             "youtube_uploaded_count": 0,
             "youtube_scheduled_public_count": 0,
             "next_youtube_scheduled_public_at": None,
+            "last_youtube_scheduled_public_at": None,
+            "last_youtube_scheduled_public_local_date": None,
+            "youtube_scheduled_public_local_dates": [],
             "releases": [],
         }
         for title in channel_titles
@@ -507,6 +519,8 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
 
     playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
     now = _utcnow()
+    schedule_tz = _youtube_schedule_timezone(services)
+    scheduled_local_dates: dict[str, set[str]] = {title: set() for title in channel_titles}
     for playlist in playlists:
         uploaded_channel_title = _playlist_uploaded_channel_title(playlist)
         if uploaded_channel_title in channels and playlist.youtube_video_id and not _playlist_is_archived(
@@ -520,6 +534,15 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
                 existing_scheduled_at = channels[uploaded_channel_title]["next_youtube_scheduled_public_at"]
                 if not existing_scheduled_at or scheduled_at_iso < existing_scheduled_at:
                     channels[uploaded_channel_title]["next_youtube_scheduled_public_at"] = scheduled_at_iso
+                existing_last_at = channels[uploaded_channel_title]["last_youtube_scheduled_public_at"]
+                if not existing_last_at or scheduled_at_iso > existing_last_at:
+                    channels[uploaded_channel_title]["last_youtube_scheduled_public_at"] = scheduled_at_iso
+                    channels[uploaded_channel_title]["last_youtube_scheduled_public_local_date"] = (
+                        scheduled_at.astimezone(schedule_tz).date().isoformat()
+                    )
+                scheduled_local_dates[uploaded_channel_title].add(
+                    scheduled_at.astimezone(schedule_tz).date().isoformat()
+                )
         if not _playlist_counts_as_backlog(playlist):
             continue
         meta = dict(playlist.metadata_json or {})
@@ -561,6 +584,10 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             channels[channel_title]["deferred"] += 1
         if auth_blocked:
             channels[channel_title]["auth_blocked"] += 1
+
+    for title, dates in scheduled_local_dates.items():
+        if title in channels:
+            channels[title]["youtube_scheduled_public_local_dates"] = sorted(dates)
 
     return {
         "channels": channels,
