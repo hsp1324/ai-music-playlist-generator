@@ -394,6 +394,7 @@ def post_progress(
     job_id: str,
     worker_id: str,
     progress: dict[str, Any],
+    timeout_seconds: float,
     message: str = "",
 ) -> None:
     try:
@@ -403,6 +404,7 @@ def post_progress(
             f"/render-worker/jobs/{job_id}/progress",
             token=token,
             json={"worker_id": worker_id, "progress": progress, "message": message},
+            timeout=max(float(timeout_seconds), 1.0),
         )
     except Exception as exc:  # noqa: BLE001
         print(f"progress update failed: {exc}", file=sys.stderr, flush=True)
@@ -416,6 +418,7 @@ def render_job(
     job: dict[str, Any],
     cache_dir: Path,
     ffmpeg_binary: str,
+    progress_timeout_seconds: float,
 ) -> Path:
     job_id = job["id"]
     job_dir = cache_dir / "jobs" / job_id
@@ -480,6 +483,7 @@ def render_job(
             job_id=job_id,
             worker_id=worker_id,
             progress=progress,
+            timeout_seconds=progress_timeout_seconds,
         )
         print_progress_line(progress)
 
@@ -632,6 +636,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         job=job,
         cache_dir=args.cache_dir,
         ffmpeg_binary=args.ffmpeg,
+        progress_timeout_seconds=args.progress_timeout_seconds,
     )
     upload_rendered_video(
         client,
@@ -671,6 +676,12 @@ def parse_args() -> argparse.Namespace:
         help="Render worker profile. Default auto-detects from worker id / hostname; desktop prefers 1080p/2k jobs, oracle prefers 720p jobs.",
     )
     parser.add_argument("--chunk-size-bytes", type=int, default=int(os.environ.get("AIMP_RENDER_WORKER_UPLOAD_CHUNK_BYTES", 8 * 1024 * 1024)))
+    parser.add_argument(
+        "--progress-timeout-seconds",
+        type=float,
+        default=float(os.environ.get("AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS", 10)),
+        help="Maximum seconds to wait for best-effort progress updates before continuing the render.",
+    )
     parser.add_argument(
         "--cache-cleanup-threshold-percent",
         type=float,
