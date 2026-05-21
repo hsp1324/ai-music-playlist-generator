@@ -1796,6 +1796,40 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         assert workspace_response.status_code == 200
         assert workspace_response.json()["render_job"]["external_render_worker"]["nickname"] == "Test Render Box"
 
+        progress = client.post(
+            f"/api/render-worker/jobs/{job_id}/progress",
+            headers=headers,
+            json={
+                "worker_id": "test-worker",
+                "progress": {"stage": "video_render", "status": "running", "percent": 10.0},
+            },
+        )
+        assert progress.status_code == 200
+        throttled_progress = client.post(
+            f"/api/render-worker/jobs/{job_id}/progress",
+            headers=headers,
+            json={
+                "worker_id": "test-worker",
+                "progress": {"stage": "video_render", "status": "running", "percent": 10.5},
+            },
+        )
+        assert throttled_progress.status_code == 200
+        with SessionLocal() as db:
+            job = db.get(Job, job_id)
+            assert job.result_json["progress"]["percent"] == 10.0
+        committed_progress = client.post(
+            f"/api/render-worker/jobs/{job_id}/progress",
+            headers=headers,
+            json={
+                "worker_id": "test-worker",
+                "progress": {"stage": "video_render", "status": "running", "percent": 11.0},
+            },
+        )
+        assert committed_progress.status_code == 200
+        with SessionLocal() as db:
+            job = db.get(Job, job_id)
+            assert job.result_json["progress"]["percent"] == 11.0
+
         payload = b"fake-rendered-video"
         first = client.put(
             f"/api/render-worker/jobs/{job_id}/upload",

@@ -38,6 +38,9 @@ from app.utils.youtube_localizations import ensure_playlist_title_prefix
 router = APIRouter(prefix="/render-worker", tags=["render-worker"])
 
 CONTENT_RANGE_RE = re.compile(r"^bytes\s+(\d+)-(\d+)/(\d+|\*)$")
+PROGRESS_UPDATE_MIN_INTERVAL_SECONDS = 30
+PROGRESS_UPDATE_MIN_RATIO_DELTA = 0.01
+PROGRESS_UPDATE_MIN_PERCENT_DELTA = 1.0
 
 
 class RenderWorkerClaimRequest(BaseModel):
@@ -61,6 +64,62 @@ class RenderWorkerCompleteRequest(BaseModel):
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _parse_progress_timestamp(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _progress_float(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _progress_delta_reached(previous: dict[str, Any], current: dict[str, Any]) -> bool:
+    for key, threshold in (
+        ("progress_ratio", PROGRESS_UPDATE_MIN_RATIO_DELTA),
+        ("percent", PROGRESS_UPDATE_MIN_PERCENT_DELTA),
+        ("upload_percent", PROGRESS_UPDATE_MIN_PERCENT_DELTA),
+    ):
+        before = _progress_float(previous.get(key))
+        after = _progress_float(current.get(key))
+        if before is None or after is None:
+            continue
+        if abs(after - before) >= threshold:
+            return True
+    return False
+
+
+def _should_commit_video_progress(
+    previous: dict[str, Any],
+    current: dict[str, Any],
+    now: datetime,
+    *,
+    force: bool = False,
+) -> bool:
+    if force or not previous:
+        return True
+    if current.get("upload_complete") and not previous.get("upload_complete"):
+        return True
+    for key in ("stage", "status", "message"):
+        if current.get(key) != previous.get(key):
+            return True
+    if _progress_delta_reached(previous, current):
+        return True
+    updated_at = _parse_progress_timestamp(previous.get("updated_at"))
+    if updated_at is None:
+        return True
+    return (now - updated_at).total_seconds() >= PROGRESS_UPDATE_MIN_INTERVAL_SECONDS
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -440,8 +499,16 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     }
 
 
-def _update_video_progress(db: Session, job: Job, playlist: Playlist, progress: dict[str, Any]) -> None:
-    now = _utcnow().isoformat()
+def _update_video_progress(
+    db: Session,
+    job: Job,
+    playlist: Playlist,
+    progress: dict[str, Any],
+    *,
+    force: bool = False,
+) -> bool:
+    now_dt = _utcnow()
+    now = now_dt.isoformat()
     payload = {
         **progress,
         "updated_at": now,
@@ -449,6 +516,9 @@ def _update_video_progress(db: Session, job: Job, playlist: Playlist, progress: 
     if "message" not in payload:
         payload["message"] = "External video render in progress."
     result = dict(job.result_json or {})
+    previous_progress = dict(result.get("progress") or {})
+    if not _should_commit_video_progress(previous_progress, payload, now_dt, force=force):
+        return False
     worker = dict(result.get("external_render_worker") or {})
     worker["heartbeat_at"] = now
     result["external_render_worker"] = worker
@@ -461,6 +531,7 @@ def _update_video_progress(db: Session, job: Job, playlist: Playlist, progress: 
     db.add(job)
     db.add(playlist)
     db.commit()
+    return True
 
 
 @router.get("/status")

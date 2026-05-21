@@ -6,6 +6,7 @@ import tempfile
 import threading
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import select, update
@@ -42,11 +43,60 @@ from app.workflows.openclaw_runtime import (
     record_openclaw_backlog_scheduler_request,
 )
 
+PROGRESS_UPDATE_MIN_INTERVAL_SECONDS = 30
+PROGRESS_UPDATE_MIN_RATIO_DELTA = 0.01
+PROGRESS_UPDATE_MIN_PERCENT_DELTA = 1.0
+
 
 def _utcnow():
-    from datetime import datetime, timezone
-
     return datetime.now(timezone.utc)
+
+
+def _parse_progress_timestamp(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _progress_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _progress_delta_reached(previous: dict, current: dict) -> bool:
+    for key, threshold in (
+        ("progress_ratio", PROGRESS_UPDATE_MIN_RATIO_DELTA),
+        ("percent", PROGRESS_UPDATE_MIN_PERCENT_DELTA),
+    ):
+        before = _progress_float(previous.get(key))
+        after = _progress_float(current.get(key))
+        if before is None or after is None:
+            continue
+        if abs(after - before) >= threshold:
+            return True
+    return False
+
+
+def _should_commit_progress(previous: dict, current: dict, now) -> bool:
+    if not previous:
+        return True
+    for key in ("stage", "status", "message"):
+        if current.get(key) != previous.get(key):
+            return True
+    if _progress_delta_reached(previous, current):
+        return True
+    updated_at = _parse_progress_timestamp(previous.get("updated_at"))
+    if updated_at is None:
+        return True
+    return (now - updated_at).total_seconds() >= PROGRESS_UPDATE_MIN_INTERVAL_SECONDS
 
 
 def _playlist_track_ids(playlist: Playlist) -> list[str]:
@@ -918,11 +968,15 @@ class BackgroundJobWorker:
     def _build_audio_progress_callback(db: Session, job: Job, playlist: Playlist):
         def callback(progress: dict) -> None:
             try:
+                now = _utcnow()
                 payload = {
                     **progress,
                     "message": BackgroundJobWorker._format_audio_progress_message(progress),
-                    "updated_at": _utcnow().isoformat(),
+                    "updated_at": now.isoformat(),
                 }
+                previous_progress = dict((job.result_json or {}).get("progress") or {})
+                if not _should_commit_progress(previous_progress, payload, now):
+                    return
                 job.result_json = {
                     **(job.result_json or {}),
                     "playlist_id": playlist.id,
@@ -948,11 +1002,15 @@ class BackgroundJobWorker:
     def _build_video_progress_callback(db: Session, job: Job, playlist: Playlist):
         def callback(progress: dict) -> None:
             try:
+                now = _utcnow()
                 payload = {
                     **progress,
                     "message": BackgroundJobWorker._format_video_progress_message(progress),
-                    "updated_at": _utcnow().isoformat(),
+                    "updated_at": now.isoformat(),
                 }
+                previous_progress = dict((job.result_json or {}).get("progress") or {})
+                if not _should_commit_progress(previous_progress, payload, now):
+                    return
                 job.result_json = {
                     **(job.result_json or {}),
                     "playlist_id": playlist.id,
