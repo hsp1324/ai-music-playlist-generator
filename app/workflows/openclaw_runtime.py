@@ -139,14 +139,6 @@ def _openclaw_manual_blocker(
     }
 
 
-def _last_finished_after_request(state: dict[str, Any], last_request_at: datetime | None) -> bool:
-    if not last_request_at:
-        return False
-    last_finished_lock = dict(state.get("last_finished_lock") or {})
-    finished_at = _parse_datetime(last_finished_lock.get("finished_at"))
-    return bool(finished_at and finished_at > last_request_at)
-
-
 def _channels_have_release_updated_after_request(
     summary: dict[str, Any],
     channel_titles: list[str],
@@ -163,6 +155,58 @@ def _channels_have_release_updated_after_request(
             if updated_at and updated_at > last_request_at:
                 return True
     return False
+
+
+def _channel_backlog_signature(summary: dict[str, Any], channel_titles: list[str]) -> dict[str, Any]:
+    channels = summary.get("channels") if isinstance(summary.get("channels"), dict) else {}
+    signature: dict[str, Any] = {}
+    for title in sorted(channel_titles):
+        payload = channels.get(title) if isinstance(channels, dict) else None
+        if not isinstance(payload, dict):
+            signature[title] = None
+            continue
+        releases = []
+        for release in payload.get("releases") or []:
+            if not isinstance(release, dict):
+                continue
+            releases.append(
+                {
+                    "id": str(release.get("id") or ""),
+                    "title": str(release.get("title") or ""),
+                    "workflow_state": str(release.get("workflow_state") or ""),
+                }
+            )
+        releases.sort(key=lambda item: (item["id"], item["workflow_state"], item["title"]))
+        scheduled_dates = [
+            str(value)
+            for value in payload.get("youtube_scheduled_public_local_dates") or []
+            if value is not None
+        ]
+        signature[title] = {
+            "count": int(payload.get("count") or 0),
+            "finishable": int(payload.get("finishable") or 0),
+            "deferred": int(payload.get("deferred") or 0),
+            "auth_blocked": int(payload.get("auth_blocked") or 0),
+            "youtube_scheduled_public_count": int(payload.get("youtube_scheduled_public_count") or 0),
+            "youtube_scheduled_public_local_dates": sorted(scheduled_dates),
+            "releases": releases,
+        }
+    return signature
+
+
+def _channels_have_backlog_state_changed_since_last_request(
+    summary: dict[str, Any],
+    channel_titles: list[str],
+    scheduler_state: dict[str, Any],
+) -> bool:
+    last_result = scheduler_state.get("last_result") if isinstance(scheduler_state, dict) else None
+    last_summary = last_result.get("summary") if isinstance(last_result, dict) else None
+    if not isinstance(last_summary, dict):
+        return False
+    return _channel_backlog_signature(summary, channel_titles) != _channel_backlog_signature(
+        last_summary,
+        channel_titles,
+    )
 
 
 def runtime_state_path(storage_root: Path) -> Path:
@@ -654,7 +698,6 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     cooldown_active = bool(
         last_request_at and cooldown_seconds and last_request_at + timedelta(seconds=cooldown_seconds) > now
     )
-    cooldown_bypassed_by_finished_lock = _last_finished_after_request(state, last_request_at)
 
     summary = build_openclaw_backlog_summary(db, services)
     channel_data = summary["channels"]
@@ -699,11 +742,16 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         *,
         pending_reason: str,
         pending_channels: list[str],
+        allow_backlog_change_bypass: bool = False,
         allow_release_update_bypass: bool = False,
     ) -> dict[str, Any] | None:
         if not cooldown_active:
             return None
-        if cooldown_bypassed_by_finished_lock:
+        if allow_backlog_change_bypass and _channels_have_backlog_state_changed_since_last_request(
+            summary,
+            pending_channels,
+            scheduler_state,
+        ):
             return None
         if allow_release_update_bypass and _channels_have_release_updated_after_request(
             summary,
@@ -766,6 +814,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         cooldown = cooldown_response(
             pending_reason="finishable_releases",
             pending_channels=finishable_channels,
+            allow_backlog_change_bypass=True,
             allow_release_update_bypass=True,
         )
         if cooldown:
@@ -786,6 +835,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         cooldown = cooldown_response(
             pending_reason="zero_scheduled_public_backlog",
             pending_channels=zero_scheduled_public_channels,
+            allow_backlog_change_bypass=True,
         )
         if cooldown:
             return cooldown
@@ -805,6 +855,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         cooldown = cooldown_response(
             pending_reason="underfilled_backlog",
             pending_channels=underfilled_channels,
+            allow_backlog_change_bypass=True,
         )
         if cooldown:
             return cooldown
