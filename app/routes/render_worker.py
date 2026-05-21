@@ -457,6 +457,7 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_lyrics_overlay_style")
         or services.settings.video_lyrics_overlay_style,
         meta,
+        title=playlist.title,
     )
     lyrics_alignment_mode = str(
         payload.get(

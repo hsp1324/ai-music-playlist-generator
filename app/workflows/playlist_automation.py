@@ -1070,6 +1070,7 @@ def serialize_playlist_workspace(
         video_lyrics_overlay_style=resolve_video_lyrics_overlay_style(
             meta.get("video_lyrics_overlay_style"),
             meta,
+            title=playlist.title,
         ),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
@@ -2451,7 +2452,11 @@ def queue_workspace_video_render(
     if video_lyrics_overlay_enabled is not None:
         meta["video_lyrics_overlay_enabled"] = bool(video_lyrics_overlay_enabled)
     if video_lyrics_overlay_style is not None:
-        meta["video_lyrics_overlay_style"] = resolve_video_lyrics_overlay_style(video_lyrics_overlay_style, meta)
+        meta["video_lyrics_overlay_style"] = resolve_video_lyrics_overlay_style(
+            video_lyrics_overlay_style,
+            meta,
+            title=playlist.title,
+        )
     if video_lyrics_alignment_mode is not None:
         mode = str(video_lyrics_alignment_mode or "").strip().lower().replace("-", "_")
         if mode not in {"whisper", "timeline"}:
@@ -2483,6 +2488,7 @@ def queue_workspace_video_render(
                     "video_lyrics_overlay_style": resolve_video_lyrics_overlay_style(
                         meta.get("video_lyrics_overlay_style"),
                         meta,
+                        title=playlist.title,
                     ),
                     "video_lyrics_alignment_mode": str(meta.get("video_lyrics_alignment_mode") or "whisper"),
                 },

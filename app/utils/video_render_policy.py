@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from app.utils.lyric_subtitles import lyric_lines_from_text
@@ -15,6 +16,20 @@ LYRIC_CENTER_CHANNEL_TITLES = {
     "불송",
     "the new verse",
     "bulsong",
+}
+LYRIC_EDITORIAL_CHANNEL_TITLES = {
+    "haruharu",
+    "tokyo daydream radio",
+    "sundaze",
+    "solwave radio",
+}
+LYRIC_SOFT_CHANNEL_TITLES = {
+    "soft hour radio",
+    "storylight ost",
+    "cinematic pulse",
+    "club bloom",
+    "bibliacanto",
+    "the old verse",
 }
 RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES = {
     "bibliacanto",
@@ -74,6 +89,66 @@ RELIGIOUS_TITLE_HINTS = (
     "불경",
     "법구경",
     "반야심경",
+)
+LYRIC_EDITORIAL_TEXT_HINTS = (
+    "j-pop",
+    "jpop",
+    "k-pop",
+    "kpop",
+    "pop latino",
+    "latin pop",
+    "spanish pop",
+    "reggaeton",
+    "bachata",
+    "r&b",
+    "rnb",
+    "hip-hop",
+    "hiphop",
+    "rap",
+    "dance pop",
+    "synth-pop",
+    "city pop",
+    "vocal",
+    "보컬",
+    "케이팝",
+    "제이팝",
+    "힙합",
+    "알앤비",
+    "라틴",
+)
+LYRIC_SOFT_TEXT_HINTS = (
+    "bgm",
+    "lofi",
+    "lo-fi",
+    "study",
+    "sleep",
+    "focus",
+    "reading",
+    "cafe",
+    "piano",
+    "ost",
+    "game",
+    "arcade",
+    "cinematic",
+    "orchestra",
+    "film score",
+    "trailer",
+    "edm",
+    "house",
+    "techno",
+    "trance",
+    "instrumental",
+    "no vocal",
+    "no-vocal",
+    "scripture",
+    "gospel",
+    "worship",
+    "bible",
+    "성경",
+    "찬양",
+    "연주곡",
+    "보컬 없는",
+    "가사 없는",
 )
 
 
@@ -139,16 +214,62 @@ def normalize_video_lyrics_overlay_style(value: Any) -> str:
     return VIDEO_LYRICS_OVERLAY_STYLE_ALIASES.get(key, "auto")
 
 
-def default_video_lyrics_overlay_style(meta: dict[str, Any]) -> str:
+def _lyrics_style_haystack(meta: dict[str, Any], *, title: str = "") -> str:
+    values: list[Any] = [
+        title,
+        meta.get("title"),
+        meta.get("release_title"),
+        meta.get("youtube_title"),
+        meta.get("description"),
+        meta.get("youtube_description"),
+        meta.get("cover_prompt"),
+        meta.get("dreamina_prompt"),
+        meta.get("video_render_source_mode"),
+        meta.get("video_spectrum_overlay_style"),
+    ]
+    values.extend(_release_channel_titles(meta))
+    return " ".join(str(value or "") for value in values).casefold()
+
+
+def _stable_lyrics_style_choice(meta: dict[str, Any], *, title: str = "") -> str:
+    seed = "|".join(
+        str(value or "")
+        for value in (
+            title,
+            meta.get("youtube_title"),
+            meta.get("release_id"),
+            meta.get("id"),
+            meta.get("youtube_channel_title"),
+            meta.get("target_youtube_channel_title"),
+        )
+    )
+    digest = hashlib.sha256(seed.encode("utf-8")).digest()
+    return "editorial_lower_left" if digest[0] % 2 else "soft_bottom_fade"
+
+
+def default_video_lyrics_overlay_style(meta: dict[str, Any], *, title: str = "") -> str:
     if is_bulsong_release(meta):
         return "center_breath_serif"
-    return "soft_bottom_fade"
+    titles = _release_channel_titles(meta)
+    if titles & LYRIC_EDITORIAL_CHANNEL_TITLES:
+        return "editorial_lower_left"
+    if titles & LYRIC_SOFT_CHANNEL_TITLES:
+        return "soft_bottom_fade"
+
+    haystack = _lyrics_style_haystack(meta, title=title)
+    editorial_score = sum(1 for hint in LYRIC_EDITORIAL_TEXT_HINTS if hint in haystack)
+    soft_score = sum(1 for hint in LYRIC_SOFT_TEXT_HINTS if hint in haystack)
+    if editorial_score > soft_score:
+        return "editorial_lower_left"
+    if soft_score > editorial_score:
+        return "soft_bottom_fade"
+    return _stable_lyrics_style_choice(meta, title=title)
 
 
-def resolve_video_lyrics_overlay_style(value: Any, meta: dict[str, Any]) -> str:
+def resolve_video_lyrics_overlay_style(value: Any, meta: dict[str, Any], *, title: str = "") -> str:
     style = normalize_video_lyrics_overlay_style(value)
     if style == "auto":
-        return default_video_lyrics_overlay_style(meta)
+        return default_video_lyrics_overlay_style(meta, title=title)
     if is_bulsong_release(meta):
         return "center_breath_serif"
     return style

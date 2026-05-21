@@ -882,6 +882,7 @@ class BackgroundJobWorker:
             or meta.get("video_lyrics_overlay_style")
             or self.settings.video_lyrics_overlay_style,
             meta,
+            title=playlist.title,
         )
         lyric_cues = (
             self._build_video_lyric_cues(job, meta, tracks, audio_path, total_duration_seconds)
