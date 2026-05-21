@@ -21,38 +21,42 @@ Use this profile only after channel selection returns `불송`, or when the huma
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Gemini/Dreamina/Seedance.
-- 불송 is a textless-video exception: the cover/first-frame must contain no text at all.
-- Do not add the `불송` channel label, title text, sutra paragraphs, lyrics, subtitles, UI, logos, duration text, watermark-like marks, or unrelated words to the cover/first-frame.
+- The cover is the playback visual, YouTube thumbnail base, and first-frame reference for Gemini/Dreamina/Seedance.
+- Do not add the `불송` channel label, the channel name, a channel logo, title sentences, sutra paragraphs, lyrics, subtitles, UI, duration text, watermark-like marks, or unrelated words to the cover/first-frame.
+- The cover/first-frame may include one short Korean passage/theme + music-style phrase that naturally fits the artwork, such as `팔정도 명상팝`, `자비 트립합`, `무상 불교 재즈`, `반야심경 R&B`, or `법구경 힙합`.
+- That phrase is the visual hook. Keep it short, readable, integrated into the image, and free of hard black rectangles, detached labels, stickers, badges, pills, or UI-like tags.
 
 ## YouTube Thumbnail
 
-- Use the exact same clean textless image as both `--cover` and the YouTube thumbnail.
-- Do not create a separate text thumbnail for 불송. Do not add `BUDDHIST JAZZ`, `DHARMA R&B`, `불경 노래`, channel labels, headline blocks, black text boxes, hard rectangles, stickers, badges, pills, capsules, or detached label shapes.
-- When using `scripts/openclaw-release auto-publish-playlist` or `auto-publish-single`, omit `--thumbnail` and let the helper reuse the 불송 cover as the thumbnail, or pass `--allow-cover-as-thumbnail` explicitly.
+- Use the same final cover/first-frame composition as the YouTube thumbnail.
+- Do not create a separate channel-branded thumbnail. Do not add `불송`, channel labels, headline blocks, black text boxes, hard rectangles, stickers, badges, pills, capsules, or detached label shapes.
+- The thumbnail should keep the same short Korean passage/theme + style phrase as the first-frame when present. It can be the exact same image as the cover.
+- When using `scripts/openclaw-release auto-publish-playlist` or `auto-publish-single`, pass the same image as both `--cover` and `--thumbnail`, or use `--allow-cover-as-thumbnail` when the same image is intended.
 
 ## Loop Video
 
 - Use Gemini, Dreamina, or Seedance only for the moving clip.
-- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
-- Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Set those only through provider controls when available.
+- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `6 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
+- Do not put `6 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Set those only through provider controls when available.
 - Animate calm environmental motion: lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
-- Preserve the textless composition. Do not add, preserve, or invent any `불송` label or other text in the loop video.
+- Preserve the opening composition and any short Korean passage/style phrase already present. Do not add, preserve, or invent any `불송` label or channel name in the loop video.
 - Queue final render with `--video-spectrum-overlay-style calm-bars`. The app enforces a very low-motion, low-opacity bar spectrum for 불송. Do not use radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or busy equalizer graphics.
-- The final moment should stay close to the opening composition so the app can repeat it smoothly.
+- The final moment should stay close to the opening composition so the app can repeat it smoothly with the 1.5 second crossfade.
 - Do not add subtitles, scripture text, title text, duration text, UI, logos, disrespectful religious imagery, or photorealistic Buddha face reenactment.
+- Inspect Gemini/Dreamina/Seedance clips for mid-clip scene changes. Reject/regenerate if the layout cuts to a different scene, resets the frame, changes the text, or behaves like a montage.
+- Do not use conceptual terms such as `playlist`, `music visual`, `visualizer shot`, `Four Noble Truths`, `사성제`, `Eightfold Path`, or `팔정도` in the video-generation prompt when a visual description is enough. Put the Buddhist source/theme in metadata, not the video prompt, unless it is visible text already designed into the first frame.
+- Prefer positive fixed-shot wording: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`. Keep negative lists short.
 
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It is a clean textless Buddhist/dharma visual with no channel label and no words.
-Create one continuous animated Buddhist scripture-inspired music visualizer shot.
-Preserve the opening composition, lighting, palette, respectful modern visual language, and the selected Buddhist/dharma atmosphere from the first frame.
-Keep the entire moving visual textless for the full clip. Do not add "불송", titles, subtitles, sutra text, UI, logos, watermarks, signs, captions, or any other words.
+Use the uploaded first-frame image as the exact starting frame.
+It is a clean Buddhist/dharma music artwork with a short Korean passage/theme + music-style phrase integrated into the image.
+Create one uninterrupted calm environmental take from a locked-off camera.
+Keep the same composition, crop, camera distance, lighting, palette, subject placement, and typography from first frame to final frame.
 Animate calm environmental motion naturally present in the scene: lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
-The motion must progress naturally for the full clip. Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ.
-Stable composition, no hard cuts, no disrespectful religious imagery, no photorealistic Buddha face, no protected characters, no other text, no subtitles, no logos, no UI.
+Keep the existing short Korean phrase stable and readable if present. Do not invent any channel name.
+No new text, subtitles, lyrics, UI, added logos, disrespectful religious imagery, photorealistic Buddha face, or protected characters.
 ```
 
 ## Metadata

@@ -10,6 +10,7 @@ from app.services.release_metadata_service import ReleaseMetadataService
 from app.utils.youtube_localizations import (
     SUPPORTED_YOUTUBE_LANGUAGES,
     ensure_playlist_title_prefix,
+    normalize_youtube_language,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
 )
@@ -70,6 +71,7 @@ def test_playlist_metadata_ready_requires_all_languages_and_timeline() -> None:
             "hi",
             "fil",
             "id",
+            "tr",
             "pt-BR",
             "pt-PT",
             "fr",
@@ -98,6 +100,20 @@ def test_playlist_metadata_ready_requires_all_languages_and_timeline() -> None:
         assert "Missing: th" in str(exc)
     else:
         raise AssertionError("metadata validation should reject missing language")
+
+
+def test_turkish_youtube_language_is_supported() -> None:
+    assert "tr" in SUPPORTED_YOUTUBE_LANGUAGES
+    assert normalize_youtube_language("turkish") == "tr"
+    localizations = normalize_youtube_localizations(
+        {
+            "tr": {
+                "title": "Turkce Baslik",
+                "description": "Turkce aciklama",
+            }
+        }
+    )
+    assert localizations["tr"]["title"] == "Turkce Baslik"
 
 
 def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:

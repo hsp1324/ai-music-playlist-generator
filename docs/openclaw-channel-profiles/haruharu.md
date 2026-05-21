@@ -28,9 +28,9 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `HaruHaru` channel brand label.
-- Make `HaruHaru` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `HaruHaru`, the channel name, a channel logo, or a brand line on the cover/first-frame.
+- If text is useful, use only a short integrated Korean pop lane phrase such as `K-POP`, `K-R&B`, `K-POP HIPHOP`, `DANCE POP`, `SYNTH POP`, or `POP ROCK`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
@@ -38,7 +38,7 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - Preserve the same scene, subject placement, lighting, palette, props, clothing colors, and camera angle from the cover.
 - Add short readable K-pop click text matched to the playlist concept, for example `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`.
 - Prefer thumbnail text that names the selected genre lane when accurate: `K-POP HIPHOP`, `K-R&B`, `DANCE POP`, `SYNTH POP`, `K-POP SOUL`, `POP ROCK`, `HEARTBREAK`, `SUMMER KPOP`, or `K-POP DRIVE`.
-- Add `HARUHARU` as the brand line. Keep it visually consistent with the large lower-left cover channel label.
+- Do not add `HARUHARU`, the channel name, or a channel logo.
 - Keep the main subject visually important; text must fit around the subject and must not push the subject into an awkward crop.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
@@ -52,22 +52,20 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
 - In photorealistic mode, keep motion subtle and realistic: light wind in hair or clothing, sunlight/water reflections, car/yacht movement, city lights, fabric movement, or gentle camera/subject tracking. Avoid exaggerated body motion or sexualized posing.
 - In photorealistic mode with an adult woman as the main subject, the subject must stay the same size in frame for the whole clip. If she walks, turns, rides in a car/yacht, or shifts position, the camera should track at the same speed/distance so her body scale, crop, and placement remain stable. Do not allow zoom-in, push-in, pull-back, lens breathing, camera drift toward/away from her, or subject scale growth/shrinkage. Let the background, side parallax, hair, clothing, light, water, city, or vehicle motion create the loop while the subject remains visually anchored.
-- Keep the `HaruHaru` brand label readable and unchanged for the full clip.
+- If the first frame has a short Korean pop style phrase, keep it stable and readable. Do not invent a channel name.
 - The final moment should stay close to the opening composition, crop, lighting, palette, camera distance, subject size, and subject placement. The app handles smooth repetition with a 1.5 second crossfade. Reject/regenerate photorealistic clips where the subject noticeably becomes larger/smaller, drifts toward/away from camera, or ends in a different crop.
 
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "HaruHaru".
-Create one continuous animated music visualizer shot for an original Korean K-pop vocal release.
+Use the uploaded first-frame image as the exact starting frame.
+Create one uninterrupted animated Korean pop visual take.
 Preserve the opening composition, lighting, palette, subject placement, fashion details, and selected visual language, whether illustrated/stylized or photorealistic.
 Animate natural motion that fits the specific playlist concept and K-pop mood.
 For photorealistic adult-woman shots, keep the main subject visually anchored at the same size and crop for the full clip. If she moves, the camera tracks with her at the same speed and distance; background/parallax/environment motion provides movement. No zoom-in, no push-in, no pull-back, no lens breathing, no camera drift toward or away from the subject, no subject scale change.
-Preserve the large, readable lower-left "HaruHaru" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
-The motion must progress naturally for the full clip.
-Do not repeat any segment. Do not ping-pong or restart motion.
+If the first frame already contains a short Korean pop style phrase, keep it stable and readable. Do not invent a channel name.
 The final moment should remain close to the opening composition, camera distance, lighting, palette, subject size, and subject placement without becoming frozen.
-Stable composition, no hard cuts, no unsafe minors, no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no sexual acts, no fetish framing, no celebrity likenesses, no other text, no subtitles, no logos, no UI.
+No unsafe minors, nudity, visible nipples/genitals, transparent clothing revealing intimate areas, sexual acts, fetish framing, celebrity likenesses, new text, subtitles, logos, or UI.
 ```
 
 ## Metadata
@@ -75,7 +73,7 @@ Stable composition, no hard cuts, no unsafe minors, no nudity, no visible nipple
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the K-pop identity, emotion, and real listening use case truthful.
 - Main upload metadata should be Korean. Use `--default-language ko` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--ko-title` / `--ko-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial K-pop playlists, not raw workspace names.
 - Use a title shape with the specific genre lane near the front, then a clear use case or emotion. Good examples: `[playlist] K-POP 힙합 믹스 | 운동, 러닝, 외출 준비, 자신감 충전`, `[playlist] Korean R&B 플레이리스트 | 이별, 늦은 밤, 혼자 듣는 노래`, `[playlist] K-POP 신스팝 드라이브 | 밤길, 도시 불빛, 자신감 충전`.

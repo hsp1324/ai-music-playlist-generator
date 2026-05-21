@@ -2,7 +2,7 @@
 
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
-For higher-level OpenClaw skill instructions, including "make one single", "build a 40-minute playlist", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
+For higher-level OpenClaw skill instructions, including "make one single", "build a playlist with roughly 40 minutes of new audio and a 60+ minute final render when reuse is available", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned `profile_doc` in [openclaw-channel-profiles](openclaw-channel-profiles/README.md). For next-release concept planning, read the returned `concept_doc` in [openclaw-channel-concepts](openclaw-channel-concepts/README.md).
 
@@ -153,10 +153,10 @@ Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into
 
 For full automatic playlist publishing, two final 16:9 images are required for normal channels.
 
-- `--cover /absolute/path/to/video-cover.png`: playback visual used inside the rendered video. For non-불송 channels, it must include only the selected channel name as a large, readable lower-left brand label because it is also the Gemini/Dreamina/Seedance first-frame reference. For `불송`, it must be a clean textless Buddhist visual with no channel label or other words.
-- `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. For non-불송 channels, include short readable click text plus the selected channel name as a smaller brand line. For `불송`, omit `--thumbnail` or pass `--allow-cover-as-thumbnail`; the app reuses the same clean textless cover as the YouTube thumbnail.
+- `--cover /absolute/path/to/video-cover.png`: playback visual and Gemini/Dreamina/Seedance first-frame reference. It must not contain channel names or logos. If text is useful, use only a short style, genre, use-case, or passage phrase.
+- `--thumbnail /absolute/path/to/youtube-thumbnail.png`: YouTube click thumbnail. Use short readable click text and never add the selected channel name or logo. For `불송`, pass the same cover/first-frame package as the thumbnail or use `--allow-cover-as-thumbnail`.
 
-Do not rely on the app's generated draft cover for YouTube upload. For non-불송 channels, do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles. The thumbnail is for clicks and should have large text; the cover is the Gemini/Dreamina/Seedance first-frame reference, so it should contain only the lower-left channel brand label. For `불송`, one clean textless image is intentionally reused for cover, thumbnail, first-frame, and loop-video reference.
+Do not rely on the app's generated draft cover for YouTube upload. Do not reuse the cover as the thumbnail unless the human explicitly approves one image for both roles or the selected profile uses one image package (`불송`). The thumbnail is for clicks and should have concise text; the cover is the video first-frame reference and should stay cleaner.
 
 Static image creation rules:
 
@@ -166,7 +166,7 @@ Static image creation rules:
 - Use OpenAI GPT Image models for static image generation. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running OpenAI/Image tool environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials.
 - If `gpt-image-2` is unavailable in the actual tool/API environment, fall back to the best available GPT Image model instead of using Dreamina for static images.
 - Produce 16:9 images, preferably `1280x720` or `1920x1080`.
-- Create the final cover first. For non-불송 channels, it must include only the selected channel name as a large, readable lower-left brand label. Then create the YouTube thumbnail from that exact final cover as an image-to-image edit/reference derivative. Do not make the thumbnail as a fresh unrelated generation. For `불송`, create one clean textless cover and reuse that exact image as the YouTube thumbnail instead of making a text derivative.
+- Create the final cover/first-frame first. Do not put channel names or logos on it. Then create the YouTube thumbnail from that exact final cover as an image-to-image edit/reference derivative. Do not make the thumbnail as a fresh unrelated generation. For `불송`, create one Buddhist cover/first-frame image with a short Korean passage/theme + style phrase when useful and reuse that exact image as the YouTube thumbnail when appropriate.
 - For `Tokyo Daydream Radio` or Japan/J-pop releases, use the Tokyo Daydream Radio profile unless the human requested a different visual concept.
 - For `Soft Hour Radio` or default BGM/cafe/sleep/study/chill releases, use the Soft Hour Radio profile.
 - For `sundaze` or English/American pop releases, use the sundaze profile. There is no fixed visual signature yet; the playlist concept should drive cover, thumbnail, and loop-video visuals.
@@ -177,40 +177,40 @@ Static image creation rules:
 - For `Club Bloom`, use the Club Bloom profile for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases. Each playlist must choose one club style lane and stay within it. Unless the human asks otherwise, Club Bloom visuals should look like an active DJ/performance moment in a premium dance venue, not abstract neon.
 - For `BibliaCanto`, use the BibliaCanto profile for lyric-based Old Testament and New Testament scripture-inspired songs. Both Bible branches upload to `BibliaCanto`; reserve Old Testament with `--channel-title "BibliaCanto"` and New Testament with `--channel-title "New Testament"`.
 - For `불송`, use the Buddhist profile for Buddhist scripture-inspired modern vocal music. Korean lyrics are the default, and the app schedules uploads public daily at 07:00 Asia/Seoul.
-- For `불송`, the cover, YouTube thumbnail, first-frame, and loop video are the same clean textless visual package. Do not put `불송`, title text, sutra text, captions, UI, logos, or any other words in the cover, thumbnail, or video visual.
+- For `불송`, the cover, YouTube thumbnail, first-frame, and loop video first frame are the same visual package. It may contain one short Korean passage/theme + style phrase, but never `불송`, title sentences, sutra paragraphs, captions, UI, logos, or unrelated words.
 - If the human explicitly names the upload channel, that channel controls visual routing.
 - Human visual requests override the selected channel visual skill. If the human asks for a specific scene, subject, action, camera angle, object, animal, character type, or video concept, use that request consistently for the cover, thumbnail, and loop video.
 - For thumbnails, the main default/requested subject must stay centered and visually important. Text must not push it to the side, crop it, cover it, or make it feel secondary. Put text into safe negative space around the centered composition.
 - Keep every static visual animated, anime, illustrated, or stylized unless the selected channel profile says otherwise. Cinematic Pulse and 불송 are photorealistic/premium cinematic-real exceptions, and HaruHaru has its own photorealistic rotation rule.
-- For non-불송 channels, the cover should be the clean channel/requested scene with only the selected channel name as a large lower-left brand label. The YouTube thumbnail should usually use the same composition plus large readable click text and channel branding. Exception: `불송` cover, YouTube thumbnail, first-frame, and loop assets must be fully textless and should all reuse the same clean image.
-- When deriving the thumbnail from the cover, preserve exact subject count, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add text, channel branding, crop/contrast/readability adjustments, and small layout refinements. Example: if a cloak is red in the cover, it must stay red in the thumbnail.
+- The cover should be the clean requested scene without channel names. The YouTube thumbnail should usually use the same composition plus large readable click text.
+- When deriving the thumbnail from the cover, preserve exact subject count, relative positions, silhouettes, clothing colors, major props, background landmarks, lighting, palette, and camera angle. Only add concise click text, crop/contrast/readability adjustments, and small layout refinements. Example: if a cloak is red in the cover, it must stay red in the thumbnail.
 - If the thumbnail changes character identity, clothing color, subject placement, or core background compared with the cover, reject it and regenerate before upload.
-- For Japan/J-pop releases on `Tokyo Daydream Radio`, keep a consistent channel thumbnail system across Tokyo/city, forest/nature, and beach variants: large `J-POP` text with smaller `TOKYO DAYDREAM RADIO` directly beneath it. Use the same full-bleed layout as the approved channel examples, with either the Tokyo three-person back-view composition or the centered human-requested visual composition.
-- For `Soft Hour Radio`, use thumbnail wording such as `DEEP SLEEP`, `CAFE PIANO`, `FOCUS MUSIC`, `RAINY NIGHT`, `STUDY BGM`, or `CALM READING`, with smaller `SOFT HOUR RADIO` branding.
-- For `sundaze`, use thumbnail wording such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`, with smaller `SUNDAZE` branding.
-- For `Solwave Radio`, use thumbnail wording such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`, with smaller `SOLWAVE RADIO` branding.
-- For `HaruHaru`, use thumbnail wording such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`, with smaller `HARUHARU` branding.
-- For `Storylight OST`, use thumbnail wording such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, or `FANTASY GAME`, with smaller `STORYLIGHT OST` branding.
-- For `Cinematic Pulse`, use thumbnail wording such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`, with smaller `CINEMATIC PULSE` branding. Avoid `FINAL BOSS`, `BOSS BGM`, `보스`, and `보스전` unless the human explicitly asks for game-combat packaging.
-- For `Club Bloom`, use style-specific thumbnail wording such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`, with smaller `CLUB BLOOM` branding.
+- For Japan/J-pop releases on `Tokyo Daydream Radio`, use large natural J-pop lane text such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, or `SUMMER J-POP`, without the channel name.
+- For `Soft Hour Radio`, use thumbnail wording such as `DEEP SLEEP`, `CAFE PIANO`, `FOCUS MUSIC`, `RAINY NIGHT`, `STUDY BGM`, `LOFI`, or `CALM READING`.
+- For `sundaze`, use thumbnail wording such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `POP R&B`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
+- For `Solwave Radio`, use thumbnail wording such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, `BACHATA POP`, or `NOCHE LATINA`.
+- For `HaruHaru`, use thumbnail wording such as `K-POP`, `K-R&B`, `K-POP HIPHOP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`.
+- For `Storylight OST`, use thumbnail wording such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, `PLAYFUL OST`, or `FANTASY GAME`.
+- For `Cinematic Pulse`, use thumbnail wording such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`. Avoid `FINAL BOSS`, `BOSS BGM`, `보스`, and `보스전` unless the human explicitly asks for game-combat packaging.
+- For `Club Bloom`, use style-specific thumbnail wording such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
 - For `Club Bloom`, reject visual assets that are too mild for a club channel: calm abstract neon, empty low-energy backgrounds, polite lounge imagery, low-contrast thumbnails, random glowing objects, or loop videos with only tiny motion. The cover, thumbnail, and short loop video should usually show active DJ/performance energy in a premium venue such as a beach-club deck, rooftop skyline DJ set, packed nightclub booth, concert/festival stage, warehouse rave, pool-party deck, open-air stage, yacht/harbor party, neon city terrace, or cyber club before upload.
-- For `BibliaCanto`, use thumbnail wording such as `GENESIS SONGS`, `OLD TESTAMENT`, `NEW TESTAMENT`, `GOSPEL SONGS`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`, with smaller `BIBLIACANTO` branding.
-- For `불송`, keep the cover, YouTube thumbnail, first-frame, and loop-video visual textless and identical. Omit `--thumbnail` or pass `--allow-cover-as-thumbnail`; do not create a separate text thumbnail unless the human explicitly reverses this rule.
+- For `BibliaCanto`, use passage-aware thumbnail wording such as `Genesis 1:1-5`, `Matthew 1:18-25`, `GENESIS SONGS`, `GOSPEL SONGS`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or a clear worship lane. Do not add `BIBLIACANTO` or any channel name to the visual.
+- For `불송`, use the same cover, YouTube thumbnail, first-frame, and loop-video first-frame package. It may contain one short Korean passage/theme + style phrase such as `팔정도 명상팝`, `자비 트립합`, or `무상 불교 재즈`, but never the `불송` channel name.
 - Do not add duration text or badges to thumbnails. Avoid `1 HOUR`, `60 MIN`, `1時間`, clocks, timers, and duration stickers.
-- Keep the channel-brand line size/style consistent between the thumbnail and the cover channel label when possible.
-- Use the cover or a separate first-frame image with only the lower-left channel brand label for Dreamina/Seedance/Gemini video generation. For `불송`, use the same fully textless cover/thumbnail/first-frame image. Do not use the final text thumbnail as the first-frame reference; generated video often makes large thumbnail text flicker, disappear, or reappear.
-- The large lower-left channel label is the only allowed baked-in moving-visual text unless the human explicitly asks for more. Exception: `불송` has no baked-in moving-visual text at all. Do not add titles, lyrics, subtitles, UI, logos, duration badges, genre text, or unrelated words inside the moving visual.
+- Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
+- Use the cover or a separate clean first-frame image for Dreamina/Seedance/Gemini video generation. Do not use a text-heavy thumbnail as the first-frame reference; generated video often makes large thumbnail text flicker, disappear, or reappear.
+- Do not add titles, lyrics, subtitles, UI, logos, duration badges, channel names, or unrelated words inside the moving visual. If text is needed, use only a short style, genre, use-case, or passage phrase already present in the first frame.
 - If Gemini/Veo adds its own provider logo or watermark, usually in the bottom-right corner, accept it as an unavoidable provider artifact. Do not regenerate a valid loop video only because that Gemini/Veo logo or watermark is visible. Do not add any other logos, brand marks, UI, or unrelated text yourself.
 
 Required moving visual:
 
-- `--loop-video /absolute/path/to/loop-video.mp4`: Gemini/Dreamina/Seedance visual clip for the rendered video. Gemini clips are uploaded as generated after inspection; Dreamina/Seedance clips should be generated with the duration control set to exactly 7 seconds.
+- `--loop-video /absolute/path/to/loop-video.mp4`: Gemini/Dreamina/Seedance visual clip for the rendered video. Gemini clips are uploaded as generated after inspection; Dreamina/Seedance clips should be generated with the duration control set to exactly 7 seconds, except `불송` clips which use 6 seconds.
 - `--loop-video-provider gemini|dreamina|seedance`: required for OpenClaw-created provider clips so the app records where the loop video came from. Use `gemini` for Gemini/Veo output, `dreamina` for Dreamina output, and `seedance` for Seedance output. The app stores this in `loop_video_provider` and `loop_video_history[].provider`.
 - OpenClaw should generate/download only the short clip. Do not export a long MP4 from OpenClaw.
 - The clip should be reusable for the full release: its final moment should stay close to the first-frame composition, camera distance, lighting, palette, and subject placement so the visual can cycle cleanly.
 - Keep natural motion while returning close enough to the opening composition.
 - Normal auto-publish must include a provider-generated `--loop-video` from Gemini, Dreamina, or Seedance. Do not use the thumbnail image, a text-heavy image, an app-rendered still image, or a locally synthesized motion loop as the moving video visual. A still-image fallback is allowed only when the human explicitly requests it, and then OpenClaw must pass `--allow-still-image-video`. `Cinematic Pulse` is an explicit standing exception: use a high-resolution photorealistic still cover as the final video visual and pass `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
-- The app validates uploaded loop videos only for technical readability. It does not reject low-motion clips or alternate clip lengths. OpenClaw still rejects unreadable/tiny files, but it should not reject a valid Gemini MP4 because of duration. If Seedance/Dreamina was generated with the wrong duration setting, regenerate it at 7 seconds before upload.
+- The app validates uploaded loop videos only for technical readability. It does not reject low-motion clips or alternate clip lengths. OpenClaw still rejects unreadable/tiny files, but it should not reject a valid Gemini MP4 because of duration. If Seedance/Dreamina was generated with the wrong duration setting, regenerate it with the correct channel duration before upload.
 
 Gemini-first website workflow for OpenClaw:
 
@@ -224,19 +224,19 @@ Gemini-first website workflow for OpenClaw:
 - When Gemini cooldown clears, process deferred releases that failed Dreamina/Seedance first. Create the Gemini loop video, upload it with `--loop-video-provider gemini`, then queue render before starting new loop-video work for other releases.
 - Open Gemini in the authenticated browser session.
 - Click the `Create image` / creation entry that accepts an image attachment and prompt. Use the image-to-video or video creation option when the UI offers it.
-- Attach the final cover or dedicated first-frame image as the first image. This image must contain only the lower-left channel brand label and no thumbnail click text.
+- Attach the final cover or dedicated first-frame image as the first image. This image must not contain a channel name or logo, and it should not be overloaded with thumbnail click text.
 - Paste the same motion prompt shape used for Dreamina/Seedance, adapted only if Gemini needs shorter wording.
-- Ask Gemini to preserve the first-frame composition, stylized/animated look, and exact lower-left channel label, and to animate the surrounding scene naturally. Do not ask it to add subtitles, title text, UI, logos, spectrum bars, or audio-reactive graphics.
+- Ask Gemini to preserve the first-frame composition, stylized/animated look, and any short style/passage phrase already present, and to animate the surrounding scene naturally. Do not ask it to add subtitles, title text, UI, logos, spectrum bars, audio-reactive graphics, or channel branding.
 - A Gemini/Veo provider logo or watermark in the corner is allowed and should not be treated as a failed generation.
 - Choose `16:9` when the Gemini UI exposes that control. Do not ask Gemini for a duration and do not mention clip length in the prompt. Download the generated MP4 as-is, inspect it, and upload it if text, framing, and motion are acceptable.
 - Download the generated MP4 to the VM or OpenClaw workspace.
-- Inspect the MP4 before upload. Reject it if the channel label disappears, flickers, is misspelled, changes position/style drastically, becomes unreadable, or if the motion is too static.
+- Inspect the MP4 before upload. Reject it if a short style/passage phrase flickers, is misspelled, changes position/style drastically, becomes unreadable, if a channel name appears, or if the motion is too static.
 - Upload it with `scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video ABSOLUTE_GEMINI_MP4`, or pass the same path to `--loop-video` in `auto-publish-playlist` / `auto-publish-single`.
 
 Gemini copyright/policy retry rule:
 
 - If Gemini refuses or blocks generation because of copyright, protected IP, policy, moderation, artist/style imitation, logo, brand, celebrity, or similar prompt/image issues, do not count that as one of the 3 successful Gemini videos.
-- Rewrite the prompt and retry Gemini up to 10 blocked attempts for that release. Each retry must remove risky wording while preserving the channel label, first-frame continuity, broad mood, and motion intent.
+- Rewrite the prompt and retry Gemini up to 10 blocked attempts for that release. Each retry must remove risky wording while preserving first-frame continuity, broad mood, and motion intent.
 - Before each retry, send Slack progress with `scripts/openclaw-release slack-notify --text "Gemini 영상 생성이 저작권/정책 이슈로 막혀서 프롬프트를 수정해 다시 시도합니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`.
 - If Gemini still cannot create a video after 10 blocked attempts, stop Gemini for that release and move on to Dreamina/Seedance instead of spending more time there.
 
@@ -251,13 +251,13 @@ Dreamina website workflow for OpenClaw:
 - Use Dreamina/Seedance `2.0 Fast` for normal releases. Exception: for HaruHaru photorealistic releases, use Seedance `2.0` instead of `2.0 Fast`.
 - Do not use Omni Reference.
 - Use the first/last-frame workflow if the UI asks which mode to use, but provide only the first-frame image.
-- Start from the cover image or a separate first-frame image that contains only the large lower-left selected-channel-name brand label. It should match the YouTube thumbnail scene and composition, including any explicit human visual request. It must not contain title text, genre text, duration text, or unrelated text.
+- Start from the cover image or a separate first-frame image without any channel name or logo. It should match the YouTube thumbnail scene and composition, including any explicit human visual request. It must not contain title sentences, duration text, or unrelated text.
 - Leave the last-frame input empty. Do not upload a last-frame reference; it makes the generated motion too static.
 - Set ratio to `16:9` when selectable.
 - Set quality to `720p` when selectable. Exception: for HaruHaru photorealistic releases, set quality to `1080p` and later queue final render with `--video-render-resolution 1080p`.
-- Set duration to `7 seconds` and re-check this visible control immediately before clicking Generate.
-- Do not click Generate while the duration control is hidden, while it shows anything other than `7 seconds`, or while you are unsure. Do not create a draft/test clip first.
-- Generate exactly one `7 second` MP4.
+- Set duration to `7 seconds` and re-check this visible control immediately before clicking Generate. For `불송`, set duration to `6 seconds`.
+- Do not click Generate while the duration control is hidden, while it shows the wrong duration, or while you are unsure. Do not create a draft/test clip first.
+- Generate exactly one short MP4 with the channel's required duration.
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
 - If login, CAPTCHA, subscription limits, face detection, moderation, or manual approval blocks Dreamina/Seedance generation/download, do not create a local motion-loop substitute. Try Gemini if quota is available. If Gemini has already created 3 videos in the active 24 hour window, defer this release and move on to another eligible release. When uploading any successful Dreamina/Seedance fallback clip, pass `--loop-video-provider dreamina` or `--loop-video-provider seedance`.
@@ -267,10 +267,10 @@ Dreamina/Seedance fallback rejection recovery:
 - If Dreamina/Seedance rejects generation for inappropriate content, copyright, policy, moderation, or similar content-safety reasons, do not retry the exact same prompt.
 - Retry up to 10 total Dreamina attempts for that loop video. Each failed attempt must send Slack progress before the next retry:
   `scripts/openclaw-release slack-notify --text "영상 만들기 실패해서 프롬프트를 수정해 다시 만듭니다. (ATTEMPT/10) RELEASE_TITLE: ERROR_SUMMARY"`
-- On each retry, make the prompt more original and generic while preserving the release mood, channel label, first-frame continuity, and requested motion direction.
+- On each retry, make the prompt more original and generic while preserving the release mood, first-frame continuity, and requested motion direction.
 - Remove or generalize anything that can look like protected IP or policy-risk text: named artists, studios, franchises, characters, brands, celebrity names, song titles, exact style imitation phrases such as `in the style of`, logos, weapons, gore, sexualized wording, minors, and real-person likeness references.
 - Replace risky references with generic descriptors. Examples: `Ghibli-like` becomes `soft hand-painted anime-inspired background`; `Disney style` becomes `warm family-friendly illustrated animation`; `YOASOBI music video style` becomes `bright mainstream Japanese pop visual mood`; a named character becomes `original youthful traveler silhouette`.
-- If the first-frame image itself appears to trigger rejection, regenerate a safer cover/first-frame image first, keeping only the large lower-left channel brand label and the same broad mood.
+- If the first-frame image itself appears to trigger rejection, regenerate a safer cover/first-frame image first, keeping the same broad mood without channel names or logos.
 - If all 10 Dreamina/Seedance attempts fail, try Gemini if quota is available.
 - If Gemini quota is exhausted, send a deferral Slack message:
   `scripts/openclaw-release slack-notify --text "Gemini 3개 영상 쿼터가 끝났고 Dreamina/Seedance도 실패해서 이 릴리즈의 loop video를 보류합니다. 24시간 쿨다운 후 Gemini로 먼저 다시 만들겠습니다. RELEASE_TITLE"`
@@ -281,11 +281,11 @@ Dreamina/Seedance/Gemini motion prompt guidance:
 - Ask the video provider for one continuous video shot whose final moment returns close to the first-frame composition. If the human requested a different motion/camera concept, ask for that requested continuous shot instead.
 - Do not put duration, ratio, or quality in the prompt when the UI has controls for them. Set duration only in Dreamina/Seedance controls; do not ask Gemini for a duration.
 - Do not include `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the prompt. Do not mention duration in Gemini prompts. These words can make Seedance/Dreamina/Gemini create a shorter repeated segment inside the clip.
-- Ask Dreamina/Seedance/Gemini to preserve the first-frame image's composition, lighting, palette, selected channel visual style, channel/requested subject/action, and large lower-left channel label in the first shot.
-- Use the selected channel profile for subject/action/motion. Always require stable composition, no hard cuts, no other text overlays, no subtitles, no logos, and no UI. Require no photorealism for the normal illustrated/anime/stylized channels; for `Cinematic Pulse`, use original photorealistic cinematic film-still / premium movie-poster realism instead.
+- Ask Dreamina/Seedance/Gemini to preserve the first-frame image's composition, lighting, palette, selected channel visual style, requested subject/action, and any short style/passage phrase already present.
+- Use the selected channel profile for subject/action/motion. Prefer positive fixed-shot language such as `single fixed camera shot`, `locked-off camera`, and `same composition from first to last frame`. Always require no channel names, no extra text overlays, no subtitles, no logos, and no UI. Require no photorealism for the normal illustrated/anime/stylized channels; for `Cinematic Pulse`, use original photorealistic cinematic film-still / premium movie-poster realism instead.
 - Provider-added Gemini/Veo corner logos or watermarks are allowed; the "no logos" requirement means OpenClaw must not request or create additional logos, brand marks, UI, or unrelated text.
-- Ask Dreamina/Seedance/Gemini to preserve the exact lower-left channel text, spelling, font/lettering, placement, color, and readability for the full clip. Ask it not to rewrite, translate, blur, morph, move, hide, flicker, or change the text. Keep the text area stable and animate only the surrounding scene subtly.
-- After generation, inspect the downloaded MP4. Reject and regenerate if the large lower-left channel label is missing, unreadable, misspelled, flickering, morphing, moving drastically, shrinking, or changing style.
+- If the first frame contains a short style, genre, use-case, or passage phrase, ask Dreamina/Seedance/Gemini to keep that phrase stable and readable for the full clip. Do not ask for channel branding.
+- After generation, inspect the downloaded MP4. Reject and regenerate if the existing short phrase is unreadable, misspelled, flickering, morphing, moving drastically, shrinking, changing style, or if a channel name appears.
 - Ask for the final moment to be close to the opening composition, but not perfectly identical or static.
 - If the model outputs audio, ignore it; the app uses the rendered playlist audio.
 
@@ -294,44 +294,40 @@ Recommended video prompt shapes are in the selected channel profile returned by 
 Tokyo/J-pop video prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Tokyo Daydream Radio".
-Create one continuous forward-moving animated music visualizer shot.
-Keep the Tokyo Daydream Radio signature: exactly three people seen from behind, walking away from the camera into the scene.
-The viewer should see backs and backs of heads, not front-facing faces.
-The motion must progress forward naturally for the full clip.
-Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
+Use the uploaded first-frame image as the exact starting frame.
+Create one continuous forward-moving J-pop visual take.
+Keep the channel signature: exactly three people walking toward the viewer in a front-view composition while the camera moves backward at the same speed.
+The three people stay the same size and centered.
+The final moment should stay close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
-Preserve the large, readable lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
+If the first frame contains a short J-pop/style phrase, keep it stable and readable. Do not invent a channel name.
 Adapt the background and atmosphere to the release concept.
-Add subtle camera-follow movement from behind, gentle environmental motion, reflections, rain shimmer, particles, or soft light motion.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI, no extra people or characters.
+Add side/background parallax, reflections, rain shimmer, particles, signs, trees, water, or soft light motion around the centered walking subjects.
+No new text, subtitles, logos, UI, photorealism, live action, or extra people.
 ```
 
 Soft Hour/default BGM video prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Soft Hour Radio".
-Create one continuous calm animated music visualizer shot for a background-music release.
+Use the uploaded first-frame image as the exact starting frame.
+Create one uninterrupted calm environmental take for a background-music release from a locked-off camera.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
-Preserve the large, readable lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, or change it.
+If the first frame contains a short use-case/style phrase, keep it stable and readable. Do not invent a channel name.
 Animate calm but clearly visible natural motion across several environmental layers already present or naturally implied by the first frame and release mood: leaves, grass, curtains, water/rain reflections, warm light shimmer, drifting particles, smoke, steam, fireflies, or soft air movement when appropriate.
 Keep continuous visible motion throughout the full clip while preserving the calm long-listening mood.
-The motion must progress naturally for the full clip.
-Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
+The final moment should preserve the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion.
+No new text, subtitles, logos, UI, photorealism, or live action.
 ```
 
-If the human provided a specific visual/video request, replace the selected channel default subject/action/camera details with the requested scene, subject, action, motion, and camera angle. Keep the rest of the constraints: one continuous shot, no repeated segment, no ping-pong, preserve first-frame composition/style, preserve the large lower-left channel label, no other text, no subtitles, no logos, no UI, and no extra unwanted subjects.
+If the human provided a specific visual/video request, replace the selected channel default subject/action/camera details with the requested scene, subject, action, motion, and camera angle. Keep the rest of the constraints: one continuous shot, stable composition, preserve first-frame composition/style, no channel names, no extra text, no subtitles, no logos, no UI, and no extra unwanted subjects.
 
-For any channel, include this in the video-generation prompt: `The uploaded first frame contains the exact large, readable lower-left channel brand label "{CHANNEL_NAME}" (for example, "Tokyo Daydream Radio"). The label should match the visual scale of the YouTube thumbnail's channel-brand line, roughly 18-24% of image width or 5-6% of image height for text cap height. Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, flicker, shrink, or change the text. Keep the text area stable; animate the surrounding scene naturally. No other text, subtitles, logos, UI, or title words.`
+For any channel, include this in the video-generation prompt: `The uploaded first frame must not contain a channel name or logo. If it contains a short style, genre, use-case, or passage phrase, keep that phrase stable and readable. Do not invent new text or channel branding. Keep the same composition, crop, camera distance, lighting, palette, and subject placement from first frame to final frame while animating natural environmental motion. No new text, subtitles, logos, UI, or title words.`
 
 Thumbnail text rules for OpenClaw:
 
 - Use 2-4 large words that describe the use case or mood, for example `CAFE PIANO`, `DEEP SLEEP`, `FOCUS MUSIC`, `RUNNING BEATS`.
-- Prefer the approved full-bleed style: strong image background, no card or panel, large bottom-left genre/mood text, and a smaller channel-brand line directly below.
-- For Tokyo Daydream Radio releases, use the channel name as the brand line. The approved mainstream J-pop pattern is large `J-POP` with `TOKYO DAYDREAM RADIO` beneath it. Keep this same two-line treatment for Tokyo/city, forest/nature, and beach versions to create channel consistency.
+- Prefer the approved full-bleed style: strong image background, no card or panel, and large genre/mood text in safe negative space.
+- For Tokyo Daydream Radio releases, use J-pop lane text such as `J-POP`, `CITY POP`, or `ANIME POP`; do not use the channel name as a brand line.
 - Do not add support text or duration badges. The thumbnail should not say `1 HOUR`, `60 MIN`, `1時間`, or show a time badge.
 - Keep text large enough to read on a phone.
 - Avoid long titles, dense paragraphs, fake UI, and obviously AI-looking distorted text.
@@ -339,8 +335,8 @@ Thumbnail text rules for OpenClaw:
 
 Localized YouTube metadata rules for OpenClaw:
 
-- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `pt-BR`, `pt-PT`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW`.
-- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `BibliaCanto`, `불송`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, playful Japanese game/anime OST BGM, cinematic orchestra/movie-OST/film-score BGM, no-vocal club music, scripture music, or similar pop-family/story-BGM releases, always write every configured language version: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
+- The app can upload YouTube localized metadata for `ko`, `ja`, `en`, `es`, `vi`, `th`, `hi`, `fil`, `id`, `tr`, `pt-BR`, `pt-PT`, `fr`, `de`, `ar`, `zh-CN`, and `zh-TW`.
+- For `Tokyo Daydream Radio`, `HaruHaru`, `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `BibliaCanto`, `불송`, `sundaze`, `Solwave Radio`, mainstream J-pop/Japanese pop, K-pop/Korean pop, English pop, Latin/Spanish pop, playful Japanese game/anime OST BGM, cinematic orchestra/movie-OST/film-score BGM, no-vocal club music, scripture music, or similar pop-family/story-BGM releases, always write every configured language version: Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese.
 - Use Korean as the default upload metadata for Tokyo/Soft Hour/HaruHaru and Buddhist `불송` unless the channel profile says otherwise. Use `--default-language en` for `Storylight OST`, `Cinematic Pulse`, `Club Bloom`, `BibliaCanto`, and `sundaze`; use `--default-language es` for `Solwave Radio`.
 - Pass the default-language copy through `--title` and `--description-file`, and also pass the matching localized title/description pair.
 - Treat localized video titles as transcreation, not literal translation. For every language below, write a natural, clickable title for that audience; if direct translation sounds awkward or weaker, change the wording, order, or exact hook while keeping the release identity, genre/lane, and use case truthful.
@@ -352,6 +348,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Pass Hindi through `--hi-title` and `--hi-description-file`; make the title natural Hindi, not literal English/Korean word order.
 - Pass Filipino through `--fil-title` and `--fil-description-file`; make the title natural Filipino/Tagalog YouTube copy.
 - Pass Indonesian through `--id-title` and `--id-description-file`; make the title natural Indonesian YouTube copy.
+- Pass Turkish through `--tr-title` and `--tr-description-file`; make the title natural Turkish YouTube copy.
 - Pass Brazilian Portuguese through `--pt-title` and `--pt-description-file`; the app stores this as `pt-BR`. Make the title natural for Brazilian viewers.
 - Pass European Portuguese for Portugal through `--pt-pt-title` and `--pt-pt-description-file`; the app stores this as `pt-PT`. Make the title natural for Portugal, not a Brazilian copy when phrasing differs.
 - Pass French through `--fr-title` and `--fr-description-file`; make the title natural French YouTube copy.
@@ -366,7 +363,7 @@ Localized YouTube metadata rules for OpenClaw:
 - For `Cinematic Pulse`, do not use juvenile game-menu title wording such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Prefer broad film-score wording across varied lanes such as final battle scene, epic cinematic orchestra, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, writing music, and movie OST focus. Title-shape repetition is acceptable when it preserves channel fit and sounds natural to a broad YouTube audience, but examples are style references rather than fixed templates.
 - For `Club Bloom`, make the club genre or subgenre obvious immediately after `[playlist]`; use mainstream mix language such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Club Mix`, or `Festival EDM Mix`. Put one or two public listening hooks after the separator. Avoid awkward keyword-stuffed title shapes like `[playlist] Progressive Trance for Night Roads, Gaming Focus and Club Drive`; prefer `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`.
 - Use `walk` / `산책` only when walking, commuting on foot, street movement, beach/forest walks, crosswalks, or similar movement is genuinely central. For arcade, game-center, karaoke, friend-hangout, party, rooftop, club, dance-pop, bass-heavy, or workout-ready releases, prefer arcade, gaming, friends, night out, getting ready, workout, running, party warmup, driving, nightlife, confidence, or weekend energy.
-- For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, the actual Japan scene, city-pop/mainstream pop substyle, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. `Tokyo Daydream Radio` is the channel brand, not a required title keyword; use `Tokyo` only for genuinely Tokyo-specific concepts. If language matters, mention it naturally in the description instead; the thumbnail/channel branding can carry `J-POP`.
+- For Japan/J-pop/Tokyo Daydream Radio titles, do not over-emphasize the language. Prefer `J-POP`, the actual Japan scene, city-pop/mainstream pop substyle, mood, and listening use cases. Avoid Korean title phrases like `일본어 J-pop`, `일본어 보컬`, or `일본어 카페 재즈` unless the human explicitly asks to highlight the language. `Tokyo Daydream Radio` is the channel brand, not a required title keyword; use `Tokyo` only for genuinely Tokyo-specific concepts. If language matters, mention it naturally in the description instead; the thumbnail text can carry `J-POP`.
 - In Korean title/description/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Use `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; localize displayed track-title text and surrounding description naturally unless a channel-specific rule says to preserve original song titles.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and every other localized description uses translated title text only.
@@ -548,8 +545,8 @@ Create an original single release and publish it through the app.
 Generate or obtain:
 - one final Suno audio file per YouTube single
 - a final clean 16:9 cover image
-- a separate YouTube thumbnail image with readable text for normal channels; for `불송`, reuse the same clean textless cover as the thumbnail
-- one short Gemini-first loop video; Seedance/Dreamina clips must be 7 seconds, while Gemini clips are uploaded as generated
+- a separate YouTube thumbnail image with readable text for normal channels; for `불송`, reuse the same cover/first-frame package as the thumbnail
+- one short Gemini-first loop video; Seedance/Dreamina clips are normally 7 seconds, `불송` clips are 6 seconds, and Gemini clips are uploaded as generated
 
 Then run:
 
@@ -569,7 +566,7 @@ scripts/openclaw-release auto-publish-single \
   --youtube-channel-title "Tokyo Daydream Radio"
 
 For non-Japan releases, use the selected channel profile. Korean/K-pop goes to "HaruHaru", playful no-vocal Japanese-style game/anime OST and arcade/fantasy-game BGM goes to "Storylight OST", no-vocal large-scale cinematic orchestra/movie-OST/film-score BGM goes to "Cinematic Pulse", no-vocal EDM/house/techno/trance club music goes to "Club Bloom", Old Testament and New Testament Bible scripture music goes to "BibliaCanto", Buddhist scripture-inspired vocal music goes to "불송", English/American pop goes to "sundaze", Latin/Spanish pop goes to "Solwave Radio", and default BGM/background goes to "Soft Hour Radio" unless the human says otherwise.
-Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run, plus one --exclude-style if excluded styles/negative tags were used. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice. For `불송`, omit `--thumbnail` or pass `--allow-cover-as-thumbnail` so the same clean textless cover is used as the thumbnail.
+Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single run, plus one --exclude-style if excluded styles/negative tags were used. If two Suno outputs are both good, create separate cover/thumbnail/loop-video assets and run auto-publish-single twice. For `불송`, pass the same cover/first-frame package as `--thumbnail` or use `--allow-cover-as-thumbnail`.
 ```
 
 ## Safety Rules
@@ -600,14 +597,14 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 - Use OpenAI GPT Image models for static cover and thumbnail images. Do not use Dreamina for static image generation.
 - Static cover and thumbnail images must follow the channel profile returned by `scripts/openclaw-release channel-profile`.
 - In thumbnails, keep the main channel/requested subject centered; text must not push it sideways.
-- Generate the thumbnail from the final cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, background continuity, and the channel-brand line style; only add click text/branding and readability adjustments.
+- Generate the thumbnail from the final cover as a reference/edit derivative. Preserve characters, positions, outfit colors, lighting, palette, and background continuity; only add concise click text and readability adjustments.
 - Do not use generated draft covers for full OpenClaw auto-publish runs. OpenClaw must create/upload a real final cover image first.
-- Do not publish without final thumbnail handling. For non-불송 channels, OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`. For `불송`, OpenClaw must reuse the same clean textless cover as the thumbnail by omitting `--thumbnail` or passing `--allow-cover-as-thumbnail`.
+- Do not publish without final thumbnail handling. For non-불송 channels, OpenClaw must create/upload a text thumbnail and pass it as `--thumbnail`. For `불송`, OpenClaw must reuse the same calm Buddhist cover/first-frame package as the thumbnail by omitting `--thumbnail` or passing `--allow-cover-as-thumbnail`; that package may contain one short Korean passage/theme + style phrase but never the `불송` channel name.
 - OpenClaw must create a Gemini/Dreamina/Seedance clip and pass the short MP4 as `--loop-video` before normal video render/publish. Try Gemini first unless its 24 hour cooldown is active; otherwise use Dreamina/Seedance. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if all 3 Gemini videos are already spent, defer this release until the 24 hour Gemini cooldown clears and process it before new loop-video work. The generated clip should end close to its opening composition so it can be reused across the long video. If the human explicitly approves a still-image fallback, pass `--allow-still-image-video`; otherwise do not render/publish. For `Cinematic Pulse`, skip loop-video work by default and render from the high-resolution still cover with `--video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
-- Keep `--cover`, `--thumbnail`, and `--loop-video` separate for non-불송 channels. `--thumbnail` should have readable YouTube text plus channel branding. `--cover` and `--loop-video` must contain only the large lower-left channel label as baked-in text. Never feed the text thumbnail into Gemini/Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. For `불송`, use one clean textless image as cover, thumbnail, and first-frame visual. If the human requested a specific video visual, that visual request must be reflected consistently across all assets.
+- Keep `--cover`, `--thumbnail`, and `--loop-video` separate for normal channels. `--thumbnail` should have readable YouTube click text; `--cover` and `--loop-video` should use the cleaner first-frame composition without channel names. Never feed a text-heavy thumbnail into Gemini/Dreamina/Seedance as the first frame; use the cover or a dedicated first-frame image. For `불송`, use one cover/thumbnail/first-frame package with a short Korean passage/theme + style phrase when useful. If the human requested a specific video visual, that visual request must be reflected consistently across all assets.
 - A Gemini/Veo provider logo or watermark in the corner is allowed and is not a reason to regenerate the loop video.
-- For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, count only successful video generations toward the 3 videos per 24 hour quota, and upload with `--loop-video-provider gemini`. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `7 seconds` through UI controls, then upload with `--loop-video-provider dreamina` or `--loop-video-provider seedance`. Exception: HaruHaru photorealistic releases use Seedance `2.0`, `1080p`, exactly `7 seconds`, and final render `--video-render-resolution 1080p`. Do not put those settings in the prompt.
-- For normal OpenClaw auto-publish work, verify the MP4 after download. If Seedance/Dreamina did not produce the requested 7 second clip, discard/regenerate unless the human explicitly accepts it and OpenClaw passes `--allow-short-loop-video`. For Gemini, inspect the generated MP4 and upload it as-is when text, framing, and motion are acceptable.
+- For Gemini, use the Gemini-first `Create image` / image+prompt workflow above, attach the cover/first-frame image, do not mention duration, count only successful video generations toward the 3 videos per 24 hour quota, and upload with `--loop-video-provider gemini`. For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, and exactly `7 seconds` through UI controls, then upload with `--loop-video-provider dreamina` or `--loop-video-provider seedance`. Exception: `불송` uses `2.0 Fast`, `720p`, exactly `6 seconds`; HaruHaru photorealistic releases use Seedance `2.0`, `1080p`, exactly `7 seconds`, and final render `--video-render-resolution 1080p`. Do not put those settings in the prompt.
+- For normal OpenClaw auto-publish work, verify the MP4 after download. If Seedance/Dreamina did not produce the requested channel duration, discard/regenerate unless the human explicitly accepts it and OpenClaw passes `--allow-short-loop-video`. For Gemini, inspect the generated MP4 and upload it as-is when text, framing, and motion are acceptable.
 - For Playlist Releases, `upload-audio` auto-approves by default. Do not add `--pending-review` unless the human explicitly asks.
 - For Playlist Releases, do not use pair/number titles. Replace Suno A/B or 1/2 output labels with independent track names before upload.
 - For Suno two-output generations, upload both candidates to one Single Release using `upload-single-candidates`.

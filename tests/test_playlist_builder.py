@@ -162,6 +162,38 @@ def test_ass_lyric_fade_scales_with_cue_duration(tmp_path) -> None:
     assert builder._lyric_ass_fade_tag(1.0, 1.6) == r"{\fad(180,200)}"
 
 
+def test_lyric_ass_styles_are_transparent_and_positioned(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    cues = [{"start": 1.0, "end": 4.0, "text": "자비의 길을 걸어"}]
+
+    center_path = tmp_path / "center.ass"
+    builder._write_lyric_ass_file(
+        center_path,
+        cues,
+        frame_size=(1280, 720),
+        lyric_overlay_style="center_breath_serif",
+    )
+    center_text = center_path.read_text(encoding="utf-8")
+    center_style = next(line for line in center_text.splitlines() if line.startswith("Style: Lyrics,"))
+    assert "Style: Lyrics,Noto Serif CJK KR" in center_text
+    assert ",0,0,0,,{\\fad(540,720)\\blur0.45}" in center_text
+    assert "&H00000000" in center_style
+    assert center_style.split(",")[18] == "5"
+
+    lower_left_path = tmp_path / "lower-left.ass"
+    builder._write_lyric_ass_file(
+        lower_left_path,
+        cues,
+        frame_size=(1280, 720),
+        lyric_overlay_style="editorial_lower_left",
+    )
+    lower_left_style = next(
+        line for line in lower_left_path.read_text(encoding="utf-8").splitlines() if line.startswith("Style: Lyrics,")
+    )
+    assert "&H00000000" in lower_left_style
+    assert lower_left_style.split(",")[18] == "1"
+
+
 def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
     audio_path = tmp_path / "empty.mp3"
     output_path = tmp_path / "release.mp3"

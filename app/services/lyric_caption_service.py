@@ -36,6 +36,7 @@ LANGUAGE_NAMES = {
     "hi": "Hindi",
     "fil": "Filipino",
     "id": "Indonesian",
+    "tr": "Turkish",
     "pt-BR": "Brazilian Portuguese",
     "pt-PT": "European Portuguese",
     "fr": "French",

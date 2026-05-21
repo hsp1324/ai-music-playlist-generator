@@ -458,6 +458,7 @@ def render_job(
     total_duration_seconds = render.get("total_duration_seconds")
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
     render_resolution = render.get("video_render_resolution") or "720p"
+    lyric_overlay_style = render.get("video_lyrics_overlay_style") or "auto"
     lyric_cues = render.get("lyric_cues") or []
     if (
         render.get("video_lyrics_overlay_enabled")
@@ -498,6 +499,7 @@ def render_job(
             render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
             lyric_cues=lyric_cues,
+            lyric_overlay_style=lyric_overlay_style,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
         )
@@ -509,6 +511,7 @@ def render_job(
             render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
             lyric_cues=lyric_cues,
+            lyric_overlay_style=lyric_overlay_style,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
         )

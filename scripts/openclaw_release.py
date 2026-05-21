@@ -134,6 +134,7 @@ REQUIRED_METADATA_LANGUAGES = (
     "hi",
     "fil",
     "id",
+    "tr",
     "pt-BR",
     "pt-PT",
     "fr",
@@ -1711,6 +1712,7 @@ def publish_release(client: httpx.Client, args: argparse.Namespace) -> dict[str,
             "youtube_channel_id": channel_id,
             "note": args.note or f"Publish release to {youtube_channel_title}.",
             "force_under_target": args.force_under_target,
+            "allow_reupload": args.allow_reupload,
         },
     )
     if not args.no_wait:
@@ -2133,6 +2135,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
             "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
+            "video_lyrics_overlay_style": getattr(args, "lyrics_overlay_style", "auto"),
             "video_lyrics_alignment_mode": getattr(args, "lyrics_alignment_mode", "whisper"),
         },
     )
@@ -2168,6 +2171,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "youtube_channel_id": channel_id,
             "note": f"Auto-publish playlist to {youtube_channel_title}.",
             "force_under_target": args.force_under_target,
+            "allow_reupload": args.allow_reupload,
         },
     )
     release = wait_for_release(
@@ -2233,7 +2237,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
         raise RuntimeError(
             "auto-publish-single requires --cover when creating a new Single Release. "
-            "Generate a final 16:9 cover image with only the large, readable lower-left channel-name brand label first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
+            "Generate a final 16:9 cover/first-frame image without channel names or logos first, then pass --cover ABSOLUTE_FINAL_COVER_IMAGE_PATH."
         )
     if not thumbnail_path and not args.release_id and not allow_cover_as_thumbnail:
         raise RuntimeError(
@@ -2455,6 +2459,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
             "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
+            "video_lyrics_overlay_style": getattr(args, "lyrics_overlay_style", "auto"),
             "video_lyrics_alignment_mode": getattr(args, "lyrics_alignment_mode", "whisper"),
         },
     )
@@ -2489,6 +2494,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "actor": args.actor,
             "youtube_channel_id": channel_id,
             "note": f"Auto-publish single to {youtube_channel_title}.",
+            "allow_reupload": args.allow_reupload,
         },
     )
     release = wait_for_release(
@@ -2724,6 +2730,7 @@ def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
             "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
+            "video_lyrics_overlay_style": getattr(args, "lyrics_overlay_style", "auto"),
             "video_lyrics_alignment_mode": getattr(args, "lyrics_alignment_mode", "whisper"),
         },
     )
@@ -2784,7 +2791,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "Use timestamps and row order exactly. Prefer display_timestamp_lines for metadata so A/B suffixes are not shown. "
             "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
-            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
+            "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "For every localized video title, use natural transcreation for that language rather than literal translation. If direct translation sounds awkward, weak, too long, or less clickable, change the wording, order, or exact hook while keeping the release identity, genre/lane, and use case truthful. For sundaze/English pop releases, localized video titles may be adapted per language; keep English track titles in every localized timestamped timeline row and translate only the surrounding prose, use-case text, and hashtags. sundaze titles must name one clear release-level genre lane when accurate, such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, neo-soul pop, acoustic pop, or ballad-pop, instead of generic English pop wording. "
             "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. HaruHaru titles must name one clear release-level genre lane when accurate, such as K-pop hip-hop, Korean R&B, K-pop dance-pop, synth-pop, pop-rock, soul/neo-soul pop, or ballad-pop, instead of generic K-pop wording. "
             "For Solwave Radio releases, write Spanish default metadata and name one clear release-level genre lane when accurate, such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul, instead of generic Latin pop wording. "
@@ -2794,7 +2801,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For 불송 Buddhist releases, write Korean default metadata and position it as modern Buddhist scripture-inspired vocal music. Name the Buddhist source or theme carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired, and do not claim exact chapter/verse coverage unless verified. Name one coherent release-level lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. State that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation. "
             "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/Buddhist scripture, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/Buddhist scripture, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
             "Use --default-language ko for HaruHaru and 불송, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, Club Bloom, and BibliaCanto."
         ),
     }
@@ -2895,6 +2902,14 @@ def metadata_localizations_from_args(args: argparse.Namespace, *, title: str, de
                 getattr(args, "id_description", ""),
                 getattr(args, "id_description_file", ""),
                 label="Indonesian description",
+            ),
+        },
+        "tr": {
+            "title": read_optional_text(getattr(args, "tr_title", ""), "", label="Turkish title"),
+            "description": read_optional_text(
+                getattr(args, "tr_description", ""),
+                getattr(args, "tr_description_file", ""),
+                label="Turkish description",
             ),
         },
         "pt-BR": {
@@ -3103,14 +3118,14 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
-    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release. For 불송, omit this to reuse the clean textless cover.")
+    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release. For 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
     auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
-    auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 uses this clean textless cover behavior by default.")
+    auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
     auto_playlist_parser.add_argument("--release-id", default="", help="Existing Playlist Release id. If omitted, a new release is created.")
     auto_playlist_parser.add_argument("--release-title", default="", help="New Playlist Release title. Defaults to first audio filename stem.")
     auto_playlist_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
@@ -3130,7 +3145,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "mirror-bars", "none"],
+        choices=["bars", "mirror-bars", "calm-bars", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
@@ -3150,6 +3165,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay",
         action="store_true",
         help="Burn approximate line-level lyric subtitles into the rendered video. Use for vocal lyric releases.",
+    )
+    auto_playlist_parser.add_argument(
+        "--lyrics-overlay-style",
+        choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
+        default="auto",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and soft-bottom-fade for other lyric releases.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3170,15 +3191,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Use exactly one; run this command again for a second good Suno output.")
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
-    auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover image with only the large, readable lower-left channel-name brand label unless an uploaded final cover already exists on the release.")
-    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release. For 불송, omit this to reuse the clean textless cover.")
+    auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover/first-frame image without channel names or logos unless an uploaded final cover already exists on the release.")
+    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release. For 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
     auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
     auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
     auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
-    auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 uses this clean textless cover behavior by default.")
+    auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
     auto_single_parser.add_argument("--release-id", default="", help="Existing Single Release id. If omitted, a new release is created.")
     auto_single_parser.add_argument("--release-title", default="", help="New Single Release title. Defaults to first audio filename stem.")
     auto_single_parser.add_argument("--description", default="", help="Release description used for metadata generation.")
@@ -3192,7 +3213,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "mirror-bars", "none"],
+        choices=["bars", "mirror-bars", "calm-bars", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
@@ -3212,6 +3233,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay",
         action="store_true",
         help="Burn approximate line-level lyric subtitles into the rendered video. Use for vocal lyric releases.",
+    )
+    auto_single_parser.add_argument(
+        "--lyrics-overlay-style",
+        choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
+        default="auto",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and soft-bottom-fade for other lyric releases.",
     )
     auto_single_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3278,7 +3305,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "mirror-bars", "none"],
+        choices=["bars", "mirror-bars", "calm-bars", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release.",
     )
@@ -3298,6 +3325,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay",
         action="store_true",
         help="Burn approximate line-level lyric subtitles into the rendered video. Use for vocal lyric releases.",
+    )
+    render_video_parser.add_argument(
+        "--lyrics-overlay-style",
+        choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
+        default="auto",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and soft-bottom-fade for other lyric releases.",
     )
     render_video_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3357,6 +3390,9 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--id-title", default="", help="Indonesian localized YouTube title.")
     metadata_parser.add_argument("--id-description", default="", help="Indonesian localized YouTube description. Prefer --id-description-file for multiline copy.")
     metadata_parser.add_argument("--id-description-file", default="", help="UTF-8 Indonesian description file.")
+    metadata_parser.add_argument("--tr-title", default="", help="Turkish localized YouTube title.")
+    metadata_parser.add_argument("--tr-description", default="", help="Turkish localized YouTube description. Prefer --tr-description-file for multiline copy.")
+    metadata_parser.add_argument("--tr-description-file", default="", help="UTF-8 Turkish description file.")
     metadata_parser.add_argument("--pt-title", default="", help="Brazilian Portuguese localized YouTube title.")
     metadata_parser.add_argument("--pt-description", default="", help="Brazilian Portuguese localized YouTube description. Prefer --pt-description-file for multiline copy.")
     metadata_parser.add_argument("--pt-description-file", default="", help="UTF-8 Brazilian Portuguese description file.")
@@ -3378,7 +3414,7 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--zh-tw-title", default="", help="Traditional Chinese localized YouTube title.")
     metadata_parser.add_argument("--zh-tw-description", default="", help="Traditional Chinese localized YouTube description. Prefer --zh-tw-description-file for multiline copy.")
     metadata_parser.add_argument("--zh-tw-description-file", default="", help="UTF-8 Traditional Chinese description file.")
-    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, fil, id, pt-BR, pt-PT, fr, de, ar, zh-CN, or zh-TW.")
+    metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, fil, id, tr, pt-BR, pt-PT, fr, de, ar, zh-CN, or zh-TW.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)

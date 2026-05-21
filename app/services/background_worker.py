@@ -8,6 +8,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session, selectinload
@@ -23,6 +24,7 @@ from app.utils.youtube_localizations import (
     ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
+    sanitize_youtube_copy,
 )
 from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 from app.utils.openclaw_slack_loop import (
@@ -35,7 +37,12 @@ from app.utils.ops_notifications import notify_youtube_publish_completed
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
 from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_line_lyric_cues
 from app.utils.timeline import build_rendered_timeline_snapshot
-from app.utils.video_render_policy import apply_video_spectrum_channel_policy, is_cinematic_pulse_release
+from app.utils.video_render_policy import (
+    apply_video_spectrum_channel_policy,
+    is_cinematic_pulse_release,
+    resolve_video_lyrics_overlay_style,
+    should_auto_enable_video_lyrics_overlay,
+)
 from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
     evaluate_openclaw_backlog_scheduler,
@@ -167,6 +174,34 @@ def _is_long_video_verification_upload_error(error_text: str, playlist: Playlist
     return any(marker in normalized for marker in duration_markers) and any(
         marker in normalized for marker in verification_markers
     )
+
+
+def _canonical_channel_title(value: str | None) -> str:
+    return str(value or "").strip().casefold()
+
+
+def _youtube_title_key(value: str | None) -> str:
+    return sanitize_youtube_copy(str(value or "")).strip()[:100].casefold()
+
+
+def _playlist_channel_matches(
+    playlist: Playlist,
+    *,
+    youtube_channel_id: str | None,
+    youtube_channel_title: str | None,
+) -> bool:
+    meta = dict(playlist.metadata_json or {})
+    clean_channel_id = str(youtube_channel_id or "").strip()
+    if clean_channel_id and str(meta.get("youtube_channel_id") or "").strip() == clean_channel_id:
+        return True
+    clean_title = _canonical_channel_title(youtube_channel_title)
+    if not clean_title:
+        return False
+    playlist_titles = {
+        _canonical_channel_title(meta.get("youtube_channel_title")),
+        _canonical_channel_title(meta.get("target_youtube_channel_title")),
+    }
+    return clean_title in playlist_titles
 
 
 @dataclass
@@ -334,6 +369,137 @@ class BackgroundJobWorker:
             if any(counts.values()):
                 db.commit()
         return counts
+
+    @staticmethod
+    def _parse_iso_datetime(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    @staticmethod
+    def _playlist_has_interrupted_upload_retry(db: Session, playlist_id: str) -> bool:
+        jobs = db.scalars(
+            select(Job).where(
+                Job.playlist_id == playlist_id,
+                Job.type == JobType.upload_youtube,
+                Job.status == JobStatus.failed,
+            )
+        ).all()
+        for failed_job in jobs:
+            result = dict(failed_job.result_json or {})
+            if result.get("interrupted_worker_resolution") == "failed_requires_retry":
+                return True
+            if "interrupted before completion" in str(failed_job.error_text or "").lower():
+                return True
+        return False
+
+    def _adopt_recent_existing_youtube_upload(
+        self,
+        db: Session,
+        playlist: Playlist,
+        *,
+        youtube_channel_id: str | None,
+        youtube_channel_title: str | None,
+        title: str,
+    ) -> SimpleNamespace | None:
+        clean_channel_id = str(youtube_channel_id or "").strip()
+        if not self.settings.youtube_adopt_existing_upload_on_retry or not clean_channel_id:
+            return None
+        if playlist.youtube_video_id or not self._playlist_has_interrupted_upload_retry(db, playlist.id):
+            return None
+
+        duration_seconds = max(
+            int(playlist.actual_duration_seconds or 0),
+            int(float((playlist.metadata_json or {}).get("rendered_duration_seconds") or 0)),
+        )
+        existing = self.services.youtube.find_recent_upload_by_title(
+            channel_id=clean_channel_id,
+            title=title,
+            duration_seconds=duration_seconds,
+            max_age_hours=self.settings.youtube_adopt_existing_upload_max_age_hours,
+        )
+        if not existing:
+            return None
+
+        response = {
+            "id": existing["video_id"],
+            "adopted_existing_upload": True,
+            "snippet": {
+                "title": existing.get("title") or title,
+                "publishedAt": existing.get("published_at"),
+                "channelId": existing.get("channel_id") or clean_channel_id,
+                "channelTitle": existing.get("channel_title") or youtube_channel_title,
+                "defaultLanguage": existing.get("default_language"),
+                "defaultAudioLanguage": existing.get("default_audio_language"),
+            },
+            "status": {
+                "privacyStatus": existing.get("privacy_status"),
+            },
+            "contentDetails": {
+                "duration": existing.get("duration"),
+            },
+            "upload_channel": {
+                "id": existing.get("channel_id") or clean_channel_id,
+                "title": existing.get("channel_title") or youtube_channel_title,
+            },
+        }
+        if existing.get("publish_at"):
+            response["status"]["publishAt"] = existing["publish_at"]
+            parsed_publish_at = self._parse_iso_datetime(existing["publish_at"])
+            if parsed_publish_at:
+                response["scheduled_publish_at"] = parsed_publish_at.isoformat()
+        return SimpleNamespace(video_id=existing["video_id"], response=response)
+
+    @staticmethod
+    def _checkpoint_youtube_upload(
+        db: Session,
+        *,
+        playlist: Playlist,
+        job: Job,
+        meta: dict,
+        result,
+        title: str,
+    ) -> dict:
+        uploaded_video_path = playlist.output_video_path
+        playlist.youtube_video_id = result.video_id
+        playlist.status = PlaylistStatus.uploaded
+        meta["workflow_state"] = "uploaded"
+        meta["youtube_response"] = result.response
+        response_snippet = result.response.get("snippet") if isinstance(result.response, dict) else {}
+        meta["youtube_published_at"] = (
+            response_snippet.get("publishedAt")
+            if isinstance(response_snippet, dict) and response_snippet.get("publishedAt")
+            else _utcnow().isoformat()
+        )
+        if result.response.get("upload_channel"):
+            meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
+            meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
+        meta.pop("youtube_upload_error", None)
+        job.result_json = {
+            **(job.result_json or {}),
+            "youtube_upload_checkpoint": {
+                "video_id": playlist.youtube_video_id,
+                "checkpointed_at": _utcnow().isoformat(),
+                "adopted_existing_upload": bool(result.response.get("adopted_existing_upload")),
+            },
+            "playlist_id": playlist.id,
+            "cover_image_path": meta.get("cover_image_path"),
+            "output_video_path": uploaded_video_path,
+            "youtube_video_id": playlist.youtube_video_id,
+            "youtube_title": title,
+        }
+        playlist.metadata_json = meta
+        db.add(playlist)
+        db.add(job)
+        db.commit()
+        db.refresh(playlist)
+        return dict(playlist.metadata_json or {})
 
     def _run_loop(
         self,
@@ -702,13 +868,21 @@ class BackgroundJobWorker:
             for item in sorted(playlist.items, key=lambda item: item.order_index)
             if item.track is not None
         ]
-        lyrics_overlay_enabled = bool(
-            (job.payload_json or {}).get(
-                "video_lyrics_overlay_enabled",
-                meta.get("video_lyrics_overlay_enabled", self.settings.video_lyrics_overlay_enabled),
-            )
-        )
+        payload = job.payload_json or {}
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
+        track_dicts = [_track_timeline_dict(track) for track in tracks]
+        lyrics_overlay_enabled = bool(
+            payload.get("video_lyrics_overlay_enabled")
+            or meta.get("video_lyrics_overlay_enabled")
+            or self.settings.video_lyrics_overlay_enabled
+            or should_auto_enable_video_lyrics_overlay(meta, track_dicts)
+        )
+        lyrics_overlay_style = resolve_video_lyrics_overlay_style(
+            payload.get("video_lyrics_overlay_style")
+            or meta.get("video_lyrics_overlay_style")
+            or self.settings.video_lyrics_overlay_style,
+            meta,
+        )
         lyric_cues = (
             self._build_video_lyric_cues(job, meta, tracks, audio_path, total_duration_seconds)
             if lyrics_overlay_enabled
@@ -764,6 +938,7 @@ class BackgroundJobWorker:
                     render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
                     lyric_cues=lyric_cues,
+                    lyric_overlay_style=lyrics_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -779,6 +954,7 @@ class BackgroundJobWorker:
                     render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
                     lyric_cues=lyric_cues,
+                    lyric_overlay_style=lyrics_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
                 )
@@ -829,6 +1005,7 @@ class BackgroundJobWorker:
         meta["video_render_resolution"] = video_render_resolution
         meta["video_render_source_mode"] = video_render_source_mode
         meta["video_lyrics_overlay_enabled"] = lyrics_overlay_enabled
+        meta["video_lyrics_overlay_style"] = lyrics_overlay_style
         meta["video_lyrics_alignment_mode"] = str(
             (job.payload_json or {}).get(
                 "video_lyrics_alignment_mode",
@@ -1103,6 +1280,7 @@ class BackgroundJobWorker:
         actor = (job.payload_json or {}).get("actor") or "background-worker"
         note = (job.payload_json or {}).get("note")
         force_under_target = bool((job.payload_json or {}).get("force_under_target"))
+        allow_reupload = bool((job.payload_json or {}).get("allow_reupload"))
         youtube_channel_id = (job.payload_json or {}).get("youtube_channel_id") or meta.get("youtube_channel_id")
 
         if not playlist.items:
@@ -1112,6 +1290,10 @@ class BackgroundJobWorker:
             raise ValueError("Playlist has not reached its target duration yet.")
         if under_target and not force_under_target:
             raise ValueError("Playlist has not reached its target duration yet.")
+        if playlist.youtube_video_id and not allow_reupload:
+            raise ValueError(
+                "This release already has a YouTube video id. Pass allow_reupload only when intentionally replacing it."
+            )
         if force_under_target and under_target:
             meta["publish_ready"] = True
             meta["publish_under_target_confirmed"] = True
@@ -1182,23 +1364,36 @@ class BackgroundJobWorker:
                             schedule_interval_days=schedule_options.get("schedule_interval_days"),
                         )
                     )
-                    result = self.services.youtube.upload_playlist_video(
+                    result = self._adopt_recent_existing_youtube_upload(
+                        db,
                         playlist,
-                        title=title,
-                        description=description,
-                        tags=tags,
-                        thumbnail_path=thumbnail_path,
                         youtube_channel_id=youtube_channel_id,
-                        localizations=localizations,
-                        default_language=default_language,
-                        scheduled_publish_at=scheduled_publish_at,
-                        privacy_status="private" if schedule_options.get("schedule_disabled") else None,
+                        youtube_channel_title=meta.get("youtube_channel_title"),
+                        title=title,
                     )
-                    uploaded_video_path = playlist.output_video_path
-                    playlist.youtube_video_id = result.video_id
-                    playlist.status = PlaylistStatus.uploaded
-                    meta["workflow_state"] = "uploaded"
-                    meta["youtube_response"] = result.response
+                    if result is None:
+                        result = self.services.youtube.upload_playlist_video(
+                            playlist,
+                            title=title,
+                            description=description,
+                            tags=tags,
+                            thumbnail_path=thumbnail_path,
+                            youtube_channel_id=youtube_channel_id,
+                            localizations=localizations,
+                            default_language=default_language,
+                            scheduled_publish_at=scheduled_publish_at,
+                            privacy_status="private" if schedule_options.get("schedule_disabled") else None,
+                        )
+                    adopted_scheduled_at = self._parse_iso_datetime(
+                        result.response.get("scheduled_publish_at")
+                        or (
+                            (result.response.get("status") or {}).get("publishAt")
+                            if isinstance(result.response.get("status"), dict)
+                            else None
+                        )
+                    )
+                    if adopted_scheduled_at is not None:
+                        scheduled_publish_at = adopted_scheduled_at
                     meta.update(
                         youtube_schedule_metadata(
                             self.services,
@@ -1214,15 +1409,15 @@ class BackgroundJobWorker:
                         meta["youtube_schedule_disabled_reason"] = str(
                             schedule_options.get("schedule_label") or "schedule_disabled"
                         )
-                    response_snippet = result.response.get("snippet") if isinstance(result.response, dict) else {}
-                    meta["youtube_published_at"] = (
-                        response_snippet.get("publishedAt")
-                        if isinstance(response_snippet, dict) and response_snippet.get("publishedAt")
-                        else _utcnow().isoformat()
+                    uploaded_video_path = playlist.output_video_path
+                    meta = self._checkpoint_youtube_upload(
+                        db,
+                        playlist=playlist,
+                        job=job,
+                        meta=meta,
+                        result=result,
+                        title=title,
                     )
-                    if result.response.get("upload_channel"):
-                        meta["youtube_channel_id"] = result.response["upload_channel"].get("id")
-                        meta["youtube_channel_title"] = result.response["upload_channel"].get("title")
                     caption_result = self._maybe_upload_youtube_lyrics_captions(
                         playlist,
                         [
@@ -1293,6 +1488,17 @@ class BackgroundJobWorker:
                             },
                         }
                 except Exception as exc:  # noqa: BLE001
+                    if playlist.youtube_video_id:
+                        playlist.status = PlaylistStatus.uploaded
+                        meta["workflow_state"] = "uploaded"
+                        meta["youtube_post_upload_error"] = str(exc)
+                        meta["note"] = (
+                            "YouTube upload completed, but a post-upload step failed. "
+                            "The app will not retry a duplicate upload."
+                        )
+                        playlist.metadata_json = meta
+                        db.add(playlist)
+                        return
                     if _is_long_video_verification_upload_error(str(exc), playlist):
                         playlist.status = PlaylistStatus.ready
                         meta["workflow_state"] = "youtube_upload_deferred_verification"
@@ -1460,8 +1666,17 @@ class BackgroundJobWorker:
                     "updated_at": _utcnow().isoformat(),
                 }
             elif job.type == JobType.upload_youtube:
-                playlist.status = PlaylistStatus.ready
-                if meta.get("workflow_state") not in {"video_build_failed", "youtube_upload_failed"}:
+                if playlist.youtube_video_id:
+                    playlist.status = PlaylistStatus.uploaded
+                    meta["workflow_state"] = "uploaded"
+                    meta["youtube_post_upload_error"] = error_text
+                    meta["note"] = (
+                        "YouTube upload completed, but a post-upload step failed. "
+                        "The app will not retry a duplicate upload."
+                    )
+                else:
+                    playlist.status = PlaylistStatus.ready
+                if not playlist.youtube_video_id and meta.get("workflow_state") not in {"video_build_failed", "youtube_upload_failed"}:
                     meta["workflow_state"] = "publish_failed"
                     meta["note"] = f"Background publish failed: {error_text}"
             playlist.metadata_json = meta
@@ -1811,23 +2026,23 @@ class BackgroundJobWorker:
         if not channel_title:
             channel_title = "Tokyo Daydream Radio" if is_tokyo_visual else "Soft Hour Radio"
         is_cinematic_pulse = channel_title.strip().lower() == "cinematic pulse"
-        channel_label_prompt = (
-            f'The uploaded first-frame image contains the exact large, readable lower-left channel brand label "{channel_title}". '
-            "It should be the same visual scale as the channel-brand line used on the YouTube thumbnail, roughly 18-24% of image width or 5-6% of image height for text cap height. "
-            "Preserve this text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, "
-            "shrink, flicker, or change it. Keep the text area stable and animate the surrounding scene naturally. "
-            "No other text, subtitles, logos, UI, or title words."
+        text_policy_prompt = (
+            "The uploaded first-frame image must not contain a channel name, channel logo, watermark, UI, subtitles, "
+            "lyrics, title sentence, or duration text. If the first frame contains text, it should be only a short "
+            "release style/genre phrase such as J-POP, LOFI, R&B, JAZZ, TECH HOUSE, or CINEMATIC, naturally integrated "
+            "into the artwork. Preserve that short style phrase only if it already exists and is not a channel name; "
+            "do not invent new words or add extra text during animation."
         )
         signature_prompt = (
-            "Signature composition for Tokyo Daydream Radio/J-pop only: exactly three people seen from behind, "
-            "walking away from the camera into the scene. The viewer sees their backs and backs of heads, "
-            "not front-facing faces. One continuous forward-moving shot with subtle camera-follow movement from behind, "
-            "final moment close to the opening composition while maintaining natural motion, "
-            "stable composition, no repeated segment, no hard cuts, no subtitles, no extra people or characters. "
-            f"{channel_label_prompt}"
+            "J-pop signature composition only: exactly three people walking toward the viewer in a front-view composition. "
+            "The camera moves backward at the same speed and distance so the three people stay the same size, crop, and centered placement. "
+            "Use side/background parallax, lights, rain, reflections, trees, water, signs, or distant activity for loopable motion. "
+            "One continuous forward-moving take, final moment close to the opening composition while maintaining natural motion, "
+            "stable composition, no hard cuts, no subtitles, no extra people or characters. "
+            f"{text_policy_prompt}"
         )
         soft_hour_prompt = (
-            "Soft Hour Radio/background-music visual system: calm, restrained visual concept matched to the release. "
+            "Background-music visual system: calm, restrained visual concept matched to the release. "
             "Let the release concept and first frame decide the subject; do not force a fixed recurring mascot, "
             "character count, scene list, or camera composition. Use motion derived from the first frame. "
             "Keep the camera locked in the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. "
@@ -1835,10 +2050,10 @@ class BackgroundJobWorker:
             "Keep continuous visible motion throughout the full clip while preserving the calm long-listening mood. "
             "The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ. "
             "No repeated segment, no hard cuts, no subtitles, no logos, no UI. "
-            f"{channel_label_prompt}"
+            f"{text_policy_prompt}"
         )
         cinematic_pulse_prompt = (
-            "Cinematic Pulse visual system: photorealistic cinematic film-still / premium movie-poster realism, "
+            "Cinematic music visual system: photorealistic cinematic film-still / premium movie-poster realism, "
             "with realistic lighting, depth of field, cinematic lensing, atmospheric haze, believable materials, "
             "bold contrast, and one strong focal scene. "
             "Animate powerful but controlled cinematic motion already present or naturally implied by the first frame: "
@@ -1847,7 +2062,7 @@ class BackgroundJobWorker:
             "Keep the final moment close to the opening composition, with stable framing and no repeated segment. "
             "Do not turn the image into anime, cartoon, illustration, painterly fantasy art, or game UI art. "
             "No gore, real war footage, real political imagery, celebrity likenesses, protected characters, franchise references, subtitles, extra text, logos, or UI. "
-            f"{channel_label_prompt}"
+            f"{text_policy_prompt}"
         )
         visual_system_prompt = cinematic_pulse_prompt if is_cinematic_pulse else (
             "Use animated, anime, illustrated, or stylized visual language. "
@@ -1875,20 +2090,20 @@ class BackgroundJobWorker:
             )
         if is_cinematic_pulse:
             return (
-                "Cinematic music visualizer shot for Cinematic Pulse. "
+                "Cinematic music visualizer shot. "
                 f"{cinematic_pulse_prompt}"
             )
         if is_tokyo_visual:
             return (
-                "Cinematic music visualizer shot for Tokyo Daydream Radio/J-pop with exactly three people seen from behind walking away from the camera into the scene, "
+                "Cinematic music visualizer shot for J-pop with exactly three people walking toward the viewer in a front-view composition, "
                 "animated/anime/illustrated style, not photorealistic or live-action, "
-                "one continuous forward-moving take with subtle camera-follow movement from behind, atmospheric lighting, final moment close to the opening composition, no repeated segment. "
-                f"{channel_label_prompt}"
+                "camera moving backward at the same speed and distance so the subjects stay the same size, atmospheric lighting, final moment close to the opening composition. "
+                f"{text_policy_prompt}"
             )
         return (
-            "Cinematic background-music visualizer shot for Soft Hour Radio: calm, restrained illustrated scene matched to the release concept. "
+            "Cinematic background-music visualizer shot: calm, restrained illustrated scene matched to the release concept. "
             "Animated/anime/illustrated style, not photorealistic or live-action. Locked camera with the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. Calm but clearly visible ambient motion across several environmental layers derived from the first frame, stable composition, no fixed recurring character/scene template, no repeated segment, continuous visible motion throughout the full clip. "
-            f"{channel_label_prompt}"
+            f"{text_policy_prompt}"
         )
 
     @staticmethod

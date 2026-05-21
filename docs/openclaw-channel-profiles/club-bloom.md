@@ -24,9 +24,9 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `Club Bloom` channel brand label.
-- Make `Club Bloom` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `Club Bloom`, the channel name, a channel logo, or a brand line on the cover/first-frame.
+- If text is useful, use only a short integrated EDM/club style phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the selected club style lane. The image should feel like a real DJ/performance context through venue, booth/decks, lighting, performers, movement, crowd energy, fashion, or nightlife atmosphere, while still staying original and varied.
 - Do not accept a cover that reads as generic ambient neon, quiet lounge art, abstract wallpaper, empty venue, random glowing background, or a low-energy image. Unless the human asked otherwise, reject covers that do not clearly show DJ/performance context or a premium dance venue. The cover should already feel energetic enough to justify a strong thumbnail.
 
@@ -35,7 +35,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable click text that matches the selected style lane, for example `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
-- Add `CLUB BLOOM` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
+- Do not add `CLUB BLOOM`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 - The thumbnail should be bolder than the cover: larger subject/action, stronger contrast, clearer facial/body silhouette when a person is present, and text that feels like a club mix hook rather than a neutral label.
 
@@ -45,7 +45,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the selected cover concept with visible rhythmic motion tied to the DJ/performance location: DJ hand movement, mixer/deck LEDs, crowd movement, light sweeps, neon reflections, LED pulses, laser haze, stage lighting, ocean/sunset reflections for beach clubs, skyline light motion for rooftops, concert strobes, or dance-floor glow.
-- Preserve the large, readable lower-left `Club Bloom` text exactly for the full clip.
+- If the first frame has a short EDM/club style phrase, keep it stable and readable. Do not invent a channel name.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, sexual acts, unsafe minors, protected brands, or real club footage.
 - The loop video must visibly move. Reject weak clips where only tiny background particles move, the scene feels static, there is no DJ/performance or premium venue read, or the club energy drops below the still cover.
@@ -58,15 +58,14 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Club Bloom".
-Create one continuous animated neon dance music visualizer shot for a Club Bloom no-vocal club release in the selected style lane.
+Use the uploaded first-frame image as the exact starting frame.
+Create one uninterrupted animated neon dance music take for a no-vocal club release in the selected style lane.
 Preserve the opening composition, lighting, palette, illustrated/stylized visual language, and the specific nightlife/dance scene from the first frame.
-Preserve the large, readable lower-left "Club Bloom" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
+If the first frame already contains a short EDM/club style phrase, keep it stable and readable. Do not invent a channel name.
 The scene should read as an active DJ/performance moment in a premium dance venue such as a beach club, rooftop skyline, packed nightclub, concert/festival stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, neon city terrace, or cyber club.
 Animate visible rhythmic environmental motion naturally present in the scene: DJ hands, mixer/deck lights, crowd movement, light sweeps, neon reflections, LED pulses, laser haze, concert strobes, ocean or skyline reflections, dance-floor glow, or atmospheric color pulses when appropriate.
-The motion must progress naturally for the full clip. Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only light and atmospheric details may differ.
-Stable composition, no hard cuts, no photorealism, no live action, no full nudity, no sexual acts, no unsafe minors, no protected brands, no other text, no subtitles, no logos, no UI.
+No full nudity, sexual acts, unsafe minors, protected brands, new text, subtitles, logos, UI, photorealism, or live action.
 ```
 
 ## Metadata

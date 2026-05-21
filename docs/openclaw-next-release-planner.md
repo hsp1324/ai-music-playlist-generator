@@ -165,7 +165,7 @@ Return this compact plan before generating audio:
 
 For every Playlist Release plan, the main YouTube title and all localized titles must start exactly with `[playlist]`. Do not use this prefix for Single Releases. After `[playlist]`, avoid duplicate playlist nouns such as `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`.
 
-Localized titles should be planned as natural language-specific titles, not literal translations. If a direct translation of the planned title sounds awkward or less clickable in Japanese, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Portuguese, French, German, Arabic, Simplified Chinese, Traditional Chinese, Korean, or English, rewrite that localized title while preserving the channel identity, genre/lane, and real listening use case.
+Localized titles should be planned as natural language-specific titles, not literal translations. If a direct translation of the planned title sounds awkward or less clickable in Japanese, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Portuguese, French, German, Arabic, Simplified Chinese, Traditional Chinese, Korean, or English, rewrite that localized title while preserving the channel identity, genre/lane, and real listening use case.
 
 If YouTube upload is blocked only because phone/account verification does not allow a 14+ minute video, keep the rendered release and metadata intact, report the deferred upload, and continue to the next release plan. Do not delete or re-render just because upload is deferred.
 
@@ -192,7 +192,7 @@ scripts/openclaw-release youtube-status
 
 If YouTube status is configured=false, authenticated=false, ready=false, or channels=[], you are using the wrong API. Stop before generation/publish and report that the deployed VM API/tunnel is missing.
 
-Run docs/openclaw-backlog-queue.md first, then choose the next 40-minute Playlist Release using docs/openclaw-next-release-planner.md:
+Run docs/openclaw-backlog-queue.md first, then choose the next Playlist Release using docs/openclaw-next-release-planner.md:
 - Keep each active automated channel filled toward the configured unfinished Playlist Release target, currently 10 per channel.
 - Finish metadata_review/publish_ready releases before creating new ones.
 - If a video render job is queued/running, VM is handling it. If any channel is below target, prepare the next eligible release up to queued video render; do not wait idle.
@@ -211,7 +211,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next 40-minute Playlis
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create roughly 20+ minutes of new approved audio for a 2400-second / 40-minute target, then let the app fill the remaining time from previous same-channel, similar-genre back-half tracks when available. Generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. Exception: for `불송`, use one clean textless cover as the cover, YouTube thumbnail, and loop-video first-frame visual; do not create a separate text thumbnail. If no similar reuse candidates exist, the app renders the uploaded new tracks instead of blocking. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+Create roughly 40 minutes of new approved audio for a 2400-second app workspace target, then let the app extend the final rendered video toward 3600 seconds / 60+ minutes from previous same-channel, similar-genre back-half tracks when available. Generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. Exception: for `불송`, use one calm Buddhist cover/thumbnail/first-frame package with at most one short Korean passage/theme + style phrase, never the `불송` channel name; do not create a separate channel-branded thumbnail. If no similar reuse candidates exist, the app renders the uploaded new tracks instead of blocking. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

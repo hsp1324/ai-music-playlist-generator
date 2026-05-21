@@ -28,6 +28,7 @@ from app.utils.youtube_tags import (
 )
 from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
+    resolve_video_lyrics_overlay_style,
     is_cinematic_pulse_release,
 )
 
@@ -153,6 +154,7 @@ REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "hi",
     "fil",
     "id",
+    "tr",
     "pt-BR",
     "pt-PT",
     "fr",
@@ -1065,6 +1067,10 @@ def serialize_playlist_workspace(
         video_render_resolution=_normalize_video_render_resolution(meta.get("video_render_resolution")),
         video_render_source_mode=_normalize_video_render_source_mode(meta.get("video_render_source_mode")),
         video_lyrics_overlay_enabled=bool(meta.get("video_lyrics_overlay_enabled")),
+        video_lyrics_overlay_style=resolve_video_lyrics_overlay_style(
+            meta.get("video_lyrics_overlay_style"),
+            meta,
+        ),
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
@@ -1683,15 +1689,19 @@ def _maybe_add_reused_back_half_tracks(
     if not bool(getattr(services.settings, "playlist_reuse_back_half_enabled", True)):
         return {"added_seconds": 0, "added_track_ids": [], "reason": "disabled"}
 
-    target_duration_seconds = max(int(playlist.target_duration_seconds or 0), 0)
-    if target_duration_seconds <= 0:
+    playlist_target_duration_seconds = max(int(playlist.target_duration_seconds or 0), 0)
+    reuse_target_duration_seconds = max(
+        playlist_target_duration_seconds,
+        int(getattr(services.settings, "playlist_reuse_back_half_target_seconds", 60 * 60) or 0),
+    )
+    if reuse_target_duration_seconds <= 0:
         return {"added_seconds": 0, "added_track_ids": [], "reason": "no_target"}
 
     _refresh_playlist_duration(playlist)
     starting_duration_seconds = playlist.actual_duration_seconds
-    remaining_seconds = target_duration_seconds - starting_duration_seconds
+    remaining_seconds = reuse_target_duration_seconds - starting_duration_seconds
     if remaining_seconds <= 0:
-        return {"added_seconds": 0, "added_track_ids": [], "reason": "target_reached"}
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "reuse_target_reached"}
 
     target_channel_title = _playlist_reuse_channel_title(playlist)
     if not target_channel_title:
@@ -1758,7 +1768,8 @@ def _maybe_add_reused_back_half_tracks(
         "source": "youtube_back_half",
         "target_channel_title": target_channel_title,
         "target_genre_tokens": sorted(target_genre_tokens),
-        "target_duration_seconds": target_duration_seconds,
+        "playlist_target_duration_seconds": playlist_target_duration_seconds,
+        "reuse_target_duration_seconds": reuse_target_duration_seconds,
         "starting_duration_seconds": starting_duration_seconds,
         "requested_reuse_seconds": remaining_seconds,
         "minimum_preferred_reuse_seconds": max(
@@ -2396,6 +2407,7 @@ def queue_workspace_video_render(
     video_render_resolution: str | None = None,
     video_render_source_mode: str | None = None,
     video_lyrics_overlay_enabled: bool | None = None,
+    video_lyrics_overlay_style: str | None = None,
     video_lyrics_alignment_mode: str | None = None,
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
@@ -2438,6 +2450,8 @@ def queue_workspace_video_render(
     meta["video_render_source_mode"] = source_mode
     if video_lyrics_overlay_enabled is not None:
         meta["video_lyrics_overlay_enabled"] = bool(video_lyrics_overlay_enabled)
+    if video_lyrics_overlay_style is not None:
+        meta["video_lyrics_overlay_style"] = resolve_video_lyrics_overlay_style(video_lyrics_overlay_style, meta)
     if video_lyrics_alignment_mode is not None:
         mode = str(video_lyrics_alignment_mode or "").strip().lower().replace("-", "_")
         if mode not in {"whisper", "timeline"}:
@@ -2466,6 +2480,10 @@ def queue_workspace_video_render(
                     "video_render_resolution": render_resolution,
                     "video_render_source_mode": source_mode,
                     "video_lyrics_overlay_enabled": bool(meta.get("video_lyrics_overlay_enabled")),
+                    "video_lyrics_overlay_style": resolve_video_lyrics_overlay_style(
+                        meta.get("video_lyrics_overlay_style"),
+                        meta,
+                    ),
                     "video_lyrics_alignment_mode": str(meta.get("video_lyrics_alignment_mode") or "whisper"),
                 },
                 result_json={},
@@ -2498,6 +2516,10 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "mirror": "mirror-bars",
         "mirrorbars": "mirror-bars",
         "mirrored-bars": "mirror-bars",
+        "calm": "calm-bars",
+        "soft-bars": "calm-bars",
+        "low-motion": "calm-bars",
+        "minimal": "calm-bars",
         "radial": "bars",
         "circle": "bars",
         "ring": "bars",
@@ -2513,7 +2535,7 @@ def _normalize_video_spectrum_overlay_style(value: str | None) -> str:
         "fast": "none",
     }
     normalized = aliases.get(normalized, normalized)
-    if normalized not in {"bars", "mirror-bars", "none"}:
+    if normalized not in {"bars", "mirror-bars", "calm-bars", "none"}:
         return "bars"
     return normalized
 
@@ -2713,6 +2735,7 @@ def _queue_publish_job(
     source: str,
     force_under_target: bool = False,
     youtube_channel_id: str | None = None,
+    allow_reupload: bool = False,
 ) -> Job | None:
     active_job = db.scalars(
         select(Job).where(
@@ -2747,6 +2770,7 @@ def _queue_publish_job(
             "note": note,
             "force_under_target": force_under_target,
             "youtube_channel_id": youtube_channel_id,
+            "allow_reupload": allow_reupload,
         },
         result_json={},
         playlist=playlist,
@@ -3422,6 +3446,7 @@ def approve_playlist_publish(
     youtube_channel_id: str | None = None,
     note: str | None = None,
     force_under_target: bool = False,
+    allow_reupload: bool = False,
 ) -> Playlist:
     playlist = db.scalars(
         select(Playlist)
@@ -3492,6 +3517,10 @@ def approve_playlist_publish(
         raise ValueError("YouTube metadata must be approved before final publish approval.")
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing before final publish approval.")
+    if playlist.youtube_video_id and not allow_reupload:
+        raise ValueError(
+            "This release already has a YouTube video id. Pass allow_reupload only when intentionally replacing it."
+        )
 
     is_playlist_release = _workspace_mode(playlist) != "single_track_video"
     default_language = normalize_youtube_language(meta.get("youtube_default_language"))
@@ -3521,6 +3550,7 @@ def approve_playlist_publish(
         source="web",
         force_under_target=force_under_target,
         youtube_channel_id=youtube_channel_id,
+        allow_reupload=allow_reupload,
     )
 
     db.commit()

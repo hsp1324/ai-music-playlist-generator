@@ -22,9 +22,9 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `Cinematic Pulse` channel brand label.
-- Make `Cinematic Pulse` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `Cinematic Pulse`, the channel name, a channel logo, or a brand line on the cover/still image.
+- If text is useful, use only a short integrated cinematic style phrase such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the playlist concept: movie-poster landscape, final battle, dark fantasy confrontation, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, or trailer-poster scene.
 
 ## YouTube Thumbnail
@@ -33,7 +33,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable click text, for example `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`.
 - Avoid juvenile game-menu wording such as `BOSS BGM`, `FINAL BOSS`, `보스`, or `보스전` unless the human explicitly asks for game-combat packaging. Cinematic Pulse should read as grand film-score / cinematic orchestra first.
-- Add `CINEMATIC PULSE` as the brand line. Keep this brand line visually consistent with the lower-left cover channel label.
+- Do not add `CINEMATIC PULSE`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Render Visual
@@ -60,7 +60,7 @@ Still-image prompt shape:
 Create a 16:9 original photorealistic cinematic film-still / premium movie-poster image for a Cinematic Pulse instrumental film-score release.
 Use realistic lighting, cinematic lensing, depth of field, atmosphere, believable materials, strong silhouettes, and one clear focal scene.
 Make it high resolution, preferably 2560x1440 or at least 1920x1080.
-Include only the large, readable lower-left channel brand label "Cinematic Pulse". Do not add title text, genre text, subtitles, logos, UI, or any other words.
+Do not add the channel name, channel logo, title sentence, subtitles, UI, or unrelated words. If visual text is useful, use only one short cinematic style phrase such as "FILM SCORE" or "CINEMATIC ORCHESTRA".
 No anime, no cartoon, no illustration, no game UI art, no gore, no real war footage, no protected characters, no franchise references, no celebrity likenesses.
 ```
 

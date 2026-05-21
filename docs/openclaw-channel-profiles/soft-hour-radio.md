@@ -19,18 +19,16 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `Soft Hour Radio` channel brand label.
-- Make `Soft Hour Radio` clearly readable on mobile playback. Match the visual scale of the `SOFT HOUR RADIO` brand line used on the YouTube thumbnail.
-- Size target: roughly 18-24% of image width, or 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
-- Keep the channel name calm and tasteful, but it should feel like visible channel branding, not hidden text.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `Soft Hour Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
+- If text is useful, use only a short integrated use-case or style phrase such as `LOFI`, `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, `RAINY NIGHT`, or `CALM READING`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable use-case/mood text, for example `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, `RAINY NIGHT`, or `CALM READING`.
-- Add `SOFT HOUR RADIO` as the brand line. Keep this brand line visually consistent with the large lower-left cover channel label.
+- Do not add `SOFT HOUR RADIO`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, or clocks unless the human explicitly asks.
 
 ## Loop Video
@@ -49,17 +47,13 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Soft Hour Radio".
-Create one continuous calm animated music visualizer shot for a Soft Hour Radio background-music release.
+Use the uploaded first-frame image as the exact starting frame.
+Create one uninterrupted calm environmental take for a background-music release from a locked-off camera.
 Preserve the opening composition, lighting, palette, and illustrated/stylized visual language.
-Preserve the large, readable lower-left "Soft Hour Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
+If the first frame already contains a short use-case/style phrase, keep it stable and readable. Do not invent a channel name.
 Animate calm but clearly visible natural motion across several environmental layers already present or naturally implied by the first frame and release mood: leaves, grass, curtains, water/rain reflections, warm light shimmer, drifting particles, smoke, steam, fireflies, or soft air movement when appropriate.
-Keep continuous visible motion throughout the full clip while preserving the calm long-listening mood.
-Keep the camera locked in the same crop and framing for the full clip. No zoom, no push-in, no pull-back, no dolly, no camera breathing, no camera drift, no camera follow, no parallax camera movement.
-The motion must progress naturally for the full clip.
-Do not repeat any segment. Do not ping-pong or restart motion.
-The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
+Keep the same crop, framing, camera distance, lighting, palette, and subject placement from first frame to final frame.
+No new text, subtitles, logos, UI, photorealism, or live action.
 ```
 
 ## Metadata

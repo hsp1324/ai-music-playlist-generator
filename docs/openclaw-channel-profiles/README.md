@@ -25,256 +25,90 @@ scripts/openclaw-release channel-profile \
 
 The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. Read `concept_doc` for the next playlist concept and `profile_doc` for visual execution. Do not mix visual signatures from another channel.
 
-Global branding rule for every channel:
+## Global Visual Rules
 
-- Every final cover/first-frame image must include the selected channel name as a large, readable lower-left brand label. It should match the visual scale of the channel-brand line used on the YouTube thumbnail. Target roughly 18-24% of the image width, or about 5-6% of image height for text cap height. On a 2048x1152 cover, `Soft Hour Radio` should be roughly 360-500 px wide with clearly readable letter height.
-- The cover/first-frame should contain only that channel name. Do not add title text, genre text, duration text, lyrics, UI, logos, or unrelated words to the cover/first-frame.
-- The Gemini/Dreamina/Seedance loop video must preserve the exact lower-left channel name for the full clip. Reject/regenerate clips where the channel name disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
-- For normal OpenClaw work, try Gemini first for loop video generation. Count only successful Gemini video generations where a video is actually made; copyright/policy blocks before video output do not count. After the 3rd successful Gemini video, use Dreamina/Seedance until 24 hours have passed from that 3rd generation. If Dreamina/Seedance cannot create the clip and Gemini quota is exhausted, defer that release until the Gemini cooldown clears, then create/upload its Gemini loop video before starting new loop-video work. For Dreamina/Seedance, duration must be set to `7 seconds` before the Generate click. Do not create a draft/test clip first.
-- Do not replace a failed Gemini/Dreamina/Seedance generation with a local motion loop, app still-image animation, pan/zoom video, or other workaround. Use Gemini when quota is available; defer the release when quota is exhausted.
-- The YouTube thumbnail still needs large click text above or near a channel-brand line. Keep the channel-brand line size/style consistent with the large cover channel label.
-- Thumbnail channel branding should read as a clean text line, not a UI button. Do not put the channel name inside a rounded pill, capsule, badge, sticker, label tag, or floating plaque unless a human explicitly requests that treatment. Reject/regenerate thumbnails where the channel name looks clipped, cramped inside a shape, detached from the text layout, pasted on top of the art, too close to an edge, or outside the intended safe area.
-- Keep all cover and thumbnail text comfortably inside safe margins. On a 16:9 image, leave roughly 5% image-width horizontal margin and 5% image-height vertical margin around every text block unless the channel profile gives a stricter layout. No letters should touch image edges, subject silhouettes, or decorative borders.
-- Metadata titles should be broad and public-facing across all channels. Use the visual scene to guide cover/video mood, but do not let a niche scene name become the main title unless it is truly the most searchable hook.
-- Every localized YouTube title should be transcreated for its own language. Do not force literal translation when it becomes awkward, weak, or less clickable; a localized title may change wording, order, and exact hook as long as it stays truthful to the release identity, genre/lane, and listening use case.
-- If Gemini blocks generation for copyright, protected IP, policy, moderation, or similar issues, retry Gemini up to 10 blocked attempts with safer prompts; blocked attempts do not count against the 3 successful Gemini videos. If Gemini still cannot create a video after 10 blocked attempts, move on to Dreamina/Seedance. If Dreamina/Seedance also fails after safe retries, try Gemini again if quota is available. If Gemini quota is exhausted, send a Slack deferral message and stop before render/publish until the 24 hour cooldown clears unless the human explicitly approves a still-image fallback.
+- Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
+- If text is useful, use a short natural style, genre, use-case, or passage phrase instead. Examples: `J-POP`, `LOFI`, `TECH HOUSE`, `CINEMATIC ORCHESTRA`, `GAME OST`, `Genesis 1:1-5`, `Matthew 1:18-25`, `팔정도 명상팝`, `자비 트립합`.
+- Text must be integrated into the artwork with safe margins. Do not use hard black boxes, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks.
+- The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
+- The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
+- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default clips are `7 seconds`; `불송` clips are `6 seconds`; HaruHaru photorealistic clips use 1080p.
+- For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
+- Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
+- Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
+- Keep negative prompt lists short. Overloaded `do not` wording can cause provider models to focus on the forbidden action and create hard cuts, resets, or layout changes.
+- If Gemini/Veo adds its own provider logo or watermark, usually in the bottom-right corner, accept it as an unavoidable provider artifact. Do not regenerate only because that provider logo is present.
+- If Gemini blocks generation for copyright, protected IP, policy, moderation, or similar issues, retry safely up to 10 blocked attempts. Remove protected names and risky terms rather than retrying the same prompt.
 
 ## Quick Asset Summary
 
-Use this as the fast checklist after channel selection. The full profile file remains the source of truth.
-
 ### Soft Hour Radio
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized image for long background listening.
-- Subject, scene, color, and camera are decided by the specific release concept.
-- No fixed mascot, fixed character count, or repeated channel composition.
-- Only text allowed is the large lower-left `Soft Hour Radio` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame with calm but clearly visible natural motion derived from the release concept.
-- Keep the composition stable and long-listening friendly.
-- Preserve the large lower-left `Soft Hour Radio` brand label exactly for the whole clip.
-- Use several environmental motion layers when the first frame supports them so Soft Hour clips have continuous visible motion without becoming visually noisy.
-- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Keep the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable use-case or mood text such as `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, `RAINY NIGHT`, or `CALM READING`.
-- Add `SOFT HOUR RADIO` brand line, visually consistent with the large cover channel label.
-- Do not add duration badges like `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
+- Calm illustrated/stylized BGM visuals for study, work, sleep, reading, cafe, lofi, or quiet focus.
+- Use locked camera and calm environmental motion. Prefer `none` or very restrained spectrum for very quiet releases.
+- If text is useful, use use-case/style phrases such as `LOFI`, `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, or `RAINY NIGHT`.
 
 ### Tokyo Daydream Radio
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized image for mainstream J-pop/Japanese pop, Tokyo/Japan pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, or similar releases.
-- Anime/OST-like music is included, but the channel is broader mainstream J-pop/pop and should not feel anime OST-only.
-- Default signature is exactly three people walking toward the viewer in a front-view composition.
-- Keep the three people centered and visually important unless the human explicitly requested a different visual concept.
-- Only text allowed is the large lower-left `Tokyo Daydream Radio` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame as one continuous forward-moving shot.
-- Keep the three people walking toward the camera while the camera moves backward at the same speed, so the people stay the same size in frame.
-- Let the side/background environment provide most of the loopable motion through parallax, lights, rain, reflections, trees, water, signs, or distant background activity.
-- Preserve the large lower-left `Tokyo Daydream Radio` brand label exactly for the whole clip; do not shrink it.
-- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same three people, positions, clothing colors, silhouettes, lighting, palette, background landmarks, and camera angle.
-- Use large `J-POP`.
-- Use `TOKYO DAYDREAM RADIO` directly beneath it, visually consistent with the large cover channel label.
-- Keep the centered people important; text must fit around them and must not push them sideways.
-- Do not add duration badges like `1 HOUR`, `60 MIN`, `1時間`, clocks, or timers.
+- Mainstream J-pop/Japanese pop visual identity.
+- Default signature: exactly three people walking toward the viewer in a front-view composition.
+- In loop video, the people walk forward while the camera moves backward at the same speed so subject size stays stable.
+- If text is useful, use short J-pop/style phrases such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, or `SUMMER J-POP`.
 
 ### sundaze
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized image for English-language pop, American pop, US/UK pop, western pop, dance-pop, synth-pop, pop-rock, or similar releases.
-- This is the English/US-pop counterpart to Tokyo Daydream Radio.
-- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
-- Only text allowed is the large lower-left `sundaze` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame according to the specific playlist concept.
-- Preserve the large lower-left `sundaze` brand label exactly for the whole clip.
-- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable English pop text such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
-- Add `SUNDAZE` brand line, visually consistent with the large cover channel label.
-- Keep `SUNDAZE` as a plain brand line directly related to the headline layout. Do not put it in a rounded yellow pill, capsule, button, sticker, or detached badge.
+- English/US-pop counterpart to Tokyo Daydream Radio.
+- Let the concept decide the scene; do not force a recurring visual.
+- If text is useful, name the pop lane or use case: `POP R&B`, `DANCE POP`, `SYNTH POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
 
 ### Solwave Radio
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized image for Latin/Spanish-language music: Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, or similar releases.
-- This is the Spanish/Latin counterpart to Tokyo Daydream Radio.
-- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
-- Only text allowed is the large lower-left `Solwave Radio` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame according to the specific playlist concept and Latin pop mood.
-- Preserve the large lower-left `Solwave Radio` brand label exactly for the whole clip.
-- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable Latin/Spanish text such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
-- Add `SOLWAVE RADIO` brand line, visually consistent with the large cover channel label.
+- Latin/Spanish vocal pop.
+- Use warm, rhythmic, beach, night-city, dance, or tropical visuals when the concept supports it.
+- If text is useful, use natural Latin/Spanish lane text: `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
 
 ### HaruHaru
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized image for original Korean K-pop vocal releases.
-- No fixed recurring visual signature yet. The playlist concept decides the scene, subject, color, and camera.
-- Only text allowed is the large lower-left `HaruHaru` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame according to the specific K-pop playlist concept.
-- Preserve the large lower-left `HaruHaru` brand label exactly for the whole clip.
-- For photorealistic adult-woman clips, keep the subject the same size/crop for the full clip. If she moves, the camera tracks with her at the same speed/distance; use background parallax and environmental motion instead of zooming, pushing in, pulling back, or changing subject scale.
-- Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable K-pop text such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, or `RAINY KPOP`.
-- Add `HARUHARU` brand line, visually consistent with the large cover channel label.
+- Korean K-pop/Korean pop vocal channel.
+- Keep a 2:1 photorealistic-to-animated visual ratio when recent history allows.
+- Photorealistic visuals can feature a clearly adult woman in tasteful fashion/lifestyle scenes with face hidden or obscured. Keep it non-explicit and avoid minors, school-uniform cues, celebrity likenesses, or fetish framing.
+- In photorealistic loop videos, keep the subject the same size and crop for the full clip. The camera tracks at the same speed/distance if she moves; background parallax and environment provide motion.
+- If text is useful, use short lane text such as `K-POP`, `K-R&B`, `K-POP HIPHOP`, `DANCE POP`, `SYNTH POP`, or `POP ROCK`.
 
 ### Storylight OST
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized game-background image for playful no-vocal Japanese-style game/anime OST, arcade-game BGM, fantasy-game BGM, cute RPG music, item-shop music, mini-game music, or light adventure instrumental releases.
-- No fixed recurring visual signature yet. The playlist concept decides the arcade, fantasy-game, anime-side-story, item-shop, mini-game, cute RPG scene, object, palette, and camera.
-- Only text allowed is the large lower-left `Storylight OST` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame with visible storybook environmental motion such as lantern glow, fireflies, drifting magic dust, leaves, candle flame, window glow, snow, water shimmer, clouds, or star shimmer.
-- Preserve the large lower-left `Storylight OST` brand label exactly for the whole clip.
-- Do not add subtitles, title text, duration text, logos, UI, protected characters, studio references, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable game/anime text such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, or `FANTASY GAME`.
-- Add `STORYLIGHT OST` brand line, visually consistent with the large cover channel label.
+- Playful no-vocal Japanese game/anime OST and BGM.
+- Use game/anime environmental motion such as cabinet lights, magical glows, flags, lantern shimmer, toy-like particles, or water shimmer.
+- If text is useful, use broad clickable benefit/style phrases such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, or `COZY GAME MUSIC`.
 
 ### Cinematic Pulse
 
-Cover / first frame:
-
-- 16:9 photorealistic cinematic film-still / premium movie-poster realism for cinematic orchestra, movie OST, trailer, heroic, sci-fi action, dark fantasy, emotional, mystery, or epic orchestral instrumental releases.
-- Strong focal scene, realistic lighting, depth of field, cinematic lensing, atmosphere, readable silhouettes, and high contrast.
-- Prefer 2560x1440 (`2k`) or at least 1920x1080 so the final still-image render stays crisp.
-- Only text allowed is the large lower-left `Cinematic Pulse` brand label.
-
-Render visual:
-
-- Do not create a Gemini/Dreamina/Seedance loop video for normal Cinematic Pulse releases.
-- Queue final render from the still cover with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
-- The app/render worker adds only the clean bar spectrum overlay; do not use radial, pulse, multiwave, dots/particles, or busy waveform styles.
-- Do not add gore, real war footage, protected characters, franchise references, subtitles, title text, logos, UI, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable cinematic text such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`.
-- Add `CINEMATIC PULSE` brand line, visually consistent with the large cover channel label.
+- No-vocal cinematic orchestra, movie OST, film score, trailer, heroic, sci-fi, dark fantasy, mystery, or emotional cinematic music.
+- Use photorealistic cinematic still-image / premium movie-poster realism. Do not create a normal provider loop video; render from the high-resolution still image.
+- Queue still-image renders with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
+- If text is useful, use `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
 
 ### Club Bloom
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized neon image for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, or party-energy releases.
-- No fixed recurring visual signature yet. The selected club style lane decides the scene, subject, color, and camera.
-- Prefer visuals that immediately read as club/dance music through an active DJ/performance moment in a premium venue: beach-club deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air stage, yacht/harbor party, neon city terrace, or cyber club. A stylish adult female DJ or dancer can fit, including bold club fashion, confident poses, and sexy nightlife energy, but it is not required and should not repeat as the same template every time.
-- Reject mild or wallpaper-like visuals. Club Bloom should be click-stopping in a mobile feed, with strong neon contrast, active nightlife/performance energy, and a more provocative club feel than calm BGM channels.
-- Only text allowed is the large lower-left `Club Bloom` brand label.
-
-Loop video:
-
-- Animate the cover/first-frame with visible rhythmic DJ/performance motion such as DJ hand movement, mixer/deck LEDs, crowd movement, light sweeps, neon reflections, LED pulses, laser haze, concert strobes, city or ocean reflections, dance-floor glow, or atmospheric color pulses.
-- Preserve the large lower-left `Club Bloom` brand label exactly for the whole clip.
-- Reject loop videos that look static or only add tiny particle motion.
-- Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, sexual acts, unsafe minors, fetish framing, protected brands, or unrelated words.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same subject, placement, lighting, palette, props, and camera angle.
-- Add large readable style-specific dance text such as `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
-- Add `CLUB BLOOM` brand line, visually consistent with the large cover channel label.
+- No-vocal EDM, house, techno, trance, club, festival, workout, night-drive, or party-energy releases.
+- Prefer active DJ/performance visuals in desirable dance locations: beach-club deck, rooftop skyline DJ set, nightclub booth, concert/festival stage, warehouse rave, pool party, yacht/harbor party, neon city terrace, or cyber club.
+- If text is useful, name the club lane near the front: `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
 
 ### BibliaCanto
 
-Cover / first frame:
-
-- 16:9 illustrated/anime/stylized biblical image for Old Testament scripture-inspired music.
-- Follow the selected Old Testament passage in sequence from Genesis onward.
-- Only text allowed is the large lower-left `BibliaCanto` brand label.
-- Keep the channel label integrated into the artwork. Do not place it on a solid black rectangle, opaque dark box, plaque, banner, pill, capsule, sticker, or detached text background.
-
-Loop video:
-
-- Animate the cover/first-frame with reverent symbolic motion such as light over water, stars, oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, or temple light.
-- Preserve the large lower-left `BibliaCanto` brand label exactly for the whole clip.
-- Queue final render with `--video-spectrum-overlay-style none`; BibliaCanto does not use app-rendered spectrum overlays.
-- Do not add verse text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
-
-YouTube thumbnail:
-
-- Start from the final cover as an image-to-image/reference edit.
-- Preserve the same passage scene, lighting, palette, props, and camera angle.
-- Add large readable Bible text that connects to the selected passage, book, theme, or worship lane. Generic labels such as `OLD TESTAMENT`, `BIBLE MUSIC`, or `SCRIPTURE SONGS` are allowed only when they are paired with a passage-aware hook or are clearly the most clickable summary.
-- Add `BIBLIACANTO` brand line, visually consistent with the large cover channel label.
-- Keep `BIBLIACANTO` as plain text, not inside a pill, capsule, badge, sticker, label tag, or floating plaque.
+- Combined Bible music channel for Old Testament and New Testament releases.
+- Do not put `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, or the channel name on visuals.
+- If text is useful, use the exact passage range and/or music lane: `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Jazz`, `Gospel R&B`, or `Scripture Worship`.
+- Queue final render with `--video-spectrum-overlay-style none`.
 
 ### 불송
 
-Cover / first frame:
-
-- 16:9 respectful Buddhist scripture-inspired image for modern vocal music.
-- Follow the selected Buddhist source/theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, mindfulness, compassion, impermanence, or non-attachment.
-- Use photorealistic or premium cinematic-real Buddhist/dharma imagery by default. Cute/gentle animation is allowed occasionally only when the music lane also fits that softer visual direction, such as cute acoustic dharma pop, gentle city-pop, warm lo-fi, soft R&B, or bright healing songs.
-- The cover/first-frame must be textless for 불송. Do not add the `불송` channel label or any other words to the cover/first-frame.
-
-Loop video:
-
-- Animate the cover/first-frame with calm environmental motion such as lantern flicker, incense smoke, rain ripple, moonlight on water, drifting petals, soft wind, candle glow, dust in light, or slow reflections.
-- Keep the loop video textless for the whole clip. Do not add `불송`, title text, sutra text, captions, UI, logos, signs, or any other words.
-- Queue final render with `--video-spectrum-overlay-style calm-bars`; 불송 uses a very low-motion, low-opacity app spectrum instead of the normal bars.
-- Do not add sutra text, subtitles, lyrics, title text, duration text, logos, UI, or long scripture quotes.
-
-YouTube thumbnail:
-
-- Use the exact same clean textless image as both the cover and YouTube thumbnail.
-- Do not add large headline text such as `BUDDHIST JAZZ`, `DHARMA R&B`, `MINDFUL HIP-HOP`, `SUTRA SONGS`, `불경 노래`, `법구경 힙합`, or `반야심경 R&B`.
-- When using `scripts/openclaw-release`, omit `--thumbnail` for 불송 and let the helper reuse the textless cover, or pass `--allow-cover-as-thumbnail` explicitly.
+- Buddhist scripture-inspired vocal music.
+- Cover, thumbnail, first-frame, and loop-video first frame should be one clean visual package with a short Korean passage/theme + style phrase when useful, such as `팔정도 명상팝`, `자비 트립합`, or `무상 불교 재즈`. Never use `불송` as visual text.
+- Use photorealistic/premium Buddhist visuals by default. Cute/gentle animation is allowed occasionally when the music lane fits.
+- Use Seedance/Dreamina `2.0 Fast`, first-frame only, `16:9`, `720p`, exactly `6 seconds`.
+- Queue final render with `--video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
+- Video prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene and motion.
 
 Profiles:
 
@@ -291,4 +125,3 @@ Profiles:
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.
-Do not continue the retired Signal Room/Signal Desk/Midnight Cue research/debate concept direction unless the human explicitly revives it.

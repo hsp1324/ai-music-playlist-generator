@@ -349,6 +349,7 @@ class FFMpegPlaylistBuilder:
         render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
         lyric_cues: list[dict[str, Any]] | None = None,
+        lyric_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -435,6 +436,7 @@ class FFMpegPlaylistBuilder:
                     current_output_path,
                     output_path,
                     lyric_cues=lyric_cues or [],
+                    lyric_overlay_style=lyric_overlay_style,
                     render_resolution=render_resolution,
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
@@ -454,6 +456,7 @@ class FFMpegPlaylistBuilder:
         render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
         lyric_cues: list[dict[str, Any]] | None = None,
+        lyric_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
     ) -> Path:
@@ -592,6 +595,7 @@ class FFMpegPlaylistBuilder:
                     current_output_path,
                     output_path,
                     lyric_cues=lyric_cues or [],
+                    lyric_overlay_style=lyric_overlay_style,
                     render_resolution=render_resolution,
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
@@ -624,6 +628,7 @@ class FFMpegPlaylistBuilder:
         output_path: Path,
         *,
         lyric_cues: list[dict[str, Any]],
+        lyric_overlay_style: str | None,
         render_resolution: str | None,
         total_duration_seconds: int | float | None,
         progress_callback: Callable[[dict[str, Any]], None] | None,
@@ -637,7 +642,12 @@ class FFMpegPlaylistBuilder:
         output_path.unlink(missing_ok=True)
         frame_size = self._render_frame_size(render_resolution)
         ass_path = output_path.with_name(f"{output_path.stem}-lyrics.ass")
-        self._write_lyric_ass_file(ass_path, cues, frame_size=frame_size)
+        self._write_lyric_ass_file(
+            ass_path,
+            cues,
+            frame_size=frame_size,
+            lyric_overlay_style=lyric_overlay_style,
+        )
         ass_filter_path = self._escape_filter_path(ass_path)
         command = [
             self.settings.ffmpeg_binary,
@@ -684,14 +694,19 @@ class FFMpegPlaylistBuilder:
         lyric_cues: list[dict[str, Any]],
         *,
         frame_size: tuple[int, int],
+        lyric_overlay_style: str | None = None,
     ) -> None:
         width, height = frame_size
-        font_size = max(int(round(height * 0.052)), 28)
-        margin_v = max(int(round(height * 0.16)), 76)
-        outline = max(round(height * 0.0045, 1), 2.2)
-        shadow = max(round(height * 0.0018, 1), 0.8)
-        wrap_chars = 42 if width <= 1280 else 54
-        font_name = str(getattr(self.settings, "video_lyrics_overlay_font", "") or "Noto Sans CJK KR")
+        style = self._normalize_lyric_overlay_style(lyric_overlay_style)
+        profile = self._lyric_overlay_ass_profile(style, frame_size)
+        font_size = profile["font_size"]
+        margin_l = profile["margin_l"]
+        margin_r = profile["margin_r"]
+        margin_v = profile["margin_v"]
+        outline = profile["outline"]
+        shadow = profile["shadow"]
+        wrap_chars = profile["wrap_chars"]
+        font_name = str(profile["font_name"])
         font_name = font_name.replace(",", " ").replace("\n", " ").replace("\r", " ").strip() or "Noto Sans CJK KR"
         lines = [
             "[Script Info]",
@@ -709,8 +724,9 @@ class FFMpegPlaylistBuilder:
             ),
             (
                 f"Style: Lyrics,{font_name},"
-                f"{font_size},&H00FFFFFF,&H00FFFFFF,&H9A000000,&H66000000,"
-                f"0,0,0,0,100,100,0,0,1,{outline},{shadow},2,80,80,{margin_v},1"
+                f"{font_size},{profile['primary_colour']},&H00FFFFFF,{profile['outline_colour']},&H00000000,"
+                f"{profile['bold']},0,0,0,100,100,0,0,1,{outline},{shadow},"
+                f"{profile['alignment']},{margin_l},{margin_r},{margin_v},1"
             ),
             "",
             "[Events]",
@@ -720,7 +736,7 @@ class FFMpegPlaylistBuilder:
             text = self._format_ass_lyric_text(str(cue.get("text") or ""), wrap_chars=wrap_chars)
             if not text:
                 continue
-            fade_tag = self._lyric_ass_fade_tag(float(cue["start"]), float(cue["end"]))
+            fade_tag = self._lyric_ass_fade_tag(float(cue["start"]), float(cue["end"]), style=style)
             lines.append(
                 "Dialogue: 0,"
                 f"{self._format_ass_timestamp(float(cue['start']))},"
@@ -729,10 +745,81 @@ class FFMpegPlaylistBuilder:
             )
         output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    def _lyric_ass_fade_tag(self, start_seconds: float, end_seconds: float) -> str:
+    def _normalize_lyric_overlay_style(self, value: str | None) -> str:
+        key = str(value or "").strip().lower().replace("-", "_")
+        if key in {"1", "01", "soft", "soft_bottom", "soft_bottom_fade"}:
+            return "soft_bottom_fade"
+        if key in {"4", "04", "editorial", "editorial_lower_left", "lower_left"}:
+            return "editorial_lower_left"
+        if key in {"9", "09", "center", "center_breath", "center_breath_serif"}:
+            return "center_breath_serif"
+        return "soft_bottom_fade"
+
+    def _lyric_overlay_ass_profile(self, style: str, frame_size: tuple[int, int]) -> dict[str, Any]:
+        width, height = frame_size
+        default_font = str(getattr(self.settings, "video_lyrics_overlay_font", "") or "Noto Sans CJK KR")
+        if style == "center_breath_serif":
+            return {
+                "font_name": "Noto Serif CJK KR",
+                "font_size": max(int(round(height * 0.063)), 32),
+                "primary_colour": "&H00F5F1E9",
+                "outline_colour": "&HAA2D241E",
+                "bold": -1,
+                "outline": max(round(height * 0.0017, 1), 0.9),
+                "shadow": max(round(height * 0.0007, 1), 0.3),
+                "alignment": 5,
+                "margin_l": max(int(round(width * 0.094)), 72),
+                "margin_r": max(int(round(width * 0.094)), 72),
+                "margin_v": max(int(round(height * 0.056)), 24),
+                "wrap_chars": 28 if width <= 1280 else 38,
+            }
+        if style == "editorial_lower_left":
+            return {
+                "font_name": default_font,
+                "font_size": max(int(round(height * 0.054)), 28),
+                "primary_colour": "&H00F4F0E8",
+                "outline_colour": "&HA01B1512",
+                "bold": -1,
+                "outline": max(round(height * 0.0015, 1), 0.8),
+                "shadow": max(round(height * 0.0011, 1), 0.5),
+                "alignment": 1,
+                "margin_l": max(int(round(width * 0.071)), 54),
+                "margin_r": max(int(round(width * 0.406)), 280),
+                "margin_v": max(int(round(height * 0.10)), 54),
+                "wrap_chars": 30 if width <= 1280 else 42,
+            }
+        return {
+            "font_name": default_font,
+            "font_size": max(int(round(height * 0.063)), 32),
+            "primary_colour": "&H00F7F4EE",
+            "outline_colour": "&H882C211B",
+            "bold": -1,
+            "outline": max(round(height * 0.0022, 1), 1.2),
+            "shadow": max(round(height * 0.0015, 1), 0.6),
+            "alignment": 2,
+            "margin_l": max(int(round(width * 0.073)), 54),
+            "margin_r": max(int(round(width * 0.073)), 54),
+            "margin_v": max(int(round(height * 0.081)), 44),
+            "wrap_chars": 34 if width <= 1280 else 46,
+        }
+
+    def _lyric_ass_fade_tag(self, start_seconds: float, end_seconds: float, *, style: str | None = None) -> str:
         duration_ms = max(int(round((end_seconds - start_seconds) * 1000)), 0)
         if duration_ms <= 0:
             return r"{\fad(0,0)}"
+        normalized_style = self._normalize_lyric_overlay_style(style) if style else ""
+        if normalized_style == "center_breath_serif":
+            fade_in_ms = min(max(int(duration_ms * 0.18), 420), 700)
+            fade_out_ms = min(max(int(duration_ms * 0.24), 520), 900)
+            return rf"{{\fad({fade_in_ms},{fade_out_ms})\blur0.45}}"
+        if normalized_style == "editorial_lower_left":
+            fade_in_ms = min(max(int(duration_ms * 0.14), 300), 450)
+            fade_out_ms = min(max(int(duration_ms * 0.20), 400), 650)
+            return rf"{{\fad({fade_in_ms},{fade_out_ms})\blur0.3}}"
+        if normalized_style == "soft_bottom_fade":
+            fade_in_ms = min(max(int(duration_ms * 0.16), 360), 520)
+            fade_out_ms = min(max(int(duration_ms * 0.22), 460), 720)
+            return rf"{{\fad({fade_in_ms},{fade_out_ms})\blur0.4}}"
         fade_in_ms = min(320, max(180, duration_ms // 8))
         fade_out_ms = min(460, max(240, duration_ms // 6))
         max_fade_ms = max(duration_ms // 3, 80)

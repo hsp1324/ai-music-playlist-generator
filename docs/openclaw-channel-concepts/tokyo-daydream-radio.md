@@ -57,7 +57,7 @@ Use one lane, then vary substyle and lyric premise:
 - The setting should match the selected concept, not a generic Tokyo scene.
 - Keep the three people centered and visually important.
 - For moving clips, keep the camera moving backward at the same pace as the people so the subjects stay the same size; let the side/background motion carry the loop instead of zooming into the people.
-- Thumbnail text usually uses large `J-POP` plus `TOKYO DAYDREAM RADIO`.
+- Thumbnail text can use large `J-POP` or a short scene/style phrase, but never `TOKYO DAYDREAM RADIO` or any channel-name brand label.
 
 ## Good Fresh Concept Shapes
 

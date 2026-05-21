@@ -122,12 +122,11 @@ def test_dreamina_prompt_uses_tokyo_daydream_three_person_signature() -> None:
 
     assert "animated, anime, illustrated, or stylized" in prompt
     assert "Do not use photorealistic" in prompt
-    assert "large, readable lower-left channel brand label" in prompt
-    assert "roughly 18-24% of image width" in prompt
-    assert 'lower-left channel brand label "Tokyo Daydream Radio"' in prompt
-    assert "Preserve this text exactly" in prompt
-    assert "No other text" in prompt
-    assert "exactly three people seen from behind" in prompt
+    assert "must not contain a channel name" in prompt
+    assert "short release style/genre phrase" in prompt
+    assert "Tokyo Daydream Radio" not in prompt
+    assert "exactly three people walking toward the viewer" in prompt
+    assert "camera moves backward at the same speed" in prompt
 
 
 def test_long_video_verification_upload_error_is_detected_for_long_release() -> None:
@@ -170,16 +169,15 @@ def test_dreamina_prompt_keeps_soft_hour_out_of_tokyo_signature() -> None:
 
     prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
 
-    assert "Soft Hour Radio/background-music visual system" in prompt
+    assert "Background-music visual system" in prompt
     assert "do not force a fixed recurring mascot" in prompt
-    assert "large, readable lower-left channel brand label" in prompt
-    assert "same visual scale as the channel-brand line" in prompt
+    assert "must not contain a channel name" in prompt
+    assert "short release style/genre phrase" in prompt
     assert "calm but clearly visible motion" in prompt
     assert "Keep the camera locked in the same crop and framing" in prompt
     assert "no zoom" in prompt
-    assert 'lower-left channel brand label "Soft Hour Radio"' in prompt
-    assert "Preserve this text exactly" in prompt
-    assert "exactly three people seen from behind" not in prompt
+    assert 'channel brand label "Soft Hour Radio"' not in prompt
+    assert "exactly three people walking toward the viewer" not in prompt
 
 
 def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> None:
@@ -196,9 +194,9 @@ def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> N
 
     prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
 
-    assert "Soft Hour Radio/background-music visual system" in prompt
-    assert 'lower-left channel brand label "Soft Hour Radio"' in prompt
-    assert "exactly three people seen from behind" not in prompt
+    assert "Background-music visual system" in prompt
+    assert 'channel brand label "Soft Hour Radio"' not in prompt
+    assert "exactly three people walking toward the viewer" not in prompt
 
 
 def test_dreamina_prompt_uses_cinematic_pulse_photorealistic_style() -> None:
@@ -219,10 +217,11 @@ def test_dreamina_prompt_uses_cinematic_pulse_photorealistic_style() -> None:
 
     assert "photorealistic cinematic film-still" in prompt
     assert "premium movie-poster realism" in prompt
-    assert 'lower-left channel brand label "Cinematic Pulse"' in prompt
+    assert "must not contain a channel name" in prompt
+    assert 'channel brand label "Cinematic Pulse"' not in prompt
     assert "Do not turn the image into anime" in prompt
     assert "Do not use photorealistic" not in prompt
-    assert "exactly three people seen from behind" not in prompt
+    assert "exactly three people walking toward the viewer" not in prompt
     assert "Soft Hour Radio/background-music visual system" not in prompt
 
 
@@ -3948,6 +3947,112 @@ def test_workspace_audio_render_reuses_similar_youtube_back_half_tracks(tmp_path
         clear_isolated_client_env()
 
 
+def test_workspace_audio_render_extends_forty_minute_release_to_one_hour_with_reuse(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_tracks = []
+            for index in range(4):
+                audio_path = tmp_path / f"source-ukg-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=f"Source UK Garage {index + 1}",
+                    prompt="uk garage night drive club groove",
+                    duration_seconds=600,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "uk garage, club instrumental", "tags": "uk garage"},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="UK Garage Night Drive Mix",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=2400,
+                actual_duration_seconds=2400,
+                youtube_video_id="yt-ukg-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "Club Bloom",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 600,
+                            "duration_seconds": 600,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=600,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "UK Garage Night Drive Mix",
+                "target_duration_seconds": 2400,
+                "description": "UK garage night drive and city lights.",
+                "target_youtube_channel_title": "Club Bloom",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        new_audio_path = tmp_path / "new-ukg.mp3"
+        new_audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "New UK Garage Hour Lead",
+                "prompt": "uk garage night drive groove",
+                "duration_seconds": 2400,
+                "audio_path": str(new_audio_path),
+                "metadata": {"style": "uk garage", "tags": "uk garage"},
+            },
+        )
+        assert track_response.status_code == 201
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert queued["target_duration_seconds"] == 2400
+        assert queued["actual_duration_seconds"] == 3600
+        assert [track["title"] for track in queued["tracks"]] == [
+            "New UK Garage Hour Lead",
+            "Source UK Garage 3",
+            "Source UK Garage 4",
+        ]
+        assert "Added 2 reused back-half track(s)" in queued["note"]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_workspace_audio_render_skips_reuse_when_genre_does_not_match(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -5604,6 +5709,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
                 "note": "re-upload test",
                 "force_under_target": True,
                 "youtube_channel_id": "UC456",
+                "allow_reupload": True,
             },
         )
         assert reupload_response.status_code == 200
@@ -5617,6 +5723,115 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert reuploaded["output_video_path"] is None
         assert not os.path.exists(second_video_path)
         assert upload_channel_ids[-1] == "UC456"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_publish_retry_adopts_recent_existing_youtube_upload(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        def fake_build_video(audio_path, cover_image_path, output_path, **_kwargs):
+            output_path.write_bytes(b"fake-mp4")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+        services.playlist_builder.build_video = fake_build_video
+        services.youtube.get_status = lambda: {"configured": True, "authenticated": True, "ready": True}
+        services.youtube.upload_playlist_video = lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("retry should adopt the existing upload instead of uploading again")
+        )
+
+        adopted_calls = []
+
+        def fake_find_recent_upload_by_title(**kwargs):
+            adopted_calls.append(kwargs)
+            return {
+                "video_id": "yt-adopted-123",
+                "title": kwargs["title"],
+                "published_at": "2026-05-21T00:00:00Z",
+                "channel_id": kwargs["channel_id"],
+                "channel_title": "Soft Hour Radio",
+                "privacy_status": "private",
+                "duration": "PT1M",
+                "publish_at": "2026-05-22T00:00:00Z",
+            }
+
+        services.youtube.find_recent_upload_by_title = fake_find_recent_upload_by_title
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Adopt Retry Workspace",
+                "target_duration_seconds": 60,
+                "description": "Existing YouTube upload should be adopted after interrupted retry.",
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+        local_audio = tmp_path / "single.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Single Track",
+                "prompt": "minimal electronic",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+        render_workspace_audio(client, workspace_id)
+        prepare_release_for_final_publish(client, workspace_id)
+
+        with SessionLocal() as db:
+            db.add(
+                Job(
+                    type=JobType.upload_youtube,
+                    status=JobStatus.failed,
+                    playlist_id=workspace_id,
+                    error_text="Background YouTube upload was interrupted before completion. Retry publish.",
+                    result_json={"interrupted_worker_resolution": "failed_requires_retry"},
+                    finished_at=datetime.now(timezone.utc),
+                )
+            )
+            db.commit()
+
+        publish_response = client.post(
+            f"/api/playlists/{workspace_id}/approve-publish",
+            json={
+                "actor": "test-suite",
+                "note": "adopt interrupted upload",
+                "youtube_channel_id": "UC_SOFT",
+            },
+        )
+        assert publish_response.status_code == 200
+        assert drain_background_jobs(client) == 1
+        assert adopted_calls
+
+        workspaces_response = client.get("/api/playlists/workspaces")
+        published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert published["workflow_state"] == "uploaded"
+        assert published["youtube_video_id"] == "yt-adopted-123"
+        assert published["output_video_path"] is None
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            assert playlist.metadata_json["youtube_response"]["adopted_existing_upload"] is True
+            assert playlist.metadata_json["youtube_channel_id"] == "UC_SOFT"
     finally:
         clear_isolated_client_env()
 

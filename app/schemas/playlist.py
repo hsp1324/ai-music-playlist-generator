@@ -29,6 +29,7 @@ class PlaylistPublishApproveRequest(BaseModel):
     youtube_channel_id: str | None = None
     note: str | None = None
     force_under_target: bool = False
+    allow_reupload: bool = False
 
 
 class PlaylistCoverGenerateRequest(BaseModel):
@@ -49,6 +50,7 @@ class PlaylistVideoRenderRequest(BaseModel):
     video_render_resolution: str | None = None
     video_render_source_mode: str | None = None
     video_lyrics_overlay_enabled: bool | None = None
+    video_lyrics_overlay_style: str | None = None
     video_lyrics_alignment_mode: str | None = None
 
 
@@ -172,6 +174,7 @@ class PlaylistWorkspaceRead(BaseModel):
     video_render_resolution: str = "720p"
     video_render_source_mode: str = "auto"
     video_lyrics_overlay_enabled: bool = False
+    video_lyrics_overlay_style: str = "auto"
     youtube_thumbnail_path: str | None = None
     youtube_thumbnail_source: str | None = None
     youtube_title: str | None = None

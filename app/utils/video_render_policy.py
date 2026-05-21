@@ -2,17 +2,49 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.utils.lyric_subtitles import lyric_lines_from_text
+
 
 CINEMATIC_PULSE_CHANNEL_TITLE = "cinematic pulse"
 LOW_MOTION_SPECTRUM_CHANNEL_TITLES = {
     "불송",
     "the new verse",
+    "bulsong",
+}
+LYRIC_CENTER_CHANNEL_TITLES = {
+    "불송",
+    "the new verse",
+    "bulsong",
 }
 RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES = {
     "bibliacanto",
     "the old verse",
     "old testament",
     "new testament",
+}
+VIDEO_LYRICS_OVERLAY_STYLE_ALIASES = {
+    "": "auto",
+    "auto": "auto",
+    "1": "soft_bottom_fade",
+    "01": "soft_bottom_fade",
+    "soft": "soft_bottom_fade",
+    "soft-bottom": "soft_bottom_fade",
+    "soft-bottom-fade": "soft_bottom_fade",
+    "soft_bottom": "soft_bottom_fade",
+    "soft_bottom_fade": "soft_bottom_fade",
+    "4": "editorial_lower_left",
+    "04": "editorial_lower_left",
+    "editorial": "editorial_lower_left",
+    "editorial-lower-left": "editorial_lower_left",
+    "editorial_lower_left": "editorial_lower_left",
+    "lower-left": "editorial_lower_left",
+    "lower_left": "editorial_lower_left",
+    "9": "center_breath_serif",
+    "09": "center_breath_serif",
+    "center": "center_breath_serif",
+    "center-breath": "center_breath_serif",
+    "center-breath-serif": "center_breath_serif",
+    "center_breath_serif": "center_breath_serif",
 }
 RELIGIOUS_TITLE_HINTS = (
     "genesis",
@@ -65,6 +97,10 @@ def is_cinematic_pulse_release(meta: dict[str, Any]) -> bool:
     return CINEMATIC_PULSE_CHANNEL_TITLE in _release_channel_titles(meta)
 
 
+def is_bulsong_release(meta: dict[str, Any]) -> bool:
+    return bool(_release_channel_titles(meta) & LYRIC_CENTER_CHANNEL_TITLES)
+
+
 def is_religious_no_spectrum_release(meta: dict[str, Any], *, title: str = "") -> bool:
     titles = _release_channel_titles(meta)
     if titles & RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES:
@@ -96,3 +132,36 @@ def apply_video_spectrum_channel_policy(
     if is_cinematic_pulse_release(meta):
         return "bars"
     return style
+
+
+def normalize_video_lyrics_overlay_style(value: Any) -> str:
+    key = str(value or "").strip().lower().replace("_", "-")
+    return VIDEO_LYRICS_OVERLAY_STYLE_ALIASES.get(key, "auto")
+
+
+def default_video_lyrics_overlay_style(meta: dict[str, Any]) -> str:
+    if is_bulsong_release(meta):
+        return "center_breath_serif"
+    return "soft_bottom_fade"
+
+
+def resolve_video_lyrics_overlay_style(value: Any, meta: dict[str, Any]) -> str:
+    style = normalize_video_lyrics_overlay_style(value)
+    if style == "auto":
+        return default_video_lyrics_overlay_style(meta)
+    if is_bulsong_release(meta):
+        return "center_breath_serif"
+    return style
+
+
+def track_dicts_have_singable_lyrics(tracks: list[dict[str, Any]]) -> bool:
+    for track in tracks:
+        if lyric_lines_from_text(str(track.get("lyrics") or "")):
+            return True
+    return False
+
+
+def should_auto_enable_video_lyrics_overlay(meta: dict[str, Any], tracks: list[dict[str, Any]]) -> bool:
+    if bool(meta.get("video_lyrics_overlay_disabled")):
+        return False
+    return track_dicts_have_singable_lyrics(tracks)

@@ -111,6 +111,7 @@ const METADATA_LANGUAGES = [
   { code: "hi", label: "Hindi", shortLabel: "HI" },
   { code: "fil", label: "Filipino", shortLabel: "FIL" },
   { code: "id", label: "Indonesian", shortLabel: "ID" },
+  { code: "tr", label: "Turkish", shortLabel: "TR" },
   { code: "pt-BR", label: "Portuguese (Brazil)", shortLabel: "PT" },
   { code: "pt-PT", label: "Portuguese (Portugal)", shortLabel: "PT-PT" },
   { code: "fr", label: "French", shortLabel: "FR" },
@@ -1106,6 +1107,7 @@ function chooseVisualizerStyle(workspace) {
   const styles = {
     bars: "20-bar spectrum, current default",
     "mirror-bars": "center mirrored bars",
+    "calm-bars": "low-motion subtle bars",
     none: "fast render, no spectrum overlay",
   };
   const current = workspace.video_spectrum_overlay_style || "bars";
@@ -1134,6 +1136,9 @@ function chooseVisualizerStyle(workspace) {
     particles: "bars",
     mirror: "mirror-bars",
     mirrorbars: "mirror-bars",
+    calm: "calm-bars",
+    "low-motion": "calm-bars",
+    minimal: "calm-bars",
     radial: "bars",
     circle: "bars",
     ring: "bars",
@@ -1149,7 +1154,7 @@ function chooseVisualizerStyle(workspace) {
   };
   const style = aliases[normalized] || normalized || "bars";
   if (!Object.prototype.hasOwnProperty.call(styles, style)) {
-    window.alert("Unknown visualizer preset. Use bars, mirror-bars, or none.");
+    window.alert("Unknown visualizer preset. Use bars, mirror-bars, calm-bars, or none.");
     return null;
   }
   return style;

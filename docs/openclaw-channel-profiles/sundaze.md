@@ -23,18 +23,17 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `sundaze` channel brand label.
-- Make `sundaze` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `sundaze`, the channel name, a channel logo, or a brand line on the cover/first-frame.
+- If text is useful, use only a short integrated pop-lane or use-case phrase such as `POP R&B`, `DANCE POP`, `SYNTH POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable pop click text matched to the playlist concept, for example `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
-- Add `SUNDAZE` as the brand line. Keep it visually consistent with the large lower-left cover channel label.
-- Keep `SUNDAZE` as plain integrated typography, preferably directly under or near the main click text. Do not put it inside a rounded yellow pill, capsule, button, sticker, badge, label tag, or detached floating plaque.
-- Keep all thumbnail text inside safe margins with breathing room. Reject/regenerate if the brand line is clipped, cramped inside a shape, too close to the edge, pasted over the art, or separated from the headline layout.
+- Do not add `SUNDAZE`, the channel name, or a channel logo.
+- Keep all thumbnail text inside safe margins with breathing room. Reject/regenerate if text is clipped, cramped inside a shape, too close to the edge, pasted over the art, or separated from the scene.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Loop Video
@@ -43,21 +42,19 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 - For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
-- Keep the `sundaze` brand label readable and unchanged for the full clip.
+- If the first frame has a short pop/style phrase, keep it stable and readable. Do not invent a channel name.
 - The final moment should stay close to the opening composition, crop, lighting, palette, and subject placement. The app handles smooth repetition with a 1.5 second crossfade.
 
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "sundaze".
-Create one continuous animated music visualizer shot for a mainstream English pop release.
+Use the uploaded first-frame image as the exact starting frame.
+Create one uninterrupted animated English pop visual take.
 Preserve the opening composition, lighting, palette, subject placement, and illustrated/stylized visual language.
 Animate natural motion that fits the specific playlist concept and pop mood.
-Preserve the large, readable lower-left "sundaze" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
-The motion must progress naturally for the full clip.
-Do not repeat any segment. Do not ping-pong or restart motion.
+If the first frame already contains a short pop/style phrase, keep it stable and readable. Do not invent a channel name.
 The final moment should remain close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
+No new text, subtitles, logos, UI, photorealism, or live action.
 ```
 
 ## Metadata
@@ -65,7 +62,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the English-pop identity and real listening use case truthful.
 - Main upload metadata should be English. Use `--default-language en` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--en-title` / `--en-description-file` should match.
 - Localized YouTube titles may be natural adaptations in each language instead of exact English copies. If a literal translation is awkward or less clickable, rewrite the localized title while keeping the English-pop identity and actual listening use case truthful.
 - In every localized description, keep timestamped tracklist song titles in English exactly as the English description. Translate only the surrounding description prose, recommended use-case line, and hashtag line.

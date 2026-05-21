@@ -535,6 +535,7 @@ def render_workspace_video(
             video_render_resolution=payload.video_render_resolution,
             video_render_source_mode=payload.video_render_source_mode,
             video_lyrics_overlay_enabled=payload.video_lyrics_overlay_enabled,
+            video_lyrics_overlay_style=payload.video_lyrics_overlay_style,
             video_lyrics_alignment_mode=payload.video_lyrics_alignment_mode,
         )
     except ValueError as exc:
@@ -716,6 +717,7 @@ def approve_publish(
             youtube_channel_id=payload.youtube_channel_id,
             note=payload.note,
             force_under_target=payload.force_under_target,
+            allow_reupload=payload.allow_reupload,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

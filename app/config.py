@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     video_spectrum_overlay_enabled: bool = True
     video_spectrum_overlay_style: str = "bars"
     video_lyrics_overlay_enabled: bool = False
+    video_lyrics_overlay_style: str = "auto"
     video_lyrics_overlay_font: str = "Noto Sans CJK KR"
     video_lyrics_alignment_mode: str = "whisper"
     video_lyrics_alignment_model: str = "tiny"
@@ -32,6 +33,7 @@ class Settings(BaseSettings):
     video_lyrics_alignment_min_score: float = 0.34
     playlist_target_minutes: int = 40
     playlist_reuse_back_half_enabled: bool = True
+    playlist_reuse_back_half_target_seconds: int = 60 * 60
     playlist_reuse_back_half_min_seconds: int = 20 * 60
     crossfade_seconds: float = 1.5
 
@@ -96,10 +98,12 @@ class Settings(BaseSettings):
     youtube_default_hashtags: str = "#Music #Visualizer #BackgroundMusic"
     youtube_lyrics_captions_enabled: bool = True
     youtube_lyrics_captions_languages: str = (
-        "ko,ja,en,es,vi,th,hi,fil,id,pt-BR,pt-PT,fr,de,ar,zh-CN,zh-TW"
+        "ko,ja,en,es,vi,th,hi,fil,id,tr,pt-BR,pt-PT,fr,de,ar,zh-CN,zh-TW"
     )
     youtube_lyrics_captions_translate: bool = True
     youtube_lyrics_captions_translation_timeout_seconds: int = 900
+    youtube_adopt_existing_upload_on_retry: bool = True
+    youtube_adopt_existing_upload_max_age_hours: int = 72
 
     codex_metadata_enabled: bool = False
     codex_metadata_command: str = "codex"

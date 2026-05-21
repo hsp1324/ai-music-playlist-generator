@@ -7,15 +7,15 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 - Let the playlist concept and channel title decide the cover, thumbnail, and loop-video direction.
 - Do not reuse another channel's fixed signature unless the human explicitly asks.
 - The cover/first-frame must be 16:9 and illustrated, anime, stylized, painterly, graphic, or otherwise non-photorealistic unless the channel identity clearly requires another style.
-- The only text on the cover/first-frame is the selected channel name as a large, readable lower-left brand label.
-- The channel label should be readable on mobile. Target roughly 18-24% of image width, or about 5-6% of image height for text cap height.
+- Do not put the selected channel name, a channel logo, or a channel-brand line on the cover/first-frame.
+- If text is useful, use only a short integrated style, genre, use-case, or theme phrase that fits the release.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image reference/edit derivative.
 - Preserve the same subject, scene, camera angle, palette, and main composition so the thumbnail and rendered video feel connected.
 - Add one large click-friendly phrase that fits the selected channel and release concept.
-- Add the selected channel name as the brand line, visually consistent with the cover's lower-left channel label.
+- Do not add the selected channel name or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Loop Video
@@ -23,7 +23,7 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 - Use the uploaded cover/first-frame image as the exact starting frame.
 - Generate a short loop video. Use Gemini first as-is; for Dreamina/Seedance set `16:9`, `720p`, and exactly `7 seconds` unless the human explicitly requests another setup.
 - Animate only visual elements that already fit the first frame and playlist concept.
-- Preserve the lower-left channel label for the full clip. Regenerate if it disappears, flickers, moves, morphs, changes spelling, changes style drastically, or becomes unreadable.
+- If the first frame has a short style/theme phrase, keep it stable and readable. Do not invent a channel name.
 - The final frame should return close to the opening composition so the app's 1.5 second crossfade loop feels natural.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 

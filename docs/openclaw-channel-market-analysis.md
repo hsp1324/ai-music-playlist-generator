@@ -63,7 +63,7 @@ Our direction:
 
 - Title shape: `[playlist] Bright J-POP Drive | Japanese Pop for Weekend Energy`.
 - Song direction: Japanese vocal pop with memorable chorus, natural Japanese phrasing, youth/confidence/first-love/new-start stories, 2.5-3.5 minute pop structures.
-- Thumbnail text: `J-POP` plus `TOKYO DAYDREAM RADIO`.
+- Thumbnail text: `J-POP` or a short scene/style phrase. Do not add `TOKYO DAYDREAM RADIO` or any channel-name brand label.
 - Avoid: `Japanese vocal`, `일본어 보컬`, or every title containing `Tokyo`.
 
 ## HaruHaru
@@ -284,7 +284,7 @@ Our direction:
 - Title shape: Korean default title that combines source/theme plus genre lane, for example Buddhist hip-hop, dharma R&B, Buddhist jazz, or neo-soul meditation songs.
 - Song direction: original Korean lyrics inspired by Buddhist teaching, not direct scripture recitation or chanting. Keep one lane per release and rotate lanes across uploads.
 - Description direction: first paragraph states the Buddhist source/theme; second paragraph names the music lane and notes that lyrics are original paraphrases inspired by Buddhist teaching.
-- Thumbnail direction: use the same clean textless photorealistic/premium cinematic-real Buddhist or dharma cover as the thumbnail. Do not add headline text, channel labels, badges, or separate thumbnail typography.
+- Thumbnail direction: use the same calm photorealistic/premium cinematic-real Buddhist or dharma cover/first-frame package as the thumbnail. It may contain one short Korean passage/theme + style phrase, but do not add the `불송` channel label, badges, hard text boxes, or separate channel branding.
 - Avoid: claiming exact chapter/verse coverage without verification, copying long sutra passages, sermon/chant format, disrespectful religious imagery, or public scheduling before human review.
 
 ## Source Index

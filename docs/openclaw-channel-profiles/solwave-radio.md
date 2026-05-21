@@ -23,16 +23,16 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `Solwave Radio` channel brand label.
-- Make `Solwave Radio` clearly readable on mobile playback. Target roughly 18-24% of image width, or 5-6% of image height for text cap height.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `Solwave Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
+- If text is useful, use only a short integrated Latin/Spanish lane phrase such as `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable Latin/Spanish click text matched to the playlist concept, for example `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
-- Add `SOLWAVE RADIO` as the brand line. Keep it visually consistent with the large lower-left cover channel label.
+- Do not add `SOLWAVE RADIO`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Loop Video
@@ -41,21 +41,19 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 - For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
-- Keep the `Solwave Radio` brand label readable and unchanged for the full clip.
+- If the first frame has a short Latin/Spanish style phrase, keep it stable and readable. Do not invent a channel name.
 - The final moment should stay close to the opening composition, crop, lighting, palette, and subject placement. The app handles smooth repetition with a 1.5 second crossfade.
 
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Solwave Radio".
-Create one continuous animated music visualizer shot for a Latin/Spanish pop release.
+Use the uploaded first-frame image as the exact starting frame.
+Create one uninterrupted animated Latin/Spanish pop visual take.
 Preserve the opening composition, lighting, palette, subject placement, and illustrated/stylized visual language.
 Animate natural motion that fits the specific playlist concept and Latin pop mood.
-Preserve the large, readable lower-left "Solwave Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
-The motion must progress naturally for the full clip.
-Do not repeat any segment. Do not ping-pong or restart motion.
+If the first frame already contains a short Latin/Spanish style phrase, keep it stable and readable. Do not invent a channel name.
 The final moment should remain close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI.
+No new text, subtitles, logos, UI, photorealism, or live action.
 ```
 
 ## Metadata
@@ -63,7 +61,7 @@ Stable composition, no hard cuts, no photorealism, no live action, no camera-pho
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the Latin/Spanish-pop identity and real listening use case truthful.
 - Main upload metadata should be Spanish. Use `--default-language es` when OpenClaw approves metadata manually.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--es-title` / `--es-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Ruta Dorada Pop`, `Latin Pop`, `Spanish Pop`, or `Pop para manejar` by themselves.
 - Use an `Essential`-style title shape with the selected genre lane near the front: a vivid situation or emotion + Pop Latino / reggaeton pop / urbano latino / bachata pop / salsa pop / cumbia pop / Latin R&B / Latin soul identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.

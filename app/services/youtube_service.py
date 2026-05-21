@@ -2,7 +2,7 @@ import json
 import os
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -291,6 +291,7 @@ class YouTubeService:
                     "default_language": snippet.get("defaultLanguage") or snippet.get("defaultAudioLanguage"),
                     "default_audio_language": snippet.get("defaultAudioLanguage"),
                     "privacy_status": status.get("privacyStatus"),
+                    "publish_at": status.get("publishAt"),
                     "duration": content_details.get("duration"),
                     "duration_seconds": self._parse_iso8601_duration_seconds(content_details.get("duration")),
                     "thumbnail_url": thumbnail.get("url"),
@@ -298,6 +299,51 @@ class YouTubeService:
                 }
             )
         return uploads
+
+    def find_recent_upload_by_title(
+        self,
+        *,
+        channel_id: str,
+        title: str,
+        duration_seconds: int | None = None,
+        max_age_hours: int = 72,
+        max_results: int = 50,
+    ) -> dict[str, Any] | None:
+        normalized_title = sanitize_youtube_copy(title).strip()[:100]
+        if not normalized_title:
+            return None
+        duration_target = max(int(duration_seconds or 0), 0)
+        max_age = timedelta(hours=max(int(max_age_hours or 0), 1))
+        now = datetime.now(timezone.utc)
+        matches: list[dict[str, Any]] = []
+        for upload in self.list_channel_uploads(channel_id=channel_id, max_results=max_results):
+            if sanitize_youtube_copy(str(upload.get("title") or "")).strip()[:100] != normalized_title:
+                continue
+            published_at = self._parse_api_datetime(upload.get("published_at"))
+            if published_at and now - published_at > max_age:
+                continue
+            if duration_target:
+                upload_duration = int(upload.get("duration_seconds") or 0)
+                if upload_duration and abs(upload_duration - duration_target) > 90:
+                    continue
+            matches.append(upload)
+        if not matches:
+            return None
+        matches.sort(
+            key=lambda item: self._parse_api_datetime(item.get("published_at"))
+            or datetime.min.replace(tzinfo=timezone.utc),
+            reverse=True,
+        )
+        return matches[0]
+
+    def delete_video(self, *, video_id: str, youtube_channel_id: str | None = None) -> dict[str, Any]:
+        normalized_video_id = str(video_id or "").strip()
+        if not normalized_video_id:
+            raise ValueError("YouTube video id is required.")
+        credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube.videos().delete(id=normalized_video_id).execute()
+        return {"id": normalized_video_id, "deleted": True}
 
     def find_or_create_playlist(
         self,
@@ -772,6 +818,18 @@ class YouTubeService:
             + int(match.group("minutes") or 0) * 60
             + int(match.group("seconds") or 0)
         )
+
+    @staticmethod
+    def _parse_api_datetime(value: str | None) -> datetime | None:
+        if not value:
+            return None
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
 
     def _prepare_thumbnail_upload(self, thumbnail_path: str) -> Path:
         source = Path(thumbnail_path)

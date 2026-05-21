@@ -31,6 +31,8 @@ from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
     is_cinematic_pulse_release,
     is_religious_no_spectrum_release,
+    resolve_video_lyrics_overlay_style,
+    should_auto_enable_video_lyrics_overlay,
 )
 from app.utils.youtube_metadata_state import apply_generated_youtube_metadata, has_youtube_metadata
 from app.utils.youtube_localizations import ensure_playlist_title_prefix
@@ -441,16 +443,23 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     )
     style = apply_video_spectrum_channel_policy(style, meta, title=playlist.title)
     render_resolution = _job_render_resolution(job, playlist)
-    lyrics_overlay_enabled = bool(
-        (job.payload_json or {}).get(
-            "video_lyrics_overlay_enabled",
-            meta.get("video_lyrics_overlay_enabled", services.settings.video_lyrics_overlay_enabled),
-        )
-    )
     lyric_tracks = [_track_timeline_dict(item) for item in sorted(playlist.items, key=lambda row: row.order_index)]
     rendered_timeline = list(meta.get("rendered_timeline") or [])
+    payload = job.payload_json or {}
+    lyrics_overlay_enabled = bool(
+        payload.get("video_lyrics_overlay_enabled")
+        or meta.get("video_lyrics_overlay_enabled")
+        or services.settings.video_lyrics_overlay_enabled
+        or should_auto_enable_video_lyrics_overlay(meta, lyric_tracks)
+    )
+    lyrics_overlay_style = resolve_video_lyrics_overlay_style(
+        payload.get("video_lyrics_overlay_style")
+        or meta.get("video_lyrics_overlay_style")
+        or services.settings.video_lyrics_overlay_style,
+        meta,
+    )
     lyrics_alignment_mode = str(
-        (job.payload_json or {}).get(
+        payload.get(
             "video_lyrics_alignment_mode",
             meta.get("video_lyrics_alignment_mode", services.settings.video_lyrics_alignment_mode),
         )
@@ -479,6 +488,7 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             "video_render_resolution": render_resolution,
             "video_render_source_mode": effective_source_mode,
             "video_lyrics_overlay_enabled": lyrics_overlay_enabled,
+            "video_lyrics_overlay_style": lyrics_overlay_style,
             "video_lyrics_alignment_mode": lyrics_alignment_mode,
             "video_lyrics_alignment_model": services.settings.video_lyrics_alignment_model,
             "video_lyrics_alignment_language": services.settings.video_lyrics_alignment_language,

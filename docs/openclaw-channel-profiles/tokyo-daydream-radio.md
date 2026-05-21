@@ -15,7 +15,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 - Default signature: exactly three people walking toward the viewer in a front-view composition.
 - The camera/viewer sees the people from the front, preferably a medium-wide or full-body view rather than a close-up face shot.
 - The three people stay centered and visually important.
-- Text must fit around the centered three-person silhouette, usually lower-left or lower negative space. Do not push people sideways.
+- Any visual text must fit around the centered three-person silhouette. Do not push people sideways.
 - Background adapts to the release: Tokyo street, forest path, beach, rainy city, night park, station road, fantasy forest, seaside walk, neon alley, or similar Japan-themed scene.
 - Style must be animated, anime, illustrated, or stylized. Avoid photorealistic/live-action looks.
 
@@ -23,18 +23,16 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- The cover must include only a large lower-left `Tokyo Daydream Radio` channel brand label.
-- Make `Tokyo Daydream Radio` clearly readable on mobile playback. Match the visual scale of the `TOKYO DAYDREAM RADIO` brand line used on the YouTube thumbnail.
-- Size target: roughly 18-24% of image width, or 5-6% of image height for text cap height. On a 2048x1152 cover, the channel label should be roughly 360-500 px wide with clearly readable letter height.
-- Keep the channel name tasteful and integrated into the scene, but it should feel like visible channel branding, not hidden fine print.
-- Do not add title text, genre text, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put `Tokyo Daydream Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
+- If text is useful, use only a short integrated J-pop/style phrase such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, or `SUMMER J-POP`.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same three people, subject placement, clothing colors, silhouettes, lighting, palette, background landmarks, and camera angle from the cover.
-- Use large `J-POP`.
-- Use `TOKYO DAYDREAM RADIO` directly beneath it. Keep this brand line visually consistent with the large lower-left cover channel label.
+- Use large natural J-pop click text such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, or `SUMMER J-POP`.
+- Do not add `TOKYO DAYDREAM RADIO`, the channel name, or a channel logo.
 - Keep the same full-bleed two-line treatment for Tokyo/city, forest/nature, and beach versions.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, `1時間`, clocks, or timers.
 
@@ -52,26 +50,25 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 Prompt shape:
 
 ```text
-Use the uploaded first-frame image as the exact starting frame. It contains the exact large, readable lower-left channel brand label "Tokyo Daydream Radio".
-Create one continuous forward-moving animated music visualizer shot for Tokyo Daydream Radio.
-Keep the Tokyo Daydream Radio signature: exactly three people walking toward the viewer in a front-view composition.
+Use the uploaded first-frame image as the exact starting frame.
+Create one continuous forward-moving J-pop visual shot.
+Keep the channel signature: exactly three people walking toward the viewer in a front-view composition.
 The viewer should see the people from the front, preferably medium-wide or full-body rather than close-up faces.
 The people walk forward naturally while the camera moves backward at the same speed, keeping the same distance from them.
-Do not repeat any segment. Do not ping-pong or restart motion.
 The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
 Preserve the opening composition, lighting, palette, and anime/illustrated style.
-Preserve the large, readable lower-left "Tokyo Daydream Radio" text exactly for the full clip. Do not rewrite, translate, blur, morph, move, hide, shrink, flicker, or change it.
+If the first frame already contains a short J-pop/style phrase, keep it stable and readable. Do not invent a channel name.
 Adapt the background and atmosphere to the release concept.
 Add gentle environmental motion, side-background parallax, reflections, rain shimmer, particles, or soft light motion around the walking subjects.
-Keep the camera at the same distance from the three people while moving backward; no zoom in, no push-in, no pull-back, no camera breathing, no changing lens scale. The three people must stay roughly the same size in frame.
-Stable composition, no hard cuts, no photorealism, no live action, no camera-photo realism, no other text, no subtitles, no logos, no UI, no extra people or characters.
+Keep the camera at the same distance from the three people while moving backward; the three people must stay roughly the same size in frame.
+No new text, subtitles, logos, UI, photorealism, live action, or extra people.
 ```
 
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds awkward, weak, or less clickable, rewrite it while keeping the J-pop identity, mood, and real listening use case truthful.
-- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
+- Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - Use Korean as the default API metadata unless the human changes this app convention.
 - Titles must be broad mainstream J-pop discovery copy first. Use specific city/visual scenes as supporting atmosphere unless they are clearly the strongest public keyword.
 - Do not over-emphasize the language in titles. Prefer `J-POP`, the actual Japan scene, mainstream pop substyle, mood, and listening use cases.
