@@ -82,7 +82,7 @@ def _auto_publish_args(audio_path: str, **overrides):
     return SimpleNamespace(**values)
 
 
-def test_playlist_track_duration_allows_short_tracks_by_default() -> None:
+def test_playlist_track_duration_allows_two_minute_tracks_by_default() -> None:
     args = _auto_publish_args("song.mp3")
 
     openclaw_release.require_playlist_track_duration(
@@ -90,6 +90,17 @@ def test_playlist_track_duration_allows_short_tracks_by_default() -> None:
         args=args,
         context="duration check",
     )
+
+
+def test_playlist_track_duration_rejects_under_two_minutes_by_default() -> None:
+    args = _auto_publish_args("song.mp3")
+
+    with pytest.raises(RuntimeError, match="at least 02:00"):
+        openclaw_release.require_playlist_track_duration(
+            {"title": "Too Short Pop", "duration_seconds": 59},
+            args=args,
+            context="duration check",
+        )
 
 
 def test_playlist_track_duration_rejects_short_tracks_when_min_configured() -> None:
@@ -107,7 +118,7 @@ def test_playlist_track_duration_allows_short_tracks_with_explicit_flag() -> Non
     args = _auto_publish_args("song.mp3", allow_short_track=True)
 
     openclaw_release.require_playlist_track_duration(
-        {"title": "Short Pop", "duration_seconds": 150},
+        {"title": "Short Pop", "duration_seconds": 59},
         args=args,
         context="duration check",
     )

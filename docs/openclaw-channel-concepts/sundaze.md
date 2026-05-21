@@ -47,7 +47,7 @@ Use a vivid situation or emotion plus one explicit English-pop genre lane. Keep 
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
-- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default.
+- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a complete English pop song with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 2:00.
 - Do not make lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly requests it.
 
 ## Visual Direction

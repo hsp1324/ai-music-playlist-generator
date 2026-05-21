@@ -45,7 +45,7 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
 - Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
 - Do not reference protected studios, franchises, characters, composers, songs, or specific artists in Suno or Dreamina prompts. Use safe generic wording such as `playful Japanese arcade-game OST`, `cute fantasy RPG BGM`, `anime side-story instrumental`, `kawaii game menu music`, or `lighthearted game background music`.
-- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed.
+- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a complete cue with a natural intro, developed loopable middle, and resolved ending; regenerate or explicitly report tracks shorter than 2:00.
 - Music should be melodic, catchy, scene-rich, and loop-friendly without sounding like generic sleep music or mainstream vocal J-pop.
 
 ## Visual Direction

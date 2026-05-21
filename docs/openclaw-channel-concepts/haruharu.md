@@ -47,7 +47,7 @@ Use one broad K-pop listening promise plus one explicit K-pop genre lane. Keep t
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a workout/getting-ready playlist because of rhythm and energy, while the lyrics are about love, confidence, moving on, or a memorable pop story unrelated to the playlist title.
 - Do not upload lyricless, BGM-only, hum-only, or instrumental K-pop unless the human explicitly requests it.
 - Use Korean song titles by default. Avoid `A/B`, `1/2`, or batch labels in public track titles.
-- Suno duration wording should be minimal: use only `less than 4 minutes` or `under 4 minutes` when a duration hint is needed. Do not add exact ranges, lower-bound targets, or any extra ending/completion wording to prompts, style strings, lyrics, or bracketed metatags. The helper allows playlist tracks up to 4:20 by default.
+- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a complete Korean pop song with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 2:00.
 - Set Suno `More options` / `Vocal gender` when the lead vocal is known: `male` for male lead, `female` for female lead, blank for mixed/duet/group/unspecified.
 - Keep vocal gender stable across retries of the same track unless the track concept changes.
 
