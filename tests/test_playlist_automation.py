@@ -1929,7 +1929,7 @@ def test_render_worker_claim_pauses_when_disk_nears_cleanup_threshold(tmp_path, 
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
         services.settings.local_video_cleanup_disk_threshold_percent = 80
-        services.settings.render_worker_claim_disk_safety_margin_percent = 5
+        services.settings.render_worker_claim_disk_safety_margin_percent = 0
 
         storage = tmp_path / "storage"
         playlist_dir = storage / "playlists"
@@ -1986,7 +1986,7 @@ def test_render_worker_claim_pauses_when_disk_nears_cleanup_threshold(tmp_path, 
         monkeypatch.setattr(
             render_worker_routes.shutil,
             "disk_usage",
-            lambda _path: SimpleNamespace(total=100, used=76, free=24),
+            lambda _path: SimpleNamespace(total=100, used=81, free=19),
         )
         claim = client.post(
             "/api/render-worker/jobs/claim",
@@ -1999,8 +1999,8 @@ def test_render_worker_claim_pauses_when_disk_nears_cleanup_threshold(tmp_path, 
         assert payload["job"] is None
         assert payload["claim_paused"] is True
         assert payload["reason"] == "disk_usage_guard"
-        assert payload["disk_usage_percent"] == 76.0
-        assert payload["pause_threshold_percent"] == 75.0
+        assert payload["disk_usage_percent"] == 81.0
+        assert payload["pause_threshold_percent"] == 80.0
 
         with SessionLocal() as db:
             assert db.get(Job, job_id).status == JobStatus.queued

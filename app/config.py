@@ -130,7 +130,7 @@ class Settings(BaseSettings):
     render_worker_claim_timeout_seconds: int = 21600
     render_worker_upload_chunk_bytes: int = 8 * 1024 * 1024
     render_worker_claim_disk_guard_enabled: bool = True
-    render_worker_claim_disk_safety_margin_percent: float = 5.0
+    render_worker_claim_disk_safety_margin_percent: float = 0.0
     local_video_cleanup_enabled: bool = True
     local_video_cleanup_disk_threshold_percent: float = 80.0
     local_video_cleanup_interval_seconds: int = 300
