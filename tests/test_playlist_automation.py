@@ -2236,7 +2236,6 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
                 "capabilities": {
                     "worker_profile": "oracle",
                     "max_render_height": 720,
-                    "prefer_no_lyrics": True,
                 },
             },
         )

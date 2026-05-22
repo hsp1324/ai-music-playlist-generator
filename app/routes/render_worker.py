@@ -611,7 +611,11 @@ def claim_render_job(
     server_nickname = str(registry_worker.get("nickname") or "").strip()
     capabilities = payload.capabilities or {}
     profile = _worker_profile(capabilities, payload.worker_id, payload.hostname)
-    prefer_no_lyrics = _capability_bool(capabilities, "prefer_no_lyrics")
+    prefer_no_lyrics = (
+        _capability_bool(capabilities, "prefer_no_lyrics")
+        if "prefer_no_lyrics" in capabilities
+        else profile == "oracle"
+    )
 
     existing = db.scalars(
         select(Job)

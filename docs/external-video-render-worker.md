@@ -40,7 +40,7 @@ export AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS=10
 export AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS=300
 export AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE=auto
 export AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODEL=tiny
-export AIMP_RENDER_WORKER_PREFER_NO_LYRICS=false
+export AIMP_RENDER_WORKER_PREFER_NO_LYRICS=true
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT=50
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS=24
 ```
@@ -67,7 +67,7 @@ scripts/render-worker --worker-id "oracle-render" --worker-profile oracle --poll
 - `desktop` workers prefer queued 1080p/2k jobs first, then take 720p jobs if no high-resolution job is waiting.
 - `oracle` workers prefer queued 720p jobs first, then take high-resolution jobs only when no 720p job is waiting.
 - `standard` workers take oldest queued jobs.
-- Set `AIMP_RENDER_WORKER_PREFER_NO_LYRICS=true` or pass `--prefer-no-lyrics` when a low-memory worker should claim queued playlists without singable lyrics before lyric-heavy playlists.
+- Oracle workers default to claiming queued playlists without singable lyrics before lyric-heavy playlists. Set `AIMP_RENDER_WORKER_PREFER_NO_LYRICS=false` or pass `--no-prefer-no-lyrics` to disable that behavior.
 
 Keep `--worker-id` stable. If the worker disconnects during upload, restarting with the same worker id lets it resume the same claimed job and continue the chunked upload from the server's current byte offset.
 

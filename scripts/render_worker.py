@@ -85,8 +85,10 @@ def normalize_api_base(value: str | None) -> str:
     return base
 
 
-def parse_bool_env(value: str | None) -> bool:
-    return str(value or "").strip().lower() in {"1", "true", "yes", "y", "on"}
+def parse_optional_bool_env(value: str | None) -> bool | None:
+    if value is None or not str(value).strip():
+        return None
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def auth_headers(token: str) -> dict[str, str]:
@@ -659,6 +661,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
     hostname = socket.gethostname()
     worker_profile = args.worker_profile or infer_worker_profile(args.worker_id, hostname)
     max_render_height = max_render_height_for_profile(worker_profile)
+    prefer_no_lyrics = bool(worker_profile == "oracle" if args.prefer_no_lyrics is None else args.prefer_no_lyrics)
     claim = request_json(
         client,
         "POST",
@@ -672,7 +675,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "chunk_size_bytes": args.chunk_size_bytes,
                 "worker_profile": worker_profile,
                 "max_render_height": max_render_height,
-                "prefer_no_lyrics": bool(args.prefer_no_lyrics),
+                "prefer_no_lyrics": prefer_no_lyrics,
             },
         },
     )
@@ -693,7 +696,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "spectrum": job["render"].get("video_spectrum_overlay_style"),
                 "render_resolution": job["render"].get("video_render_resolution"),
                 "worker_profile": worker_profile,
-                "prefer_no_lyrics": bool(args.prefer_no_lyrics),
+                "prefer_no_lyrics": prefer_no_lyrics,
             },
         }
     )
@@ -773,8 +776,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--prefer-no-lyrics",
         action=argparse.BooleanOptionalAction,
-        default=parse_bool_env(os.environ.get("AIMP_RENDER_WORKER_PREFER_NO_LYRICS")),
-        help="Prefer queued render jobs whose tracks do not contain singable lyrics.",
+        default=parse_optional_bool_env(os.environ.get("AIMP_RENDER_WORKER_PREFER_NO_LYRICS")),
+        help="Prefer queued render jobs whose tracks do not contain singable lyrics. Defaults on for oracle workers.",
     )
     parser.add_argument(
         "--cache-cleanup-threshold-percent",
