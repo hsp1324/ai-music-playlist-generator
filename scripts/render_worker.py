@@ -24,7 +24,7 @@ import httpx
 
 from app.config import Settings
 from app.services.playlist_builder import FFMpegPlaylistBuilder
-from app.utils.lyric_subtitles import build_word_aligned_line_lyric_cues
+from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_line_lyric_cues
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
@@ -52,6 +52,30 @@ def max_render_height_for_profile(profile: str) -> int:
     if profile == "oracle":
         return 720
     return 1080
+
+
+def normalize_lyrics_alignment_mode(value: str | None) -> str:
+    normalized = str(value or "").strip().lower().replace("-", "_")
+    if normalized in {"timeline", "line", "line_timeline", "approx", "approximate"}:
+        return "timeline"
+    if normalized in {"whisper", "faster_whisper", "asr"}:
+        return "whisper"
+    return "auto"
+
+
+def resolve_worker_lyrics_alignment_mode(
+    *,
+    worker_profile: str,
+    server_mode: str,
+    override: str,
+) -> str:
+    requested = normalize_lyrics_alignment_mode(override)
+    if requested != "auto":
+        return requested
+    normalized_server_mode = normalize_lyrics_alignment_mode(server_mode)
+    if worker_profile == "oracle" and normalized_server_mode == "whisper":
+        return "timeline"
+    return normalized_server_mode
 
 
 def normalize_api_base(value: str | None) -> str:
@@ -426,6 +450,8 @@ def render_job(
     cache_dir: Path,
     ffmpeg_binary: str,
     progress_timeout_seconds: float,
+    worker_profile: str,
+    lyrics_alignment_mode_override: str,
 ) -> Path:
     job_id = job["id"]
     job_dir = cache_dir / "jobs" / job_id
@@ -467,22 +493,37 @@ def render_job(
     render_resolution = render.get("video_render_resolution") or "720p"
     lyric_overlay_style = render.get("video_lyrics_overlay_style") or "auto"
     lyric_cues = render.get("lyric_cues") or []
-    if (
-        render.get("video_lyrics_overlay_enabled")
-        and not lyric_cues
-        and str(render.get("video_lyrics_alignment_mode") or "whisper").lower().replace("-", "_") == "whisper"
-    ):
-        print("Building line lyric cues with faster-whisper alignment...", flush=True)
-        lyric_cues = build_word_aligned_line_lyric_cues(
-            list(render.get("lyric_tracks") or []),
-            list(render.get("rendered_timeline") or []),
-            audio_path=audio_path,
-            model_size=str(render.get("video_lyrics_alignment_model") or "tiny"),
-            language=str(render.get("video_lyrics_alignment_language") or "").strip() or None,
-            min_score=float(render.get("video_lyrics_alignment_min_score") or 0.34),
-            max_end_seconds=total_duration_seconds,
+    if render.get("video_lyrics_overlay_enabled") and not lyric_cues:
+        alignment_mode = resolve_worker_lyrics_alignment_mode(
+            worker_profile=worker_profile,
+            server_mode=str(render.get("video_lyrics_alignment_mode") or "whisper"),
+            override=lyrics_alignment_mode_override,
         )
-        print(f"Built {len(lyric_cues)} aligned lyric cues.", flush=True)
+        if alignment_mode == "whisper":
+            print("Building line lyric cues with faster-whisper alignment...", flush=True)
+            try:
+                lyric_cues = build_word_aligned_line_lyric_cues(
+                    list(render.get("lyric_tracks") or []),
+                    list(render.get("rendered_timeline") or []),
+                    audio_path=audio_path,
+                    model_size=str(render.get("video_lyrics_alignment_model") or "tiny"),
+                    language=str(render.get("video_lyrics_alignment_language") or "").strip() or None,
+                    min_score=float(render.get("video_lyrics_alignment_min_score") or 0.34),
+                    max_end_seconds=total_duration_seconds,
+                )
+            except Exception as exc:  # noqa: BLE001
+                print(f"faster-whisper lyric alignment failed; falling back to timeline cues: {exc}", flush=True)
+                lyric_cues = []
+            else:
+                print(f"Built {len(lyric_cues)} aligned lyric cues.", flush=True)
+        if not lyric_cues:
+            print("Building approximate timeline lyric cues...", flush=True)
+            lyric_cues = build_line_lyric_cues(
+                list(render.get("lyric_tracks") or []),
+                list(render.get("rendered_timeline") or []),
+                max_end_seconds=total_duration_seconds,
+            )
+            print(f"Built {len(lyric_cues)} timeline lyric cues.", flush=True)
 
     def callback(progress: dict[str, Any]) -> None:
         post_progress(
@@ -647,6 +688,8 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         cache_dir=args.cache_dir,
         ffmpeg_binary=args.ffmpeg,
         progress_timeout_seconds=args.progress_timeout_seconds,
+        worker_profile=worker_profile,
+        lyrics_alignment_mode_override=args.lyrics_alignment_mode,
     )
     upload_rendered_video(
         client,
@@ -697,6 +740,12 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=float(os.environ.get("AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS", 300)),
         help="Maximum idle seconds for render-worker API calls such as claim, asset download, upload-status, upload chunks, and complete. Use 0 for no timeout.",
+    )
+    parser.add_argument(
+        "--lyrics-alignment-mode",
+        default=os.environ.get("AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE", "auto"),
+        choices=("auto", "whisper", "timeline"),
+        help="Override lyric timing generation. Auto uses timeline cues on low-memory oracle workers and whisper elsewhere.",
     )
     parser.add_argument(
         "--cache-cleanup-threshold-percent",

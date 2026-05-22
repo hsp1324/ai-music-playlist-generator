@@ -38,6 +38,7 @@ export AIMP_RENDER_WORKER_API_BASE="https://ai-music.168.107.34.175.sslip.io/api
 export AIMP_RENDER_WORKER_SHARED_TOKEN="PASTE_THE_MAIN_VM_TOKEN_HERE"
 export AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS=10
 export AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS=300
+export AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE=auto
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT=50
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS=24
 ```
@@ -71,6 +72,7 @@ After the final MP4 is successfully uploaded back to the web app, the worker wri
 
 Progress updates are best effort. `AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS` (default `10`) prevents a wedged web server connection from blocking ffmpeg progress output long enough to stall the render.
 Other worker API calls use `AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS` (default `300`) so claim, asset download, chunk upload, upload-status, and complete calls can retry instead of hanging forever when the web server accepts a connection but stops responding.
+Lyric timing uses `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE` (default `auto`). In auto mode, low-memory `oracle` workers use approximate timeline cues so lyrics still burn into the video without loading faster-whisper; desktop/GPU workers use faster-whisper alignment unless the server already supplied timeline cues.
 
 After a worker claims a job, the web app shows that `worker_id` in the release render status card. Click `Set Nickname` there to assign a human-readable name such as `Oracle Render 1`, `Home Desktop`, or `Laptop GPU`. The nickname is stored on the main VM in `storage/render-workers.json`, so the external machine does not need its own nickname configuration.
 
