@@ -356,14 +356,20 @@ function releaseIsScheduled(workspace) {
 
 function releaseChannelKey(workspace) {
   const channelId = String(workspace?.youtube_channel_id || "").trim();
+  const channelTitle = canonicalYouTubeChannelTitle(
+    workspace?.youtube_channel_title || workspace?.target_youtube_channel_title
+  );
+  const connectedChannel = connectedYouTubeChannel(channelId, channelTitle);
+  if (connectedChannel?.id) return `id:${connectedChannel.id}`;
   if (channelId) return `id:${channelId}`;
-  const channelTitle = canonicalYouTubeChannelTitle(workspace?.youtube_channel_title);
   if (channelTitle) return `title:${channelTitle}`;
   return "unknown";
 }
 
 function releaseChannelDisplayLabel(workspace) {
-  return canonicalYouTubeChannelTitle(workspace?.youtube_channel_title) || workspace?.youtube_channel_id || "Unknown Channel";
+  return canonicalYouTubeChannelTitle(workspace?.youtube_channel_title || workspace?.target_youtube_channel_title)
+    || workspace?.youtube_channel_id
+    || "Unknown Channel";
 }
 
 function canonicalYouTubeChannelTitle(title) {
@@ -2057,9 +2063,12 @@ function channelUploadSummaries() {
   });
 
   activeWorkspaces().forEach((workspace) => {
-    if (!releasePublishedChannelLabel(workspace)) return;
     const key = releaseChannelKey(workspace);
-    const connectedChannel = connectedYouTubeChannel(workspace.youtube_channel_id, workspace.youtube_channel_title);
+    if (!key || key === "unknown") return;
+    const connectedChannel = connectedYouTubeChannel(
+      workspace.youtube_channel_id,
+      workspace.youtube_channel_title || workspace.target_youtube_channel_title
+    );
     const releaseSortTime = releaseDisplaySortTimestamp(workspace);
     const existing = channels.get(key) || {
       key,
@@ -2123,18 +2132,44 @@ function channelUploadSummariesFromServer() {
     if (!key) return;
     const channelId = key.startsWith("id:") ? key.slice(3) : "";
     const connectedChannel = connectedYouTubeChannel(channelId, summary.label);
+    const normalizedKey = connectedChannel?.id ? `id:${connectedChannel.id}` : key;
     const latestAt = new Date(summary.latestAt || 0);
-    channels.set(key, {
-      key,
+    const latestTime = Number.isNaN(latestAt.getTime()) ? 0 : latestAt.getTime();
+    const existing = channels.get(normalizedKey) || {
+      key: normalizedKey,
       label: canonicalYouTubeChannelTitle(summary.label) || connectedChannel?.title || channelId || "Unknown Channel",
       thumbnailUrl: connectedChannel?.thumbnail_url || "",
-      count: Number(summary.count || 0),
-      playlistCount: Number(summary.playlistCount || 0),
-      singleCount: Number(summary.singleCount || 0),
-      totalDuration: Number(summary.totalDuration || 0),
-      latestTitle: summary.latestTitle || "",
-      latestAt: Number.isNaN(latestAt.getTime()) ? 0 : latestAt.getTime(),
-      latestAtLabel: summary.latestAt ? formatArchiveDate(summary.latestAt) : "",
+      count: 0,
+      playlistCount: 0,
+      singleCount: 0,
+      totalDuration: 0,
+      latestTitle: "",
+      latestAt: 0,
+      latestAtLabel: "",
+    };
+    existing.count += Number(summary.count || 0);
+    existing.playlistCount += Number(summary.playlistCount || 0);
+    existing.singleCount += Number(summary.singleCount || 0);
+    existing.totalDuration += Number(summary.totalDuration || 0);
+    if (!existing.thumbnailUrl && connectedChannel?.thumbnail_url) {
+      existing.thumbnailUrl = connectedChannel.thumbnail_url;
+    }
+    if (latestTime >= existing.latestAt) {
+      existing.latestAt = latestTime;
+      existing.latestAtLabel = summary.latestAt ? formatArchiveDate(summary.latestAt) : "";
+      existing.latestTitle = summary.latestTitle || existing.latestTitle;
+    }
+    channels.set(normalizedKey, {
+      key: normalizedKey,
+      label: existing.label,
+      thumbnailUrl: existing.thumbnailUrl,
+      count: existing.count,
+      playlistCount: existing.playlistCount,
+      singleCount: existing.singleCount,
+      totalDuration: existing.totalDuration,
+      latestTitle: existing.latestTitle,
+      latestAt: existing.latestAt,
+      latestAtLabel: existing.latestAtLabel,
     });
   });
 
@@ -2159,7 +2194,7 @@ function ensureChannelFilter() {
 
 function workspaceMatchesChannelFilter(workspace) {
   if (state.channelFilter === CHANNEL_FILTER_ALL) return true;
-  return releaseChannelKey(workspace) === state.channelFilter && Boolean(releasePublishedChannelLabel(workspace));
+  return releaseChannelKey(workspace) === state.channelFilter;
 }
 
 function visibleWorkspaces() {
@@ -2425,7 +2460,7 @@ function channelSummaryCard(channel) {
 
   const caption = document.createElement("span");
   caption.className = "channel-summary-caption";
-  caption.textContent = "uploaded releases";
+  caption.textContent = "releases";
 
   const meta = document.createElement("span");
   meta.className = "channel-summary-meta";
@@ -2435,7 +2470,7 @@ function channelSummaryCard(channel) {
   const latest = document.createElement("span");
   latest.className = "channel-summary-latest";
   const latestDate = channel.latestAtLabel ? ` · ${channel.latestAtLabel}` : "";
-  latest.textContent = `${channel.latestTitle || "최근 업로드 없음"}${latestDate}`;
+  latest.textContent = `${channel.latestTitle || "release 없음"}${latestDate}`;
 
   card.append(channelAvatar(channel, "channel-summary-avatar"), label, count, caption, meta, latest);
   return card;

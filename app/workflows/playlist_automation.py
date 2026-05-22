@@ -1225,15 +1225,33 @@ def list_workspace_channel_summaries(db: Session) -> list[dict]:
     purge_expired_archived_workspaces(db)
     channels: dict[str, dict] = {}
     playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
+    channel_ids_by_title: dict[str, str] = {}
     for playlist in playlists:
         meta = _playlist_meta(playlist)
         if meta.get("hidden"):
             continue
-        if not playlist.youtube_video_id and meta.get("workflow_state") != "uploaded":
+        channel_id = str(meta.get("youtube_channel_id") or "").strip()
+        channel_title = (
+            _canonical_youtube_channel_title(meta.get("youtube_channel_title"))
+            or _canonical_youtube_channel_title(meta.get("target_youtube_channel_title"))
+            or ""
+        )
+        if channel_id and channel_title:
+            channel_ids_by_title.setdefault(channel_title, channel_id)
+
+    for playlist in playlists:
+        meta = _playlist_meta(playlist)
+        if meta.get("hidden"):
             continue
 
         channel_id = str(meta.get("youtube_channel_id") or "").strip()
-        channel_title = _canonical_youtube_channel_title(meta.get("youtube_channel_title")) or ""
+        channel_title = (
+            _canonical_youtube_channel_title(meta.get("youtube_channel_title"))
+            or _canonical_youtube_channel_title(meta.get("target_youtube_channel_title"))
+            or ""
+        )
+        if not channel_id and channel_title:
+            channel_id = channel_ids_by_title.get(channel_title, "")
         if channel_id:
             key = f"id:{channel_id}"
         elif channel_title:
