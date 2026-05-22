@@ -37,6 +37,7 @@ Set the API URL and token:
 export AIMP_RENDER_WORKER_API_BASE="https://ai-music.168.107.34.175.sslip.io/api"
 export AIMP_RENDER_WORKER_SHARED_TOKEN="PASTE_THE_MAIN_VM_TOKEN_HERE"
 export AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS=10
+export AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS=300
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT=50
 export AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS=24
 ```
@@ -69,6 +70,7 @@ Keep `--worker-id` stable. If the worker disconnects during upload, restarting w
 After the final MP4 is successfully uploaded back to the web app, the worker writes a completion marker in that job cache directory. When disk usage for the worker cache filesystem rises above `AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT` (default `50`), the worker deletes completed job cache directories oldest first. It also deletes unmarked stale job cache directories older than `AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS` (default `24`) because older workers may have left successful renders without markers. The active job writes `.render-worker-active.json`; fresh in-progress job directories are not deleted by cache cleanup.
 
 Progress updates are best effort. `AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS` (default `10`) prevents a wedged web server connection from blocking ffmpeg progress output long enough to stall the render.
+Other worker API calls use `AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS` (default `300`) so claim, asset download, chunk upload, upload-status, and complete calls can retry instead of hanging forever when the web server accepts a connection but stops responding.
 
 After a worker claims a job, the web app shows that `worker_id` in the release render status card. Click `Set Nickname` there to assign a human-readable name such as `Oracle Render 1`, `Home Desktop`, or `Laptop GPU`. The nickname is stored on the main VM in `storage/render-workers.json`, so the external machine does not need its own nickname configuration.
 

@@ -191,6 +191,13 @@ def request_json(client: httpx.Client, method: str, url: str, *, token: str, **k
     return payload
 
 
+def client_timeout_from_seconds(value: float) -> httpx.Timeout:
+    seconds = float(value)
+    if seconds <= 0:
+        return httpx.Timeout(None)
+    return httpx.Timeout(timeout=seconds, connect=min(seconds, 30.0))
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -686,6 +693,12 @@ def parse_args() -> argparse.Namespace:
         help="Maximum seconds to wait for best-effort progress updates before continuing the render.",
     )
     parser.add_argument(
+        "--api-timeout-seconds",
+        type=float,
+        default=float(os.environ.get("AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS", 300)),
+        help="Maximum idle seconds for render-worker API calls such as claim, asset download, upload-status, upload chunks, and complete. Use 0 for no timeout.",
+    )
+    parser.add_argument(
         "--cache-cleanup-threshold-percent",
         type=float,
         default=float(os.environ.get("AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT", 50)),
@@ -707,7 +720,7 @@ def main() -> int:
     args.api_base = normalize_api_base(args.api_base)
     if not args.token:
         raise SystemExit("AIMP_RENDER_WORKER_SHARED_TOKEN or --token is required.")
-    timeout = httpx.Timeout(None)
+    timeout = client_timeout_from_seconds(args.api_timeout_seconds)
     with httpx.Client(base_url=args.api_base, timeout=timeout, follow_redirects=True) as client:
         while True:
             try:
