@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
@@ -76,6 +77,10 @@ def resolve_worker_lyrics_alignment_mode(
     if worker_profile == "oracle" and normalized_server_mode == "whisper":
         return "timeline"
     return normalized_server_mode
+
+
+def faster_whisper_available() -> bool:
+    return importlib.util.find_spec("faster_whisper") is not None
 
 
 def normalize_api_base(value: str | None) -> str:
@@ -662,6 +667,16 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
     worker_profile = args.worker_profile or infer_worker_profile(args.worker_id, hostname)
     max_render_height = max_render_height_for_profile(worker_profile)
     prefer_no_lyrics = bool(worker_profile == "oracle" if args.prefer_no_lyrics is None else args.prefer_no_lyrics)
+    has_faster_whisper = faster_whisper_available()
+    effective_default_alignment_mode = resolve_worker_lyrics_alignment_mode(
+        worker_profile=worker_profile,
+        server_mode="whisper",
+        override=args.lyrics_alignment_mode,
+    )
+    supports_whisper_alignment = has_faster_whisper and effective_default_alignment_mode == "whisper"
+    lyrics_alignment_modes = ["timeline"]
+    if supports_whisper_alignment:
+        lyrics_alignment_modes.append("whisper")
     claim = request_json(
         client,
         "POST",
@@ -676,6 +691,9 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "worker_profile": worker_profile,
                 "max_render_height": max_render_height,
                 "prefer_no_lyrics": prefer_no_lyrics,
+                "faster_whisper": supports_whisper_alignment,
+                "video_lyrics_alignment_mode": "whisper" if supports_whisper_alignment else "timeline",
+                "lyrics_alignment_modes": lyrics_alignment_modes,
             },
         },
     )

@@ -2248,6 +2248,146 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "lyrics-capability-audio.mp3"
+        cover_path = playlist_dir / "lyrics-capability-cover.png"
+        loop_path = playlist_dir / "lyrics-capability-loop.mp4"
+        track_path = track_dir / "lyrics-capability-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Lyric Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "first line\nsecond line"},
+            )
+            lyric_playlist = Playlist(
+                title="Lyric Whisper Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            plain_playlist = Playlist(
+                title="Plain Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, lyric_playlist, plain_playlist])
+            db.flush()
+            db.add_all(
+                [
+                    PlaylistItem(
+                        playlist_id=lyric_playlist.id,
+                        track_id=track.id,
+                        order_index=1,
+                        included_duration_seconds=60,
+                    ),
+                    PlaylistItem(
+                        playlist_id=plain_playlist.id,
+                        track_id=track.id,
+                        order_index=1,
+                        included_duration_seconds=60,
+                    ),
+                ]
+            )
+            lyric_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=lyric_playlist.id,
+                payload_json={"video_lyrics_overlay_enabled": True, "video_lyrics_alignment_mode": "whisper"},
+                result_json={},
+            )
+            plain_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=plain_playlist.id,
+                payload_json={"video_lyrics_overlay_enabled": False},
+                result_json={},
+            )
+            db.add_all([lyric_job, plain_job])
+            db.commit()
+            lyric_job_id = lyric_job.id
+            plain_job_id = plain_job.id
+
+        headers = {"X-Render-Worker-Token": "test-render-token"}
+        legacy_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "legacy-oracle",
+                "hostname": "oracle-instance",
+                "capabilities": {"worker_profile": "oracle", "max_render_height": 720},
+            },
+        )
+        assert legacy_claim.status_code == 200
+        assert legacy_claim.json()["job"]["id"] == plain_job_id
+
+        legacy_empty_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "legacy-oracle-2",
+                "hostname": "oracle-instance-2",
+                "capabilities": {"worker_profile": "oracle", "max_render_height": 720},
+            },
+        )
+        assert legacy_empty_claim.status_code == 200
+        assert legacy_empty_claim.json()["job"] is None
+
+        whisper_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "updated-worker",
+                "hostname": "updated-host",
+                "capabilities": {
+                    "worker_profile": "oracle",
+                    "max_render_height": 720,
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["timeline", "whisper"],
+                },
+            },
+        )
+        assert whisper_claim.status_code == 200
+        assert whisper_claim.json()["job"]["id"] == lyric_job_id
+        assert whisper_claim.json()["job"]["render"]["video_lyrics_alignment_mode"] == "whisper"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"

@@ -353,6 +353,51 @@ def _render_job_sort_key(
     return (lyrics_rank, 0, created_at)
 
 
+def _is_truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def _job_requires_whisper_lyric_alignment(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
+    meta = dict(playlist.metadata_json or {})
+    payload = dict(job.payload_json or {})
+    lyrics_overlay_enabled = _is_truthy(
+        payload.get("video_lyrics_overlay_enabled")
+        or meta.get("video_lyrics_overlay_enabled")
+        or services.settings.video_lyrics_overlay_enabled
+    )
+    if not lyrics_overlay_enabled:
+        return False
+    alignment_mode = str(
+        payload.get(
+            "video_lyrics_alignment_mode",
+            meta.get("video_lyrics_alignment_mode", services.settings.video_lyrics_alignment_mode),
+        )
+        or "whisper"
+    ).strip().lower().replace("-", "_")
+    return alignment_mode == "whisper"
+
+
+def _worker_supports_whisper_lyric_alignment(capabilities: dict[str, Any]) -> bool:
+    if _is_truthy(capabilities.get("faster_whisper")) or _is_truthy(capabilities.get("video_lyrics_whisper")):
+        return True
+    raw_modes = (
+        capabilities.get("lyrics_alignment_modes")
+        or capabilities.get("video_lyrics_alignment_modes")
+        or capabilities.get("video_lyrics_alignment_mode")
+    )
+    if isinstance(raw_modes, str):
+        modes = [item.strip().lower().replace("-", "_") for item in raw_modes.split(",")]
+    elif isinstance(raw_modes, (list, tuple, set)):
+        modes = [str(item).strip().lower().replace("-", "_") for item in raw_modes]
+    else:
+        modes = []
+    return "whisper" in modes
+
+
 def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) -> int:
     timeout_seconds = max(int(services.settings.render_worker_claim_timeout_seconds or 0), 60)
     cutoff = _utcnow() - timedelta(seconds=timeout_seconds)
@@ -669,8 +714,18 @@ def claim_render_job(
         .order_by(Job.created_at.asc())
         .limit(50)
     ).all()
+    claimable_jobs = []
+    for job in candidate_jobs:
+        if job.playlist is None:
+            continue
+        if (
+            _job_requires_whisper_lyric_alignment(job, job.playlist, services)
+            and not _worker_supports_whisper_lyric_alignment(payload.capabilities or {})
+        ):
+            continue
+        claimable_jobs.append(job)
     candidate_jobs = sorted(
-        [job for job in candidate_jobs if job.playlist is not None],
+        claimable_jobs,
         key=lambda job: _render_job_sort_key(job, job.playlist, profile, prefer_no_lyrics=prefer_no_lyrics),
     )
     claimed_id = None
