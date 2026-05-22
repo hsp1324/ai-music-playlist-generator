@@ -1922,6 +1922,156 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_external_render_worker_claim_clears_stale_partial_upload(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "stale-upload-audio.mp3"
+        cover_path = playlist_dir / "stale-upload-cover.png"
+        loop_path = playlist_dir / "stale-upload-loop.mp4"
+        track_path = track_dir / "stale-upload-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "navy").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Stale Upload Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
+            playlist = Playlist(
+                title="Stale Upload Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(type=JobType.build_video, status=JobStatus.queued, playlist_id=playlist.id, result_json={})
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        part_path, _meta_path = render_worker_routes._upload_paths(services, job_id)
+        part_path.write_bytes(b"stale-partial-from-old-worker")
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={"worker_id": "fresh-worker", "hostname": "fresh-host"},
+        )
+        assert claim.status_code == 200
+        assert claim.json()["job"]["id"] == job_id
+        assert not part_path.exists()
+    finally:
+        clear_isolated_client_env()
+
+
+def test_external_render_worker_checksum_mismatch_clears_partial_upload(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "checksum-audio.mp3"
+        cover_path = playlist_dir / "checksum-cover.png"
+        loop_path = playlist_dir / "checksum-loop.mp4"
+        track_path = track_dir / "checksum-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Checksum Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
+            playlist = Playlist(
+                title="Checksum Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(type=JobType.build_video, status=JobStatus.queued, playlist_id=playlist.id, result_json={})
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        headers = {"X-Render-Worker-Token": "test-render-token"}
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={"worker_id": "checksum-worker", "hostname": "checksum-host"},
+        )
+        assert claim.status_code == 200
+        payload = b"rendered-video-bytes"
+        upload = client.put(
+            f"/api/render-worker/jobs/{job_id}/upload",
+            headers={**headers, "Content-Range": f"bytes 0-{len(payload) - 1}/{len(payload)}"},
+            content=payload,
+        )
+        assert upload.status_code == 200
+        part_path, _meta_path = render_worker_routes._upload_paths(services, job_id)
+        assert part_path.exists()
+
+        complete = client.post(
+            f"/api/render-worker/jobs/{job_id}/complete",
+            headers=headers,
+            json={"worker_id": "checksum-worker", "size_bytes": len(payload), "sha256": hashlib.sha256(b"wrong").hexdigest()},
+        )
+        assert complete.status_code == 400
+        assert not part_path.exists()
+        status_response = client.get(f"/api/render-worker/jobs/{job_id}/upload-status", headers=headers)
+        assert status_response.status_code == 200
+        assert status_response.json()["received_bytes"] == 0
+        with SessionLocal() as db:
+            job = db.get(Job, job_id)
+            assert job.status == JobStatus.running
+            assert job.result_json["progress"]["status"] == "failed"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_render_worker_claim_pauses_when_disk_nears_cleanup_threshold(tmp_path, monkeypatch) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -2586,6 +2736,101 @@ def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path
         assert whisper_claim.status_code == 200
         assert whisper_claim.json()["job"]["id"] == lyric_job_id
         assert whisper_claim.json()["job"]["render"]["video_lyrics_alignment_mode"] == "whisper"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_render_worker_claim_requires_cjk_font_for_cjk_lyric_jobs(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "cjk-lyrics-audio.mp3"
+        cover_path = playlist_dir / "cjk-lyrics-cover.png"
+        loop_path = playlist_dir / "cjk-lyrics-loop.mp4"
+        track_path = track_dir / "cjk-lyrics-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Korean Lyric Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "달빛 아래 걷는 마음\n조용히 다시 피어나"},
+            )
+            playlist = Playlist(
+                title="Korean Lyric Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "youtube_channel_title": "불송",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={"video_lyrics_overlay_enabled": True, "video_lyrics_alignment_mode": "whisper"},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        headers = {"X-Render-Worker-Token": "test-render-token"}
+        no_font_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "whisper-no-font",
+                "hostname": "desktop",
+                "capabilities": {
+                    "worker_profile": "desktop",
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["timeline", "whisper"],
+                },
+            },
+        )
+        assert no_font_claim.status_code == 200
+        assert no_font_claim.json()["job"] is None
+
+        cjk_font_claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={
+                "worker_id": "whisper-with-font",
+                "hostname": "desktop",
+                "capabilities": {
+                    "worker_profile": "desktop",
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["timeline", "whisper"],
+                    "video_lyrics_cjk_font": "Noto Sans CJK KR",
+                },
+            },
+        )
+        assert cjk_font_claim.status_code == 200
+        assert cjk_font_claim.json()["job"]["id"] == job_id
     finally:
         clear_isolated_client_env()
 

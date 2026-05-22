@@ -31,6 +31,8 @@ sudo apt update
 sudo apt install -y ffmpeg fonts-noto-cjk
 ```
 
+`fonts-noto-cjk` is required on Linux/WSL workers that render Korean, Japanese, or Chinese lyric burn-in. Without a CJK-capable font, ASS subtitles can render as square placeholder glyphs even when Whisper timing is correct.
+
 Set the API URL and token:
 
 ```bash
@@ -77,7 +79,7 @@ After the final MP4 is successfully uploaded back to the web app, the worker wri
 
 Progress updates are best effort. `AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS` (default `10`) prevents a wedged web server connection from blocking ffmpeg progress output long enough to stall the render.
 Other worker API calls use `AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS` (default `300`) so claim, asset download, chunk upload, upload-status, and complete calls can retry instead of hanging forever when the web server accepts a connection but stops responding.
-Lyric timing uses `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE` (default `auto`). In auto mode, low-memory `oracle` workers use approximate timeline cues so lyrics still burn into the video without loading faster-whisper; desktop/GPU workers use faster-whisper alignment unless the server already supplied timeline cues. Set `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE=whisper` and `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODEL=tiny` when this worker must always use faster-whisper timing.
+Lyric timing uses `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE` (default `auto`). In auto mode, low-memory `oracle` workers use approximate timeline cues so lyrics still burn into the video without loading faster-whisper; desktop/GPU workers use faster-whisper alignment unless the server already supplied timeline cues. Set `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE=whisper` and `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODEL=tiny` when this worker must always use faster-whisper timing. Current workers advertise `video_lyrics_cjk_font` / `cjk_font` only when `fc-match` finds a CJK-capable font; the main app will not assign CJK lyric overlay jobs to workers that do not advertise that font support.
 
 After a worker claims a job, the web app shows that `worker_id` in the release render status card. Click `Set Nickname` there to assign a human-readable name such as `Oracle Render 1`, `Home Desktop`, or `Laptop GPU`. The nickname is stored on the main VM in `storage/render-workers.json`, so the external machine does not need its own nickname configuration.
 
@@ -95,6 +97,7 @@ The upload path is resumable:
 - The server stores partial uploads in `storage/tmp/render-worker/JOB_ID.mp4.part`.
 - The worker asks `/api/render-worker/jobs/JOB_ID/upload-status` before every chunk and continues from `received_bytes`.
 - If the worker process dies and restarts with the same `--worker-id`, the claim endpoint returns the existing running job instead of creating a duplicate.
+- If a queued job is reclaimed by a different worker after timeout/operator intervention, the server clears any stale partial upload for that job before returning the claim. If `/complete` detects a size or checksum mismatch, the server also clears the partial upload so the next retry starts from byte zero instead of resuming corrupted bytes.
 - The server records `worker_id`, hostname, capabilities, and the optional server-side nickname in the job's `external_render_worker` metadata, so operators can tell which compute resource owns each render.
 - If a claimed job has no heartbeat for `AIMP_RENDER_WORKER_CLAIM_TIMEOUT_SECONDS`, default 21600 seconds, the main VM requeues it for any render worker.
 
@@ -141,6 +144,6 @@ If you deploy a new VM or change Nginx manually, keep this block.
 - Multiple render workers can run at the same time. Each worker claims only one queued video job at a time.
 - The main VM remains the only machine that uploads to YouTube.
 - OpenClaw should still call `scripts/openclaw-release render-video` after audio/cover/thumbnail/loop-video are ready. That creates the queued video job; render workers do the actual MP4 work. For vocal releases, OpenClaw should upload clean lyrics with the audio. The app auto-burns original-language line lyrics into the MP4 when singable lyrics are present and creates YouTube CC captions at publish time from the same saved lyrics, using faster-whisper line timing and Codex translations. 불송 uses the centered `center-breath-serif` burn-in style; other lyric releases use `soft-bottom-fade` by default unless `--lyrics-overlay-style editorial-lower-left` is explicitly better for that composition. Cinematic Pulse is the still-image high-resolution exception: OpenClaw queues it with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`, so no loop-video asset is required.
-- Keep external workers updated before letting them handle vocal/lyrics releases. Current workers advertise `faster_whisper` and `lyrics_alignment_modes` when the Python environment can import `faster_whisper`; the main app will not assign Whisper lyric burn-in jobs to older workers or workers missing that capability. If a worker only advertises timeline support, it can still claim instrumental/no-lyric renders.
+- Keep external workers updated before letting them handle vocal/lyrics releases. Current workers advertise `faster_whisper` and `lyrics_alignment_modes` when the Python environment can import `faster_whisper`; the main app will not assign Whisper lyric burn-in jobs to older workers or workers missing that capability. CJK lyric jobs additionally require advertised CJK font support. If a worker only advertises timeline support, it can still claim instrumental/no-lyric renders.
 - Do not run `scripts/render-worker` on the main VM if the goal is to keep the main VM free from video rendering.
 - If a rendered release is stuck, check `/api/render-worker/status`, the workspace progress, and `storage/tmp/render-worker/` partial files.

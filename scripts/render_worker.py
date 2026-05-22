@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import socket
+import subprocess
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -30,6 +31,24 @@ from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
 ACTIVE_JOB_MARKER = ".render-worker-active.json"
+CJK_FONT_CANDIDATES = (
+    "Noto Sans CJK KR",
+    "Noto Serif CJK KR",
+    "Noto Sans KR",
+    "NanumGothic",
+    "Malgun Gothic",
+    "Apple SD Gothic Neo",
+    "Unifont",
+)
+CJK_FONT_MATCH_MARKERS = (
+    "noto sans cjk",
+    "noto serif cjk",
+    "noto sans kr",
+    "nanum",
+    "malgun",
+    "apple sd gothic",
+    "unifont",
+)
 
 
 def infer_worker_profile(worker_id: str, hostname: str) -> str:
@@ -81,6 +100,34 @@ def resolve_worker_lyrics_alignment_mode(
 
 def faster_whisper_available() -> bool:
     return importlib.util.find_spec("faster_whisper") is not None
+
+
+def detect_cjk_lyric_font() -> str:
+    explicit = os.environ.get("AIMP_RENDER_WORKER_CJK_FONT", "").strip()
+    if explicit:
+        return explicit
+    fc_match = shutil.which("fc-match")
+    if not fc_match:
+        return ""
+    for candidate in CJK_FONT_CANDIDATES:
+        try:
+            result = subprocess.run(
+                [fc_match, "-f", "%{family}|%{file}\n", candidate],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if result.returncode != 0:
+            continue
+        output = (result.stdout or "").strip()
+        lowered = output.lower()
+        if any(marker in lowered for marker in CJK_FONT_MATCH_MARKERS):
+            family = output.split("|", 1)[0].split(",", 1)[0].strip()
+            return family or candidate
+    return ""
 
 
 def normalize_api_base(value: str | None) -> str:
@@ -492,13 +539,24 @@ def render_job(
             destination=job_dir / assets["loop_video"]["filename"],
         )
 
+    render = job["render"]
     settings = Settings(
         storage_root=cache_dir / "storage",
         ffmpeg_binary=ffmpeg_binary,
     )
+    local_cjk_font = detect_cjk_lyric_font()
+    if local_cjk_font:
+        settings.video_lyrics_overlay_font = local_cjk_font
+        settings.video_lyrics_overlay_serif_font = local_cjk_font
+    else:
+        settings.video_lyrics_overlay_font = str(
+            render.get("video_lyrics_overlay_font") or settings.video_lyrics_overlay_font
+        )
+        settings.video_lyrics_overlay_serif_font = str(
+            render.get("video_lyrics_overlay_serif_font") or settings.video_lyrics_overlay_serif_font
+        )
     settings.ensure_storage_dirs()
     builder = FFMpegPlaylistBuilder(settings)
-    render = job["render"]
     output_path = job_dir / render["output_filename"]
     total_duration_seconds = render.get("total_duration_seconds")
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
@@ -682,6 +740,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
     lyrics_alignment_modes = ["timeline"]
     if supports_whisper_alignment:
         lyrics_alignment_modes.append("whisper")
+    cjk_font = detect_cjk_lyric_font()
     claim = request_json(
         client,
         "POST",
@@ -699,6 +758,9 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "faster_whisper": supports_whisper_alignment,
                 "video_lyrics_alignment_mode": "whisper" if supports_whisper_alignment else "timeline",
                 "lyrics_alignment_modes": lyrics_alignment_modes,
+                "cjk_font": bool(cjk_font),
+                "video_lyrics_cjk_font": cjk_font,
+                "video_lyrics_overlay_font": cjk_font,
             },
         },
     )

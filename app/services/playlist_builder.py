@@ -758,9 +758,10 @@ class FFMpegPlaylistBuilder:
     def _lyric_overlay_ass_profile(self, style: str, frame_size: tuple[int, int]) -> dict[str, Any]:
         width, height = frame_size
         default_font = str(getattr(self.settings, "video_lyrics_overlay_font", "") or "Noto Sans KR")
+        serif_font = str(getattr(self.settings, "video_lyrics_overlay_serif_font", "") or "Noto Serif KR")
         if style == "center_breath_serif":
             return {
-                "font_name": "Noto Serif KR",
+                "font_name": serif_font,
                 "font_size": max(int(round(height * 0.063)), 32),
                 "primary_colour": "&H00F5F1E9",
                 "outline_colour": "&HAA2D241E",

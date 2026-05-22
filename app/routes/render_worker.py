@@ -42,6 +42,7 @@ from app.utils.youtube_localizations import ensure_playlist_title_prefix
 router = APIRouter(prefix="/render-worker", tags=["render-worker"])
 
 CONTENT_RANGE_RE = re.compile(r"^bytes\s+(\d+)-(\d+)/(\d+|\*)$")
+CJK_TEXT_RE = re.compile(r"[\u1100-\u11ff\u3130-\u318f\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]")
 PROGRESS_UPDATE_MIN_INTERVAL_SECONDS = 30
 PROGRESS_UPDATE_MIN_RATIO_DELTA = 0.01
 PROGRESS_UPDATE_MIN_PERCENT_DELTA = 1.0
@@ -249,6 +250,12 @@ def _upload_paths(services: ServiceRegistry, job_id: str) -> tuple[Path, Path]:
     return part_path, meta_path
 
 
+def _clear_render_upload(services: ServiceRegistry, job_id: str) -> None:
+    part_path, meta_path = _upload_paths(services, job_id)
+    part_path.unlink(missing_ok=True)
+    meta_path.unlink(missing_ok=True)
+
+
 def _public_api_url(services: ServiceRegistry, path: str) -> str:
     return f"{services.settings.public_base_url.rstrip('/')}{services.settings.api_prefix}{path}"
 
@@ -386,7 +393,7 @@ def _is_truthy(value: Any) -> bool:
     return bool(value)
 
 
-def _job_requires_whisper_lyric_alignment(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
+def _job_uses_lyric_overlay(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
     meta = dict(playlist.metadata_json or {})
     payload = dict(job.payload_json or {})
     lyric_tracks = _playlist_lyric_track_dicts(playlist)
@@ -400,6 +407,14 @@ def _job_requires_whisper_lyric_alignment(job: Job, playlist: Playlist, services
     ) or should_auto_enable_video_lyrics_overlay(policy_meta, lyric_tracks)
     if not lyrics_overlay_enabled:
         return False
+    return True
+
+
+def _job_requires_whisper_lyric_alignment(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
+    if not _job_uses_lyric_overlay(job, playlist, services):
+        return False
+    meta = dict(playlist.metadata_json or {})
+    payload = dict(job.payload_json or {})
     alignment_mode = str(
         payload.get(
             "video_lyrics_alignment_mode",
@@ -425,6 +440,37 @@ def _worker_supports_whisper_lyric_alignment(capabilities: dict[str, Any]) -> bo
     else:
         modes = []
     return "whisper" in modes
+
+
+def _job_has_cjk_lyrics(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
+    if not _job_uses_lyric_overlay(job, playlist, services):
+        return False
+    for track in _playlist_lyric_track_dicts(playlist):
+        if CJK_TEXT_RE.search(str(track.get("lyrics") or "")):
+            return True
+    return False
+
+
+def _worker_supports_cjk_lyric_overlay(capabilities: dict[str, Any]) -> bool:
+    for key in (
+        "cjk_font",
+        "cjk_fonts",
+        "video_lyrics_cjk_font",
+        "video_lyrics_cjk_fonts",
+        "video_lyrics_overlay_font",
+    ):
+        value = capabilities.get(key)
+        if isinstance(value, bool):
+            if value:
+                return True
+            continue
+        if isinstance(value, str):
+            if value.strip():
+                return True
+            continue
+        if isinstance(value, (list, tuple, set)) and any(str(item).strip() for item in value):
+            return True
+    return False
 
 
 def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) -> int:
@@ -594,6 +640,8 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             "video_lyrics_overlay_enabled": lyrics_overlay_enabled,
             "video_lyrics_overlay_style": lyrics_overlay_style,
             "video_lyrics_alignment_mode": lyrics_alignment_mode,
+            "video_lyrics_overlay_font": services.settings.video_lyrics_overlay_font,
+            "video_lyrics_overlay_serif_font": services.settings.video_lyrics_overlay_serif_font,
             "release_vocal_mode": vocal_info["release_vocal_mode"],
             "release_has_singable_lyrics": bool(vocal_info["release_has_singable_lyrics"]),
             "release_vocal_mode_source": vocal_info["release_vocal_mode_source"],
@@ -764,11 +812,13 @@ def claim_render_job(
     for job in candidate_jobs:
         if job.playlist is None:
             continue
-        if (
-            _job_requires_whisper_lyric_alignment(job, job.playlist, services)
-            and not _worker_supports_whisper_lyric_alignment(payload.capabilities or {})
-        ):
+        requires_whisper = _job_requires_whisper_lyric_alignment(job, job.playlist, services)
+        has_cjk_lyrics = _job_has_cjk_lyrics(job, job.playlist, services)
+        if has_cjk_lyrics and not _worker_supports_cjk_lyric_overlay(payload.capabilities or {}):
             continue
+        if requires_whisper:
+            if not _worker_supports_whisper_lyric_alignment(payload.capabilities or {}):
+                continue
         claimable_jobs.append(job)
     candidate_jobs = sorted(
         claimable_jobs,
@@ -790,6 +840,7 @@ def claim_render_job(
         return {"ok": True, "job": None, "recovered_stale_jobs": recovered}
 
     job, playlist = _load_render_job(db, claimed_id)
+    _clear_render_upload(services, claimed_id)
     track_ids = _playlist_track_ids(playlist)
     result = dict(job.result_json or {})
     worker_meta = {
@@ -1000,8 +1051,32 @@ def complete_render_job(
     if not part_path.exists() or part_path.stat().st_size == 0:
         raise HTTPException(status_code=400, detail="Rendered video upload is empty or missing.")
     if payload.size_bytes is not None and part_path.stat().st_size != payload.size_bytes:
+        _clear_render_upload(services, job_id)
+        _update_video_progress(
+            db,
+            job,
+            playlist,
+            {
+                "stage": "video_upload",
+                "status": "failed",
+                "message": "Rendered video size mismatch; cleared partial upload for retry.",
+            },
+            force=True,
+        )
         raise HTTPException(status_code=400, detail="Rendered video size does not match uploaded bytes.")
     if payload.sha256 and _sha256_file(part_path).lower() != payload.sha256.lower():
+        _clear_render_upload(services, job_id)
+        _update_video_progress(
+            db,
+            job,
+            playlist,
+            {
+                "stage": "video_upload",
+                "status": "failed",
+                "message": "Rendered video checksum mismatch; cleared partial upload for retry.",
+            },
+            force=True,
+        )
         raise HTTPException(status_code=400, detail="Rendered video checksum mismatch.")
 
     result = dict(job.result_json or {})
