@@ -1134,7 +1134,9 @@ def complete_render_job(
 
     playlist.output_video_path = str(output_path)
     is_playlist_release = str(meta.get("workspace_mode") or "playlist") != "single_track_video"
-    if has_youtube_metadata(meta):
+    auto_publish_after_video_render = bool(meta.get("auto_publish_after_video_render"))
+    metadata_was_preserved = has_youtube_metadata(meta)
+    if metadata_was_preserved:
         meta["youtube_metadata_preserved_after_video_render"] = True
     else:
         tracks = [item.track for item in sorted(playlist.items, key=lambda item: item.order_index) if item.track]
@@ -1145,14 +1147,33 @@ def complete_render_job(
             is_playlist=is_playlist_release,
         )
         meta["youtube_metadata_preserved_after_video_render"] = False
-    meta["metadata_approved"] = False
-    meta["publish_approved"] = False
+    should_queue_youtube_upload = bool(
+        auto_publish_after_video_render
+        and metadata_was_preserved
+        and meta.get("cover_approved")
+        and meta.get("cover_image_path")
+        and not playlist.youtube_video_id
+    )
+    if should_queue_youtube_upload:
+        meta["metadata_approved"] = True
+        meta["publish_ready"] = True
+        meta["publish_approved"] = True
+        meta["publish_approved_by"] = "system:auto-publish-after-video-render"
+    else:
+        meta["metadata_approved"] = False
+        meta["publish_approved"] = False
     meta["rendered_video_track_ids"] = current_track_ids
     meta["rendered_video_track_count"] = len(current_track_ids)
     meta.pop("stale_video_render", None)
     meta.pop("video_build_error", None)
-    meta["workflow_state"] = "metadata_review"
-    meta["note"] = payload.message or "External video render completed. Review YouTube metadata next."
+    if should_queue_youtube_upload:
+        meta["workflow_state"] = "publish_queued"
+        meta["note"] = (
+            "External video render completed. Preserved approved metadata and queued YouTube upload."
+        )
+    else:
+        meta["workflow_state"] = "metadata_review"
+        meta["note"] = payload.message or "External video render completed. Review YouTube metadata next."
     meta["video_render_progress"] = {
         **dict(meta.get("video_render_progress") or {}),
         "stage": "video_render",
@@ -1179,16 +1200,40 @@ def complete_render_job(
     job.result_json = result
     db.add(playlist)
     db.add(job)
+    upload_job = None
+    if should_queue_youtube_upload:
+        upload_job = db.scalars(
+            select(Job).where(
+                Job.playlist_id == playlist.id,
+                Job.type == JobType.upload_youtube,
+                Job.status.in_([JobStatus.queued, JobStatus.running]),
+            )
+        ).first()
+        if upload_job is None:
+            upload_job = Job(
+                type=JobType.upload_youtube,
+                status=JobStatus.queued,
+                source="system:auto-publish-after-video-render",
+                payload_json={
+                    "playlist_id": playlist.id,
+                    "actor": "system:auto-publish-after-video-render",
+                    "note": meta["note"],
+                },
+                result_json={},
+                playlist=playlist,
+            )
+            db.add(upload_job)
     db.commit()
     _run_public_video_cleanup(db, services)
     notify_render_worker_completed(db, services, playlist=playlist, job=job, worker=worker, now=now)
 
-    services.worker._request_openclaw_for_video_event(
-        playlist_id=playlist.id,
-        job_id=job.id,
-        event="video_render_completed",
-        reason="external_video_render_completed",
-    )
+    if upload_job is None:
+        services.worker._request_openclaw_for_video_event(
+            playlist_id=playlist.id,
+            job_id=job.id,
+            event="video_render_completed",
+            reason="external_video_render_completed",
+        )
     return {
         "ok": True,
         "playlist_id": playlist.id,

@@ -217,6 +217,10 @@ REUSE_FALLBACK_CHANNEL_MATCH_TITLES = {
     "cinematic pulse",
     "soft hour radio",
     "storylight ost",
+}
+LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES = {
+    "old verse",
+    "new verse",
     "the old verse",
     "the new verse",
 }
@@ -1602,6 +1606,42 @@ def _playlist_reuse_channel_title(playlist: Playlist) -> str:
     ).strip()
 
 
+def _normalize_reuse_channel_title(title: str | None) -> str:
+    return re.sub(r"\s+", " ", str(title or "").strip().lower())
+
+
+def _playlist_raw_reuse_channel_title(playlist: Playlist) -> str:
+    meta = _playlist_meta(playlist)
+    return str(meta.get("youtube_channel_title") or meta.get("target_youtube_channel_title") or "").strip()
+
+
+def _playlist_reuse_channel_id(playlist: Playlist) -> str:
+    meta = _playlist_meta(playlist)
+    return str(meta.get("youtube_channel_id") or "").strip()
+
+
+def _playlist_has_ambiguous_legacy_reuse_channel(playlist: Playlist) -> bool:
+    return _normalize_reuse_channel_title(
+        _playlist_raw_reuse_channel_title(playlist)
+    ) in LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES
+
+
+def _reuse_channel_identity_matches(target_playlist: Playlist, source_playlist: Playlist) -> bool:
+    if _playlist_has_ambiguous_legacy_reuse_channel(target_playlist):
+        return False
+    if _playlist_has_ambiguous_legacy_reuse_channel(source_playlist):
+        return False
+
+    target_channel_id = _playlist_reuse_channel_id(target_playlist)
+    source_channel_id = _playlist_reuse_channel_id(source_playlist)
+    if target_channel_id and source_channel_id:
+        return target_channel_id == source_channel_id
+
+    target_channel_title = _normalize_reuse_channel_title(_playlist_reuse_channel_title(target_playlist))
+    source_channel_title = _normalize_reuse_channel_title(_playlist_reuse_channel_title(source_playlist))
+    return bool(target_channel_title and source_channel_title and target_channel_title == source_channel_title)
+
+
 def _reuse_text_values_for_playlist(playlist: Playlist) -> list[str]:
     meta = _playlist_meta(playlist)
     values = [
@@ -1704,13 +1744,13 @@ def _playlist_back_half_reuse_rows(playlist: Playlist) -> list[dict]:
 
 def _reuse_candidate_is_similar(
     *,
+    target_playlist: Playlist,
     target_channel_title: str,
     target_genre_tokens: set[str],
     source_playlist: Playlist,
     track: Track,
 ) -> bool:
-    source_channel_title = _playlist_reuse_channel_title(source_playlist)
-    if target_channel_title and source_channel_title and target_channel_title.lower() != source_channel_title.lower():
+    if not _reuse_channel_identity_matches(target_playlist, source_playlist):
         return False
 
     source_meta = source_playlist.metadata_json or {}
@@ -1732,9 +1772,7 @@ def _reuse_candidate_is_similar(
 
     return bool(
         target_channel_title
-        and source_channel_title
-        and target_channel_title.lower() == source_channel_title.lower()
-        and target_channel_title.lower() in REUSE_FALLBACK_CHANNEL_MATCH_TITLES
+        and _normalize_reuse_channel_title(target_channel_title) in REUSE_FALLBACK_CHANNEL_MATCH_TITLES
     )
 
 
@@ -1768,6 +1806,8 @@ def _maybe_add_reused_back_half_tracks(
     target_channel_title = _playlist_reuse_channel_title(playlist)
     if not target_channel_title:
         return {"added_seconds": 0, "added_track_ids": [], "reason": "missing_channel"}
+    if _playlist_has_ambiguous_legacy_reuse_channel(playlist):
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "ambiguous_legacy_channel"}
 
     target_genre_tokens = _reuse_genre_tokens_from_values(_reuse_text_values_for_playlist(playlist))
     existing_track_ids = set(_playlist_track_ids(playlist))
@@ -1797,6 +1837,7 @@ def _maybe_add_reused_back_half_tracks(
             if not track_id or track_id in existing_track_ids or not _track_has_local_audio(track):
                 continue
             if not _reuse_candidate_is_similar(
+                target_playlist=playlist,
                 target_channel_title=target_channel_title,
                 target_genre_tokens=target_genre_tokens,
                 source_playlist=source_playlist,

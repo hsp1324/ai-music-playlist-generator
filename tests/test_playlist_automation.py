@@ -1922,6 +1922,109 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_external_render_worker_auto_queues_youtube_upload_after_rerender(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        storage = tmp_path / "storage"
+        playlist_dir = storage / "playlists"
+        track_dir = storage / "tracks"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "release-audio.mp3"
+        cover_path = playlist_dir / "cover.png"
+        loop_path = playlist_dir / "loop.mp4"
+        track_path = track_dir / "track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "navy").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Rerender Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "test"},
+            )
+            playlist = Playlist(
+                title="[playlist] Rerender Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "youtube_title": "[playlist] Preserved Title",
+                    "youtube_description": "Preserved description.",
+                    "youtube_tags": ["test"],
+                    "auto_publish_after_video_render": True,
+                    "publish_ready": True,
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="ops:rerender",
+                playlist_id=playlist.id,
+                payload_json={},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+            playlist_id = playlist.id
+
+        headers = {"X-Render-Worker-Token": "test-render-token"}
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers=headers,
+            json={"worker_id": "test-worker", "hostname": "test-host"},
+        )
+        assert claim.status_code == 200
+        payload = b"fake-rendered-video"
+        upload = client.put(
+            f"/api/render-worker/jobs/{job_id}/upload",
+            headers={**headers, "Content-Range": f"bytes 0-{len(payload) - 1}/{len(payload)}"},
+            content=payload,
+        )
+        assert upload.status_code == 200
+        complete = client.post(
+            f"/api/render-worker/jobs/{job_id}/complete",
+            headers=headers,
+            json={
+                "worker_id": "test-worker",
+                "size_bytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            },
+        )
+        assert complete.status_code == 200
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, playlist_id)
+            upload_job = db.scalars(
+                select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.upload_youtube)
+            ).first()
+            assert playlist.metadata_json["workflow_state"] == "publish_queued"
+            assert playlist.metadata_json["metadata_approved"] is True
+            assert playlist.metadata_json["publish_approved"] is True
+            assert upload_job is not None
+            assert upload_job.status == JobStatus.queued
+            assert upload_job.source == "system:auto-publish-after-video-render"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_external_render_worker_claim_clears_stale_partial_upload(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -4918,6 +5021,106 @@ def test_workspace_audio_render_skips_reuse_when_genre_does_not_match(tmp_path) 
         queued = render_response.json()
         assert queued["actual_duration_seconds"] == 1200
         assert [track["title"] for track in queued["tracks"]] == ["New Tech House Lead"]
+        assert "reused back-half" not in queued["note"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_workspace_audio_render_skips_reuse_for_ambiguous_legacy_new_verse_channel(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_tracks = []
+            for index, title in enumerate(("Hope Over Bethlehem", "Another Road Home")):
+                audio_path = tmp_path / f"legacy-new-verse-source-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=title,
+                    prompt="English scripture r&b worship ballad",
+                    duration_seconds=600,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "r&b scripture worship", "tags": "scripture,rnb"},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="Matthew Worship Songs",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=1200,
+                actual_duration_seconds=1200,
+                youtube_video_id="yt-legacy-new-verse",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "The New Verse",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 600,
+                            "duration_seconds": 600,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=600,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "반야심경 R&B",
+                "target_duration_seconds": 2400,
+                "description": "Korean Buddhist R&B inspired by the Heart Sutra.",
+                "target_youtube_channel_title": "The New Verse",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        new_audio_path = tmp_path / "heart-sutra-rnb.mp3"
+        new_audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "비워진 마음의 빛",
+                "prompt": "Korean Buddhist R&B soul Heart Sutra inspired letting go",
+                "duration_seconds": 1200,
+                "audio_path": str(new_audio_path),
+                "metadata": {"style": "r&b Buddhist soul", "tags": "rnb,buddhist"},
+            },
+        )
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert queued["actual_duration_seconds"] == 1200
+        assert [track["title"] for track in queued["tracks"]] == ["비워진 마음의 빛"]
         assert "reused back-half" not in queued["note"]
     finally:
         clear_isolated_client_env()
