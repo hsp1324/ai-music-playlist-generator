@@ -2118,6 +2118,137 @@ def test_render_worker_claim_prioritizes_resolution_by_worker_profile(tmp_path) 
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "lyrics-priority-audio.mp3"
+        cover_path = playlist_dir / "lyrics-priority-cover.png"
+        loop_path = playlist_dir / "lyrics-priority-loop.mp4"
+        vocal_track_path = track_dir / "lyrics-priority-vocal.mp3"
+        instrumental_track_path = track_dir / "lyrics-priority-instrumental.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        vocal_track_path.write_bytes(b"fake-vocal-track")
+        instrumental_track_path.write_bytes(b"fake-instrumental-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            vocal_track = Track(
+                title="Vocal Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(vocal_track_path),
+                metadata_json={"lyrics": "[Verse]\nRain over Seoul tonight"},
+            )
+            instrumental_track = Track(
+                title="Instrumental Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(instrumental_track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
+            vocal_playlist = Playlist(
+                title="Older Vocal Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            instrumental_playlist = Playlist(
+                title="Newer Instrumental Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            db.add_all([vocal_track, instrumental_track, vocal_playlist, instrumental_playlist])
+            db.flush()
+            db.add_all(
+                [
+                    PlaylistItem(
+                        playlist_id=vocal_playlist.id,
+                        track_id=vocal_track.id,
+                        order_index=1,
+                        included_duration_seconds=60,
+                    ),
+                    PlaylistItem(
+                        playlist_id=instrumental_playlist.id,
+                        track_id=instrumental_track.id,
+                        order_index=1,
+                        included_duration_seconds=60,
+                    ),
+                ]
+            )
+            vocal_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=vocal_playlist.id,
+                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                result_json={},
+                created_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            )
+            instrumental_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=instrumental_playlist.id,
+                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                result_json={},
+                created_at=datetime.now(timezone.utc),
+            )
+            db.add_all([vocal_job, instrumental_job])
+            db.commit()
+            instrumental_job_id = instrumental_job.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={
+                "worker_id": "oracle-render",
+                "hostname": "oracle-instance",
+                "capabilities": {
+                    "worker_profile": "oracle",
+                    "max_render_height": 720,
+                    "prefer_no_lyrics": True,
+                },
+            },
+        )
+
+        assert claim.status_code == 200
+        body = claim.json()
+        assert body["job"]["id"] == instrumental_job_id
+        assert body["job"]["title"] == "Newer Instrumental Release"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_stale_external_render_worker_requeue_posts_ops_slack(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"

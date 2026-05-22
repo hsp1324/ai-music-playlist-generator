@@ -20,7 +20,7 @@ from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
-from app.utils.lyric_subtitles import build_line_lyric_cues
+from app.utils.lyric_subtitles import build_line_lyric_cues, lyric_lines_from_text
 from app.utils.ops_notifications import (
     notify_render_worker_claimed,
     notify_render_worker_completed,
@@ -315,15 +315,42 @@ def _worker_profile(capabilities: dict[str, Any], worker_id: str, hostname: str)
     return "standard"
 
 
-def _render_job_sort_key(job: Job, playlist: Playlist, profile: str) -> tuple[int, datetime]:
+def _capability_bool(capabilities: dict[str, Any], key: str) -> bool:
+    value = capabilities.get(key)
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _playlist_has_singable_lyrics(playlist: Playlist) -> bool:
+    for item in sorted(playlist.items, key=lambda item: item.order_index):
+        track = item.track
+        if not track:
+            continue
+        meta = dict(track.metadata_json or {})
+        if lyric_lines_from_text(str(meta.get("lyrics") or "")):
+            return True
+    return False
+
+
+def _render_job_sort_key(
+    job: Job,
+    playlist: Playlist,
+    profile: str,
+    *,
+    prefer_no_lyrics: bool = False,
+) -> tuple[int, int, datetime]:
     height = _render_resolution_height(_job_render_resolution(job, playlist))
     is_high_resolution = height >= 1080
+    lyrics_rank = 1 if prefer_no_lyrics and _playlist_has_singable_lyrics(playlist) else 0
     created_at = job.created_at or _utcnow()
     if profile == "desktop":
-        return (0 if is_high_resolution else 1, created_at)
+        return (lyrics_rank, 0 if is_high_resolution else 1, created_at)
     if profile == "oracle":
-        return (0 if not is_high_resolution else 1, created_at)
-    return (0, created_at)
+        return (lyrics_rank, 0 if not is_high_resolution else 1, created_at)
+    return (lyrics_rank, 0, created_at)
 
 
 def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) -> int:
@@ -582,7 +609,9 @@ def claim_render_job(
         claimed_at=now.isoformat(),
     )
     server_nickname = str(registry_worker.get("nickname") or "").strip()
-    profile = _worker_profile(payload.capabilities or {}, payload.worker_id, payload.hostname)
+    capabilities = payload.capabilities or {}
+    profile = _worker_profile(capabilities, payload.worker_id, payload.hostname)
+    prefer_no_lyrics = _capability_bool(capabilities, "prefer_no_lyrics")
 
     existing = db.scalars(
         select(Job)
@@ -631,14 +660,14 @@ def claim_render_job(
 
     candidate_jobs = db.scalars(
         select(Job)
-        .options(selectinload(Job.playlist))
+        .options(selectinload(Job.playlist).selectinload(Playlist.items).selectinload(PlaylistItem.track))
         .where(Job.type == JobType.build_video, Job.status == JobStatus.queued)
         .order_by(Job.created_at.asc())
         .limit(50)
     ).all()
     candidate_jobs = sorted(
         [job for job in candidate_jobs if job.playlist is not None],
-        key=lambda job: _render_job_sort_key(job, job.playlist, profile),
+        key=lambda job: _render_job_sort_key(job, job.playlist, profile, prefer_no_lyrics=prefer_no_lyrics),
     )
     claimed_id = None
     for candidate in candidate_jobs:
