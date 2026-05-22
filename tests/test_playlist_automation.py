@@ -1927,6 +1927,16 @@ def test_external_render_worker_auto_queues_youtube_upload_after_rerender(tmp_pa
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
         os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
         client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.release_metadata.build_youtube_metadata = lambda _playlist, _tracks: SimpleNamespace(
+            title="Generated Rerender Title",
+            description="Generated rerender description.",
+            tags=["test"],
+            provider="test",
+            error=None,
+            localizations={},
+            default_language="ko",
+        )
         storage = tmp_path / "storage"
         playlist_dir = storage / "playlists"
         track_dir = storage / "tracks"
@@ -1962,8 +1972,6 @@ def test_external_render_worker_auto_queues_youtube_upload_after_rerender(tmp_pa
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
                     "loop_video_path": str(loop_path),
-                    "youtube_title": "[playlist] Preserved Title",
-                    "youtube_description": "Preserved description.",
                     "youtube_tags": ["test"],
                     "auto_publish_after_video_render": True,
                     "publish_ready": True,
@@ -2018,6 +2026,7 @@ def test_external_render_worker_auto_queues_youtube_upload_after_rerender(tmp_pa
             assert playlist.metadata_json["workflow_state"] == "publish_queued"
             assert playlist.metadata_json["metadata_approved"] is True
             assert playlist.metadata_json["publish_approved"] is True
+            assert playlist.metadata_json["youtube_title"] == "[playlist] Generated Rerender Title"
             assert upload_job is not None
             assert upload_job.status == JobStatus.queued
             assert upload_job.source == "system:auto-publish-after-video-render"

@@ -1149,7 +1149,7 @@ def complete_render_job(
         meta["youtube_metadata_preserved_after_video_render"] = False
     should_queue_youtube_upload = bool(
         auto_publish_after_video_render
-        and metadata_was_preserved
+        and has_youtube_metadata(meta)
         and meta.get("cover_approved")
         and meta.get("cover_image_path")
         and not playlist.youtube_video_id
