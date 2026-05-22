@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     video_spectrum_overlay_style: str = "bars"
     video_lyrics_overlay_enabled: bool = False
     video_lyrics_overlay_style: str = "auto"
-    video_lyrics_overlay_font: str = "Noto Sans CJK KR"
+    video_lyrics_overlay_font: str = "Noto Sans KR"
     video_lyrics_alignment_mode: str = "whisper"
     video_lyrics_alignment_model: str = "tiny"
     video_lyrics_alignment_language: str = ""

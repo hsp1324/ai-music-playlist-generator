@@ -175,7 +175,7 @@ def test_lyric_ass_styles_are_transparent_and_positioned(tmp_path) -> None:
     )
     center_text = center_path.read_text(encoding="utf-8")
     center_style = next(line for line in center_text.splitlines() if line.startswith("Style: Lyrics,"))
-    assert "Style: Lyrics,Noto Serif CJK KR" in center_text
+    assert "Style: Lyrics,Noto Serif KR" in center_text
     assert ",0,0,0,,{\\fad(540,720)\\blur0.45}" in center_text
     assert "&H00000000" in center_style
     assert center_style.split(",")[18] == "5"
