@@ -18,7 +18,7 @@ if tmux has-session -t "$session_name" 2>/dev/null; then
   echo "Render worker tmux session already exists: $session_name"
 else
   tmux new-session -d -s "$session_name" \
-    "cd '$repo_dir' && bash -ic 'source \"\$HOME/.local/bin/env\" >/dev/null 2>&1; scripts/render-worker --worker-id \"$worker_id\" --worker-profile desktop --ffmpeg \"$ffmpeg_path\" --poll-seconds 60 2>&1 | tee -a .render-worker/render-worker.log'"
+    "cd '$repo_dir' && bash -ic 'source \"\$HOME/.local/bin/env\" >/dev/null 2>&1; scripts/render-worker --worker-id \"$worker_id\" --worker-profile desktop --no-prefer-no-lyrics --lyrics-alignment-mode whisper --lyrics-alignment-model base --ffmpeg \"$ffmpeg_path\" --poll-seconds 60 2>&1 | tee -a .render-worker/render-worker.log'"
   echo "Render worker tmux session started: $session_name"
 fi
 

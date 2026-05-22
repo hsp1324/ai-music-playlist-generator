@@ -519,6 +519,7 @@ def render_job(
                 or "tiny"
             )
             print(f"Building line lyric cues with faster-whisper alignment ({alignment_model})...", flush=True)
+            alignment_started = time.monotonic()
             try:
                 lyric_cues = build_word_aligned_line_lyric_cues(
                     list(render.get("lyric_tracks") or []),
@@ -535,7 +536,11 @@ def render_job(
                 print(f"faster-whisper lyric alignment failed; falling back to timeline cues: {exc}", flush=True)
                 lyric_cues = []
             else:
-                print(f"Built {len(lyric_cues)} aligned lyric cues.", flush=True)
+                alignment_elapsed = time.monotonic() - alignment_started
+                print(
+                    f"Built {len(lyric_cues)} aligned lyric cues with {alignment_model} in {alignment_elapsed:.1f}s.",
+                    flush=True,
+                )
                 if strict_whisper and not lyric_cues:
                     raise RuntimeError("faster-whisper lyric alignment produced no cues.")
         if not lyric_cues and not strict_whisper:
