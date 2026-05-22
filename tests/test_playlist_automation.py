@@ -22,6 +22,7 @@ from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
 from app.routes import playlists as playlist_routes
+from app.routes import render_worker as render_worker_routes
 from app.routes.tracks import _extract_embedded_cover
 from app.services.background_worker import BackgroundJobWorker, _is_long_video_verification_upload_error
 from app.services import youtube_service as youtube_service_module
@@ -1917,6 +1918,92 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             assert Path(playlist.output_video_path).read_bytes() == payload
             assert playlist.metadata_json["workflow_state"] == "metadata_review"
             assert playlist.metadata_json["video_render_progress"]["status"] == "end"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_render_worker_claim_pauses_when_disk_nears_cleanup_threshold(tmp_path, monkeypatch) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.local_video_cleanup_disk_threshold_percent = 80
+        services.settings.render_worker_claim_disk_safety_margin_percent = 5
+
+        storage = tmp_path / "storage"
+        playlist_dir = storage / "playlists"
+        track_dir = storage / "tracks"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "disk-guard-audio.mp3"
+        cover_path = playlist_dir / "disk-guard-cover.png"
+        loop_path = playlist_dir / "disk-guard-loop.mp4"
+        track_path = track_dir / "disk-guard-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Disk Guard Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
+            playlist = Playlist(
+                title="Disk Guard Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        monkeypatch.setattr(
+            render_worker_routes.shutil,
+            "disk_usage",
+            lambda _path: SimpleNamespace(total=100, used=76, free=24),
+        )
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={"worker_id": "desktop-render", "hostname": "desktop"},
+        )
+
+        assert claim.status_code == 200
+        payload = claim.json()
+        assert payload["job"] is None
+        assert payload["claim_paused"] is True
+        assert payload["reason"] == "disk_usage_guard"
+        assert payload["disk_usage_percent"] == 76.0
+        assert payload["pause_threshold_percent"] == 75.0
+
+        with SessionLocal() as db:
+            assert db.get(Job, job_id).status == JobStatus.queued
     finally:
         clear_isolated_client_env()
 

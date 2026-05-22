@@ -134,6 +134,31 @@ def _run_public_video_cleanup(db: Session, services: ServiceRegistry) -> None:
     cleanup_public_uploaded_local_videos(db, services.settings)
 
 
+def _storage_disk_usage_percent(path: Path) -> float:
+    target = path
+    while not target.exists() and target != target.parent:
+        target = target.parent
+    usage = shutil.disk_usage(target)
+    if usage.total <= 0:
+        return 0.0
+    return usage.used / usage.total * 100.0
+
+
+def _render_claim_disk_guard(services: ServiceRegistry) -> dict[str, Any]:
+    if not services.settings.render_worker_claim_disk_guard_enabled:
+        return {"blocked": False}
+    cleanup_threshold = max(0.0, min(float(services.settings.local_video_cleanup_disk_threshold_percent), 100.0))
+    margin = max(0.0, float(services.settings.render_worker_claim_disk_safety_margin_percent or 0))
+    pause_threshold = max(0.0, min(cleanup_threshold - margin, cleanup_threshold))
+    usage_percent = _storage_disk_usage_percent(services.settings.storage_root)
+    return {
+        "blocked": usage_percent >= pause_threshold,
+        "disk_usage_percent": round(usage_percent, 2),
+        "pause_threshold_percent": round(pause_threshold, 2),
+        "cleanup_threshold_percent": round(cleanup_threshold, 2),
+    }
+
+
 def _request_token(
     authorization: str | None = Header(default=None),
     x_render_worker_token: str | None = Header(default=None),
@@ -715,6 +740,18 @@ def claim_render_job(
                 },
             )
             return {"ok": True, "job": _render_job_payload(job, playlist, services), "recovered_stale_jobs": recovered}
+
+    _run_public_video_cleanup(db, services)
+    disk_guard = _render_claim_disk_guard(services)
+    if disk_guard.get("blocked"):
+        return {
+            "ok": True,
+            "job": None,
+            "recovered_stale_jobs": recovered,
+            "claim_paused": True,
+            "reason": "disk_usage_guard",
+            **disk_guard,
+        }
 
     candidate_jobs = db.scalars(
         select(Job)
