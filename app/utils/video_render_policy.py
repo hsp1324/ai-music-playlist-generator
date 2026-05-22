@@ -37,6 +37,47 @@ RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES = {
     "old testament",
     "new testament",
 }
+VOCAL_RELEASE_CHANNEL_TITLES = {
+    "불송",
+    "the new verse",
+    "new verse",
+    "bulsong",
+    "bibliacanto",
+    "biblia canto",
+    "the old verse",
+    "old verse",
+    "old testament",
+    "new testament",
+    "haruharu",
+    "tokyo daydream radio",
+    "sundaze",
+    "solwave radio",
+}
+INSTRUMENTAL_RELEASE_CHANNEL_TITLES = {
+    "soft hour radio",
+    "storylight ost",
+    "cinematic pulse",
+    "club bloom",
+}
+RELEASE_VOCAL_MODE_ALIASES = {
+    "": "unknown",
+    "unknown": "unknown",
+    "auto": "unknown",
+    "vocal": "vocal",
+    "vocals": "vocal",
+    "lyric": "vocal",
+    "lyrics": "vocal",
+    "singing": "vocal",
+    "sung": "vocal",
+    "instrumental": "instrumental",
+    "no vocal": "instrumental",
+    "no vocals": "instrumental",
+    "no-vocal": "instrumental",
+    "no-vocals": "instrumental",
+    "no lyrics": "instrumental",
+    "no-lyrics": "instrumental",
+    "bgm": "instrumental",
+}
 VIDEO_LYRICS_OVERLAY_STYLE_ALIASES = {
     "": "auto",
     "auto": "auto",
@@ -168,6 +209,80 @@ def _release_channel_titles(meta: dict[str, Any]) -> set[str]:
     return {title for title in titles if title}
 
 
+def _optional_bool(value: Any) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    clean = str(value).strip().lower()
+    if clean in {"1", "true", "yes", "y", "on"}:
+        return True
+    if clean in {"0", "false", "no", "n", "off"}:
+        return False
+    return None
+
+
+def normalize_release_vocal_mode(value: Any) -> str:
+    key = str(value or "").strip().lower().replace("_", "-")
+    return RELEASE_VOCAL_MODE_ALIASES.get(key, "unknown")
+
+
+def infer_release_vocal_mode(meta: dict[str, Any], tracks: list[dict[str, Any]] | None = None) -> tuple[str, str]:
+    """Return (mode, source) for whether a release should be treated as lyric/vocal work."""
+
+    stored_source = str(meta.get("release_vocal_mode_source") or "").strip().lower()
+    stored_mode = normalize_release_vocal_mode(meta.get("release_vocal_mode"))
+    if stored_mode != "unknown" and stored_source in {"explicit", "manual", "user"}:
+        return stored_mode, stored_source
+
+    stored_has_lyrics = _optional_bool(meta.get("release_has_singable_lyrics"))
+    if stored_has_lyrics is not None and stored_source in {"explicit", "manual", "user"}:
+        return ("vocal" if stored_has_lyrics else "instrumental"), stored_source
+
+    for key in ("lyrics_release", "has_vocals", "vocal_release"):
+        value = _optional_bool(meta.get(key))
+        if value is not None:
+            return ("vocal" if value else "instrumental"), "explicit"
+
+    for key in ("instrumental_release", "no_vocals", "no_vocal", "no_lyrics"):
+        value = _optional_bool(meta.get(key))
+        if value is not None:
+            return ("instrumental" if value else "vocal"), "explicit"
+
+    titles = _release_channel_titles(meta)
+    if titles & VOCAL_RELEASE_CHANNEL_TITLES:
+        return "vocal", "channel"
+    if titles & INSTRUMENTAL_RELEASE_CHANNEL_TITLES:
+        return "instrumental", "channel"
+
+    if tracks is not None and track_dicts_have_singable_lyrics(tracks):
+        return "vocal", "tracks"
+
+    return "unknown", "unknown"
+
+
+def release_has_singable_lyrics(meta: dict[str, Any], tracks: list[dict[str, Any]] | None = None) -> bool:
+    mode, _source = infer_release_vocal_mode(meta, tracks)
+    return mode == "vocal"
+
+
+def release_vocal_metadata(meta: dict[str, Any], tracks: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    mode, source = infer_release_vocal_mode(meta, tracks)
+    return {
+        "release_vocal_mode": mode,
+        "release_has_singable_lyrics": mode == "vocal",
+        "release_vocal_mode_source": source,
+    }
+
+
+def apply_release_vocal_metadata(
+    meta: dict[str, Any],
+    tracks: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    meta.update(release_vocal_metadata(meta, tracks))
+    return meta
+
+
 def is_cinematic_pulse_release(meta: dict[str, Any]) -> bool:
     return CINEMATIC_PULSE_CHANNEL_TITLE in _release_channel_titles(meta)
 
@@ -285,4 +400,4 @@ def track_dicts_have_singable_lyrics(tracks: list[dict[str, Any]]) -> bool:
 def should_auto_enable_video_lyrics_overlay(meta: dict[str, Any], tracks: list[dict[str, Any]]) -> bool:
     if bool(meta.get("video_lyrics_overlay_disabled")):
         return False
-    return track_dicts_have_singable_lyrics(tracks)
+    return release_has_singable_lyrics(meta, tracks)

@@ -27,9 +27,12 @@ from app.utils.youtube_tags import (
     sanitize_description_hashtags,
 )
 from app.utils.video_render_policy import (
+    apply_release_vocal_metadata,
     apply_video_spectrum_channel_policy,
-    resolve_video_lyrics_overlay_style,
     is_cinematic_pulse_release,
+    release_vocal_metadata,
+    resolve_video_lyrics_overlay_style,
+    should_auto_enable_video_lyrics_overlay,
 )
 
 
@@ -814,6 +817,26 @@ def _track_payload(track: Track) -> PlaylistTrackRead:
     )
 
 
+def _track_policy_payload(track: Track) -> dict:
+    meta = dict(track.metadata_json or {})
+    return {
+        "id": track.id,
+        "title": track.title,
+        "duration_seconds": track.duration_seconds,
+        "lyrics": str(meta.get("lyrics") or ""),
+        "style": str(meta.get("style") or ""),
+        "tags": meta.get("tags") or "",
+    }
+
+
+def _playlist_track_policy_payloads(playlist: Playlist) -> list[dict]:
+    return [
+        _track_policy_payload(item.track)
+        for item in sorted(playlist.items, key=lambda item: item.order_index)
+        if item.track is not None
+    ]
+
+
 def _latest_render_job(playlist: Playlist) -> PlaylistJobRead | None:
     jobs = [
         job
@@ -1026,6 +1049,20 @@ def serialize_playlist_workspace(
             if item.track is not None
         ]
         track_count = len(tracks)
+    vocal_info = release_vocal_metadata(
+        meta,
+        [
+            {
+                "lyrics": track.lyrics,
+                "style": track.style,
+                "title": track.title,
+                "tags": track.tags or "",
+            }
+            for track in tracks
+        ]
+        if tracks
+        else None,
+    )
     progress_ratio = 0.0
     if _workspace_mode(playlist) == "single_track_video":
         progress_ratio = 1.0 if track_count else 0.0
@@ -1072,6 +1109,9 @@ def serialize_playlist_workspace(
             meta,
             title=playlist.title,
         ),
+        release_vocal_mode=vocal_info["release_vocal_mode"],
+        release_has_singable_lyrics=bool(vocal_info["release_has_singable_lyrics"]),
+        release_vocal_mode_source=vocal_info["release_vocal_mode_source"],
         youtube_thumbnail_path=meta.get("youtube_thumbnail_path"),
         youtube_thumbnail_source=_youtube_thumbnail_source(meta),
         youtube_title=meta.get("youtube_title"),
@@ -1397,24 +1437,27 @@ def create_playlist_workspace(
     if auto_publish is None:
         auto_publish = False
 
+    meta = {
+        "workspace_mode": normalized_mode,
+        "auto_publish_when_ready": auto_publish,
+        "description": description,
+        "cover_prompt": cover_prompt,
+        "dreamina_prompt": dreamina_prompt,
+        "target_youtube_channel_title": target_youtube_channel_title,
+        "workflow_state": "collecting",
+        "publish_ready": False,
+        "publish_approved": False,
+        "cover_approved": False,
+        "metadata_approved": False,
+    }
+    apply_release_vocal_metadata(meta)
+
     playlist = Playlist(
         title=title,
         status=PlaylistStatus.draft,
         target_duration_seconds=target_duration_seconds,
         actual_duration_seconds=0,
-        metadata_json={
-            "workspace_mode": normalized_mode,
-            "auto_publish_when_ready": auto_publish,
-            "description": description,
-            "cover_prompt": cover_prompt,
-            "dreamina_prompt": dreamina_prompt,
-            "target_youtube_channel_title": target_youtube_channel_title,
-            "workflow_state": "collecting",
-            "publish_ready": False,
-            "publish_approved": False,
-            "cover_approved": False,
-            "metadata_approved": False,
-        },
+        metadata_json=meta,
     )
     db.add(playlist)
     db.commit()
@@ -2460,6 +2503,8 @@ def queue_workspace_video_render(
     active_job = _find_active_video_job(db, playlist)
     visualizer_style = _normalize_video_spectrum_overlay_style(video_spectrum_overlay_style)
     visualizer_style = apply_video_spectrum_channel_policy(visualizer_style, meta, title=playlist.title)
+    track_policy_payloads = _playlist_track_policy_payloads(playlist)
+    apply_release_vocal_metadata(meta, track_policy_payloads)
     meta["workflow_state"] = "video_queued"
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
@@ -2469,6 +2514,8 @@ def queue_workspace_video_render(
     meta["video_render_source_mode"] = source_mode
     if video_lyrics_overlay_enabled is not None:
         meta["video_lyrics_overlay_enabled"] = bool(video_lyrics_overlay_enabled)
+    else:
+        meta["video_lyrics_overlay_enabled"] = should_auto_enable_video_lyrics_overlay(meta, track_policy_payloads)
     if video_lyrics_overlay_style is not None:
         meta["video_lyrics_overlay_style"] = resolve_video_lyrics_overlay_style(
             video_lyrics_overlay_style,
@@ -2488,32 +2535,38 @@ def queue_workspace_video_render(
     playlist.status = PlaylistStatus.building
     db.add(playlist)
 
+    render_payload = {
+        "playlist_id": playlist.id,
+        "actor": actor,
+        "trigger": "manual-video-render",
+        "allow_still_image_fallback": allow_still_image_fallback,
+        "video_spectrum_overlay_style": visualizer_style,
+        "video_render_resolution": render_resolution,
+        "video_render_source_mode": source_mode,
+        "video_lyrics_overlay_enabled": bool(meta.get("video_lyrics_overlay_enabled")),
+        "video_lyrics_overlay_style": resolve_video_lyrics_overlay_style(
+            meta.get("video_lyrics_overlay_style"),
+            meta,
+            title=playlist.title,
+        ),
+        "video_lyrics_alignment_mode": str(meta.get("video_lyrics_alignment_mode") or "whisper"),
+        **release_vocal_metadata(meta, track_policy_payloads),
+    }
+
     if active_job is None:
         db.add(
             Job(
                 type=JobType.build_video,
                 status=JobStatus.queued,
                 source="web:render-video",
-                payload_json={
-                    "playlist_id": playlist.id,
-                    "actor": actor,
-                    "trigger": "manual-video-render",
-                    "allow_still_image_fallback": allow_still_image_fallback,
-                    "video_spectrum_overlay_style": visualizer_style,
-                    "video_render_resolution": render_resolution,
-                    "video_render_source_mode": source_mode,
-                    "video_lyrics_overlay_enabled": bool(meta.get("video_lyrics_overlay_enabled")),
-                    "video_lyrics_overlay_style": resolve_video_lyrics_overlay_style(
-                        meta.get("video_lyrics_overlay_style"),
-                        meta,
-                        title=playlist.title,
-                    ),
-                    "video_lyrics_alignment_mode": str(meta.get("video_lyrics_alignment_mode") or "whisper"),
-                },
+                payload_json=render_payload,
                 result_json={},
                 playlist=playlist,
             )
         )
+    else:
+        active_job.payload_json = {**dict(active_job.payload_json or {}), **render_payload}
+        db.add(active_job)
 
     db.commit()
     return _load_playlist_with_tracks(db, playlist.id)

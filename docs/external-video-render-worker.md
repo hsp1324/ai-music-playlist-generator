@@ -68,6 +68,7 @@ scripts/render-worker --worker-id "oracle-render" --worker-profile oracle --poll
 - `oracle` workers prefer queued 720p jobs first, then take high-resolution jobs only when no 720p job is waiting.
 - `standard` workers take oldest queued jobs.
 - Oracle workers default to claiming queued playlists without singable lyrics before lyric-heavy playlists. Set `AIMP_RENDER_WORKER_PREFER_NO_LYRICS=false` or pass `--no-prefer-no-lyrics` to disable that behavior.
+- The claim response includes `render.release_vocal_mode`, `render.release_has_singable_lyrics`, and `render.release_vocal_mode_source`. These are inferred from the release channel first, then from saved track lyrics for unknown/manual channels. Workers do not need to guess from titles; use these flags and server-side claim ordering so lyric work stays on Whisper-capable devices and Oracle-style workers can focus on instrumental/no-lyric jobs.
 
 Keep `--worker-id` stable. If the worker disconnects during upload, restarting with the same worker id lets it resume the same claimed job and continue the chunked upload from the server's current byte offset.
 

@@ -20,7 +20,7 @@ from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
-from app.utils.lyric_subtitles import build_line_lyric_cues, lyric_lines_from_text
+from app.utils.lyric_subtitles import build_line_lyric_cues
 from app.utils.ops_notifications import (
     notify_render_worker_claimed,
     notify_render_worker_completed,
@@ -31,6 +31,8 @@ from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
     is_cinematic_pulse_release,
     is_religious_no_spectrum_release,
+    release_has_singable_lyrics,
+    release_vocal_metadata,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
 )
@@ -324,15 +326,13 @@ def _capability_bool(capabilities: dict[str, Any], key: str) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-def _playlist_has_singable_lyrics(playlist: Playlist) -> bool:
-    for item in sorted(playlist.items, key=lambda item: item.order_index):
-        track = item.track
-        if not track:
-            continue
-        meta = dict(track.metadata_json or {})
-        if lyric_lines_from_text(str(meta.get("lyrics") or "")):
-            return True
-    return False
+def _playlist_lyric_track_dicts(playlist: Playlist) -> list[dict[str, Any]]:
+    return [_track_timeline_dict(item) for item in sorted(playlist.items, key=lambda row: row.order_index)]
+
+
+def _job_release_has_singable_lyrics(job: Job, playlist: Playlist) -> bool:
+    meta = {**dict(playlist.metadata_json or {}), **dict(job.payload_json or {})}
+    return release_has_singable_lyrics(meta, _playlist_lyric_track_dicts(playlist))
 
 
 def _render_job_sort_key(
@@ -344,7 +344,7 @@ def _render_job_sort_key(
 ) -> tuple[int, int, datetime]:
     height = _render_resolution_height(_job_render_resolution(job, playlist))
     is_high_resolution = height >= 1080
-    lyrics_rank = 1 if prefer_no_lyrics and _playlist_has_singable_lyrics(playlist) else 0
+    lyrics_rank = 1 if prefer_no_lyrics and _job_release_has_singable_lyrics(job, playlist) else 0
     created_at = job.created_at or _utcnow()
     if profile == "desktop":
         return (lyrics_rank, 0 if is_high_resolution else 1, created_at)
@@ -364,11 +364,15 @@ def _is_truthy(value: Any) -> bool:
 def _job_requires_whisper_lyric_alignment(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
     meta = dict(playlist.metadata_json or {})
     payload = dict(job.payload_json or {})
+    lyric_tracks = _playlist_lyric_track_dicts(playlist)
+    policy_meta = {**meta, **payload}
+    if not release_has_singable_lyrics(policy_meta, lyric_tracks):
+        return False
     lyrics_overlay_enabled = _is_truthy(
         payload.get("video_lyrics_overlay_enabled")
         or meta.get("video_lyrics_overlay_enabled")
         or services.settings.video_lyrics_overlay_enabled
-    )
+    ) or should_auto_enable_video_lyrics_overlay(policy_meta, lyric_tracks)
     if not lyrics_overlay_enabled:
         return False
     alignment_mode = str(
@@ -515,15 +519,17 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     )
     style = apply_video_spectrum_channel_policy(style, meta, title=playlist.title)
     render_resolution = _job_render_resolution(job, playlist)
-    lyric_tracks = [_track_timeline_dict(item) for item in sorted(playlist.items, key=lambda row: row.order_index)]
+    lyric_tracks = _playlist_lyric_track_dicts(playlist)
     rendered_timeline = list(meta.get("rendered_timeline") or [])
     payload = job.payload_json or {}
+    policy_meta = {**meta, **payload}
     lyrics_overlay_enabled = bool(
         payload.get("video_lyrics_overlay_enabled")
         or meta.get("video_lyrics_overlay_enabled")
         or services.settings.video_lyrics_overlay_enabled
-        or should_auto_enable_video_lyrics_overlay(meta, lyric_tracks)
+        or should_auto_enable_video_lyrics_overlay(policy_meta, lyric_tracks)
     )
+    vocal_info = release_vocal_metadata(policy_meta, lyric_tracks)
     lyrics_overlay_style = resolve_video_lyrics_overlay_style(
         payload.get("video_lyrics_overlay_style")
         or meta.get("video_lyrics_overlay_style")
@@ -563,6 +569,9 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             "video_lyrics_overlay_enabled": lyrics_overlay_enabled,
             "video_lyrics_overlay_style": lyrics_overlay_style,
             "video_lyrics_alignment_mode": lyrics_alignment_mode,
+            "release_vocal_mode": vocal_info["release_vocal_mode"],
+            "release_has_singable_lyrics": bool(vocal_info["release_has_singable_lyrics"]),
+            "release_vocal_mode_source": vocal_info["release_vocal_mode_source"],
             "video_lyrics_alignment_model": services.settings.video_lyrics_alignment_model,
             "video_lyrics_alignment_language": services.settings.video_lyrics_alignment_language,
             "video_lyrics_alignment_min_score": services.settings.video_lyrics_alignment_min_score,

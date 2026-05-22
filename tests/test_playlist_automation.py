@@ -34,7 +34,9 @@ from app.utils.openclaw_slack_loop import (
 )
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import (
+    create_playlist_workspace,
     next_youtube_scheduled_publish_at,
+    queue_workspace_video_render,
     reconcile_due_scheduled_youtube_public_states,
     scripture_youtube_playlist_titles,
     youtube_schedule_options_for_playlist,
@@ -1982,7 +1984,14 @@ def test_render_worker_claim_forces_no_spectrum_for_religious_channel(tmp_path) 
         claim = client.post(
             "/api/render-worker/jobs/claim",
             headers={"X-Render-Worker-Token": "test-render-token"},
-            json={"worker_id": "test-worker", "hostname": "test-host"},
+            json={
+                "worker_id": "test-worker",
+                "hostname": "test-host",
+                "capabilities": {
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["whisper"],
+                },
+            },
         )
 
         assert claim.status_code == 200
@@ -2248,6 +2257,104 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_uses_channel_vocal_mode_for_priority(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "channel-vocal-audio.mp3"
+        cover_path = playlist_dir / "channel-vocal-cover.png"
+        loop_path = playlist_dir / "channel-vocal-loop.mp4"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            vocal_playlist = Playlist(
+                title="Older Bulsong Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "target_youtube_channel_title": "불송",
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            instrumental_playlist = Playlist(
+                title="Newer Club Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "target_youtube_channel_title": "Club Bloom",
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            db.add_all([vocal_playlist, instrumental_playlist])
+            db.flush()
+            vocal_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=vocal_playlist.id,
+                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                result_json={},
+                created_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            )
+            instrumental_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=instrumental_playlist.id,
+                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                result_json={},
+                created_at=datetime.now(timezone.utc),
+            )
+            db.add_all([vocal_job, instrumental_job])
+            db.commit()
+            instrumental_job_id = instrumental_job.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={
+                "worker_id": "oracle-render",
+                "hostname": "oracle-instance",
+                "capabilities": {
+                    "worker_profile": "oracle",
+                    "max_render_height": 720,
+                    "prefer_no_lyrics": True,
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["whisper"],
+                },
+            },
+        )
+
+        assert claim.status_code == 200
+        body = claim.json()
+        assert body["job"]["id"] == instrumental_job_id
+        assert body["job"]["render"]["release_vocal_mode"] == "instrumental"
+        assert body["job"]["render"]["release_vocal_mode_source"] == "channel"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -2277,6 +2384,14 @@ def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path
                 audio_path=str(track_path),
                 metadata_json={"lyrics": "first line\nsecond line"},
             )
+            plain_track = Track(
+                title="Plain Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
             lyric_playlist = Playlist(
                 title="Lyric Whisper Render",
                 status=PlaylistStatus.building,
@@ -2303,7 +2418,7 @@ def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path
                     "loop_video_path": str(loop_path),
                 },
             )
-            db.add_all([track, lyric_playlist, plain_playlist])
+            db.add_all([track, plain_track, lyric_playlist, plain_playlist])
             db.flush()
             db.add_all(
                 [
@@ -2315,7 +2430,7 @@ def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path
                     ),
                     PlaylistItem(
                         playlist_id=plain_playlist.id,
-                        track_id=track.id,
+                        track_id=plain_track.id,
                         order_index=1,
                         included_duration_seconds=60,
                     ),
@@ -2384,6 +2499,60 @@ def test_render_worker_claim_requires_whisper_capability_for_lyric_jobs(tmp_path
         assert whisper_claim.status_code == 200
         assert whisper_claim.json()["job"]["id"] == lyric_job_id
         assert whisper_claim.json()["job"]["render"]["video_lyrics_alignment_mode"] == "whisper"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_queue_workspace_video_render_stores_channel_vocal_mode(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        audio_path = playlist_dir / "bulsong-audio.mp3"
+        cover_path = playlist_dir / "bulsong-cover.png"
+        loop_path = playlist_dir / "bulsong-loop.mp4"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            playlist = create_playlist_workspace(
+                db,
+                title="Bulsong Channel Vocal",
+                target_duration_seconds=2400,
+                target_youtube_channel_title="불송",
+            )
+            meta = dict(playlist.metadata_json or {})
+            meta.update(
+                {
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                }
+            )
+            playlist.output_audio_path = str(audio_path)
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
+
+            queued = queue_workspace_video_render(db, playlist_id=playlist.id, actor="test")
+            render_job = db.scalars(
+                select(Job).where(
+                    Job.playlist_id == playlist.id,
+                    Job.type == JobType.build_video,
+                    Job.status == JobStatus.queued,
+                )
+            ).one()
+
+            assert queued.metadata_json["release_vocal_mode"] == "vocal"
+            assert queued.metadata_json["release_has_singable_lyrics"] is True
+            assert queued.metadata_json["release_vocal_mode_source"] == "channel"
+            assert queued.metadata_json["video_lyrics_overlay_enabled"] is True
+            assert render_job.payload_json["release_vocal_mode"] == "vocal"
+            assert render_job.payload_json["release_has_singable_lyrics"] is True
+            assert render_job.payload_json["release_vocal_mode_source"] == "channel"
+            assert render_job.payload_json["video_lyrics_overlay_enabled"] is True
     finally:
         clear_isolated_client_env()
 

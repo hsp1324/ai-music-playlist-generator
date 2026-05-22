@@ -308,6 +308,13 @@ function releaseModeLabel(workspace) {
   return isSingleRelease(workspace) ? "Single Release" : "Playlist Release";
 }
 
+function releaseVocalLabel(workspace) {
+  const mode = String(workspace?.release_vocal_mode || "unknown").toLowerCase();
+  if (mode === "vocal") return "Lyrics";
+  if (mode === "instrumental") return "No lyrics";
+  return "Lyrics unknown";
+}
+
 function releaseTrackCount(workspace) {
   return Number(workspace?.track_count ?? workspace?.tracks?.length ?? 0);
 }
@@ -2831,7 +2838,7 @@ function renderWorkspaceTiles() {
       tile.classList.add("active");
     }
 
-    mode.textContent = releaseModeLabel(workspace);
+    mode.textContent = `${releaseModeLabel(workspace)} · ${releaseVocalLabel(workspace)}`;
     name.textContent = displayTitle(workspace.title, "Untitled Release");
     stateEl.textContent = currentStage?.label || statusLabel(workspace.workflow_state);
     stateEl.classList.add(currentStage?.status || "current");
@@ -2968,7 +2975,7 @@ function renderWorkspaceDetail() {
       : isSingleRelease(workspace) ? "source not ready" : "not rendered";
   const currentStage = currentPipelineStage(workspace);
   const pendingCount = tracksForReview.length;
-  detailMeta.textContent = `${releaseModeLabel(workspace)} · ${currentStage?.label || statusLabel(workspace.workflow_state)} · ${releaseTrackCount(workspace)} approved · ${pendingCount} in review · ${renderState}`;
+  detailMeta.textContent = `${releaseModeLabel(workspace)} · ${releaseVocalLabel(workspace)} · ${currentStage?.label || statusLabel(workspace.workflow_state)} · ${releaseTrackCount(workspace)} approved · ${pendingCount} in review · ${renderState}`;
   queueTitle.textContent = isSingleRelease(workspace)
     ? `${displayTitle(workspace.title)} candidates`
     : `${displayTitle(workspace.title)} review queue`;

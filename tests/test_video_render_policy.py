@@ -1,4 +1,9 @@
-from app.utils.video_render_policy import resolve_video_lyrics_overlay_style
+from app.utils.video_render_policy import (
+    infer_release_vocal_mode,
+    release_has_singable_lyrics,
+    resolve_video_lyrics_overlay_style,
+    should_auto_enable_video_lyrics_overlay,
+)
 
 
 def test_bulsong_uses_center_lyrics_even_when_explicit_style_is_different() -> None:
@@ -67,3 +72,27 @@ def test_unknown_ambiguous_channels_get_stable_mixed_auto_choice() -> None:
 
     assert first in {"soft_bottom_fade", "editorial_lower_left"}
     assert second == first
+
+
+def test_release_vocal_mode_uses_channel_before_track_fallback() -> None:
+    assert infer_release_vocal_mode({"target_youtube_channel_title": "불송"}) == ("vocal", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "BibliaCanto"}) == ("vocal", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "HaruHaru"}) == ("vocal", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "Solwave Radio"}) == ("vocal", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "Club Bloom"}) == ("instrumental", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "Storylight OST"}) == ("instrumental", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "Cinematic Pulse"}) == ("instrumental", "channel")
+    assert infer_release_vocal_mode({"youtube_channel_title": "Soft Hour Radio"}) == ("instrumental", "channel")
+
+    custom_meta = {"youtube_channel_title": "Custom Channel"}
+    assert infer_release_vocal_mode(custom_meta, [{"lyrics": "line one\nline two"}]) == ("vocal", "tracks")
+    assert release_has_singable_lyrics(custom_meta, [{"lyrics": "line one"}])
+
+
+def test_auto_lyrics_overlay_uses_channel_policy_and_respects_disable_flag() -> None:
+    assert should_auto_enable_video_lyrics_overlay({"youtube_channel_title": "불송"}, [])
+    assert not should_auto_enable_video_lyrics_overlay({"youtube_channel_title": "Club Bloom"}, [{"lyrics": "line"}])
+    assert not should_auto_enable_video_lyrics_overlay(
+        {"youtube_channel_title": "불송", "video_lyrics_overlay_disabled": True},
+        [{"lyrics": "line"}],
+    )

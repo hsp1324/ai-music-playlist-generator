@@ -10,6 +10,7 @@ from app.db import get_db
 from app.models.playlist import Playlist
 from app.services.registry import ServiceRegistry
 from app.utils.openclaw_slack_loop import post_backlog_queue_request
+from app.utils.video_render_policy import apply_release_vocal_metadata
 from app.workflows.openclaw_runtime import (
     acquire_openclaw_lock,
     build_openclaw_backlog_summary,
@@ -135,6 +136,19 @@ def _record_release_channel_hint(db: Session, *, release_id: str, channel_title:
     if meta.get("openclaw_lock_channel_title") != normalized_channel_title:
         meta["openclaw_lock_channel_title"] = normalized_channel_title
         changed = True
+    before_vocal = (
+        meta.get("release_vocal_mode"),
+        meta.get("release_has_singable_lyrics"),
+        meta.get("release_vocal_mode_source"),
+    )
+    apply_release_vocal_metadata(meta)
+    after_vocal = (
+        meta.get("release_vocal_mode"),
+        meta.get("release_has_singable_lyrics"),
+        meta.get("release_vocal_mode_source"),
+    )
+    if after_vocal != before_vocal:
+        changed = True
     if not changed:
         return False
 
@@ -178,6 +192,19 @@ def _record_release_scripture_hint(
         if value and meta.get(key) != value:
             meta[key] = value
             changed = True
+    before_vocal = (
+        meta.get("release_vocal_mode"),
+        meta.get("release_has_singable_lyrics"),
+        meta.get("release_vocal_mode_source"),
+    )
+    apply_release_vocal_metadata(meta)
+    after_vocal = (
+        meta.get("release_vocal_mode"),
+        meta.get("release_has_singable_lyrics"),
+        meta.get("release_vocal_mode_source"),
+    )
+    if after_vocal != before_vocal:
+        changed = True
     if not changed:
         return False
 

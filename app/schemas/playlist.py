@@ -175,6 +175,9 @@ class PlaylistWorkspaceRead(BaseModel):
     video_render_source_mode: str = "auto"
     video_lyrics_overlay_enabled: bool = False
     video_lyrics_overlay_style: str = "auto"
+    release_vocal_mode: str = "unknown"
+    release_has_singable_lyrics: bool = False
+    release_vocal_mode_source: str = "unknown"
     youtube_thumbnail_path: str | None = None
     youtube_thumbnail_source: str | None = None
     youtube_title: str | None = None
