@@ -1,6 +1,6 @@
 # OpenClaw Next Release Planner Skill
 
-Use this skill when the AI Music web app asks OpenClaw to choose the next 40-minute playlist concept for the backlog queue.
+Use this skill when the AI Music web app asks OpenClaw to choose the next playlist concept for the backlog queue.
 
 This is the channel/concept selection step inside the continuous automation loop. For queue sizing and producer/finisher behavior, read [openclaw-backlog-queue.md](openclaw-backlog-queue.md) first. This planner chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the production/publish instructions in [openclaw-skills.md](openclaw-skills.md).
 
@@ -20,7 +20,7 @@ The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MA
 
 ## Goal
 
-Choose the next channel and a fresh 40-minute playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely.
+Choose the next channel and a fresh playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely. Non-scripture channels normally need about 15 minutes of new audio; BibliaCanto and 불송 still need about 40 minutes of new passage-based audio.
 
 The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. `MusicSun` is manual-only and is excluded from automatic rotation. Current known active channels include:
 
@@ -211,7 +211,7 @@ Run docs/openclaw-backlog-queue.md first, then choose the next Playlist Release 
 - Pick a concept not used recently while keeping the selected channel identity clear.
 
 After choosing the channel and concept, run the production instructions from docs/openclaw-skills.md.
-Create roughly 40 minutes of new approved audio for a 2400-second app workspace target, then let the app extend the final rendered video toward 3600 seconds / 60+ minutes from previous same-channel, similar-genre back-half tracks when available. Generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. Exception: for `불송`, use one calm Buddhist cover/thumbnail/first-frame package with at most one short Korean passage/theme + style phrase, never the `불송` channel name; do not create a separate channel-branded thumbnail. If no similar reuse candidates exist, the app renders the uploaded new tracks instead of blocking. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
+For non-scripture channels, create roughly 15 minutes of new approved audio for a 900-second app workspace target; the app then tries to extend the base block to about 40 minutes from previous same-channel, similar-genre back-half tracks. For `BibliaCanto` and `불송`, create roughly 40 minutes of new passage-based audio for a 2400-second target and do not rely on reuse. Final video render repeats the base block to about 2 hours, normally 3 repeats for a 40 minute block, while YouTube metadata keeps the base-block timeline. Generate final cover, separate YouTube thumbnail, a short loop video, render audio, queue video render, then stop and release the lock. Exception: for `불송`, use one calm Buddhist cover/thumbnail/first-frame package with at most one short Korean passage/theme + style phrase, never the `불송` channel name; do not create a separate channel-branded thumbnail. If no similar reuse candidates exist on non-scripture channels, the app renders the uploaded new tracks instead of blocking. When the app later asks after external render completion, finish metadata and private/scheduled publish. Do not skip the loop video unless the human explicitly approves a still-image fallback.
 
 When done, report:
 - selected_channel

@@ -42,7 +42,9 @@ from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
+    final_video_duration_seconds,
     is_cinematic_pulse_release,
+    resolve_final_video_repeat_count,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
 )
@@ -884,6 +886,12 @@ class BackgroundJobWorker:
         ]
         payload = job.payload_json or {}
         total_duration_seconds = max(playlist.actual_duration_seconds, 0) or None
+        final_repeat_count = resolve_final_video_repeat_count(
+            self.settings,
+            meta,
+            base_duration_seconds=total_duration_seconds,
+        )
+        final_duration_seconds = final_video_duration_seconds(total_duration_seconds, final_repeat_count)
         track_dicts = [_track_timeline_dict(track) for track in tracks]
         lyrics_overlay_enabled = bool(
             payload.get("video_lyrics_overlay_enabled")
@@ -956,6 +964,7 @@ class BackgroundJobWorker:
                     lyric_overlay_style=lyrics_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
+                    final_repeat_count=final_repeat_count,
                 )
             )
             meta["loop_video_render_mode"] = "smooth-forward-crossfade" if meta.get("loop_video_smooth", True) else "hard-loop"
@@ -972,6 +981,7 @@ class BackgroundJobWorker:
                     lyric_overlay_style=lyrics_overlay_style,
                     progress_callback=progress_callback,
                     total_duration_seconds=total_duration_seconds,
+                    final_repeat_count=final_repeat_count,
                 )
             )
             meta["loop_video_render_mode"] = "still-image-fallback"
@@ -1029,6 +1039,9 @@ class BackgroundJobWorker:
             or "whisper"
         )
         meta["video_lyrics_overlay_cue_count"] = len(lyric_cues)
+        meta["video_base_duration_seconds"] = int(total_duration_seconds or 0)
+        meta["video_final_repeat_count"] = final_repeat_count
+        meta["rendered_duration_seconds"] = final_duration_seconds or int(total_duration_seconds or 0)
         tracks = [
             item.track
             for item in sorted(playlist.items, key=lambda item: item.order_index)
@@ -1046,6 +1059,9 @@ class BackgroundJobWorker:
             "video_spectrum_overlay_style",
             "video_render_resolution",
             "video_render_source_mode",
+            "video_base_duration_seconds",
+            "video_final_repeat_count",
+            "rendered_duration_seconds",
         ):
             if key in render_meta:
                 meta[key] = render_meta[key]
@@ -1079,6 +1095,7 @@ class BackgroundJobWorker:
             "eta_seconds": 0,
             "status": "end",
             "message": "Video render completed.",
+            "total_seconds": final_duration_seconds or total_duration_seconds,
             "updated_at": _utcnow().isoformat(),
         }
         playlist.metadata_json = meta
@@ -1090,6 +1107,8 @@ class BackgroundJobWorker:
             "cover_image_path": cover_image_path,
             "output_video_path": playlist.output_video_path,
             "youtube_title": meta["youtube_title"],
+            "rendered_duration_seconds": meta["rendered_duration_seconds"],
+            "video_final_repeat_count": final_repeat_count,
             "progress": meta["video_render_progress"],
         }
         db.add(playlist)

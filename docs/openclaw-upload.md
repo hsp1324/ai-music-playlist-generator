@@ -2,7 +2,7 @@
 
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
-For higher-level OpenClaw skill instructions, including "make one single", "build a playlist with roughly 40 minutes of new audio and a 60+ minute final render when reuse is available", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
+For higher-level OpenClaw skill instructions, including "make one single", "build a playlist with roughly 15 minutes of new audio on normal channels, roughly 40 minutes on scripture/Buddhist channels, and an app-rendered ~2 hour final video", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md).
 For the metadata-specific command and prompt, see [openclaw-youtube-metadata.md](openclaw-youtube-metadata.md).
 For channel-specific image/video rules, first run `scripts/openclaw-release channel-profile` and read the returned `profile_doc` in [openclaw-channel-profiles](openclaw-channel-profiles/README.md). For next-release concept planning, read the returned `concept_doc` in [openclaw-channel-concepts](openclaw-channel-concepts/README.md).
 
@@ -368,7 +368,7 @@ Localized YouTube metadata rules for OpenClaw:
 - Keep all localized titles under 100 characters. Keep timestamps identical across languages; localize displayed track-title text and surrounding description naturally unless a channel-specific rule says to preserve original song titles.
 - For Japan/J-pop/Tokyo Daydream Radio timestamped tracklists, format localized rows by language: Korean/default uses Japanese title plus Korean translation in parentheses, Japanese uses Japanese title only, and every other localized description uses translated title text only.
 - For sundaze/English pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In timestamped tracklists, keep the English song title after each timestamp in every localized description. Translate only the surrounding description prose, use-case line, and hashtags.
-- If the release is 60 minutes or longer, use `HH:MM:SS` for every timestamp in every localized description. Start with `00:00:00`, not `00:00`, and use `01:00:00+` after the one-hour point so YouTube can link those chapters reliably.
+- Use the base-block `rendered_timeline` for every localized description. Do not add second/third-pass repeated timestamps just because the final MP4 is repeated to about 2 hours. If the base timeline itself is 60 minutes or longer, use `HH:MM:SS` for every timestamp, starting with `00:00:00`.
 - Use `scripts/openclaw-release metadata-context` after audio/video render and preserve the returned timestamp positions exactly. Those positions may come from `rendered_timeline`, which is more accurate than rounded DB durations.
 
 Example localized metadata approval:
@@ -516,7 +516,7 @@ scripts/openclaw-release create-release --workspace-mode single --release-title 
 
 For a new playlist/mix, first create one Playlist Release:
 
-scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --target-seconds 2400 --description "CONCEPT"
+scripts/openclaw-release create-release --workspace-mode playlist --release-title "TITLE" --youtube-channel-title "CHANNEL_TITLE" --description "CONCEPT"
 
 Keep the returned release.id. Do not create Suno songs before the release.id exists.
 For an existing release, use --release-id and keep all related Suno outputs in that same workspace.

@@ -646,6 +646,7 @@ def render_job(
     builder = FFMpegPlaylistBuilder(settings)
     output_path = job_dir / render["output_filename"]
     total_duration_seconds = render.get("total_duration_seconds")
+    final_repeat_count = int(render.get("video_final_repeat_count") or 1)
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
     render_resolution = render.get("video_render_resolution") or "720p"
     lyric_overlay_style = render.get("video_lyrics_overlay_style") or "auto"
@@ -725,6 +726,7 @@ def render_job(
             lyric_overlay_style=lyric_overlay_style,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
+            final_repeat_count=final_repeat_count,
         )
     else:
         builder.build_video(
@@ -737,6 +739,7 @@ def render_job(
             lyric_overlay_style=lyric_overlay_style,
             progress_callback=callback,
             total_duration_seconds=total_duration_seconds,
+            final_repeat_count=final_repeat_count,
         )
     return output_path
 

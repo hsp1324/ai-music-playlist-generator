@@ -18,7 +18,7 @@ class Playlist(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     title: Mapped[str] = mapped_column(String(255))
     status: Mapped[PlaylistStatus] = mapped_column(Enum(PlaylistStatus), default=PlaylistStatus.draft)
-    target_duration_seconds: Mapped[int] = mapped_column(Integer, default=2400)
+    target_duration_seconds: Mapped[int] = mapped_column(Integer, default=900)
     actual_duration_seconds: Mapped[int] = mapped_column(Integer, default=0)
     output_audio_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     output_video_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)

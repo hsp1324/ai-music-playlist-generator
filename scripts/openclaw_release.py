@@ -28,6 +28,8 @@ DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 120
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
+DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 15 * 60
+DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 40 * 60
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
 LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
@@ -46,6 +48,10 @@ MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
 LONG_PLAYLIST_TRACK_ALLOWED_CHANNEL_TITLES = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
+}
+SCRIPTURE_PLAYLIST_CHANNEL_TITLES = {
+    OLD_VERSE_YOUTUBE_CHANNEL_TITLE,
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
 CHANNEL_PROFILE_DOCS = {
     DEFAULT_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/soft-hour-radio.md",
@@ -747,19 +753,25 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
     if not workspace_mode:
         raise RuntimeError("--workspace-mode must be playlist or single.")
 
+    youtube_channel_title = getattr(args, "youtube_channel_title", "")
+    target_seconds = (
+        default_playlist_target_seconds_for_channel(youtube_channel_title)
+        if workspace_mode == "playlist" and int(args.target_seconds or 0) <= 0
+        else args.target_seconds
+    )
     release = request_json(
         client,
         "POST",
         "/playlists/workspaces",
         json={
             "title": args.release_title,
-            "target_duration_seconds": args.target_seconds,
+            "target_duration_seconds": target_seconds,
             "workspace_mode": workspace_mode,
             "auto_publish_when_ready": False,
             "description": args.description,
             "cover_prompt": "",
             "dreamina_prompt": "",
-            "target_youtube_channel_title": getattr(args, "youtube_channel_title", ""),
+            "target_youtube_channel_title": youtube_channel_title,
         },
     )
     return {
@@ -1394,17 +1406,22 @@ def create_playlist_release(
     client: httpx.Client,
     *,
     title: str,
-    target_duration_seconds: int = 2400,
+    target_duration_seconds: int | None = None,
     description: str = "",
     youtube_channel_title: str = "",
 ) -> dict[str, Any]:
+    resolved_target_duration_seconds = (
+        target_duration_seconds
+        if target_duration_seconds and target_duration_seconds > 0
+        else default_playlist_target_seconds_for_channel(youtube_channel_title)
+    )
     return request_json(
         client,
         "POST",
         "/playlists/workspaces",
         json={
             "title": title,
-            "target_duration_seconds": target_duration_seconds,
+            "target_duration_seconds": resolved_target_duration_seconds,
             "workspace_mode": "playlist",
             "auto_publish_when_ready": False,
             "description": description or "Automatic private playlist release created by OpenClaw.",
@@ -1508,6 +1525,22 @@ def is_bulsong_channel_title(value: str | None) -> bool:
     aliases = {NEW_VERSE_YOUTUBE_CHANNEL_TITLE.lower()}
     aliases.update(alias.lower() for alias in CHANNEL_TITLE_ALIASES.get(NEW_VERSE_YOUTUBE_CHANNEL_TITLE, ()))
     return title.lower() in aliases
+
+
+def is_scripture_playlist_channel_title(value: str | None) -> bool:
+    title = str(value or "").strip()
+    if not title:
+        return False
+    aliases = {channel.lower() for channel in SCRIPTURE_PLAYLIST_CHANNEL_TITLES}
+    for channel in SCRIPTURE_PLAYLIST_CHANNEL_TITLES:
+        aliases.update(alias.lower() for alias in CHANNEL_TITLE_ALIASES.get(channel, ()))
+    return title.lower() in aliases
+
+
+def default_playlist_target_seconds_for_channel(value: str | None) -> int:
+    if is_scripture_playlist_channel_title(value):
+        return DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS
+    return DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS
 
 
 def is_storylight_channel_title(value: str | None) -> bool:
@@ -1953,7 +1986,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         else create_playlist_release(
             client,
             title=args.release_title or file_stem(audio_paths[0]),
-            target_duration_seconds=args.target_seconds,
+            target_duration_seconds=args.target_seconds if int(args.target_seconds or 0) > 0 else None,
             description=args.description,
             youtube_channel_title=youtube_channel_title,
         )
@@ -3084,7 +3117,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
     )
-    create_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes). Ignored for single releases.")
+    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 900 seconds for normal channels, 2400 seconds for BibliaCanto/불송. Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
     create_parser.set_defaults(func=create_release)
@@ -3174,7 +3207,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_playlist_parser.add_argument("--target-seconds", type=int, default=2400, help="Playlist target duration. Default: 2400 seconds (40 minutes).")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 900 seconds for normal channels, 2400 seconds for BibliaCanto/불송.")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 120 seconds.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")

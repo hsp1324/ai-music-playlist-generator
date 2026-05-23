@@ -88,3 +88,53 @@ def test_lyric_caption_service_builds_source_and_translated_caption_tracks(monke
     assert "First line" in result.caption_tracks["en"]
     assert "첫 번째 줄" in result.caption_tracks["ko"]
     assert "最初の行" in result.caption_tracks["ja"]
+
+
+def test_lyric_caption_service_repeats_cues_for_repeated_final_video(monkeypatch, tmp_path) -> None:
+    audio_path = tmp_path / "rendered.mp3"
+    audio_path.write_bytes(b"fake")
+    playlist = Playlist(
+        id="playlist-repeat",
+        title="Lyrics Release",
+        actual_duration_seconds=60,
+        metadata_json={
+            "video_base_duration_seconds": 60,
+            "video_final_repeat_count": 2,
+            "rendered_timeline": [
+                {
+                    "track_id": "track-1",
+                    "title": "Song One",
+                    "start_seconds_exact": 0,
+                    "duration_seconds_exact": 60,
+                }
+            ],
+        },
+    )
+    track = Track(
+        id="track-1",
+        title="Song One",
+        duration_seconds=60,
+        metadata_json={"lyrics": "First line"},
+    )
+
+    monkeypatch.setattr(
+        lyric_caption_service,
+        "build_word_aligned_line_lyric_cues",
+        lambda *_args, **_kwargs: [{"start": 1.0, "end": 3.0, "text": "First line"}],
+    )
+
+    service = LyricCaptionService(
+        Settings(
+            storage_root=tmp_path / "storage",
+            youtube_lyrics_captions_languages="en",
+        )
+    )
+    result = service.build_youtube_caption_tracks(
+        playlist,
+        [track],
+        audio_path=Path(audio_path),
+        default_language="en",
+    )
+
+    assert result.cue_count == 2
+    assert "00:01:01,000 --> 00:01:03,000" in result.caption_tracks["en"]

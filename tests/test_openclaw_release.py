@@ -528,6 +528,49 @@ def test_create_release_creates_empty_workspace_before_suno_generation() -> None
     assert "--release-id" in result["next"]
 
 
+def test_create_release_uses_channel_aware_playlist_target_defaults() -> None:
+    captured_payloads = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.read())
+        captured_payloads.append(payload)
+        return httpx.Response(
+            201,
+            json={
+                "id": f"release-{len(captured_payloads)}",
+                "title": payload["title"],
+                "workspace_mode": "playlist",
+                "workflow_state": "collecting",
+                "target_duration_seconds": payload["target_duration_seconds"],
+            },
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    create_release(
+        client,
+        SimpleNamespace(
+            release_title="Club Mix",
+            workspace_mode="playlist",
+            target_seconds=0,
+            description="Create workspace before Suno generation.",
+            youtube_channel_title="Club Bloom",
+        ),
+    )
+    create_release(
+        client,
+        SimpleNamespace(
+            release_title="Heart Sutra Songs",
+            workspace_mode="playlist",
+            target_seconds=0,
+            description="Create workspace before Suno generation.",
+            youtube_channel_title=NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
+        ),
+    )
+
+    assert captured_payloads[0]["target_duration_seconds"] == 900
+    assert captured_payloads[1]["target_duration_seconds"] == 2400
+
+
 def test_upload_single_candidates_can_target_existing_precreated_release(tmp_path) -> None:
     first_audio = tmp_path / "first.mp3"
     second_audio = tmp_path / "second.mp3"

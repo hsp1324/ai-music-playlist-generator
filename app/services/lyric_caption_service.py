@@ -99,6 +99,7 @@ class LyricCaptionService:
             min_score=float(self.settings.video_lyrics_alignment_min_score),
             max_end_seconds=playlist.actual_duration_seconds or None,
         )
+        cues = self._repeat_cues_for_final_video(cues, meta)
         if not cues:
             return LyricCaptionBuildResult({}, source_language, 0, skipped_reason="no_aligned_cues")
 
@@ -130,6 +131,34 @@ class LyricCaptionService:
             cue_count=len(cues),
             translation_error=translation_error,
         )
+
+    @staticmethod
+    def _repeat_cues_for_final_video(cues: list[dict], meta: dict) -> list[dict]:
+        try:
+            repeat_count = max(int(meta.get("video_final_repeat_count") or 1), 1)
+        except (TypeError, ValueError):
+            repeat_count = 1
+        if repeat_count <= 1 or not cues:
+            return cues
+        try:
+            base_duration = float(meta.get("video_base_duration_seconds") or 0)
+        except (TypeError, ValueError):
+            base_duration = 0
+        if base_duration <= 0:
+            return cues
+
+        repeated: list[dict] = []
+        for repeat_index in range(repeat_count):
+            offset = repeat_index * base_duration
+            for cue in cues:
+                repeated.append(
+                    {
+                        **cue,
+                        "start": float(cue.get("start") or 0) + offset,
+                        "end": float(cue.get("end") or 0) + offset,
+                    }
+                )
+        return repeated
 
     def _track_dicts_with_lyrics(self, tracks: list[Track]) -> list[dict[str, Any]]:
         values: list[dict[str, Any]] = []

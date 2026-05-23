@@ -225,6 +225,12 @@ LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES = {
     "the old verse",
     "the new verse",
 }
+REUSE_EXCLUDED_CHANNEL_TITLES = {
+    "bibliacanto",
+    "biblia canto",
+    "불송",
+    "bulsong",
+}
 REUSE_GENRE_PATTERNS = {
     "afro-house": ("afro house", "afro-house"),
     "anime": ("anime", "anime-pop", "anime pop"),
@@ -1627,10 +1633,18 @@ def _playlist_has_ambiguous_legacy_reuse_channel(playlist: Playlist) -> bool:
     ) in LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES
 
 
+def _playlist_reuse_excluded_for_scripture_channel(playlist: Playlist) -> bool:
+    return _normalize_reuse_channel_title(_playlist_reuse_channel_title(playlist)) in REUSE_EXCLUDED_CHANNEL_TITLES
+
+
 def _reuse_channel_identity_matches(target_playlist: Playlist, source_playlist: Playlist) -> bool:
     if _playlist_has_ambiguous_legacy_reuse_channel(target_playlist):
         return False
     if _playlist_has_ambiguous_legacy_reuse_channel(source_playlist):
+        return False
+    if _playlist_reuse_excluded_for_scripture_channel(target_playlist):
+        return False
+    if _playlist_reuse_excluded_for_scripture_channel(source_playlist):
         return False
 
     target_channel_id = _playlist_reuse_channel_id(target_playlist)
@@ -1809,6 +1823,8 @@ def _maybe_add_reused_back_half_tracks(
         return {"added_seconds": 0, "added_track_ids": [], "reason": "missing_channel"}
     if _playlist_has_ambiguous_legacy_reuse_channel(playlist):
         return {"added_seconds": 0, "added_track_ids": [], "reason": "ambiguous_legacy_channel"}
+    if _playlist_reuse_excluded_for_scripture_channel(playlist):
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "scripture_or_buddhist_channel"}
 
     target_genre_tokens = _reuse_genre_tokens_from_values(_reuse_text_values_for_playlist(playlist))
     existing_track_ids = set(_playlist_track_ids(playlist))

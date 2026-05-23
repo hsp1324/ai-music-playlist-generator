@@ -5150,12 +5150,12 @@ def test_workspace_audio_render_reuses_similar_youtube_back_half_tracks(tmp_path
         clear_isolated_client_env()
 
 
-def test_workspace_audio_render_extends_forty_minute_release_to_one_hour_with_reuse(tmp_path) -> None:
+def test_workspace_audio_render_extends_fifteen_minute_release_to_forty_minute_block_with_reuse(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         with SessionLocal() as db:
             source_tracks = []
-            for index in range(4):
+            for index in range(6):
                 audio_path = tmp_path / f"source-ukg-{index}.mp3"
                 audio_path.write_bytes(b"fake-audio")
                 track = Track(
@@ -5206,7 +5206,7 @@ def test_workspace_audio_render_extends_forty_minute_release_to_one_hour_with_re
             "/api/playlists/workspaces",
             json={
                 "title": "UK Garage Night Drive Mix",
-                "target_duration_seconds": 2400,
+                "target_duration_seconds": 900,
                 "description": "UK garage night drive and city lights.",
                 "target_youtube_channel_title": "Club Bloom",
             },
@@ -5221,7 +5221,7 @@ def test_workspace_audio_render_extends_forty_minute_release_to_one_hour_with_re
             json={
                 "title": "New UK Garage Hour Lead",
                 "prompt": "uk garage night drive groove",
-                "duration_seconds": 2400,
+                "duration_seconds": 900,
                 "audio_path": str(new_audio_path),
                 "metadata": {"style": "uk garage", "tags": "uk garage"},
             },
@@ -5244,14 +5244,15 @@ def test_workspace_audio_render_extends_forty_minute_release_to_one_hour_with_re
         )
         assert render_response.status_code == 200
         queued = render_response.json()
-        assert queued["target_duration_seconds"] == 2400
-        assert queued["actual_duration_seconds"] == 3600
+        assert queued["target_duration_seconds"] == 900
+        assert queued["actual_duration_seconds"] == 2700
         assert [track["title"] for track in queued["tracks"]] == [
             "New UK Garage Hour Lead",
-            "Source UK Garage 3",
             "Source UK Garage 4",
+            "Source UK Garage 5",
+            "Source UK Garage 6",
         ]
-        assert "Added 2 reused back-half track(s)" in queued["note"]
+        assert "Added 3 reused back-half track(s)" in queued["note"]
     finally:
         clear_isolated_client_env()
 
@@ -5450,6 +5451,100 @@ def test_workspace_audio_render_skips_reuse_for_ambiguous_legacy_new_verse_chann
         queued = render_response.json()
         assert queued["actual_duration_seconds"] == 1200
         assert [track["title"] for track in queued["tracks"]] == ["비워진 마음의 빛"]
+        assert "reused back-half" not in queued["note"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_workspace_audio_render_skips_reuse_for_current_scripture_channels(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_track_path = tmp_path / "bulsong-source.mp3"
+            source_track_path.write_bytes(b"fake-audio")
+            source_track = Track(
+                title="숨을 보는 마음",
+                prompt="Korean Buddhist jazz song",
+                duration_seconds=600,
+                audio_path=str(source_track_path),
+                status=TrackStatus.approved,
+                metadata_json={"style": "buddhist jazz", "tags": "buddhist,jazz"},
+            )
+            db.add(source_track)
+            db.flush()
+            source_playlist = Playlist(
+                title="불교 재즈 명상",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=900,
+                actual_duration_seconds=600,
+                youtube_video_id="yt-bulsong-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "불송",
+                    "rendered_timeline": [
+                        {
+                            "track_id": source_track.id,
+                            "title": source_track.title,
+                            "start_seconds": 0,
+                            "duration_seconds": 600,
+                        }
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            db.add(
+                PlaylistItem(
+                    playlist=source_playlist,
+                    track=source_track,
+                    order_index=1,
+                    included_duration_seconds=600,
+                )
+            )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "금강경 네오소울",
+                "target_duration_seconds": 900,
+                "description": "Korean Buddhist neo soul inspired by the Diamond Sutra.",
+                "target_youtube_channel_title": "불송",
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        new_audio_path = tmp_path / "diamond-sutra-neosoul.mp3"
+        new_audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "붙잡지 않는 마음",
+                "prompt": "Korean Buddhist neo soul Diamond Sutra",
+                "duration_seconds": 900,
+                "audio_path": str(new_audio_path),
+                "metadata": {"style": "buddhist neo soul", "tags": "buddhist,neo soul"},
+            },
+        )
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert queued["actual_duration_seconds"] == 900
+        assert [track["title"] for track in queued["tracks"]] == ["붙잡지 않는 마음"]
         assert "reused back-half" not in queued["note"]
     finally:
         clear_isolated_client_env()

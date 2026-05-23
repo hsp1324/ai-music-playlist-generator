@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from typing import Any
 
 from app.utils.lyric_subtitles import lyric_lines_from_text
@@ -390,3 +391,61 @@ def should_auto_enable_video_lyrics_overlay(meta: dict[str, Any], tracks: list[d
     if bool(meta.get("video_lyrics_overlay_disabled")):
         return False
     return release_has_singable_lyrics(meta, tracks)
+
+
+def resolve_final_video_repeat_count(
+    settings: Any,
+    meta: dict[str, Any],
+    *,
+    base_duration_seconds: int | float | None,
+) -> int:
+    if not bool(getattr(settings, "playlist_final_video_repeat_enabled", True)):
+        return 1
+    if str(meta.get("workspace_mode") or "playlist").strip().lower() == "single_track_video":
+        return 1
+
+    try:
+        base_duration = int(float(base_duration_seconds or 0))
+    except (TypeError, ValueError):
+        base_duration = 0
+    if base_duration <= 0:
+        return 1
+
+    explicit_count = meta.get("video_final_repeat_count") or meta.get("final_video_repeat_count")
+    try:
+        configured_count = int(explicit_count or getattr(settings, "playlist_final_video_repeat_count", 3) or 1)
+    except (TypeError, ValueError):
+        configured_count = 1
+    configured_count = max(configured_count, 1)
+
+    try:
+        min_base_seconds = int(getattr(settings, "playlist_final_video_repeat_min_base_seconds", 15 * 60) or 0)
+    except (TypeError, ValueError):
+        min_base_seconds = 15 * 60
+    if configured_count <= 1 and base_duration < min_base_seconds:
+        return 1
+    if not explicit_count and base_duration < min_base_seconds:
+        return 1
+
+    try:
+        min_final_seconds = int(getattr(settings, "playlist_final_video_min_seconds", 2 * 60 * 60) or 0)
+    except (TypeError, ValueError):
+        min_final_seconds = 0
+    if min_final_seconds > 0 and not explicit_count:
+        configured_count = max(configured_count, math.ceil(min_final_seconds / base_duration))
+
+    try:
+        max_count = int(getattr(settings, "playlist_final_video_max_repeat_count", 12) or 0)
+    except (TypeError, ValueError):
+        max_count = 12
+    if max_count > 0:
+        configured_count = min(configured_count, max_count)
+    return max(configured_count, 1)
+
+
+def final_video_duration_seconds(base_duration_seconds: int | float | None, repeat_count: int) -> int:
+    try:
+        base_duration = int(float(base_duration_seconds or 0))
+    except (TypeError, ValueError):
+        base_duration = 0
+    return max(base_duration, 0) * max(int(repeat_count or 1), 1)

@@ -352,6 +352,7 @@ class FFMpegPlaylistBuilder:
         lyric_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
+        final_repeat_count: int | None = None,
     ) -> Path:
         if not audio_path.exists():
             raise FileNotFoundError(f"Audio file does not exist: {audio_path}")
@@ -441,6 +442,12 @@ class FFMpegPlaylistBuilder:
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
                 )
+            self._repeat_final_video(
+                output_path,
+                repeat_count=final_repeat_count,
+                base_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
         finally:
             for path in cleanup_paths:
                 path.unlink(missing_ok=True)
@@ -459,6 +466,7 @@ class FFMpegPlaylistBuilder:
         lyric_overlay_style: str | None = None,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
+        final_repeat_count: int | None = None,
     ) -> Path:
         if not clip_path.exists():
             raise FileNotFoundError(f"Loop clip does not exist: {clip_path}")
@@ -600,6 +608,12 @@ class FFMpegPlaylistBuilder:
                     total_duration_seconds=total_duration_seconds,
                     progress_callback=progress_callback,
                 )
+            self._repeat_final_video(
+                output_path,
+                repeat_count=final_repeat_count,
+                base_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
         finally:
             for path in cleanup_paths:
                 path.unlink(missing_ok=True)
@@ -621,6 +635,73 @@ class FFMpegPlaylistBuilder:
 
     def _post_render_path(self, output_path: Path, suffix: str) -> Path:
         return output_path.with_name(f"{output_path.stem}-{suffix}-render{output_path.suffix}")
+
+    def _repeat_final_video(
+        self,
+        output_path: Path,
+        *,
+        repeat_count: int | None,
+        base_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None,
+    ) -> None:
+        count = max(int(repeat_count or 1), 1)
+        if count <= 1:
+            return
+        if not output_path.exists():
+            raise FileNotFoundError(f"Rendered video does not exist: {output_path}")
+
+        source_path = self._post_render_path(output_path, "repeat-source")
+        repeated_path = self._post_render_path(output_path, "repeat")
+        concat_path = output_path.with_name(f"{output_path.stem}-repeat-concat.txt")
+        source_path.unlink(missing_ok=True)
+        repeated_path.unlink(missing_ok=True)
+        concat_path.unlink(missing_ok=True)
+        output_path.replace(source_path)
+        try:
+            escaped = str(source_path).replace("\\", "\\\\").replace("'", "\\'")
+            concat_path.write_text("".join(f"file '{escaped}'\n" for _ in range(count)), encoding="utf-8")
+            total_seconds = None
+            try:
+                base_duration = float(base_duration_seconds or 0)
+            except (TypeError, ValueError):
+                base_duration = 0
+            if base_duration > 0:
+                total_seconds = base_duration * count
+            command = [
+                self.settings.ffmpeg_binary,
+                "-y",
+                "-hide_banner",
+                "-nostats",
+                "-progress",
+                "pipe:1",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(concat_path),
+                "-c",
+                "copy",
+                "-movflags",
+                "+faststart",
+                str(repeated_path),
+            ]
+            self._run_ffmpeg_with_progress(
+                command,
+                output_path=repeated_path,
+                total_duration_seconds=total_seconds,
+                progress_callback=progress_callback,
+                stage="video_repeat_concat",
+            )
+            repeated_path.replace(output_path)
+        except Exception:
+            if not output_path.exists() and source_path.exists():
+                source_path.replace(output_path)
+            raise
+        finally:
+            source_path.unlink(missing_ok=True)
+            repeated_path.unlink(missing_ok=True)
+            concat_path.unlink(missing_ok=True)
 
     def _apply_lyric_subtitles(
         self,

@@ -29,11 +29,13 @@ from app.utils.ops_notifications import (
 from app.utils.render_worker_registry import record_render_worker_seen, render_worker_display_name
 from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
+    final_video_duration_seconds,
     is_cinematic_pulse_release,
     is_religious_no_spectrum_release,
     is_storylight_ost_release,
     release_has_singable_lyrics,
     release_vocal_metadata,
+    resolve_final_video_repeat_count,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
 )
@@ -652,6 +654,13 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         if lyrics_overlay_enabled and lyrics_alignment_mode == "timeline"
         else []
     )
+    base_duration_seconds = int(playlist.actual_duration_seconds or 0) or None
+    final_repeat_count = resolve_final_video_repeat_count(
+        services.settings,
+        meta,
+        base_duration_seconds=base_duration_seconds,
+    )
+    final_duration_seconds = final_video_duration_seconds(base_duration_seconds, final_repeat_count) or None
     return {
         "id": job.id,
         "type": job.type.value,
@@ -680,7 +689,10 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
             "lyric_tracks": lyric_tracks,
             "rendered_timeline": rendered_timeline,
             "lyric_cues": lyric_cues,
-            "total_duration_seconds": int(playlist.actual_duration_seconds or 0) or None,
+            "total_duration_seconds": base_duration_seconds,
+            "video_base_duration_seconds": base_duration_seconds,
+            "video_final_repeat_count": final_repeat_count,
+            "video_final_duration_seconds": final_duration_seconds,
             "track_ids": _playlist_track_ids(playlist),
             "output_filename": f"{playlist.id}.mp4",
         },
@@ -875,6 +887,14 @@ def claim_render_job(
     job, playlist = _load_render_job(db, claimed_id)
     _clear_render_upload(services, claimed_id)
     track_ids = _playlist_track_ids(playlist)
+    meta = dict(playlist.metadata_json or {})
+    base_duration_seconds = int(playlist.actual_duration_seconds or 0) or None
+    final_repeat_count = resolve_final_video_repeat_count(
+        services.settings,
+        meta,
+        base_duration_seconds=base_duration_seconds,
+    )
+    final_duration_seconds = final_video_duration_seconds(base_duration_seconds, final_repeat_count) or None
     result = dict(job.result_json or {})
     worker_meta = {
         "worker_id": payload.worker_id,
@@ -884,12 +904,14 @@ def claim_render_job(
         "claimed_at": now.isoformat(),
         "heartbeat_at": now.isoformat(),
         "rendered_track_ids": track_ids,
+        "video_base_duration_seconds": base_duration_seconds,
+        "video_final_repeat_count": final_repeat_count,
+        "video_final_duration_seconds": final_duration_seconds,
     }
     if server_nickname:
         worker_meta["nickname"] = server_nickname
     result["external_render_worker"] = worker_meta
     job.result_json = result
-    meta = dict(playlist.metadata_json or {})
     if is_cinematic_pulse_release(meta):
         meta["video_spectrum_overlay_style"] = "bars"
         meta["video_render_source_mode"] = "still_image"
@@ -897,6 +919,9 @@ def claim_render_job(
         meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
     elif is_religious_no_spectrum_release(meta, title=playlist.title):
         meta["video_spectrum_overlay_style"] = "none"
+    meta["video_base_duration_seconds"] = base_duration_seconds or 0
+    meta["video_final_repeat_count"] = final_repeat_count
+    meta["rendered_duration_seconds"] = final_duration_seconds or int(playlist.actual_duration_seconds or 0)
     meta["workflow_state"] = "video_rendering"
     worker_label = render_worker_display_name(worker_meta)
     meta["note"] = f"External render worker claimed the video job: {worker_label}."
@@ -905,7 +930,8 @@ def claim_render_job(
         "progress_ratio": 0.0,
         "percent": 0.0,
         "processed_seconds": 0.0,
-        "total_seconds": playlist.actual_duration_seconds or None,
+        "total_seconds": final_duration_seconds or playlist.actual_duration_seconds or None,
+        "base_total_seconds": playlist.actual_duration_seconds or None,
         "eta_seconds": None,
         "status": "claimed",
         "message": meta["note"],
@@ -1166,6 +1192,16 @@ def complete_render_job(
             meta[key] = render_meta[key]
 
     playlist.output_video_path = str(output_path)
+    video_base_duration_seconds = int(worker.get("video_base_duration_seconds") or playlist.actual_duration_seconds or 0)
+    video_final_repeat_count = max(int(worker.get("video_final_repeat_count") or 1), 1)
+    rendered_duration_seconds = int(
+        worker.get("video_final_duration_seconds")
+        or final_video_duration_seconds(video_base_duration_seconds, video_final_repeat_count)
+        or video_base_duration_seconds
+    )
+    meta["video_base_duration_seconds"] = video_base_duration_seconds
+    meta["video_final_repeat_count"] = video_final_repeat_count
+    meta["rendered_duration_seconds"] = rendered_duration_seconds
     is_playlist_release = str(meta.get("workspace_mode") or "playlist") != "single_track_video"
     auto_publish_after_video_render = bool(meta.get("auto_publish_after_video_render"))
     metadata_was_preserved = has_youtube_metadata(meta)
@@ -1215,6 +1251,8 @@ def complete_render_job(
         "eta_seconds": 0,
         "status": "end",
         "message": "External video render completed.",
+        "total_seconds": rendered_duration_seconds,
+        "base_total_seconds": playlist.actual_duration_seconds or None,
         "updated_at": now.isoformat(),
     }
     playlist.metadata_json = meta
@@ -1225,6 +1263,8 @@ def complete_render_job(
             "playlist_id": playlist.id,
             "output_video_path": playlist.output_video_path,
             "youtube_title": meta.get("youtube_title"),
+            "rendered_duration_seconds": rendered_duration_seconds,
+            "video_final_repeat_count": video_final_repeat_count,
             "progress": meta["video_render_progress"],
         }
     )

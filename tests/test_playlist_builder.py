@@ -146,6 +146,52 @@ def test_build_video_can_burn_line_lyric_subtitles(tmp_path, monkeypatch) -> Non
     assert not (tmp_path / "release-lyrics.ass").exists()
 
 
+def test_build_video_can_repeat_final_video_with_stream_copy(tmp_path, monkeypatch) -> None:
+    audio_path = tmp_path / "source.mp3"
+    cover_path = tmp_path / "cover.png"
+    output_path = tmp_path / "release.mp4"
+    audio_path.write_bytes(b"fake-audio")
+    cover_path.write_bytes(b"fake-cover")
+
+    builder = FFMpegPlaylistBuilder(
+        Settings(
+            storage_root=tmp_path / "storage",
+            video_spectrum_overlay_enabled=False,
+        )
+    )
+    calls = []
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        calls.append(
+            {
+                "command": command,
+                "output_path": output_path,
+                "total_duration_seconds": total_duration_seconds,
+                "stage": stage,
+            }
+        )
+        output_path.write_bytes(f"fake-{stage}".encode("utf-8"))
+
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    result = builder.build_video(
+        audio_path,
+        cover_path,
+        output_path,
+        total_duration_seconds=2400,
+        final_repeat_count=3,
+    )
+
+    assert result == output_path
+    assert output_path.read_bytes() == b"fake-video_repeat_concat"
+    assert [call["stage"] for call in calls] == ["video_render", "video_repeat_concat"]
+    repeat_command = calls[1]["command"]
+    assert repeat_command[repeat_command.index("-f") + 1] == "concat"
+    assert repeat_command[repeat_command.index("-c") + 1] == "copy"
+    assert calls[1]["total_duration_seconds"] == 7200
+    assert not (tmp_path / "release-repeat-source-render.mp4").exists()
+
+
 def test_spectrum_overlay_forces_30fps_output(tmp_path, monkeypatch) -> None:
     audio_path = tmp_path / "source.mp3"
     base_video_path = tmp_path / "base.mp4"

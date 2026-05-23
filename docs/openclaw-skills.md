@@ -145,7 +145,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - In Korean YouTube titles/descriptions/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Prefer `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, and translated song titles in every other localized description. Keep the same timestamps and order in all languages.
 - In `sundaze` English/American pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In localized descriptions, timestamped tracklists should keep the English song/track titles in every language. Translate the intro, recommended-for line, and hashtags, but do not translate the song names after each timestamp.
-- For releases 60 minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`; this avoids one-hour-plus YouTube timestamp links failing to activate.
+- Use the release's base-block `rendered_timeline` for the tracklist. Do not add repeated second/third-pass timestamps just because the final MP4 is repeated to about 2 hours. If the base timeline itself reaches 60 minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`.
 - After audio render, metadata timestamps come from the release's saved `rendered_timeline` snapshot, which uses actual ffprobe source-file durations. Always call `scripts/openclaw-release metadata-context` after render and use its returned timeline; do not manually add rounded track durations.
 - If a playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release render-audio` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
@@ -428,16 +428,17 @@ Use randomized audio render when Suno two-output pairs are adjacent and the huma
 
 Generate enough material before publishing:
 
-- Create roughly `2400` seconds / 40 minutes of new approved audio for every normal playlist on every channel.
-- After audio render is queued, the app will try to extend the final rendered video to `3600` seconds / 60+ minutes by reusing tracks from the back half of previous same-channel, similar-genre YouTube uploads.
-- If no similar back-half reuse candidates exist, render proceeds with the uploaded new tracks instead of blocking. Do not keep making unrelated songs just to force reuse.
+- Create roughly `900` seconds / 15 minutes of new approved audio for non-scripture channels. The app will try to extend the base block to roughly `2400` seconds / 40 minutes by reusing tracks from the back half of previous same-channel, similar-genre YouTube uploads.
+- For `BibliaCanto` and `불송`, create roughly `2400` seconds / 40 minutes of new passage-based audio and do not rely on reuse. Those channels are excluded from back-half reuse so Bible/Buddhist passage content is not mixed with unrelated previous chapters.
+- Final video render repeats the rendered base block to about 2 hours, normally 3 repeats for a 40 minute block. YouTube descriptions should keep the base-block timestamp timeline; do not list repeated timestamps for the second/third pass.
+- If no similar back-half reuse candidates exist on non-scripture channels, render proceeds with the uploaded new tracks instead of blocking. Do not keep making unrelated songs just to force reuse.
 - Every helper audio upload retries up to 3 times. If a track still fails, the helper posts a Slack warning, continues uploading the rest of the batch, and stops before render/publish. Re-download or re-export only the failed source files, upload them again, then render/publish after the full intended track set is present.
 - After every successful upload, use the returned JSON as the receipt: confirm `track.id`, `track.status`, and `duration_seconds`. The duration must be close to the actual local audio length.
 
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and publishing a Playlist Release through the AI Music app. Create roughly 40 minutes of new audio; the app will try to extend the final render to 60+ minutes through reuse.
+You are creating and publishing a Playlist Release through the AI Music app. For non-scripture channels, create roughly 15 minutes of new audio; the app will try to extend the base block to about 40 minutes through same-channel similar-genre reuse, then repeat the rendered base block to about 2 hours.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
@@ -445,7 +446,7 @@ Use scripts/openclaw-release only.
 Goal:
 - Create or select one Playlist Release workspace before opening Suno or generating audio.
 - Select Suno v5.5 for every new generation whenever it is available. If the UI/API shows a higher credit cost than v5 for the same request, stop and report the exact difference instead of silently using v5.
-- Generate songs in batches until the new approved audio duration is roughly 40 minutes. The app workspace target remains 2400 seconds for the new material, then the audio render step automatically tries to extend the final render toward 3600 seconds / 60+ minutes from previous same-channel, similar-genre back-half tracks. If it cannot find suitable reuse candidates, it renders the uploaded new tracks instead of blocking.
+- Generate songs in batches until the new approved audio duration is roughly 15 minutes for normal non-scripture channels. The app workspace target is 900 seconds for that new material, then audio render automatically tries to extend the base block toward 2400 seconds / 40 minutes from previous same-channel, similar-genre back-half tracks. If it cannot find suitable reuse candidates, it renders the uploaded new tracks instead of blocking. For BibliaCanto and 불송, generate roughly 40 minutes of new passage-based audio instead; these channels must not use back-half reuse.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For Soft Hour Radio lofi / lo-fi releases, put lofi in the Suno style/settings for each track and in the YouTube title/description/localizations so viewers immediately understand the genre.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.
@@ -500,7 +501,7 @@ First, before opening Suno or submitting the first playlist prompt, create the d
 scripts/openclaw-release create-release \
   --workspace-mode playlist \
   --release-title "PLAYLIST_TITLE" \
-  --target-seconds 2400 \
+  --youtube-channel-title "CHANNEL_TITLE" \
   --description "Short mood/use-case description for metadata generation."
 ```
 
