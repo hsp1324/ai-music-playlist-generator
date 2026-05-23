@@ -13,6 +13,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -32,19 +33,37 @@ from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
 ACTIVE_JOB_MARKER = ".render-worker-active.json"
-CJK_FONT_CANDIDATES = (
+JAPANESE_TEXT_RE = re.compile(r"[\u3040-\u30ff]")
+HANGUL_TEXT_RE = re.compile(r"[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]")
+JAPANESE_FONT_CANDIDATES = (
+    "Noto Sans CJK JP",
+    "Noto Sans JP",
+    "Yu Gothic",
+    "Yu Gothic UI",
+    "Meiryo",
+    "MS Gothic",
+    "MS PGothic",
+)
+KOREAN_FONT_CANDIDATES = (
     "Noto Sans CJK KR",
     "Noto Serif CJK KR",
     "Noto Sans KR",
     "NanumGothic",
     "Malgun Gothic",
     "Apple SD Gothic Neo",
+)
+CJK_FALLBACK_FONT_CANDIDATES = (
     "Unifont",
 )
 CJK_FONT_MATCH_MARKERS = (
     "noto sans cjk",
     "noto serif cjk",
+    "noto sans jp",
     "noto sans kr",
+    "yu gothic",
+    "meiryo",
+    "ms gothic",
+    "ms pgothic",
     "nanum",
     "malgun",
     "apple sd gothic",
@@ -103,14 +122,62 @@ def faster_whisper_available() -> bool:
     return importlib.util.find_spec("faster_whisper") is not None
 
 
-def detect_cjk_lyric_font() -> str:
+def _unique_font_candidates(candidates: list[str]) -> list[str]:
+    seen: set[str] = set()
+    values: list[str] = []
+    for candidate in candidates:
+        key = candidate.strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        values.append(candidate)
+    return values
+
+
+def cjk_font_candidates_for_text(text: str = "") -> list[str]:
+    haystack = str(text or "")
+    if JAPANESE_TEXT_RE.search(haystack):
+        return _unique_font_candidates(
+            [*JAPANESE_FONT_CANDIDATES, *KOREAN_FONT_CANDIDATES, *CJK_FALLBACK_FONT_CANDIDATES]
+        )
+    if HANGUL_TEXT_RE.search(haystack):
+        return _unique_font_candidates(
+            [*KOREAN_FONT_CANDIDATES, *JAPANESE_FONT_CANDIDATES, *CJK_FALLBACK_FONT_CANDIDATES]
+        )
+    return _unique_font_candidates(
+        [*KOREAN_FONT_CANDIDATES, *JAPANESE_FONT_CANDIDATES, *CJK_FALLBACK_FONT_CANDIDATES]
+    )
+
+
+def lyric_text_for_font_detection(render: dict[str, Any]) -> str:
+    chunks: list[str] = []
+    for track in render.get("lyric_tracks") or []:
+        if not isinstance(track, dict):
+            continue
+        chunks.append(str(track.get("title") or ""))
+        chunks.append(str(track.get("lyrics") or ""))
+    for cue in render.get("lyric_cues") or []:
+        if isinstance(cue, dict):
+            chunks.append(str(cue.get("text") or ""))
+    return "\n".join(chunks)
+
+
+def detect_cjk_lyric_font(text: str = "") -> str:
     explicit = os.environ.get("AIMP_RENDER_WORKER_CJK_FONT", "").strip()
     if explicit:
         return explicit
+    if JAPANESE_TEXT_RE.search(str(text or "")):
+        explicit = os.environ.get("AIMP_RENDER_WORKER_JAPANESE_FONT", "").strip()
+        if explicit:
+            return explicit
+    if HANGUL_TEXT_RE.search(str(text or "")):
+        explicit = os.environ.get("AIMP_RENDER_WORKER_KOREAN_FONT", "").strip()
+        if explicit:
+            return explicit
     fc_match = shutil.which("fc-match")
     if not fc_match:
         return ""
-    for candidate in CJK_FONT_CANDIDATES:
+    for candidate in cjk_font_candidates_for_text(text):
         try:
             result = subprocess.run(
                 [fc_match, "-f", "%{family}|%{file}\n", candidate],
@@ -564,7 +631,7 @@ def render_job(
         storage_root=cache_dir / "storage",
         ffmpeg_binary=ffmpeg_binary,
     )
-    local_cjk_font = detect_cjk_lyric_font()
+    local_cjk_font = detect_cjk_lyric_font(lyric_text_for_font_detection(render))
     if local_cjk_font:
         settings.video_lyrics_overlay_font = local_cjk_font
         settings.video_lyrics_overlay_serif_font = local_cjk_font
