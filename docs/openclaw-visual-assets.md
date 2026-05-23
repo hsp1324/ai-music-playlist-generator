@@ -22,6 +22,7 @@ The production source of truth is [openclaw-channel-profiles](openclaw-channel-p
 ## Loop Video Rules
 
 - Normal Dreamina/Seedance browser clips use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`.
+- If the Seedance/Dreamina duration control is hidden when the screen opens, gently drag/scroll the settings/control row to the right until the duration option is visible, then set it to exactly `7 seconds`. Do not Generate while the duration is hidden, set to 5 seconds, or uncertain.
 - `불송` clips use Seedance/Dreamina `2.0 Fast`, first-frame only, `16:9`, `720p`, exactly `6 seconds`.
 - HaruHaru photorealistic clips use Seedance `2.0`, first-frame only, `16:9`, `1080p`, exactly `7 seconds`, then final render `--video-render-resolution 1080p`.
 - Gemini clips are uploaded as generated after inspection. Do not mention duration in Gemini prompts.

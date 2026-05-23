@@ -32,7 +32,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Text must be integrated into the artwork with safe margins. Do not use hard black boxes, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks.
 - The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
 - The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
-- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default clips are `7 seconds`; `불송` clips are `6 seconds`; HaruHaru photorealistic clips use 1080p.
+- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default clips are `7 seconds`; `불송` clips are `6 seconds`; HaruHaru photorealistic clips use 1080p. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set the required duration before Generate.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
 - Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
