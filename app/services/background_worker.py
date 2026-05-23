@@ -34,7 +34,10 @@ from app.utils.openclaw_slack_loop import (
     record_auto_loop_upload,
 )
 from app.utils.ops_notifications import notify_youtube_publish_completed
-from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
+from app.utils.local_video_cleanup import (
+    cleanup_public_uploaded_local_videos,
+    mark_local_video_retained_after_youtube_upload,
+)
 from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_line_lyric_cues
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.utils.video_render_policy import (
@@ -306,14 +309,13 @@ class BackgroundJobWorker:
                         playlist.status = PlaylistStatus.uploaded
                         meta = dict(playlist.metadata_json or {})
                         meta["workflow_state"] = "uploaded"
-                        cleanup = self._delete_uploaded_video_file(playlist.output_video_path)
-                        if cleanup["deleted"]:
-                            playlist.output_video_path = None
-                            meta["local_video_deleted_after_youtube_upload"] = cleanup["path"]
-                            meta["local_video_deleted_at"] = now.isoformat()
-                            meta.pop("local_video_cleanup_error", None)
-                        elif cleanup.get("error"):
-                            meta["local_video_cleanup_error"] = cleanup["error"]
+                        meta = mark_local_video_retained_after_youtube_upload(
+                            playlist,
+                            meta,
+                            video_path=playlist.output_video_path,
+                            settings=self.settings,
+                            now=now,
+                        )
                         playlist.metadata_json = meta
                         db.add(playlist)
                     else:
@@ -1450,14 +1452,12 @@ class BackgroundJobWorker:
                             )
                         else:
                             meta.pop("youtube_lyrics_captions_error", None)
-                    cleanup = self._delete_uploaded_video_file(uploaded_video_path)
-                    if cleanup["deleted"]:
-                        playlist.output_video_path = None
-                        meta["local_video_deleted_after_youtube_upload"] = cleanup["path"]
-                        meta["local_video_deleted_at"] = _utcnow().isoformat()
-                        meta.pop("local_video_cleanup_error", None)
-                    elif cleanup.get("error"):
-                        meta["local_video_cleanup_error"] = cleanup["error"]
+                    meta = mark_local_video_retained_after_youtube_upload(
+                        playlist,
+                        meta,
+                        video_path=uploaded_video_path,
+                        settings=self.settings,
+                    )
                     managed_playlist_titles = scripture_youtube_playlist_titles(meta, title=playlist.title)
                     if managed_playlist_titles and playlist.youtube_video_id and meta.get("youtube_channel_id"):
                         try:
@@ -1637,19 +1637,6 @@ class BackgroundJobWorker:
             "failed_languages": failed_languages,
             **({"translation_error": build_result.translation_error} if build_result.translation_error else {}),
         }
-
-    @staticmethod
-    def _delete_uploaded_video_file(video_path: str | None) -> dict:
-        if not video_path:
-            return {"deleted": False, "path": None}
-        path = Path(video_path)
-        if not path.exists():
-            return {"deleted": False, "path": str(path)}
-        try:
-            path.unlink()
-        except OSError as exc:
-            return {"deleted": False, "path": str(path), "error": str(exc)}
-        return {"deleted": True, "path": str(path)}
 
     def _mark_job_failed(self, db: Session, job: Job, error_text: str) -> None:
         playlist = db.get(Playlist, job.playlist_id) if job.playlist_id else None

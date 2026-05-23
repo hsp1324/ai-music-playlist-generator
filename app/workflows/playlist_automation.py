@@ -2392,7 +2392,8 @@ def attach_uploaded_loop_video(
     meta["publish_approved"] = False
     if playlist.output_video_path:
         playlist.output_video_path = None
-        playlist.youtube_video_id = None
+        if playlist.status != PlaylistStatus.uploaded:
+            playlist.youtube_video_id = None
         if playlist.output_audio_path and meta.get("cover_approved"):
             meta["workflow_state"] = "video_required"
         meta["note"] = "Loop video uploaded. Re-render video before publishing."
@@ -2445,7 +2446,8 @@ def clear_uploaded_loop_video(
     meta["publish_approved"] = False
     if playlist.output_video_path:
         playlist.output_video_path = None
-        playlist.youtube_video_id = None
+        if playlist.status != PlaylistStatus.uploaded:
+            playlist.youtube_video_id = None
     if playlist.output_audio_path and meta.get("cover_approved"):
         meta["workflow_state"] = "video_required"
     elif playlist.output_audio_path:

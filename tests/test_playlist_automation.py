@@ -3653,6 +3653,7 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
         settings = client.app.state.settings
         settings.local_video_cleanup_enabled = True
         settings.local_video_cleanup_disk_threshold_percent = 50
+        settings.local_video_cleanup_public_retention_days = 7
         settings.playlists_dir.mkdir(parents=True, exist_ok=True)
         now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
 
@@ -3665,7 +3666,8 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
                 youtube_video_id="yt-public",
                 metadata_json={
                     "workflow_state": "uploaded",
-                    "youtube_uploaded_at": "2026-05-10T12:00:00+00:00",
+                    "youtube_uploaded_at": "2026-05-07T12:00:00+00:00",
+                    "youtube_public_at": "2026-05-07T12:00:00+00:00",
                     "youtube_response": {"status": {"privacyStatus": "public"}},
                 },
             )
@@ -3677,8 +3679,20 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
                 youtube_video_id="yt-orphan",
                 metadata_json={
                     "workflow_state": "uploaded",
-                    "youtube_uploaded_at": "2026-05-11T12:00:00+00:00",
-                    "youtube_scheduled_publish_at": "2026-05-14T12:00:00+00:00",
+                    "youtube_uploaded_at": "2026-05-07T13:00:00+00:00",
+                    "youtube_scheduled_publish_at": "2026-05-07T13:00:00+00:00",
+                },
+            )
+            recent_public_playlist = Playlist(
+                title="Recent Public Local Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-recent",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_public_at": "2026-05-12T12:00:00+00:00",
+                    "youtube_response": {"status": {"privacyStatus": "public"}},
                 },
             )
             future_playlist = Playlist(
@@ -3712,22 +3726,34 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
                 actual_duration_seconds=60,
                 metadata_json={"workflow_state": "metadata_review"},
             )
-            db.add_all([public_playlist, orphan_playlist, future_playlist, private_playlist, not_uploaded_playlist])
+            db.add_all(
+                [
+                    public_playlist,
+                    orphan_playlist,
+                    recent_public_playlist,
+                    future_playlist,
+                    private_playlist,
+                    not_uploaded_playlist,
+                ]
+            )
             db.flush()
             public_path = settings.playlists_dir / f"{public_playlist.id}.mp4"
             orphan_path = settings.playlists_dir / f"{orphan_playlist.id}.mp4"
+            recent_public_path = settings.playlists_dir / f"{recent_public_playlist.id}.mp4"
             future_path = settings.playlists_dir / f"{future_playlist.id}.mp4"
             private_path = settings.playlists_dir / f"{private_playlist.id}.mp4"
             not_uploaded_path = settings.playlists_dir / f"{not_uploaded_playlist.id}.mp4"
-            for path in (public_path, orphan_path, future_path, private_path, not_uploaded_path):
+            for path in (public_path, orphan_path, recent_public_path, future_path, private_path, not_uploaded_path):
                 path.write_bytes(b"fake-video")
             public_playlist.output_video_path = str(public_path)
+            recent_public_playlist.output_video_path = str(recent_public_path)
             future_playlist.output_video_path = str(future_path)
             private_playlist.output_video_path = str(private_path)
             not_uploaded_playlist.output_video_path = str(not_uploaded_path)
             db.commit()
             public_id = public_playlist.id
             orphan_id = orphan_playlist.id
+            recent_public_id = recent_public_playlist.id
             future_id = future_playlist.id
             private_id = private_playlist.id
             not_uploaded_id = not_uploaded_playlist.id
@@ -3746,19 +3772,22 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
             ]
             assert not public_path.exists()
             assert not orphan_path.exists()
+            assert recent_public_path.exists()
             assert future_path.exists()
             assert private_path.exists()
             assert not_uploaded_path.exists()
             public_updated = db.get(Playlist, public_id)
             orphan_updated = db.get(Playlist, orphan_id)
+            recent_public_updated = db.get(Playlist, recent_public_id)
             future_updated = db.get(Playlist, future_id)
             private_updated = db.get(Playlist, private_id)
             not_uploaded_updated = db.get(Playlist, not_uploaded_id)
             assert public_updated.output_video_path is None
             assert public_updated.metadata_json["local_video_deleted_after_youtube_upload"] == str(public_path)
-            assert public_updated.metadata_json["local_video_cleanup_reason"] == "disk_usage_threshold_uploaded_youtube_video"
+            assert public_updated.metadata_json["local_video_cleanup_reason"] == "public_retention_expired_uploaded_youtube_video"
             assert orphan_updated.output_video_path is None
             assert orphan_updated.metadata_json["local_video_cleanup_source"] == "canonical_playlist_mp4"
+            assert recent_public_updated.output_video_path == str(recent_public_path)
             assert future_updated.output_video_path == str(future_path)
             assert private_updated.output_video_path == str(private_path)
             assert not_uploaded_updated.output_video_path == str(not_uploaded_path)
@@ -3800,10 +3829,58 @@ def test_local_video_cleanup_skips_when_disk_usage_is_at_or_below_threshold(tmp_
             )
 
             assert result["skipped"] is True
-            assert result["reason"] == "below_threshold"
+            assert result["reason"] == "below_threshold_no_retention_expired_candidates"
             assert result["deleted_count"] == 0
             assert video_path.exists()
             assert db.get(Playlist, playlist.id).output_video_path == str(video_path)
+    finally:
+        clear_isolated_client_env()
+
+
+def test_local_video_cleanup_deletes_expired_public_video_below_threshold(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        settings.local_video_cleanup_enabled = True
+        settings.local_video_cleanup_disk_threshold_percent = 80
+        settings.local_video_cleanup_public_retention_days = 7
+        settings.playlists_dir.mkdir(parents=True, exist_ok=True)
+        now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
+
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Expired Retention Public Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-expired",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_public_at": "2026-05-01T12:00:00+00:00",
+                    "youtube_response": {"status": {"privacyStatus": "public"}},
+                },
+            )
+            db.add(playlist)
+            db.flush()
+            video_path = settings.playlists_dir / f"{playlist.id}.mp4"
+            video_path.write_bytes(b"fake-video")
+            playlist.output_video_path = str(video_path)
+            playlist_id = playlist.id
+            db.commit()
+
+            result = cleanup_public_uploaded_local_videos(
+                db,
+                settings,
+                now=now,
+                usage_provider=lambda _path: SimpleNamespace(total=100, used=40, free=60),
+            )
+
+            assert result["skipped"] is False
+            assert result["deleted_count"] == 1
+            assert not video_path.exists()
+            updated = db.get(Playlist, playlist_id)
+            assert updated.output_video_path is None
+            assert updated.metadata_json["local_video_cleanup_reason"] == "public_retention_expired_uploaded_youtube_video"
     finally:
         clear_isolated_client_env()
 
@@ -4501,10 +4578,12 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
         uploaded = uploaded_response.json()
         assert uploaded["status"] == "uploaded"
         assert uploaded["youtube_video_id"] == f"yt-{marker}"
-        assert uploaded["output_video_path"] is None
+        assert uploaded["output_video_path"] == str(local_video)
         assert uploaded["metadata_json"]["youtube_channel_id"] == "UC-soft-hour"
         assert uploaded["metadata_json"]["youtube_channel_title"] == "Soft Hour Radio"
-        assert not local_video.exists()
+        assert uploaded["metadata_json"]["local_video_retained_after_youtube_upload"] == str(local_video)
+        assert uploaded["metadata_json"]["local_video_retention_days"] == 7
+        assert local_video.exists()
 
         track_after = client.get(f"/api/tracks/{track_id}")
         assert track_after.status_code == 200
@@ -6820,8 +6899,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert published["workflow_state"] == "uploaded"
         assert published["youtube_video_id"] == "yt-auto-123"
-        assert published["output_video_path"] is None
-        assert not os.path.exists(first_video_path)
+        assert published["output_video_path"] == first_video_path
+        assert os.path.exists(first_video_path)
         assert any("YouTube publish completed" in call["text"] for call in ops_calls)
         assert any("https://youtu.be/yt-auto-123" in call["text"] for call in ops_calls)
         assert upload_channel_ids[-1] == "UC123"
@@ -6834,7 +6913,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
-            assert playlist.metadata_json["local_video_deleted_after_youtube_upload"] == first_video_path
+            assert playlist.metadata_json["local_video_retained_after_youtube_upload"] == first_video_path
+            assert playlist.metadata_json["local_video_retention_days"] == 7
+            assert "local_video_deleted_after_youtube_upload" not in playlist.metadata_json
 
         loop_replaced = upload_test_loop_video(client, workspace_id)
         assert loop_replaced["workflow_state"] == "video_required"
@@ -6901,8 +6982,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         reuploaded = next(item for item in reloaded_response.json() if item["id"] == workspace_id)
         assert reuploaded["workflow_state"] == "uploaded"
         assert reuploaded["youtube_video_id"] == "yt-auto-456"
-        assert reuploaded["output_video_path"] is None
-        assert not os.path.exists(second_video_path)
+        assert reuploaded["output_video_path"] == second_video_path
+        assert os.path.exists(second_video_path)
         assert upload_channel_ids[-1] == "UC456"
     finally:
         clear_isolated_client_env()
@@ -7008,11 +7089,12 @@ def test_publish_retry_adopts_recent_existing_youtube_upload(tmp_path) -> None:
         published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert published["workflow_state"] == "uploaded"
         assert published["youtube_video_id"] == "yt-adopted-123"
-        assert published["output_video_path"] is None
+        assert published["output_video_path"].endswith(".mp4")
         with SessionLocal() as db:
             playlist = db.get(Playlist, workspace_id)
             assert playlist.metadata_json["youtube_response"]["adopted_existing_upload"] is True
             assert playlist.metadata_json["youtube_channel_id"] == "UC_SOFT"
+            assert playlist.metadata_json["local_video_retained_after_youtube_upload"] == playlist.output_video_path
     finally:
         clear_isolated_client_env()
 
@@ -7102,7 +7184,7 @@ def test_single_track_video_mode_uses_uploaded_loop_in_video_stage(tmp_path) -> 
         playlists_response = client.get("/api/playlists")
         playlist = next(item for item in playlists_response.json() if item["id"] == workspace["id"])
         assert playlist["youtube_video_id"] == "yt-single-123"
-        assert playlist["output_video_path"] is None
+        assert playlist["output_video_path"].endswith(".mp4")
         assert playlist["metadata_json"]["youtube_title"].startswith("Neon Solo")
         assert playlist["metadata_json"]["loop_video_source"] == "manual-upload"
         assert "dreamina_job_id" not in playlist["metadata_json"]

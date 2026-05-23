@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -76,7 +76,8 @@ def youtube_public_at(playlist: Playlist, *, now: datetime | None = None) -> dat
     ).strip().lower()
     if privacy_status == "public":
         return (
-            _parse_datetime(meta.get("youtube_published_at"))
+            _parse_datetime(meta.get("youtube_public_at"))
+            or _parse_datetime(meta.get("youtube_published_at"))
             or _parse_datetime(status.get("publishAt"))
             or playlist.updated_at
             or playlist.created_at
@@ -118,7 +119,8 @@ def youtube_uploaded_at(playlist: Playlist, *, now: datetime | None = None) -> d
 class LocalVideoCandidate:
     playlist: Playlist
     path: Path
-    uploaded_at: datetime
+    public_at: datetime
+    eligible_after: datetime
     source: str
     size_bytes: int
 
@@ -142,6 +144,8 @@ def collect_public_uploaded_local_video_candidates(
     now: datetime | None = None,
 ) -> list[LocalVideoCandidate]:
     current = now or _utcnow()
+    retention_days = max(int(settings.local_video_cleanup_public_retention_days or 0), 0)
+    retention = timedelta(days=retention_days)
     candidates: list[LocalVideoCandidate] = []
     playlists = db.scalars(
         select(Playlist).where(
@@ -151,10 +155,11 @@ def collect_public_uploaded_local_video_candidates(
     ).all()
     seen_paths: set[Path] = set()
     for playlist in playlists:
-        if youtube_public_at(playlist, now=current) is None:
+        public_at = youtube_public_at(playlist, now=current)
+        if public_at is None:
             continue
-        uploaded_at = youtube_uploaded_at(playlist, now=current)
-        if uploaded_at is None:
+        eligible_after = public_at + retention
+        if eligible_after > current:
             continue
         for path, source in _candidate_paths(playlist, settings):
             try:
@@ -168,12 +173,42 @@ def collect_public_uploaded_local_video_candidates(
                 LocalVideoCandidate(
                     playlist=playlist,
                     path=path,
-                    uploaded_at=uploaded_at,
+                    public_at=public_at,
+                    eligible_after=eligible_after,
                     source=source,
                     size_bytes=path.stat().st_size,
                 )
             )
-    return sorted(candidates, key=lambda item: (item.uploaded_at, item.playlist.updated_at or item.uploaded_at))
+    return sorted(candidates, key=lambda item: (item.public_at, item.playlist.updated_at or item.public_at))
+
+
+def mark_local_video_retained_after_youtube_upload(
+    playlist: Playlist,
+    meta: dict[str, Any],
+    *,
+    video_path: str | None,
+    settings: Settings,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    if not video_path:
+        return meta
+    path = Path(video_path)
+    current = now or _utcnow()
+    retention_days = max(int(settings.local_video_cleanup_public_retention_days or 0), 0)
+    public_at = youtube_public_at(playlist, now=current)
+    eligible_after = public_at + timedelta(days=retention_days) if public_at else None
+    meta["local_video_retained_after_youtube_upload"] = str(path)
+    meta["local_video_retention_policy"] = "delete_after_public_retention"
+    meta["local_video_retention_days"] = retention_days
+    meta["local_video_retention_recorded_at"] = current.isoformat()
+    if eligible_after:
+        meta["local_video_cleanup_eligible_after"] = eligible_after.isoformat()
+    else:
+        meta.pop("local_video_cleanup_eligible_after", None)
+    meta.pop("local_video_deleted_after_youtube_upload", None)
+    meta.pop("local_video_deleted_at", None)
+    meta.pop("local_video_cleanup_error", None)
+    return meta
 
 
 def cleanup_public_uploaded_local_videos(
@@ -183,6 +218,7 @@ def cleanup_public_uploaded_local_videos(
     now: datetime | None = None,
     usage_provider: Callable[[Path], Any] | None = None,
 ) -> dict[str, Any]:
+    current = now or _utcnow()
     threshold = float(settings.local_video_cleanup_disk_threshold_percent)
     threshold = max(0.0, min(threshold, 100.0))
     before_percent = _disk_usage_percent(settings.storage_root, usage_provider=usage_provider)
@@ -190,6 +226,7 @@ def cleanup_public_uploaded_local_videos(
         "ok": True,
         "enabled": bool(settings.local_video_cleanup_enabled),
         "threshold_percent": threshold,
+        "public_retention_days": max(int(settings.local_video_cleanup_public_retention_days or 0), 0),
         "disk_usage_before_percent": round(before_percent, 2),
         "disk_usage_after_percent": round(before_percent, 2),
         "deleted_count": 0,
@@ -202,15 +239,19 @@ def cleanup_public_uploaded_local_videos(
         result["skipped"] = True
         result["reason"] = "disabled"
         return result
-    if before_percent <= threshold:
+    candidates = collect_public_uploaded_local_video_candidates(db, settings, now=current)
+    if before_percent <= threshold and not candidates:
         result["skipped"] = True
-        result["reason"] = "below_threshold"
+        result["reason"] = "below_threshold_no_retention_expired_candidates"
+        return result
+    if not candidates:
+        result["skipped"] = True
+        result["reason"] = "above_threshold_no_retention_expired_candidates"
         return result
 
-    current = now or _utcnow()
-    for candidate in collect_public_uploaded_local_video_candidates(db, settings, now=current):
+    for candidate in candidates:
         current_percent = _disk_usage_percent(settings.storage_root, usage_provider=usage_provider)
-        if current_percent <= threshold:
+        if current_percent <= threshold and candidate.eligible_after > current:
             break
         path = candidate.path
         try:
@@ -238,11 +279,12 @@ def cleanup_public_uploaded_local_videos(
         entry = {
             "path": str(path),
             "deleted_at": current.isoformat(),
-            "reason": "disk_usage_threshold_uploaded_youtube_video",
+            "reason": "public_retention_expired_uploaded_youtube_video",
             "source": candidate.source,
             "size_bytes": candidate.size_bytes,
             "youtube_video_id": candidate.playlist.youtube_video_id,
-            "youtube_uploaded_at": candidate.uploaded_at.isoformat(),
+            "youtube_public_at": candidate.public_at.isoformat(),
+            "local_video_cleanup_eligible_after": candidate.eligible_after.isoformat(),
             "disk_usage_before_percent": round(before_percent, 2),
             "threshold_percent": threshold,
         }
@@ -268,7 +310,8 @@ def cleanup_public_uploaded_local_videos(
                 "size_bytes": candidate.size_bytes,
                 "source": candidate.source,
                 "youtube_video_id": candidate.playlist.youtube_video_id,
-                "youtube_uploaded_at": candidate.uploaded_at.isoformat(),
+                "youtube_public_at": candidate.public_at.isoformat(),
+                "local_video_cleanup_eligible_after": candidate.eligible_after.isoformat(),
             }
         )
 

@@ -136,6 +136,7 @@ class Settings(BaseSettings):
     local_video_cleanup_enabled: bool = True
     local_video_cleanup_disk_threshold_percent: float = 80.0
     local_video_cleanup_interval_seconds: int = 300
+    local_video_cleanup_public_retention_days: int = 7
 
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"
