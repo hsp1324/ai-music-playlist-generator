@@ -44,7 +44,7 @@ def youtube_video_filter(frame_size: tuple[int, int], *, fps: int | None = None)
     return ",".join(parts)
 
 
-YOUTUBE_STILL_IMAGE_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE)
+YOUTUBE_STILL_IMAGE_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE, fps=30)
 YOUTUBE_LOOP_VIDEO_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE, fps=30)
 DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 7
 DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 1.5
@@ -390,7 +390,7 @@ class FFMpegPlaylistBuilder:
             "-tune",
             "stillimage",
             "-vf",
-            youtube_video_filter(frame_size),
+            youtube_video_filter(frame_size, fps=30),
             "-crf",
             self._x264_crf_for_frame_size(frame_size),
             "-c:a",
@@ -659,7 +659,7 @@ class FFMpegPlaylistBuilder:
             "-i",
             str(base_video_path),
             "-vf",
-            f"ass={ass_filter_path}",
+            f"ass={ass_filter_path},fps={SPECTRUM_OVERLAY_FPS},format=yuv420p",
             "-map",
             "0:v:0",
             "-map",
@@ -1023,9 +1023,10 @@ class FFMpegPlaylistBuilder:
                 str(overlay_path),
                 "-filter_complex",
                 (
-                    "[1:v]format=rgba[visualizer];"
-                    f"[0:v][visualizer]overlay=x={x}:y={y}:shortest=1:format=auto,"
-                    "format=yuv420p[v]"
+                    f"[0:v]fps={SPECTRUM_OVERLAY_FPS},setpts=PTS-STARTPTS[base];"
+                    f"[1:v]fps={SPECTRUM_OVERLAY_FPS},setpts=PTS-STARTPTS,format=rgba[visualizer];"
+                    f"[base][visualizer]overlay=x={x}:y={y}:shortest=1:format=auto,"
+                    f"fps={SPECTRUM_OVERLAY_FPS},format=yuv420p[v]"
                 ),
                 "-map",
                 "[v]",

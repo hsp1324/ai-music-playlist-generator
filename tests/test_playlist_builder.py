@@ -52,6 +52,7 @@ def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> Non
     args = json.loads(args_path.read_text(encoding="utf-8"))
     assert args[args.index("-vf") + 1] == YOUTUBE_STILL_IMAGE_FILTER
     assert "scale=1280:720" in args[args.index("-vf") + 1]
+    assert "fps=30" in args[args.index("-vf") + 1]
 
 
 def test_build_video_accepts_2k_render_resolution(tmp_path) -> None:
@@ -139,9 +140,53 @@ def test_build_video_can_burn_line_lyric_subtitles(tmp_path, monkeypatch) -> Non
     assert calls[0]["output_path"].name == "release-base-render.mp4"
     subtitle_command = calls[1]["command"]
     assert subtitle_command[subtitle_command.index("-vf") + 1].startswith("ass=")
+    assert "fps=30" in subtitle_command[subtitle_command.index("-vf") + 1]
     assert subtitle_command[subtitle_command.index("-c:a") + 1] == "copy"
     assert not (tmp_path / "release-base-render.mp4").exists()
     assert not (tmp_path / "release-lyrics.ass").exists()
+
+
+def test_spectrum_overlay_forces_30fps_output(tmp_path, monkeypatch) -> None:
+    audio_path = tmp_path / "source.mp3"
+    base_video_path = tmp_path / "base.mp4"
+    cover_path = tmp_path / "cover.png"
+    output_path = tmp_path / "release.mp4"
+    audio_path.write_bytes(b"fake-audio")
+    base_video_path.write_bytes(b"fake-video")
+    Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    calls = []
+
+    def fake_build_overlay(*args, **_kwargs):
+        output_path = args[1]
+        output_path.write_bytes(b"fake-overlay")
+        return output_path
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        calls.append({"command": command, "output_path": output_path, "stage": stage})
+        output_path.write_bytes(b"fake-spectrum")
+
+    monkeypatch.setattr(builder, "_build_spectrum_overlay_video", fake_build_overlay)
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder._apply_spectrum_overlay(
+        base_video_path,
+        audio_path,
+        cover_path,
+        output_path,
+        spectrum_overlay_style="bars",
+        render_resolution="720p",
+        total_duration_seconds=10,
+        progress_callback=None,
+    )
+
+    assert output_path.read_bytes() == b"fake-spectrum"
+    filter_complex = calls[0]["command"][calls[0]["command"].index("-filter_complex") + 1]
+    assert "[0:v]fps=30" in filter_complex
+    assert "[1:v]fps=30" in filter_complex
+    assert "overlay=" in filter_complex
+    assert "fps=30,format=yuv420p[v]" in filter_complex
 
 
 def test_ass_lyric_text_wraps_into_two_useful_lines(tmp_path) -> None:
