@@ -399,7 +399,7 @@ def resolve_final_video_repeat_count(
     *,
     base_duration_seconds: int | float | None,
 ) -> int:
-    if not bool(getattr(settings, "playlist_final_video_repeat_enabled", True)):
+    if not bool(getattr(settings, "playlist_final_video_repeat_enabled", False)):
         return 1
     if str(meta.get("workspace_mode") or "playlist").strip().lower() == "single_track_video":
         return 1

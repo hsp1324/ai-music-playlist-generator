@@ -1193,9 +1193,19 @@ def complete_render_job(
 
     playlist.output_video_path = str(output_path)
     video_base_duration_seconds = int(worker.get("video_base_duration_seconds") or playlist.actual_duration_seconds or 0)
-    video_final_repeat_count = max(int(worker.get("video_final_repeat_count") or 1), 1)
-    rendered_duration_seconds = int(
-        worker.get("video_final_duration_seconds")
+    configured_repeat_count = resolve_final_video_repeat_count(
+        services.settings,
+        meta,
+        base_duration_seconds=video_base_duration_seconds,
+    )
+    worker_repeat_count = max(int(worker.get("video_final_repeat_count") or 1), 1)
+    video_final_repeat_count = worker_repeat_count if configured_repeat_count > 1 else 1
+    try:
+        probed_duration_seconds = int(round(services.playlist_builder._probe_media_duration(output_path)))
+    except Exception:  # noqa: BLE001
+        probed_duration_seconds = 0
+    rendered_duration_seconds = (
+        probed_duration_seconds
         or final_video_duration_seconds(video_base_duration_seconds, video_final_repeat_count)
         or video_base_duration_seconds
     )

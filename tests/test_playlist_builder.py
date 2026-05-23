@@ -10,7 +10,7 @@ from app.services.playlist_builder import (
     SPECTRUM_OVERLAY_WIDTH,
     YOUTUBE_STILL_IMAGE_FILTER,
 )
-from app.utils.video_render_policy import apply_video_spectrum_channel_policy
+from app.utils.video_render_policy import apply_video_spectrum_channel_policy, resolve_final_video_repeat_count
 
 
 def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> None:
@@ -190,6 +190,18 @@ def test_build_video_can_repeat_final_video_with_stream_copy(tmp_path, monkeypat
     assert repeat_command[repeat_command.index("-c") + 1] == "copy"
     assert calls[1]["total_duration_seconds"] == 7200
     assert not (tmp_path / "release-repeat-source-render.mp4").exists()
+
+
+def test_final_video_repeat_is_disabled_by_default() -> None:
+    assert resolve_final_video_repeat_count(Settings(), {}, base_duration_seconds=2400) == 1
+    assert (
+        resolve_final_video_repeat_count(
+            Settings(playlist_final_video_repeat_enabled=True),
+            {},
+            base_duration_seconds=2400,
+        )
+        == 3
+    )
 
 
 def test_spectrum_overlay_forces_30fps_output(tmp_path, monkeypatch) -> None:

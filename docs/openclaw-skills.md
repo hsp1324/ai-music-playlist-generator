@@ -145,7 +145,7 @@ Then read the returned `concept_doc` from [openclaw-channel-concepts](openclaw-c
 - In Korean YouTube titles/descriptions/localizations, do not use the transliterated words `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Prefer `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡`.
 - In Japan/J-pop localized descriptions, timestamped tracklists must use Japanese titles in the Korean/default description with Korean translations in parentheses, Japanese titles only in the Japanese description, and translated song titles in every other localized description. Keep the same timestamps and order in all languages.
 - In `sundaze` English/American pop metadata, localized video titles may be natural adaptations in each language instead of exact English copies. In localized descriptions, timestamped tracklists should keep the English song/track titles in every language. Translate the intro, recommended-for line, and hashtags, but do not translate the song names after each timestamp.
-- Use the release's base-block `rendered_timeline` for the tracklist. Do not add repeated second/third-pass timestamps just because the final MP4 is repeated to about 2 hours. If the base timeline itself reaches 60 minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`.
+- Use the release's base-block `rendered_timeline` for the tracklist. If the optional final-repeat feature is enabled later, do not add repeated second/third-pass timestamps. If the base timeline itself reaches 60 minutes or longer, use `HH:MM:SS` timestamps for the whole tracklist, starting at `00:00:00`.
 - After audio render, metadata timestamps come from the release's saved `rendered_timeline` snapshot, which uses actual ffprobe source-file durations. Always call `scripts/openclaw-release metadata-context` after render and use its returned timeline; do not manually add rounded track durations.
 - If a playlist contains consecutive Suno pair outputs that may feel repetitive, use randomized render order before audio render. In the API this is `random: true`; in `scripts/openclaw-release render-audio` this is `--randomize-order`. The app saves the shuffled order before rendering, so final order and metadata timestamps remain consistent.
 - Do not leave trailing `A` / `B`, `1` / `2`, `Morning` / `Evening`, or similar pair labels in uploaded playlist track titles.
@@ -430,7 +430,7 @@ Generate enough material before publishing:
 
 - Create roughly `900` seconds / 15 minutes of new approved audio for non-scripture channels. The app will try to extend the base block to roughly `2400` seconds / 40 minutes by reusing tracks from the back half of previous same-channel, similar-genre YouTube uploads.
 - For `BibliaCanto` and `불송`, create roughly `2400` seconds / 40 minutes of new passage-based audio and do not rely on reuse. Those channels are excluded from back-half reuse so Bible/Buddhist passage content is not mixed with unrelated previous chapters.
-- Final video render repeats the rendered base block to about 2 hours, normally 3 repeats for a 40 minute block. YouTube descriptions should keep the base-block timestamp timeline; do not list repeated timestamps for the second/third pass.
+- During the trial period, final video repeat is disabled by default, so render workers upload the rendered base block only. The repeat feature remains available behind an app setting for later testing.
 - If no similar back-half reuse candidates exist on non-scripture channels, render proceeds with the uploaded new tracks instead of blocking. Do not keep making unrelated songs just to force reuse.
 - Every helper audio upload retries up to 3 times. If a track still fails, the helper posts a Slack warning, continues uploading the rest of the batch, and stops before render/publish. Re-download or re-export only the failed source files, upload them again, then render/publish after the full intended track set is present.
 - After every successful upload, use the returned JSON as the receipt: confirm `track.id`, `track.status`, and `duration_seconds`. The duration must be close to the actual local audio length.
@@ -438,7 +438,7 @@ Generate enough material before publishing:
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and publishing a Playlist Release through the AI Music app. For non-scripture channels, create roughly 15 minutes of new audio; the app will try to extend the base block to about 40 minutes through same-channel similar-genre reuse, then repeat the rendered base block to about 2 hours.
+You are creating and publishing a Playlist Release through the AI Music app. For non-scripture channels, create roughly 15 minutes of new audio; the app will try to extend the base block to about 40 minutes through same-channel similar-genre reuse. During the trial period, final video repeat is disabled.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
