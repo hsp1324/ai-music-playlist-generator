@@ -35,6 +35,7 @@ Use this profile only after channel selection returns `Storylight OST`.
 ## Loop Video
 
 - Use Dreamina/Seedance or Gemini only for the moving clip.
+- Storylight OST must have an uploaded provider-generated loop MP4 before final render. Do not use `--allow-still-image-video`, `--video-render-source-mode still_image`, or a cover-only final render for this channel unless the human explicitly names this exact release and asks for a still-image exception.
 - For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - The loop video should animate the selected cover concept with visible playful game/anime motion: cabinet light pulses, pixel sparkle, floating item icons, UI-like magical glows, bouncing props, lantern shimmer, shop lights, flag movement, toy-like particles, confetti, leaves, water shimmer, or soft character/mascot idle motion when appropriate.

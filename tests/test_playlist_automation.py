@@ -2451,7 +2451,7 @@ def test_render_worker_claim_prioritizes_resolution_by_worker_profile(tmp_path) 
             json={
                 "worker_id": "desktop-render",
                 "hostname": "home-desktop",
-                "capabilities": {"worker_profile": "desktop", "max_render_height": 1440},
+                "capabilities": {"worker_profile": "desktop", "max_render_height": 1440, "still_image_video_fps": 30},
             },
         )
         assert desktop_claim.status_code == 200
@@ -3514,6 +3514,65 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
             assert job.payload_json["video_spectrum_overlay_style"] == "bars"
             assert job.payload_json["video_render_source_mode"] == "still_image"
             assert job.payload_json["video_render_resolution"] == "2k"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_storylight_video_render_rejects_still_image_source(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        playlist_dir = settings.playlists_dir
+        track_dir = settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "storylight-audio.mp3"
+        cover_path = playlist_dir / "storylight-cover.png"
+        track_path = track_dir / "storylight-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "blue").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Storylight Track",
+                prompt="happy game bgm",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "happy game bgm"},
+            )
+            playlist = Playlist(
+                title="Storylight Render",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "Storylight OST",
+                    "workflow_state": "audio_ready",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            db.commit()
+            playlist_id = playlist.id
+
+        response = client.post(
+            f"/api/playlists/{playlist_id}/video/render",
+            json={
+                "actor": "test-suite",
+                "allow_still_image_fallback": True,
+                "video_render_source_mode": "still_image",
+            },
+        )
+
+        assert response.status_code == 400
+        assert "Storylight OST requires an uploaded loop video" in response.json()["detail"]
     finally:
         clear_isolated_client_env()
 

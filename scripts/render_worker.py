@@ -778,6 +778,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "worker_profile": worker_profile,
                 "max_render_height": max_render_height,
                 "prefer_no_lyrics": prefer_no_lyrics,
+                "still_image_video_fps": 30,
                 "faster_whisper": supports_whisper_alignment,
                 "video_lyrics_alignment_mode": "whisper" if supports_whisper_alignment else "timeline",
                 "lyrics_alignment_modes": lyrics_alignment_modes,

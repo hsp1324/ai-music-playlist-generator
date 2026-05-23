@@ -103,6 +103,7 @@ class Settings(BaseSettings):
     )
     youtube_lyrics_captions_translate: bool = True
     youtube_lyrics_captions_translation_timeout_seconds: int = 900
+    youtube_api_timeout_seconds: int = 120
     youtube_adopt_existing_upload_on_retry: bool = True
     youtube_adopt_existing_upload_max_age_hours: int = 72
 

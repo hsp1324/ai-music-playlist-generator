@@ -31,6 +31,7 @@ from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
     is_cinematic_pulse_release,
     is_religious_no_spectrum_release,
+    is_storylight_ost_release,
     release_has_singable_lyrics,
     release_vocal_metadata,
     resolve_video_lyrics_overlay_style,
@@ -327,6 +328,23 @@ def _job_render_resolution(job: Job, playlist: Playlist) -> str:
     return resolution
 
 
+def _job_will_render_still_image(job: Job, playlist: Playlist) -> bool:
+    meta = dict(playlist.metadata_json or {})
+    payload = job.payload_json or {}
+    source_mode = _normalize_render_source_mode(
+        payload.get("video_render_source_mode")
+        or meta.get("video_render_source_mode")
+        or "auto"
+    )
+    if is_cinematic_pulse_release(meta):
+        return True
+    if source_mode == "still_image":
+        return True
+    loop_video_path = Path(str(meta.get("loop_video_path") or "")) if meta.get("loop_video_path") else None
+    has_loop_video = bool(loop_video_path and loop_video_path.exists())
+    return bool(source_mode == "auto" and not has_loop_video and payload.get("allow_still_image_fallback"))
+
+
 def _worker_profile(capabilities: dict[str, Any], worker_id: str, hostname: str) -> str:
     explicit = str(capabilities.get("worker_profile") or capabilities.get("device_profile") or "").strip().lower()
     if explicit:
@@ -475,6 +493,13 @@ def _worker_supports_cjk_lyric_overlay(capabilities: dict[str, Any]) -> bool:
     return False
 
 
+def _worker_supports_smooth_still_image_render(capabilities: dict[str, Any]) -> bool:
+    try:
+        return float(capabilities.get("still_image_video_fps") or 0) >= 30
+    except (TypeError, ValueError):
+        return False
+
+
 def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) -> int:
     timeout_seconds = max(int(services.settings.render_worker_claim_timeout_seconds or 0), 60)
     cutoff = _utcnow() - timedelta(seconds=timeout_seconds)
@@ -559,6 +584,8 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     is_cinematic_pulse = is_cinematic_pulse_release(meta)
     if is_cinematic_pulse:
         source_mode = "still_image"
+    if is_storylight_ost_release(meta) and source_mode == "still_image":
+        raise HTTPException(status_code=409, detail="Storylight OST requires an uploaded loop video.")
     if source_mode == "still_image":
         allow_still_image_fallback = True
         has_loop_video = False
@@ -813,6 +840,10 @@ def claim_render_job(
     claimable_jobs = []
     for job in candidate_jobs:
         if job.playlist is None:
+            continue
+        if _job_will_render_still_image(job, job.playlist) and not _worker_supports_smooth_still_image_render(
+            payload.capabilities or {}
+        ):
             continue
         requires_whisper = _job_requires_whisper_lyric_alignment(job, job.playlist, services)
         has_cjk_lyrics = _job_has_cjk_lyrics(job, job.playlist, services)

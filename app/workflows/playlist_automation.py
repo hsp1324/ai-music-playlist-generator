@@ -30,6 +30,7 @@ from app.utils.video_render_policy import (
     apply_release_vocal_metadata,
     apply_video_spectrum_channel_policy,
     is_cinematic_pulse_release,
+    is_storylight_ost_release,
     release_vocal_metadata,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
@@ -2535,6 +2536,8 @@ def queue_workspace_video_render(
         if render_resolution == "720p":
             render_resolution = "2k"
         allow_still_image_fallback = True
+    if is_storylight_ost_release(meta) and source_mode == "still_image":
+        raise ValueError("Storylight OST requires an uploaded loop video; still-image video render is not allowed.")
 
     loop_video_path = str(meta.get("loop_video_path") or "").strip()
     needs_loop_video = source_mode != "still_image" and not allow_still_image_fallback

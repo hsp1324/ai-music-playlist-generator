@@ -303,6 +303,19 @@ class BackgroundJobWorker:
                         job.finished_at = now
                         result["interrupted_worker_resolution"] = "already_uploaded"
                         counts["completed_uploads"] += 1
+                        playlist.status = PlaylistStatus.uploaded
+                        meta = dict(playlist.metadata_json or {})
+                        meta["workflow_state"] = "uploaded"
+                        cleanup = self._delete_uploaded_video_file(playlist.output_video_path)
+                        if cleanup["deleted"]:
+                            playlist.output_video_path = None
+                            meta["local_video_deleted_after_youtube_upload"] = cleanup["path"]
+                            meta["local_video_deleted_at"] = now.isoformat()
+                            meta.pop("local_video_cleanup_error", None)
+                        elif cleanup.get("error"):
+                            meta["local_video_cleanup_error"] = cleanup["error"]
+                        playlist.metadata_json = meta
+                        db.add(playlist)
                     else:
                         message = (
                             "Background YouTube upload was interrupted before completion. "
@@ -498,8 +511,7 @@ class BackgroundJobWorker:
         db.add(playlist)
         db.add(job)
         db.commit()
-        db.refresh(playlist)
-        return dict(playlist.metadata_json or {})
+        return dict(meta)
 
     def _run_loop(
         self,

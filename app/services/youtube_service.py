@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+import google_auth_httplib2
+import httplib2
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
@@ -49,6 +51,24 @@ class YouTubeUploadResult:
 class YouTubeService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+
+    def _build_youtube_client(self, credentials: Credentials) -> Any:
+        timeout = max(float(self.settings.youtube_api_timeout_seconds or 0), 1.0)
+        raw_http = httplib2.Http(timeout=timeout)
+        try:
+            raw_http.redirect_codes = raw_http.redirect_codes - {308}
+        except AttributeError:
+            pass
+        http = google_auth_httplib2.AuthorizedHttp(
+            credentials,
+            http=raw_http,
+        )
+        return build(
+            YOUTUBE_API_SERVICE_NAME,
+            YOUTUBE_API_VERSION,
+            http=http,
+            cache_discovery=False,
+        )
 
     def get_status(self) -> dict[str, Any]:
         configured = bool(self.settings.youtube_client_secrets_path) and Path(
@@ -215,7 +235,7 @@ class YouTubeService:
 
     def list_channel_uploads(self, *, channel_id: str, max_results: int = 20) -> list[dict[str, Any]]:
         credentials = self._load_credentials(youtube_channel_id=channel_id)
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
         channel_response = youtube.channels().list(part="snippet,contentDetails", mine=True).execute()
         channel_items = channel_response.get("items") or []
         if not channel_items:
@@ -341,7 +361,7 @@ class YouTubeService:
         if not normalized_video_id:
             raise ValueError("YouTube video id is required.")
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
         youtube.videos().delete(id=normalized_video_id).execute()
         return {"id": normalized_video_id, "deleted": True}
 
@@ -358,7 +378,7 @@ class YouTubeService:
             raise ValueError("YouTube playlist title is required.")
 
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
 
         request = youtube.playlists().list(part="snippet,status", mine=True, maxResults=50)
         while request is not None:
@@ -401,7 +421,7 @@ class YouTubeService:
             raise ValueError("YouTube playlist id and video id are required.")
 
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
 
         existing = youtube.playlistItems().list(
             part="id,contentDetails",
@@ -487,7 +507,7 @@ class YouTubeService:
         default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
     ) -> dict[str, Any]:
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
         response = youtube.videos().list(part="snippet,localizations", id=video_id).execute()
         items = response.get("items") or []
         if not items:
@@ -553,7 +573,7 @@ class YouTubeService:
         if not playlist.output_video_path:
             raise ValueError("Playlist output_video_path is missing.")
 
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
         default_language = normalize_youtube_language(default_language)
         title = sanitize_youtube_copy(title)[:100]
         description = sanitize_youtube_copy(description)
@@ -671,7 +691,7 @@ class YouTubeService:
             raise FileNotFoundError(f"Caption file does not exist: {path}")
 
         credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
         for caption in self._list_video_captions(youtube, normalized_video_id):
             snippet = caption.get("snippet") or {}
             if str(snippet.get("language") or "").strip().lower() != normalized_language.lower():
@@ -902,7 +922,7 @@ class YouTubeService:
         }
 
     def _fetch_authenticated_channel(self, credentials: Credentials) -> dict[str, Any]:
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube = self._build_youtube_client(credentials)
         response = youtube.channels().list(part="snippet", mine=True).execute()
         items = response.get("items") or []
         if not items:

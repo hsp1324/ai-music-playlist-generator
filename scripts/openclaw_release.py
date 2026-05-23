@@ -1510,6 +1510,15 @@ def is_bulsong_channel_title(value: str | None) -> bool:
     return title.lower() in aliases
 
 
+def is_storylight_channel_title(value: str | None) -> bool:
+    title = str(value or "").strip()
+    if not title:
+        return False
+    aliases = {STORYLIGHT_YOUTUBE_CHANNEL_TITLE.lower()}
+    aliases.update(alias.lower() for alias in CHANNEL_TITLE_ALIASES.get(STORYLIGHT_YOUTUBE_CHANNEL_TITLE, ()))
+    return title.lower() in aliases
+
+
 def release_youtube_channel_title(release: dict[str, Any], fallback: str = "") -> str:
     meta = release.get("metadata_json") if isinstance(release.get("metadata_json"), dict) else {}
     return str(
@@ -1520,6 +1529,21 @@ def release_youtube_channel_title(release: dict[str, Any], fallback: str = "") -
         or fallback
         or ""
     ).strip()
+
+
+def require_video_render_source_allowed(
+    *,
+    release: dict[str, Any],
+    channel_title: str,
+    args: argparse.Namespace,
+) -> None:
+    render_source_mode = str(getattr(args, "video_render_source_mode", "auto") or "auto").strip().lower()
+    still_image_requested = bool(getattr(args, "allow_still_image_video", False) or render_source_mode == "still_image")
+    if still_image_requested and is_storylight_channel_title(release_youtube_channel_title(release, fallback=channel_title)):
+        raise RuntimeError(
+            "Storylight OST requires a provider-generated loop video. "
+            "Upload the loop video first and render with --video-render-source-mode loop_video or auto."
+        )
 
 
 def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
@@ -2124,6 +2148,11 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "note": "Auto-approved cover for private playlist publishing.",
         },
     )
+    require_video_render_source_allowed(
+        release=release,
+        channel_title=release_channel_title,
+        args=args,
+    )
     release = request_json(
         client,
         "POST",
@@ -2448,6 +2477,11 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "note": "Auto-approved cover for private single publishing.",
         },
     )
+    require_video_render_source_allowed(
+        release=release,
+        channel_title=release_channel_title,
+        args=args,
+    )
     release = request_json(
         client,
         "POST",
@@ -2719,6 +2753,11 @@ def approve_cover(client: httpx.Client, args: argparse.Namespace) -> dict[str, A
 
 def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    require_video_render_source_allowed(
+        release=release,
+        channel_title=str(getattr(args, "youtube_channel_title", "") or ""),
+        args=args,
+    )
     release = request_json(
         client,
         "POST",

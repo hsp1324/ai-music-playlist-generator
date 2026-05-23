@@ -7,6 +7,7 @@ from app.utils.lyric_subtitles import lyric_lines_from_text
 
 
 CINEMATIC_PULSE_CHANNEL_TITLE = "cinematic pulse"
+STORYLIGHT_OST_CHANNEL_TITLE = "storylight ost"
 LOW_MOTION_SPECTRUM_CHANNEL_TITLES = {
     "불송",
     "the new verse",
@@ -285,6 +286,10 @@ def apply_release_vocal_metadata(
 
 def is_cinematic_pulse_release(meta: dict[str, Any]) -> bool:
     return CINEMATIC_PULSE_CHANNEL_TITLE in _release_channel_titles(meta)
+
+
+def is_storylight_ost_release(meta: dict[str, Any]) -> bool:
+    return STORYLIGHT_OST_CHANNEL_TITLE in _release_channel_titles(meta)
 
 
 def is_bulsong_release(meta: dict[str, Any]) -> bool:
