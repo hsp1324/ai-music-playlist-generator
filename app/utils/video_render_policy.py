@@ -370,29 +370,13 @@ def _stable_lyrics_style_choice(meta: dict[str, Any], *, title: str = "") -> str
 def default_video_lyrics_overlay_style(meta: dict[str, Any], *, title: str = "") -> str:
     if is_bulsong_release(meta):
         return "center_breath_serif"
-    titles = _release_channel_titles(meta)
-    if titles & LYRIC_EDITORIAL_CHANNEL_TITLES:
-        return "editorial_lower_left"
-    if titles & LYRIC_SOFT_CHANNEL_TITLES:
-        return "soft_bottom_fade"
-
-    haystack = _lyrics_style_haystack(meta, title=title)
-    editorial_score = sum(1 for hint in LYRIC_EDITORIAL_TEXT_HINTS if hint in haystack)
-    soft_score = sum(1 for hint in LYRIC_SOFT_TEXT_HINTS if hint in haystack)
-    if editorial_score > soft_score:
-        return "editorial_lower_left"
-    if soft_score > editorial_score:
-        return "soft_bottom_fade"
-    return _stable_lyrics_style_choice(meta, title=title)
+    return "editorial_lower_left"
 
 
 def resolve_video_lyrics_overlay_style(value: Any, meta: dict[str, Any], *, title: str = "") -> str:
-    style = normalize_video_lyrics_overlay_style(value)
-    if style == "auto":
-        return default_video_lyrics_overlay_style(meta, title=title)
     if is_bulsong_release(meta):
         return "center_breath_serif"
-    return style
+    return "editorial_lower_left"
 
 
 def track_dicts_have_singable_lyrics(tracks: list[dict[str, Any]]) -> bool:
