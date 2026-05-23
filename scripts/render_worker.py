@@ -18,6 +18,7 @@ import socket
 import subprocess
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -128,6 +129,25 @@ def detect_cjk_lyric_font() -> str:
             family = output.split("|", 1)[0].split(",", 1)[0].strip()
             return family or candidate
     return ""
+
+
+def summarize_lyric_alignment(cues: list[dict[str, Any]]) -> str:
+    if not cues:
+        return ""
+    counts = Counter(str(cue.get("alignment") or "unknown") for cue in cues)
+    coverages = [
+        float(cue.get("alignment_match_coverage"))
+        for cue in cues
+        if isinstance(cue.get("alignment_match_coverage"), (int, float))
+    ]
+    parts = [
+        f"direct={counts.get('faster-whisper', 0)}",
+        f"global={counts.get('faster-whisper-global', 0)}",
+        f"interpolated={counts.get('faster-whisper-interpolated', 0)}",
+    ]
+    if coverages:
+        parts.append(f"avg_match_coverage={sum(coverages) / len(coverages):.2f}")
+    return ", ".join(parts)
 
 
 def normalize_api_base(value: str | None) -> str:
@@ -585,7 +605,7 @@ def render_job(
                     audio_path=audio_path,
                     model_size=alignment_model,
                     language=str(render.get("video_lyrics_alignment_language") or "").strip() or None,
-                    min_score=float(render.get("video_lyrics_alignment_min_score") or 0.34),
+                    min_score=float(render.get("video_lyrics_alignment_min_score") or 0.30),
                     max_end_seconds=total_duration_seconds,
                 )
             except Exception as exc:  # noqa: BLE001
@@ -599,6 +619,9 @@ def render_job(
                     f"Built {len(lyric_cues)} aligned lyric cues with {alignment_model} in {alignment_elapsed:.1f}s.",
                     flush=True,
                 )
+                alignment_summary = summarize_lyric_alignment(list(lyric_cues))
+                if alignment_summary:
+                    print(f"Lyric alignment summary: {alignment_summary}.", flush=True)
                 if strict_whisper and not lyric_cues:
                     raise RuntimeError("faster-whisper lyric alignment produced no cues.")
         if not lyric_cues and not strict_whisper:

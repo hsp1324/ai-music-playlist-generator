@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import re
+import unicodedata
+from bisect import bisect_left
+from dataclasses import dataclass
 from difflib import SequenceMatcher
 from functools import lru_cache
 from pathlib import Path
@@ -15,10 +18,23 @@ INSTRUMENTAL_HINT_RE = re.compile(
     r"^\s*(?:instrumental|instrumental only|no vocals?|without lyrics|interlude|intro|outro)\s*$",
     re.IGNORECASE,
 )
-LYRIC_TOKEN_RE = re.compile(
-    r"[a-z0-9]+(?:'[a-z0-9]+)?|[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]",
-    re.IGNORECASE,
-)
+_DIRECT_MATCH = "faster-whisper"
+_GLOBAL_MATCH = "faster-whisper-global"
+_INTERPOLATED_MATCH = "faster-whisper-interpolated"
+_DIAG = 1
+_SKIP_LYRIC = 2
+_SKIP_WORD = 3
+_LYRIC_GAP_PENALTY = 0.62
+_WORD_GAP_PENALTY = 0.28
+_MISMATCH_SCORE = -0.85
+_MAX_INTERPOLATED_SECONDS_PER_TOKEN = 3.2
+
+
+@dataclass(frozen=True)
+class _TokenMatch:
+    lyric_index: int
+    word_index: int
+    similarity: float
 
 
 def lyric_lines_from_text(lyrics: str) -> list[str]:
@@ -114,7 +130,7 @@ def build_word_aligned_line_lyric_cues(
     audio_path: str | Path,
     model_size: str = "tiny",
     language: str | None = None,
-    min_score: float = 0.34,
+    min_score: float = 0.30,
     max_end_seconds: float | None = None,
 ) -> list[dict[str, Any]]:
     """Build line lyric cues by aligning stored lyrics to ASR word timestamps.
@@ -235,25 +251,99 @@ def _align_lines_to_words(
     if not lines or not words:
         return cues
 
-    tokens = [str(word.get("token") or "") for word in words]
-    cursor = 0
-    for line_index, line in enumerate(lines, start=1):
+    word_tokens = [str(word.get("token") or "") for word in words]
+    line_ranges: list[tuple[int, int] | None] = []
+    lyric_tokens: list[str] = []
+    for line in lines:
         line_tokens = _tokens_from_text(line)
         if not line_tokens:
+            line_ranges.append(None)
             continue
-        match = _best_line_window(line_tokens, tokens, cursor)
-        if not match or match["score"] < min_score:
+        start_index = len(lyric_tokens)
+        lyric_tokens.extend(line_tokens)
+        line_ranges.append((start_index, len(lyric_tokens)))
+    if not lyric_tokens or not word_tokens:
+        return cues
+
+    matches = _global_token_alignment(lyric_tokens, word_tokens)
+    if not matches:
+        return cues
+    match_by_lyric = {match.lyric_index: match for match in matches}
+    matched_lyric_indexes = sorted(match_by_lyric)
+    track_match_ratio = len(matches) / max(len(lyric_tokens), 1)
+    allow_interpolation = len(matches) >= 2 and track_match_ratio >= max(0.10, min_score * 0.35)
+
+    for line_index, (line, token_range) in enumerate(zip(lines, line_ranges), start=1):
+        if token_range is None:
             continue
-        start_index = int(match["start"])
-        end_index = int(match["end"])
-        if end_index < start_index or start_index >= len(words):
+        start_token, end_token_exclusive = token_range
+        line_token_count = max(end_token_exclusive - start_token, 1)
+        line_matches = [
+            match_by_lyric[token_index]
+            for token_index in range(start_token, end_token_exclusive)
+            if token_index in match_by_lyric
+        ]
+        match_coverage = len(line_matches) / line_token_count
+        avg_similarity = (
+            sum(match.similarity for match in line_matches) / len(line_matches)
+            if line_matches
+            else 0.0
+        )
+        bounds: tuple[float, float] | None = None
+        alignment_kind = _DIRECT_MATCH
+        strong_direct_match = match_coverage >= min_score and (len(line_matches) >= 2 or line_token_count <= 2)
+
+        if strong_direct_match:
+            if allow_interpolation:
+                bounds = _bounds_from_lyric_span(
+                    start_token,
+                    end_token_exclusive - 1,
+                    words,
+                    match_by_lyric,
+                    matched_lyric_indexes,
+                )
+            if bounds is None:
+                word_indexes = [match.word_index for match in line_matches]
+                bounds = _bounds_from_word_indexes(words, word_indexes)
+        if bounds is None and allow_interpolation:
+            span_match_by_lyric = match_by_lyric
+            span_matched_lyric_indexes = matched_lyric_indexes
+            if line_matches and not strong_direct_match and line_token_count > 2:
+                span_match_by_lyric = {
+                    index: match
+                    for index, match in match_by_lyric.items()
+                    if not start_token <= index < end_token_exclusive
+                }
+                span_matched_lyric_indexes = [
+                    index
+                    for index in matched_lyric_indexes
+                    if not start_token <= index < end_token_exclusive
+                ]
+            bounds = _bounds_from_lyric_span(
+                start_token,
+                end_token_exclusive - 1,
+                words,
+                span_match_by_lyric,
+                span_matched_lyric_indexes,
+            )
+            alignment_kind = _GLOBAL_MATCH if line_matches and strong_direct_match else _INTERPOLATED_MATCH
+        if bounds is None and line_matches and match_coverage >= max(0.18, min_score * 0.55):
+            word_indexes = [match.word_index for match in line_matches]
+            bounds = _bounds_from_word_indexes(words, word_indexes)
+            alignment_kind = _GLOBAL_MATCH
+        if bounds is None:
             continue
-        start = max(_positive_float(words[start_index].get("start")) - 0.12, track_start)
-        end = min(_positive_float(words[min(end_index, len(words) - 1)].get("end")) + 0.25, track_end)
-        if end - start < 0.55:
-            end = min(start + 0.9, track_end)
+        start, end = _cue_bounds_with_padding(
+            bounds[0],
+            bounds[1],
+            track_start=track_start,
+            track_end=track_end,
+        )
         if end <= start:
             continue
+        if strong_direct_match:
+            alignment_kind = _DIRECT_MATCH
+        alignment_score = (match_coverage * 0.75) + (avg_similarity * 0.25)
         cues.append(
             {
                 "start": round(start, 3),
@@ -262,42 +352,192 @@ def _align_lines_to_words(
                 "track_id": track_id,
                 "track_title": track_title,
                 "line_index": line_index,
-                "alignment": "faster-whisper",
-                "alignment_score": round(float(match["score"]), 3),
+                "alignment": alignment_kind,
+                "alignment_score": round(alignment_score, 3),
+                "alignment_match_coverage": round(match_coverage, 3),
+                "alignment_matched_tokens": len(line_matches),
+                "alignment_total_tokens": line_token_count,
             }
         )
-        cursor = max(end_index + 1, cursor)
     return _smooth_overlaps(cues)
 
 
-def _best_line_window(line_tokens: list[str], tokens: list[str], cursor: int) -> dict[str, float | int] | None:
-    if not line_tokens or not tokens:
-        return None
-    start_at = max(cursor - 2, 0)
-    line_len = len(line_tokens)
-    min_window = max(1, min(line_len, int(line_len * 0.45)))
-    max_window = min(len(tokens), max(line_len * 2 + 4, line_len + 8, 6))
-    best: dict[str, float | int] | None = None
-    for start in range(start_at, len(tokens)):
-        if start < cursor - 2:
-            continue
-        if best and start > cursor + max(60, line_len * 8) and float(best["score"]) >= 0.5:
+def _global_token_alignment(lyric_tokens: list[str], word_tokens: list[str]) -> list[_TokenMatch]:
+    if not lyric_tokens or not word_tokens:
+        return []
+
+    word_count = len(word_tokens)
+    previous = [0.0] * (word_count + 1)
+    directions = [bytearray(word_count + 1) for _ in range(len(lyric_tokens) + 1)]
+    for word_index in range(1, word_count + 1):
+        previous[word_index] = previous[word_index - 1] - _WORD_GAP_PENALTY
+        directions[0][word_index] = _SKIP_WORD
+
+    for lyric_index, lyric_token in enumerate(lyric_tokens, start=1):
+        current = [0.0] * (word_count + 1)
+        current[0] = previous[0] - _LYRIC_GAP_PENALTY
+        directions[lyric_index][0] = _SKIP_LYRIC
+        for word_index, word_token in enumerate(word_tokens, start=1):
+            diagonal = previous[word_index - 1] + _token_alignment_score(lyric_token, word_token)
+            skip_lyric = previous[word_index] - _LYRIC_GAP_PENALTY
+            skip_word = current[word_index - 1] - _WORD_GAP_PENALTY
+            if diagonal >= skip_lyric and diagonal >= skip_word:
+                current[word_index] = diagonal
+                directions[lyric_index][word_index] = _DIAG
+            elif skip_lyric >= skip_word:
+                current[word_index] = skip_lyric
+                directions[lyric_index][word_index] = _SKIP_LYRIC
+            else:
+                current[word_index] = skip_word
+                directions[lyric_index][word_index] = _SKIP_WORD
+        previous = current
+
+    matches: list[_TokenMatch] = []
+    lyric_index = len(lyric_tokens)
+    word_index = word_count
+    while lyric_index > 0 or word_index > 0:
+        direction = directions[lyric_index][word_index]
+        if direction == _DIAG and lyric_index > 0 and word_index > 0:
+            similarity = _token_similarity(lyric_tokens[lyric_index - 1], word_tokens[word_index - 1])
+            if similarity > 0:
+                matches.append(_TokenMatch(lyric_index - 1, word_index - 1, similarity))
+            lyric_index -= 1
+            word_index -= 1
+        elif direction == _SKIP_WORD and word_index > 0:
+            word_index -= 1
+        elif lyric_index > 0:
+            lyric_index -= 1
+        else:
             break
-        for end_exclusive in range(start + min_window, min(len(tokens), start + max_window) + 1):
-            window = tokens[start:end_exclusive]
-            matcher = SequenceMatcher(None, line_tokens, window, autojunk=False)
-            blocks = matcher.get_matching_blocks()
-            matched = sum(block.size for block in blocks)
-            if matched <= 0:
-                continue
-            line_coverage = matched / max(len(line_tokens), 1)
-            window_coverage = matched / max(len(window), 1)
-            score = (matcher.ratio() * 0.55) + (line_coverage * 0.35) + (window_coverage * 0.10)
-            if start < cursor:
-                score -= 0.08
-            if best is None or score > float(best["score"]):
-                best = {"start": start, "end": end_exclusive - 1, "score": score}
-    return best
+    matches.reverse()
+    return matches
+
+
+def _token_alignment_score(lyric_token: str, word_token: str) -> float:
+    similarity = _token_similarity(lyric_token, word_token)
+    if similarity >= 0.999:
+        return 2.0
+    if similarity >= 0.82:
+        return similarity * 1.1
+    return _MISMATCH_SCORE
+
+
+def _token_similarity(left: str, right: str) -> float:
+    if not left or not right:
+        return 0.0
+    if left == right:
+        return 1.0
+    if len(left) < 4 or len(right) < 4:
+        return 0.0
+    if not (_is_ascii_word_token(left) and _is_ascii_word_token(right)):
+        return 0.0
+    ratio = SequenceMatcher(None, left, right, autojunk=False).ratio()
+    return ratio if ratio >= 0.82 else 0.0
+
+
+def _bounds_from_word_indexes(words: list[dict[str, Any]], word_indexes: list[int]) -> tuple[float, float] | None:
+    if not word_indexes:
+        return None
+    first_word_index = max(min(word_indexes), 0)
+    last_word_index = min(max(word_indexes), len(words) - 1)
+    start = _positive_float(words[first_word_index].get("start"))
+    end = _positive_float(words[last_word_index].get("end"))
+    if end <= start:
+        center = _word_center(words[first_word_index])
+        return (center, center)
+    return (start, end)
+
+
+def _bounds_from_lyric_span(
+    start_lyric_index: int,
+    end_lyric_index: int,
+    words: list[dict[str, Any]],
+    match_by_lyric: dict[int, _TokenMatch],
+    matched_lyric_indexes: list[int],
+) -> tuple[float, float] | None:
+    start = _time_for_lyric_token(
+        start_lyric_index,
+        words,
+        match_by_lyric,
+        matched_lyric_indexes,
+        boundary="start",
+    )
+    end = _time_for_lyric_token(
+        end_lyric_index,
+        words,
+        match_by_lyric,
+        matched_lyric_indexes,
+        boundary="end",
+    )
+    if start is None or end is None:
+        return None
+    if end < start:
+        midpoint = (start + end) / 2
+        return (midpoint, midpoint)
+    return (start, end)
+
+
+def _time_for_lyric_token(
+    lyric_index: int,
+    words: list[dict[str, Any]],
+    match_by_lyric: dict[int, _TokenMatch],
+    matched_lyric_indexes: list[int],
+    *,
+    boundary: str,
+) -> float | None:
+    match = match_by_lyric.get(lyric_index)
+    if match is not None:
+        word = words[match.word_index]
+        if boundary == "start":
+            return _positive_float(word.get("start"))
+        if boundary == "end":
+            return _positive_float(word.get("end"))
+        return _word_center(word)
+
+    position = bisect_left(matched_lyric_indexes, lyric_index)
+    if position <= 0 or position >= len(matched_lyric_indexes):
+        return None
+    previous_index = matched_lyric_indexes[position - 1]
+    next_index = matched_lyric_indexes[position]
+    lyric_gap = next_index - previous_index
+    if lyric_gap <= 0:
+        return None
+    previous_time = _word_center(words[match_by_lyric[previous_index].word_index])
+    next_time = _word_center(words[match_by_lyric[next_index].word_index])
+    time_gap = next_time - previous_time
+    if time_gap <= 0:
+        return None
+    if time_gap / lyric_gap > _MAX_INTERPOLATED_SECONDS_PER_TOKEN:
+        return None
+    ratio = (lyric_index - previous_index) / lyric_gap
+    return previous_time + (time_gap * ratio)
+
+
+def _cue_bounds_with_padding(
+    start: float,
+    end: float,
+    *,
+    track_start: float,
+    track_end: float,
+) -> tuple[float, float]:
+    start = max(start - 0.12, track_start)
+    end = min(end + 0.25, track_end)
+    if end - start < 0.55:
+        midpoint = (start + end) / 2
+        half_duration = 0.45
+        start = max(midpoint - half_duration, track_start)
+        end = min(midpoint + half_duration, track_end)
+    if end - start < 0.45:
+        end = min(start + 0.75, track_end)
+    return start, end
+
+
+def _word_center(word: dict[str, Any]) -> float:
+    start = _positive_float(word.get("start"))
+    end = _positive_float(word.get("end"))
+    if end <= start:
+        return start
+    return (start + end) / 2
 
 
 def _smooth_overlaps(cues: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -326,7 +566,47 @@ def _dedupe_and_order_cues(cues: list[dict[str, Any]], *, max_end_seconds: float
 
 
 def _tokens_from_text(text: str) -> list[str]:
-    return [match.group(0).lower() for match in LYRIC_TOKEN_RE.finditer(str(text or ""))]
+    tokens: list[str] = []
+    current_word: list[str] = []
+
+    def flush_word() -> None:
+        if current_word:
+            tokens.append("".join(current_word))
+            current_word.clear()
+
+    normalized = unicodedata.normalize("NFKC", str(text or "")).lower()
+    for char in normalized:
+        if _is_cjk_kana_or_hangul(char):
+            flush_word()
+            tokens.append(char)
+            continue
+        for piece in unicodedata.normalize("NFKD", char):
+            if unicodedata.combining(piece):
+                continue
+            if _is_cjk_kana_or_hangul(piece):
+                flush_word()
+                tokens.append(piece)
+            elif piece.isascii() and piece.isalnum():
+                current_word.append(piece)
+            else:
+                flush_word()
+    flush_word()
+    return tokens
+
+
+def _is_cjk_kana_or_hangul(char: str) -> bool:
+    if not char:
+        return False
+    codepoint = ord(char)
+    return (
+        0x3040 <= codepoint <= 0x30FF
+        or 0x3400 <= codepoint <= 0x9FFF
+        or 0xAC00 <= codepoint <= 0xD7AF
+    )
+
+
+def _is_ascii_word_token(token: str) -> bool:
+    return bool(token) and all(char.isascii() and char.isalnum() for char in token)
 
 
 def _line_weight(line: str) -> float:

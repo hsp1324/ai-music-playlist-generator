@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     video_lyrics_alignment_mode: str = "whisper"
     video_lyrics_alignment_model: str = "tiny"
     video_lyrics_alignment_language: str = ""
-    video_lyrics_alignment_min_score: float = 0.34
+    video_lyrics_alignment_min_score: float = 0.30
     playlist_target_minutes: int = 40
     playlist_reuse_back_half_enabled: bool = True
     playlist_reuse_back_half_target_seconds: int = 60 * 60
