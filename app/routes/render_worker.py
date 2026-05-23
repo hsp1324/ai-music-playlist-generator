@@ -376,13 +376,15 @@ def _render_job_sort_key(
 ) -> tuple[int, int, datetime]:
     height = _render_resolution_height(_job_render_resolution(job, playlist))
     is_high_resolution = height >= 1080
-    lyrics_rank = 1 if prefer_no_lyrics and _job_release_has_singable_lyrics(job, playlist) else 0
+    has_singable_lyrics = _job_release_has_singable_lyrics(job, playlist)
+    is_no_lyrics_preferred = prefer_no_lyrics and not has_singable_lyrics
     created_at = job.created_at or _utcnow()
     if profile == "desktop":
-        return (lyrics_rank, 0 if is_high_resolution else 1, created_at)
+        return (0 if is_no_lyrics_preferred else 1, 0 if is_high_resolution else 1, created_at)
     if profile == "oracle":
-        return (lyrics_rank, 0 if not is_high_resolution else 1, created_at)
-    return (lyrics_rank, 0, created_at)
+        is_oracle_preferred = is_no_lyrics_preferred or not is_high_resolution
+        return (0 if is_oracle_preferred else 1, 0, created_at)
+    return (0 if is_no_lyrics_preferred else 1, 0, created_at)
 
 
 def _is_truthy(value: Any) -> bool:

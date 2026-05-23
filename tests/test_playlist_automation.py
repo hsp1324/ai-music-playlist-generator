@@ -2392,7 +2392,7 @@ def test_render_worker_claim_prioritizes_resolution_by_worker_profile(tmp_path) 
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
                     "loop_video_path": str(loop_path),
-                    "video_render_resolution": "720p",
+                    "video_render_resolution": "2k",
                     "video_render_source_mode": "loop_video",
                 },
             )
@@ -2526,7 +2526,7 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
                     "loop_video_path": str(loop_path),
-                    "video_render_resolution": "720p",
+                    "video_render_resolution": "2k",
                     "video_render_source_mode": "loop_video",
                 },
             )
@@ -2568,7 +2568,7 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
                 status=JobStatus.queued,
                 source="web:render-video",
                 playlist_id=vocal_playlist.id,
-                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                payload_json={"video_render_resolution": "2k", "video_render_source_mode": "loop_video"},
                 result_json={},
                 created_at=datetime.now(timezone.utc) - timedelta(minutes=5),
             )
@@ -2577,7 +2577,7 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
                 status=JobStatus.queued,
                 source="web:render-video",
                 playlist_id=instrumental_playlist.id,
-                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                payload_json={"video_render_resolution": "2k", "video_render_source_mode": "loop_video"},
                 result_json={},
                 created_at=datetime.now(timezone.utc),
             )
@@ -2602,6 +2602,145 @@ def test_render_worker_claim_can_prefer_no_lyrics_jobs(tmp_path) -> None:
         body = claim.json()
         assert body["job"]["id"] == instrumental_job_id
         assert body["job"]["title"] == "Newer Instrumental Release"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_oracle_render_worker_prefers_no_lyrics_or_720p_then_queue_order(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "or-priority-audio.mp3"
+        cover_path = playlist_dir / "or-priority-cover.png"
+        loop_path = playlist_dir / "or-priority-loop.mp4"
+        vocal_track_path = track_dir / "or-priority-vocal.mp3"
+        instrumental_track_path = track_dir / "or-priority-instrumental.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        vocal_track_path.write_bytes(b"fake-vocal-track")
+        instrumental_track_path.write_bytes(b"fake-instrumental-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            vocal_track = Track(
+                title="Vocal 720p Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(vocal_track_path),
+                metadata_json={"lyrics": "line one\nline two"},
+            )
+            instrumental_track = Track(
+                title="Instrumental 2k Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(instrumental_track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
+            vocal_720p = Playlist(
+                title="Older Vocal 720p Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            instrumental_2k = Playlist(
+                title="Newer Instrumental 2k Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "video_render_resolution": "2k",
+                    "video_render_source_mode": "loop_video",
+                },
+            )
+            db.add_all([vocal_track, instrumental_track, vocal_720p, instrumental_2k])
+            db.flush()
+            db.add_all(
+                [
+                    PlaylistItem(
+                        playlist_id=vocal_720p.id,
+                        track_id=vocal_track.id,
+                        order_index=1,
+                        included_duration_seconds=60,
+                    ),
+                    PlaylistItem(
+                        playlist_id=instrumental_2k.id,
+                        track_id=instrumental_track.id,
+                        order_index=1,
+                        included_duration_seconds=60,
+                    ),
+                ]
+            )
+            vocal_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=vocal_720p.id,
+                payload_json={
+                    "video_render_resolution": "720p",
+                    "video_render_source_mode": "loop_video",
+                    "video_lyrics_overlay_enabled": True,
+                    "video_lyrics_alignment_mode": "whisper",
+                },
+                result_json={},
+                created_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            )
+            instrumental_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=instrumental_2k.id,
+                payload_json={"video_render_resolution": "2k", "video_render_source_mode": "loop_video"},
+                result_json={},
+                created_at=datetime.now(timezone.utc),
+            )
+            db.add_all([vocal_job, instrumental_job])
+            db.commit()
+            vocal_job_id = vocal_job.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={
+                "worker_id": "oracle-render",
+                "hostname": "oracle-instance",
+                "capabilities": {
+                    "worker_profile": "oracle",
+                    "max_render_height": 720,
+                    "prefer_no_lyrics": True,
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["timeline", "whisper"],
+                },
+            },
+        )
+
+        assert claim.status_code == 200
+        body = claim.json()
+        assert body["job"]["id"] == vocal_job_id
+        assert body["job"]["title"] == "Older Vocal 720p Release"
+        assert body["job"]["render"]["video_lyrics_alignment_mode"] == "whisper"
     finally:
         clear_isolated_client_env()
 
@@ -2635,7 +2774,7 @@ def test_render_worker_claim_uses_channel_vocal_mode_for_priority(tmp_path) -> N
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
                     "loop_video_path": str(loop_path),
-                    "video_render_resolution": "720p",
+                    "video_render_resolution": "2k",
                     "video_render_source_mode": "loop_video",
                 },
             )
@@ -2651,7 +2790,7 @@ def test_render_worker_claim_uses_channel_vocal_mode_for_priority(tmp_path) -> N
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
                     "loop_video_path": str(loop_path),
-                    "video_render_resolution": "720p",
+                    "video_render_resolution": "2k",
                     "video_render_source_mode": "loop_video",
                 },
             )
@@ -2662,7 +2801,7 @@ def test_render_worker_claim_uses_channel_vocal_mode_for_priority(tmp_path) -> N
                 status=JobStatus.queued,
                 source="web:render-video",
                 playlist_id=vocal_playlist.id,
-                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                payload_json={"video_render_resolution": "2k", "video_render_source_mode": "loop_video"},
                 result_json={},
                 created_at=datetime.now(timezone.utc) - timedelta(minutes=5),
             )
@@ -2671,7 +2810,7 @@ def test_render_worker_claim_uses_channel_vocal_mode_for_priority(tmp_path) -> N
                 status=JobStatus.queued,
                 source="web:render-video",
                 playlist_id=instrumental_playlist.id,
-                payload_json={"video_render_resolution": "720p", "video_render_source_mode": "loop_video"},
+                payload_json={"video_render_resolution": "2k", "video_render_source_mode": "loop_video"},
                 result_json={},
                 created_at=datetime.now(timezone.utc),
             )
