@@ -658,7 +658,7 @@ class FFMpegPlaylistBuilder:
         concat_path.unlink(missing_ok=True)
         output_path.replace(source_path)
         try:
-            escaped = str(source_path).replace("\\", "\\\\").replace("'", "\\'")
+            escaped = str(source_path.resolve()).replace("'", "'\\''")
             concat_path.write_text("".join(f"file '{escaped}'\n" for _ in range(count)), encoding="utf-8")
             total_seconds = None
             try:

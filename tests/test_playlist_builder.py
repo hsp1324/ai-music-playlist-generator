@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+
 import pytest
 from PIL import Image, ImageDraw
 
@@ -147,9 +149,10 @@ def test_build_video_can_burn_line_lyric_subtitles(tmp_path, monkeypatch) -> Non
 
 
 def test_build_video_can_repeat_final_video_with_stream_copy(tmp_path, monkeypatch) -> None:
-    audio_path = tmp_path / "source.mp3"
-    cover_path = tmp_path / "cover.png"
-    output_path = tmp_path / "release.mp4"
+    monkeypatch.chdir(tmp_path)
+    audio_path = Path("source.mp3")
+    cover_path = Path("cover.png")
+    output_path = Path("job/release.mp4")
     audio_path.write_bytes(b"fake-audio")
     cover_path.write_bytes(b"fake-cover")
 
@@ -160,8 +163,12 @@ def test_build_video_can_repeat_final_video_with_stream_copy(tmp_path, monkeypat
         )
     )
     calls = []
+    concat_contents = []
 
     def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        if stage == "video_repeat_concat":
+            concat_path = Path(command[command.index("-i") + 1])
+            concat_contents.append(concat_path.read_text(encoding="utf-8"))
         calls.append(
             {
                 "command": command,
@@ -189,7 +196,8 @@ def test_build_video_can_repeat_final_video_with_stream_copy(tmp_path, monkeypat
     assert repeat_command[repeat_command.index("-f") + 1] == "concat"
     assert repeat_command[repeat_command.index("-c") + 1] == "copy"
     assert calls[1]["total_duration_seconds"] == 7200
-    assert not (tmp_path / "release-repeat-source-render.mp4").exists()
+    assert f"file '{tmp_path / 'job' / 'release-repeat-source-render.mp4'}'" in concat_contents[0]
+    assert not Path("job/release-repeat-source-render.mp4").exists()
 
 
 def test_final_video_repeat_is_disabled_by_default() -> None:
