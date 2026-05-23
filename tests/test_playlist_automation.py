@@ -1080,6 +1080,49 @@ def test_openclaw_backlog_scheduler_cooldown_blocks_unhandled_duplicate_finishab
         clear_isolated_client_env()
 
 
+def test_openclaw_backlog_scheduler_cooldown_blocks_same_finishable_release_update(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOFT", "title": "Soft Hour Radio"}],
+        }
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Ready Metadata Release",
+                status=PlaylistStatus.ready,
+                metadata_json={
+                    "workflow_state": "metadata_review",
+                    "youtube_channel_title": "Soft Hour Radio",
+                },
+            )
+            db.add(playlist)
+            db.commit()
+            initial_evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+            record_openclaw_backlog_scheduler_request(
+                storage_root=services.settings.storage_root,
+                result=initial_evaluation,
+            )
+            playlist.metadata_json = {**dict(playlist.metadata_json or {}), "note": "OpenClaw reported no change."}
+            db.add(playlist)
+            db.commit()
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is False
+        assert evaluation["reason"] == "backlog_request_cooldown"
+        assert evaluation["pending_reason"] == "finishable_releases"
+        assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_openclaw_backlog_scheduler_keeps_cooldown_after_openclaw_finishes_without_backlog_change(
     tmp_path,
 ) -> None:

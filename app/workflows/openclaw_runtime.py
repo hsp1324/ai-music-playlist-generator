@@ -143,14 +143,35 @@ def _channels_have_release_updated_after_request(
     summary: dict[str, Any],
     channel_titles: list[str],
     last_request_at: datetime | None,
+    scheduler_state: dict[str, Any] | None = None,
 ) -> bool:
     if not last_request_at:
         return False
+    previous_release_ids: set[str] = set()
+    last_result = scheduler_state.get("last_result") if isinstance(scheduler_state, dict) else None
+    last_summary = last_result.get("summary") if isinstance(last_result, dict) else None
+    if isinstance(last_summary, dict):
+        previous_channels = (
+            last_summary.get("channels") if isinstance(last_summary.get("channels"), dict) else {}
+        )
+        for title in channel_titles:
+            previous_payload = previous_channels.get(title) if isinstance(previous_channels, dict) else None
+            if not isinstance(previous_payload, dict):
+                continue
+            for release in previous_payload.get("releases") or []:
+                if not isinstance(release, dict):
+                    continue
+                release_id = str(release.get("id") or "").strip()
+                if release_id:
+                    previous_release_ids.add(release_id)
     channels = summary.get("channels") if isinstance(summary.get("channels"), dict) else {}
     for title in channel_titles:
         payload = channels.get(title) if isinstance(channels, dict) else None
         releases = payload.get("releases") if isinstance(payload, dict) else []
         for release in releases or []:
+            release_id = str((release or {}).get("id") or "").strip()
+            if previous_release_ids and release_id in previous_release_ids:
+                continue
             updated_at = _parse_datetime((release or {}).get("updated_at"))
             if updated_at and updated_at > last_request_at:
                 return True
@@ -757,6 +778,7 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             summary,
             pending_channels,
             last_request_at,
+            scheduler_state,
         ):
             return None
         return {
