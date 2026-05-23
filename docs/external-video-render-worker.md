@@ -33,6 +33,36 @@ sudo apt install -y ffmpeg fonts-noto-cjk
 
 `fonts-noto-cjk` is required on Linux/WSL workers that render Korean, Japanese, or Chinese lyric burn-in. Without a CJK-capable font, ASS subtitles can render as square placeholder glyphs even when Whisper timing is correct.
 
+For WSL desktop workers, also register the Windows Korean/Japanese fonts with fontconfig. This avoids missing-glyph boxes such as square/X placeholders in Japanese lyric overlays:
+
+```bash
+mkdir -p ~/.local/share/fonts/windows-korean ~/.local/share/fonts/windows-japanese
+cp -u /mnt/c/Windows/Fonts/malgun*.ttf ~/.local/share/fonts/windows-korean/ 2>/dev/null || true
+cp -u /mnt/c/Windows/Fonts/NotoSansKR-VF.ttf /mnt/c/Windows/Fonts/NotoSerifKR-VF.ttf ~/.local/share/fonts/windows-korean/ 2>/dev/null || true
+cp -u /mnt/c/Windows/Fonts/YuGoth*.ttc /mnt/c/Windows/Fonts/msgothic.ttc ~/.local/share/fonts/windows-japanese/ 2>/dev/null || true
+fc-cache -f ~/.local/share/fonts
+fc-match "Noto Sans KR"
+fc-match "Yu Gothic"
+fc-match "MS Gothic"
+```
+
+Expected behavior:
+
+- Korean lyric text should resolve to `Noto Sans KR` or `Malgun Gothic`.
+- Japanese lyric text should resolve to `Yu Gothic` or `MS Gothic`.
+- If Japanese fonts resolve to `DejaVu Sans`, Japanese lyrics can still show square/X missing-glyph placeholders. Install/register the Japanese fonts and restart the worker before claiming more Japanese lyric jobs.
+
+Font override environment variables are available for unusual hosts:
+
+```bash
+export AIMP_RENDER_WORKER_KOREAN_FONT="Noto Sans KR"
+export AIMP_RENDER_WORKER_JAPANESE_FONT="Yu Gothic"
+# Last-resort global override for every CJK lyric render:
+export AIMP_RENDER_WORKER_CJK_FONT="Noto Sans CJK JP"
+```
+
+The worker inspects the release lyrics before rendering. Kana text prefers Japanese font candidates first; Hangul text prefers Korean font candidates first. Already-rendered MP4s keep the old burned subtitles, so font fixes require re-rendering the affected release.
+
 Set the API URL and token:
 
 ```bash
@@ -143,7 +173,7 @@ If you deploy a new VM or change Nginx manually, keep this block.
 
 - Multiple render workers can run at the same time. Each worker claims only one queued video job at a time.
 - The main VM remains the only machine that uploads to YouTube.
-- OpenClaw should still call `scripts/openclaw-release render-video` after audio/cover/thumbnail/loop-video are ready. That creates the queued video job; render workers do the actual MP4 work. For vocal releases, OpenClaw should upload clean lyrics with the audio. The app auto-burns original-language line lyrics into the MP4 when singable lyrics are present and creates YouTube CC captions at publish time from the same saved lyrics, using faster-whisper line timing and Codex translations. 불송 uses the centered `center-breath-serif` burn-in style; other lyric releases use `soft-bottom-fade` by default unless `--lyrics-overlay-style editorial-lower-left` is explicitly better for that composition. Cinematic Pulse is the still-image high-resolution exception: OpenClaw queues it with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`, so no loop-video asset is required.
+- OpenClaw should still call `scripts/openclaw-release render-video` after audio/cover/thumbnail/loop-video are ready. That creates the queued video job; render workers do the actual MP4 work. For vocal releases, OpenClaw should upload clean lyrics with the audio. The app auto-burns original-language line lyrics into the MP4 when singable lyrics are present and creates YouTube CC captions at publish time from the same saved lyrics, using faster-whisper line timing and Codex translations. Lyric placement is channel policy: 불송 / The New Verse / Bulsong uses the centered `center-breath-serif` burn-in style; every other channel uses `editorial-lower-left` so lyrics do not collide with the spectrum overlay. Cinematic Pulse is the still-image high-resolution exception: OpenClaw queues it with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`, so no loop-video asset is required.
 - Still-image render jobs require updated render workers that advertise `still_image_video_fps: 30`. Older workers should not claim these jobs, because the previous still-image ffmpeg path produced a 2fps base stream and visibly choppy spectrum motion. After pulling a main-VM update that changes still-image rendering, restart every external render worker before queueing Cinematic Pulse replacements.
 - Keep external workers updated before letting them handle vocal/lyrics releases. Current workers advertise `faster_whisper` and `lyrics_alignment_modes` when the Python environment can import `faster_whisper`; the main app will not assign Whisper lyric burn-in jobs to older workers or workers missing that capability. CJK lyric jobs additionally require advertised CJK font support. If a worker only advertises timeline support, it can still claim instrumental/no-lyric renders.
 - Do not run `scripts/render-worker` on the main VM if the goal is to keep the main VM free from video rendering.
