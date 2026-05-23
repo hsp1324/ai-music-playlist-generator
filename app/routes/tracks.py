@@ -5,21 +5,24 @@ from urllib.parse import unquote, urlparse
 from pathlib import Path
 
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
 from app.models.enums import DecisionSource, DecisionValue, JobStatus, JobType, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist
 from app.models.track import Track
+from app.models.track_reuse import TrackReuseEvent
 from app.schemas.common import MessageResponse
 from app.schemas.track import (
     TrackCreateRequest,
     TrackDecisionRequest,
     TrackRatingRequest,
     TrackRead,
+    TrackReuseEventRead,
+    TrackReuseSummaryRead,
     TrackReturnToReviewRequest,
 )
 from app.services.registry import ServiceRegistry
@@ -425,6 +428,127 @@ def list_tracks(
             if str((track.metadata_json or {}).get("user_rating") or "") == user_rating
         ]
     return [TrackRead.model_validate(track) for track in tracks]
+
+
+def _safe_int(value: object) -> int:
+    try:
+        return max(int(value or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _track_reuse_event_rollup(db: Session) -> dict[str, dict[str, int]]:
+    rows = db.execute(
+        select(
+            TrackReuseEvent.track_id,
+            func.count(TrackReuseEvent.id),
+            func.coalesce(func.sum(TrackReuseEvent.reused_duration_seconds), 0),
+        ).group_by(TrackReuseEvent.track_id)
+    ).all()
+    return {
+        str(track_id): {
+            "count": _safe_int(count),
+            "seconds": _safe_int(seconds),
+        }
+        for track_id, count, seconds in rows
+        if track_id
+    }
+
+
+def _serialize_track_reuse_event(event: TrackReuseEvent) -> TrackReuseEventRead:
+    meta = dict(event.metadata_json or {})
+    return TrackReuseEventRead(
+        id=event.id,
+        track_id=event.track_id,
+        track_title=str(meta.get("track_title") or (event.track.title if event.track else "")),
+        target_playlist_id=event.target_playlist_id,
+        target_playlist_title=str(
+            meta.get("target_playlist_title")
+            or (event.target_playlist.title if event.target_playlist else "")
+        ),
+        source_playlist_id=event.source_playlist_id,
+        source_playlist_title=str(
+            meta.get("source_playlist_title")
+            or (event.source_playlist.title if event.source_playlist else "")
+            or ""
+        )
+        or None,
+        source_youtube_video_id=str(
+            meta.get("source_youtube_video_id")
+            or (event.source_playlist.youtube_video_id if event.source_playlist else "")
+            or ""
+        )
+        or None,
+        actor=event.actor,
+        source=event.source,
+        reused_duration_seconds=event.reused_duration_seconds,
+        source_start_seconds=event.source_start_seconds,
+        reuse_count_before=event.reuse_count_before,
+        reused_seconds_before=event.reused_seconds_before,
+        selection_rank=event.selection_rank,
+        metadata_json=meta,
+        created_at=event.created_at,
+    )
+
+
+@router.get("/reuse", response_model=list[TrackReuseSummaryRead])
+def list_track_reuse_summary(
+    limit: int = Query(default=100, ge=1, le=1000),
+    reused_only: bool = False,
+    db: Session = Depends(get_db),
+) -> list[TrackReuseSummaryRead]:
+    event_rollup = _track_reuse_event_rollup(db)
+    tracks = db.scalars(select(Track)).all()
+    summaries: list[TrackReuseSummaryRead] = []
+    for track in tracks:
+        meta = dict(track.metadata_json or {})
+        event_entry = event_rollup.get(track.id, {})
+        reuse_count = max(_safe_int(meta.get("playlist_reuse_count")), _safe_int(event_entry.get("count")))
+        reused_seconds = max(
+            _safe_int(meta.get("playlist_reused_seconds")),
+            _safe_int(event_entry.get("seconds")),
+        )
+        event_count = _safe_int(event_entry.get("count"))
+        if reused_only and not reuse_count and not event_count:
+            continue
+        summaries.append(
+            TrackReuseSummaryRead(
+                track_id=track.id,
+                title=track.title,
+                duration_seconds=track.duration_seconds,
+                audio_path=track.audio_path,
+                reuse_count=reuse_count,
+                reused_seconds=reused_seconds,
+                event_count=event_count,
+                last_reused_at=str(meta.get("playlist_last_reused_at") or "") or None,
+                last_reused_in_playlist_id=str(meta.get("playlist_last_reused_in_playlist_id") or "") or None,
+                last_reused_by=str(meta.get("playlist_last_reused_by") or "") or None,
+            )
+        )
+
+    summaries.sort(key=lambda item: (item.reuse_count, item.reused_seconds, item.title.lower()))
+    return summaries[:limit]
+
+
+@router.get("/{track_id}/reuse", response_model=list[TrackReuseEventRead])
+def get_track_reuse_events(
+    track_id: str,
+    db: Session = Depends(get_db),
+) -> list[TrackReuseEventRead]:
+    track = db.get(Track, track_id)
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+    events = db.scalars(
+        select(TrackReuseEvent)
+        .where(TrackReuseEvent.track_id == track_id)
+        .options(
+            selectinload(TrackReuseEvent.track),
+            selectinload(TrackReuseEvent.target_playlist),
+            selectinload(TrackReuseEvent.source_playlist),
+        )
+        .order_by(TrackReuseEvent.created_at.desc())
+    ).all()
+    return [_serialize_track_reuse_event(event) for event in events]
 
 
 @router.get("/{track_id}", response_model=TrackRead)

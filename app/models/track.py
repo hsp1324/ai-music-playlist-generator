@@ -40,6 +40,7 @@ class Track(Base):
 
     approvals = relationship("Approval", back_populates="track", cascade="all, delete-orphan")
     playlist_items = relationship("PlaylistItem", back_populates="track")
+    reuse_events = relationship("TrackReuseEvent", back_populates="track", cascade="all, delete-orphan")
     jobs = relationship("Job", back_populates="track")
 
     @property

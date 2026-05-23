@@ -11,6 +11,7 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
+from app.models.track_reuse import TrackReuseEvent
 from app.schemas.playlist import PlaylistJobRead, PlaylistTrackRead, PlaylistWorkspaceRead
 from app.services.registry import ServiceRegistry
 from app.utils.youtube_localizations import (
@@ -1791,6 +1792,157 @@ def _reuse_candidate_is_similar(
     )
 
 
+def _coerce_nonnegative_int(value: object) -> int:
+    try:
+        return max(int(value or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _track_reuse_stats_from_events(db: Session) -> dict[str, dict[str, int]]:
+    rows = db.execute(
+        select(
+            TrackReuseEvent.track_id,
+            func.count(TrackReuseEvent.id),
+            func.coalesce(func.sum(TrackReuseEvent.reused_duration_seconds), 0),
+        ).group_by(TrackReuseEvent.track_id)
+    ).all()
+    return {
+        str(track_id): {
+            "count": _coerce_nonnegative_int(count),
+            "seconds": _coerce_nonnegative_int(seconds),
+        }
+        for track_id, count, seconds in rows
+        if track_id
+    }
+
+
+def _track_reuse_stats_from_playlist_history(playlists: list[Playlist]) -> dict[str, dict[str, int]]:
+    stats: dict[str, dict[str, int]] = {}
+
+    def record(track_id: object, duration_seconds: object = 0) -> None:
+        clean_track_id = str(track_id or "").strip()
+        if not clean_track_id:
+            return
+        entry = stats.setdefault(clean_track_id, {"count": 0, "seconds": 0})
+        entry["count"] += 1
+        entry["seconds"] += _coerce_nonnegative_int(duration_seconds)
+
+    for playlist in playlists:
+        meta = _playlist_meta(playlist)
+        history = meta.get("auto_reuse_history")
+        if isinstance(history, list) and history:
+            for attempt in history:
+                if not isinstance(attempt, dict):
+                    continue
+                durations_by_track_id: dict[str, int] = {}
+                details = attempt.get("added_track_details")
+                if isinstance(details, list):
+                    for detail in details:
+                        if not isinstance(detail, dict):
+                            continue
+                        track_id = str(detail.get("track_id") or "").strip()
+                        if track_id:
+                            durations_by_track_id[track_id] = _coerce_nonnegative_int(
+                                detail.get("duration_seconds")
+                            )
+                for track_id in attempt.get("added_track_ids") or []:
+                    record(track_id, durations_by_track_id.get(str(track_id), 0))
+            continue
+
+        for track_id in meta.get("auto_reused_track_ids") or []:
+            record(track_id)
+
+    return stats
+
+
+def _track_reuse_stats_for_track(
+    track: Track,
+    *,
+    event_stats: dict[str, dict[str, int]],
+    history_stats: dict[str, dict[str, int]],
+) -> dict[str, int]:
+    meta = track.metadata_json or {}
+    event_entry = event_stats.get(track.id, {})
+    history_entry = history_stats.get(track.id, {})
+    return {
+        "count": max(
+            _coerce_nonnegative_int(meta.get("playlist_reuse_count")),
+            _coerce_nonnegative_int(event_entry.get("count")),
+            _coerce_nonnegative_int(history_entry.get("count")),
+        ),
+        "seconds": max(
+            _coerce_nonnegative_int(meta.get("playlist_reused_seconds")),
+            _coerce_nonnegative_int(event_entry.get("seconds")),
+            _coerce_nonnegative_int(history_entry.get("seconds")),
+        ),
+    }
+
+
+def _record_track_reuse_event(
+    db: Session,
+    *,
+    track: Track,
+    target_playlist: Playlist,
+    source_playlist: Playlist,
+    source_row: dict,
+    actor: str,
+    attempted_at: str,
+    duration_seconds: int,
+    selection_rank: int,
+    reuse_count_before: int,
+    reused_seconds_before: int,
+) -> None:
+    source_start_seconds = _coerce_nonnegative_int(source_row.get("start_seconds"))
+    event_metadata = {
+        "track_title": track.title,
+        "target_playlist_title": target_playlist.title,
+        "target_channel_title": _playlist_reuse_channel_title(target_playlist),
+        "source_playlist_title": source_playlist.title,
+        "source_youtube_video_id": source_playlist.youtube_video_id,
+        "source_channel_title": _playlist_reuse_channel_title(source_playlist),
+        "recorded_at": attempted_at,
+    }
+    db.add(
+        TrackReuseEvent(
+            track=track,
+            target_playlist=target_playlist,
+            source_playlist=source_playlist,
+            actor=actor,
+            source="youtube_back_half",
+            reused_duration_seconds=duration_seconds,
+            source_start_seconds=source_start_seconds,
+            reuse_count_before=reuse_count_before,
+            reused_seconds_before=reused_seconds_before,
+            selection_rank=selection_rank,
+            metadata_json=event_metadata,
+        )
+    )
+
+    meta = dict(track.metadata_json or {})
+    meta["playlist_reuse_count"] = reuse_count_before + 1
+    meta["playlist_reused_seconds"] = reused_seconds_before + duration_seconds
+    meta["playlist_last_reused_at"] = attempted_at
+    meta["playlist_last_reused_by"] = actor
+    meta["playlist_last_reused_in_playlist_id"] = target_playlist.id
+    reuse_history = list(meta.get("playlist_reuse_history") or [])
+    reuse_history.append(
+        {
+            "playlist_id": target_playlist.id,
+            "playlist_title": target_playlist.title,
+            "source_playlist_id": source_playlist.id,
+            "source_playlist_title": source_playlist.title,
+            "duration_seconds": duration_seconds,
+            "reused_at": attempted_at,
+            "actor": actor,
+            "reuse_count_before": reuse_count_before,
+        }
+    )
+    meta["playlist_reuse_history"] = reuse_history[-50:]
+    track.metadata_json = meta
+    db.add(track)
+
+
 def _maybe_add_reused_back_half_tracks(
     db: Session,
     services: ServiceRegistry,
@@ -1830,6 +1982,7 @@ def _maybe_add_reused_back_half_tracks(
     existing_track_ids = set(_playlist_track_ids(playlist))
     added_track_ids: list[str] = []
     added_titles: list[str] = []
+    added_track_details: list[dict] = []
     added_seconds = 0
     next_order_index = max((item.order_index for item in playlist.items), default=0) + 1
 
@@ -1844,10 +1997,14 @@ def _maybe_add_reused_back_half_tracks(
     ).all()
     source_playlists = sorted(source_playlists, key=_playlist_reuse_source_sort_key, reverse=True)
 
+    event_stats = _track_reuse_stats_from_events(db)
+    history_stats = _track_reuse_stats_from_playlist_history(db.scalars(select(Playlist)).all())
+    candidates: list[dict] = []
     for source_playlist in source_playlists:
         source_meta = _playlist_meta(source_playlist)
         if source_meta.get("hidden"):
             continue
+        source_sort_key = _playlist_reuse_source_sort_key(source_playlist)
         for row in _playlist_back_half_reuse_rows(source_playlist):
             track = row["track"]
             track_id = row["track_id"]
@@ -1864,28 +2021,94 @@ def _maybe_add_reused_back_half_tracks(
             duration_seconds = max(int(track.duration_seconds or row.get("duration_seconds") or 0), 0)
             if duration_seconds <= 0:
                 continue
-            db.add(
-                PlaylistItem(
-                    playlist=playlist,
-                    track=track,
-                    order_index=next_order_index,
-                    included_duration_seconds=duration_seconds,
-                )
+            reuse_stats = _track_reuse_stats_for_track(
+                track,
+                event_stats=event_stats,
+                history_stats=history_stats,
             )
-            existing_track_ids.add(track_id)
-            added_track_ids.append(track_id)
-            added_titles.append(track.title)
-            added_seconds += duration_seconds
-            next_order_index += 1
-            if added_seconds >= remaining_seconds:
-                break
+            candidates.append(
+                {
+                    "track": track,
+                    "track_id": track_id,
+                    "source_playlist": source_playlist,
+                    "source_row": row,
+                    "source_sort_key": source_sort_key,
+                    "duration_seconds": duration_seconds,
+                    "reuse_count_before": reuse_stats["count"],
+                    "reused_seconds_before": reuse_stats["seconds"],
+                    "source_start_seconds": _coerce_nonnegative_int(row.get("start_seconds")),
+                }
+            )
+
+    candidates.sort(
+        key=lambda candidate: (
+            candidate["reuse_count_before"],
+            candidate["reused_seconds_before"],
+            -candidate["source_sort_key"].timestamp(),
+            candidate["source_start_seconds"],
+            str(candidate["track"].title).lower(),
+        )
+    )
+
+    attempted_at = _utcnow().isoformat()
+    for candidate in candidates:
+        track = candidate["track"]
+        track_id = candidate["track_id"]
+        if not track_id or track_id in existing_track_ids:
+            continue
+        duration_seconds = candidate["duration_seconds"]
+        source_playlist = candidate["source_playlist"]
+        source_row = candidate["source_row"]
+        reuse_count_before = candidate["reuse_count_before"]
+        reused_seconds_before = candidate["reused_seconds_before"]
+        db.add(
+            PlaylistItem(
+                playlist=playlist,
+                track=track,
+                order_index=next_order_index,
+                included_duration_seconds=duration_seconds,
+            )
+        )
+        selection_rank = len(added_track_details) + 1
+        _record_track_reuse_event(
+            db,
+            track=track,
+            target_playlist=playlist,
+            source_playlist=source_playlist,
+            source_row=source_row,
+            actor=actor,
+            attempted_at=attempted_at,
+            duration_seconds=duration_seconds,
+            selection_rank=selection_rank,
+            reuse_count_before=reuse_count_before,
+            reused_seconds_before=reused_seconds_before,
+        )
+        existing_track_ids.add(track_id)
+        added_track_ids.append(track_id)
+        added_titles.append(track.title)
+        added_track_details.append(
+            {
+                "track_id": track_id,
+                "title": track.title,
+                "duration_seconds": duration_seconds,
+                "source_playlist_id": source_playlist.id,
+                "source_playlist_title": source_playlist.title,
+                "source_youtube_video_id": source_playlist.youtube_video_id,
+                "source_start_seconds": candidate["source_start_seconds"],
+                "reuse_count_before": reuse_count_before,
+                "reused_seconds_before": reused_seconds_before,
+            }
+        )
+        added_seconds += duration_seconds
+        next_order_index += 1
         if added_seconds >= remaining_seconds:
             break
 
     attempt = {
         "actor": actor,
-        "attempted_at": _utcnow().isoformat(),
+        "attempted_at": attempted_at,
         "source": "youtube_back_half",
+        "selection_policy": "least_reused_then_recent_back_half",
         "target_channel_title": target_channel_title,
         "target_genre_tokens": sorted(target_genre_tokens),
         "playlist_target_duration_seconds": playlist_target_duration_seconds,
@@ -1899,6 +2122,8 @@ def _maybe_add_reused_back_half_tracks(
         "added_seconds": added_seconds,
         "added_track_ids": added_track_ids,
         "added_titles": added_titles,
+        "added_track_details": added_track_details,
+        "candidate_count": len(candidates),
         "reason": "added" if added_track_ids else "no_similar_back_half_tracks",
     }
     history = list(meta.get("auto_reuse_history") or [])

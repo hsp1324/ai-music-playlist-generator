@@ -73,3 +73,36 @@ class TrackRead(BaseModel):
     updated_at: datetime
     reviewed_at: datetime | None
     approvals: list[ApprovalRead] = []
+
+
+class TrackReuseEventRead(BaseModel):
+    id: str
+    track_id: str
+    track_title: str
+    target_playlist_id: str
+    target_playlist_title: str
+    source_playlist_id: str | None = None
+    source_playlist_title: str | None = None
+    source_youtube_video_id: str | None = None
+    actor: str
+    source: str
+    reused_duration_seconds: int
+    source_start_seconds: int
+    reuse_count_before: int
+    reused_seconds_before: int
+    selection_rank: int
+    metadata_json: dict[str, Any]
+    created_at: datetime
+
+
+class TrackReuseSummaryRead(BaseModel):
+    track_id: str
+    title: str
+    duration_seconds: int
+    audio_path: str | None = None
+    reuse_count: int = 0
+    reused_seconds: int = 0
+    event_count: int = 0
+    last_reused_at: str | None = None
+    last_reused_in_playlist_id: str | None = None
+    last_reused_by: str | None = None
