@@ -260,6 +260,52 @@ button:disabled {
   justify-content: flex-start;
 }
 
+.tools-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.tools-menu-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  min-width: 230px;
+  padding: 8px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff8ea;
+  box-shadow: 5px 5px 0 rgba(23, 19, 15, 0.48);
+}
+
+.tools-menu-list[hidden] {
+  display: none;
+}
+
+.tools-menu-list button {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tools-menu-list button:hover,
+.tools-menu-list button:focus-visible {
+  background: rgba(47, 125, 88, 0.14);
+  outline: none;
+}
+
 .menu-icon {
   position: relative;
   width: 18px;
@@ -595,6 +641,10 @@ button:disabled {
   border-radius: 24px;
   background: #fffdf8;
   box-shadow: 4px 4px 0 rgba(23, 19, 15, 0.72);
+}
+
+.drawer-track-reuse {
+  margin-top: 0;
 }
 
 .track-reuse-section .section-headline {

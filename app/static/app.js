@@ -5,6 +5,7 @@ const state = {
   workspaces: [],
   selectedWorkspaceId: initialReleaseId,
   drawerOpen: false,
+  toolsMenuOpen: false,
   releaseFocus: Boolean(initialReleaseId),
   autoRefreshDeferred: false,
   autoRefreshInFlight: false,
@@ -21,7 +22,7 @@ const state = {
   releaseSortKey: "published",
   releaseSortDirection: "desc",
   trackReuseDirection: "desc",
-  trackReuseReusedOnly: true,
+  trackReuseReusedOnly: false,
   workspacePages: {
     active: 1,
     archive: 1,
@@ -63,6 +64,8 @@ const queueTitle = document.querySelector("#queue-title");
 const approvedTitle = document.querySelector("#approved-title");
 const toolbarSummaryText = document.querySelector("#toolbar-summary-text");
 const menuToggleButton = document.querySelector("#menu-toggle-button");
+const toolsMenuList = document.querySelector("#tools-menu-list");
+const toolMenuItems = [...document.querySelectorAll("[data-tool-action]")];
 const utilityDrawer = document.querySelector("#utility-drawer");
 const refreshButton = document.querySelector("#refresh-button");
 const quickUploadInput = document.querySelector("#quick-upload-input");
@@ -89,6 +92,11 @@ const youtubeConnectButton = document.querySelector("#youtube-connect-button");
 const youtubeChannelControls = document.querySelector("#youtube-channel-controls");
 const youtubeChannelSelect = document.querySelector("#youtube-channel-select");
 const youtubeImportButton = document.querySelector("#youtube-import-button");
+const quickUploadToolPanel = document.querySelector(".drawer-quick-upload");
+const manualTrackPanel = document.querySelector("#manual-track-panel");
+const createReleasePanel = document.querySelector("#create-release-panel");
+const youtubeToolsPanel = document.querySelector("#youtube-tools-panel");
+const trackReuseSection = document.querySelector("#track-reuse-section");
 const workspaceTileTemplate = document.querySelector("#workspace-tile-template");
 const queueTemplate = document.querySelector("#queue-card-template");
 const approvedCardTemplate = document.querySelector("#approved-card-template");
@@ -2419,9 +2427,9 @@ function renderTrackReuseList() {
   const summaries = state.trackReuseSummaries || [];
   trackReuseList.innerHTML = "";
   if (trackReuseSummary) {
-    const mode = state.trackReuseReusedOnly ? "reused tracks" : "tracks";
-    const direction = state.trackReuseDirection === "desc" ? "most used first" : "least used first";
-    trackReuseSummary.textContent = `${summaries.length} ${mode} · ${direction}`;
+    const mode = state.trackReuseReusedOnly ? "재사용된 곡" : "전체 곡";
+    const direction = state.trackReuseDirection === "desc" ? "많이 재사용된 순" : "적게 재사용된 순";
+    trackReuseSummary.textContent = `${summaries.length}개 ${mode} · ${direction}`;
   }
   if (!summaries.length) {
     const empty = document.createElement("div");
@@ -2449,7 +2457,7 @@ function renderTrackReuseList() {
 
     const count = document.createElement("span");
     count.className = "track-reuse-count";
-    count.textContent = `${track.reuse_count || 0} uses`;
+    count.textContent = `재사용 ${track.reuse_count || 0}회`;
 
     const duration = document.createElement("span");
     duration.className = "track-reuse-duration";
@@ -2457,7 +2465,7 @@ function renderTrackReuseList() {
 
     const last = document.createElement("span");
     last.className = "track-reuse-last";
-    last.textContent = formatPublishedDate(track.last_reused_at) || "not reused";
+    last.textContent = formatPublishedDate(track.last_reused_at) || "재사용 없음";
 
     row.appendChild(order);
     row.appendChild(title);
@@ -2587,10 +2595,40 @@ function pendingTracks(workspaceId = "") {
   });
 }
 
+function setToolsMenuOpen(open) {
+  state.toolsMenuOpen = Boolean(open);
+  if (toolsMenuList) {
+    toolsMenuList.hidden = !state.toolsMenuOpen;
+  }
+  menuToggleButton.setAttribute("aria-expanded", String(state.toolsMenuOpen));
+}
+
+function toggleToolsMenu() {
+  setToolsMenuOpen(!state.toolsMenuOpen);
+}
+
 function toggleDrawer(forceOpen) {
   state.drawerOpen = typeof forceOpen === "boolean" ? forceOpen : !state.drawerOpen;
   utilityDrawer.hidden = !state.drawerOpen;
-  menuToggleButton.setAttribute("aria-expanded", String(state.drawerOpen));
+}
+
+function toolPanelForAction(action) {
+  if (action === "quick-upload") return quickUploadToolPanel;
+  if (action === "manual-track") return manualTrackPanel;
+  if (action === "create-release") return createReleasePanel;
+  if (action === "youtube") return youtubeToolsPanel;
+  if (action === "track-reuse") return trackReuseSection;
+  return utilityDrawer;
+}
+
+function openToolPanel(action) {
+  toggleDrawer(true);
+  setToolsMenuOpen(false);
+  const panel = toolPanelForAction(action);
+  panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (action === "track-reuse") {
+    refreshTrackReuseList().catch((error) => alert(error.message));
+  }
 }
 
 function updateToolbarSummary() {
@@ -3969,7 +4007,10 @@ workspaceForm.addEventListener("submit", async (event) => {
   }
 });
 
-menuToggleButton.addEventListener("click", () => toggleDrawer());
+menuToggleButton.addEventListener("click", () => toggleToolsMenu());
+toolMenuItems.forEach((button) => {
+  button.addEventListener("click", () => openToolPanel(button.dataset.toolAction || ""));
+});
 workspaceTabButtons.forEach((button) => {
   button.addEventListener("click", () => setWorkspaceTab(button.dataset.workspaceTab));
 });
@@ -4002,6 +4043,11 @@ textModal?.addEventListener("click", (event) => {
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && textModal && !textModal.hidden) {
     closeTextModal();
+    return;
+  }
+  if (event.key === "Escape" && state.toolsMenuOpen) {
+    setToolsMenuOpen(false);
+    menuToggleButton.focus();
   }
 });
 window.addEventListener("popstate", () => {
@@ -4139,6 +4185,9 @@ document.addEventListener("play", (event) => {
   }
 }, true);
 document.addEventListener("click", (event) => {
+  if (state.toolsMenuOpen && !event.target?.closest?.(".tools-menu")) {
+    setToolsMenuOpen(false);
+  }
   document.querySelectorAll(".channel-avatar-select.open").forEach((picker) => {
     if (picker.contains(event.target)) return;
     picker.classList.remove("open");
