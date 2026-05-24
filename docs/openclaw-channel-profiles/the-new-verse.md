@@ -23,7 +23,7 @@ Use this profile only after channel selection returns `불송`, or when the huma
 - Create one final 16:9 cover first.
 - The cover is the playback visual, YouTube thumbnail base, and first-frame reference for Gemini/Dreamina/Seedance.
 - Do not add the `불송` channel label, the channel name, a channel logo, title sentences, sutra paragraphs, lyrics, subtitles, UI, duration text, watermark-like marks, or unrelated words to the cover/first-frame.
-- The cover/first-frame may include one short Korean passage/theme + music-style phrase that naturally fits the artwork, such as `팔정도 명상팝`, `자비 트립합`, `무상 불교 재즈`, `반야심경 R&B`, or `법구경 힙합`.
+- The cover/first-frame may include one short Korean passage/theme + music-style phrase that naturally fits the artwork, such as `팔정도 명상팝`, `자비 트립합`, `무상 불교 재즈`, `반야심경 R&B`, or `법구경 힙합`. Put this phrase in upper-left safe negative space when possible.
 - That phrase is the visual hook. Keep it short, readable, integrated into the image, and free of hard black rectangles, detached labels, stickers, badges, pills, or UI-like tags.
 
 ## YouTube Thumbnail

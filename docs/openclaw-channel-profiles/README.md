@@ -86,7 +86,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - No-vocal cinematic orchestra, movie OST, film score, trailer, heroic, sci-fi, dark fantasy, mystery, or emotional cinematic music.
 - Use photorealistic cinematic first-frame / premium movie-poster realism and create a restrained provider loop video.
 - Queue renders with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly approves a still-image fallback.
-- Include a tasteful lower-left cinematic style phrase on the cover/first-frame and use that image as the loop-video starting frame. Use `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`, not the channel name.
+- Include a tasteful upper-left cinematic style phrase on the cover/first-frame and use that image as the loop-video starting frame. Use `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`, not the channel name.
 
 ### Club Bloom
 
@@ -104,7 +104,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### 불송
 
 - Buddhist scripture-inspired vocal music.
-- Cover, thumbnail, first-frame, and loop-video first frame should be one clean visual package with a short Korean passage/theme + style phrase when useful, such as `팔정도 명상팝`, `자비 트립합`, or `무상 불교 재즈`. Never use `불송` as visual text.
+- Cover, thumbnail, first-frame, and loop-video first frame should be one clean visual package with a short upper-left Korean passage/theme + style phrase when useful, such as `팔정도 명상팝`, `자비 트립합`, or `무상 불교 재즈`. Never use `불송` as visual text.
 - Use photorealistic/premium Buddhist visuals by default. Cute/gentle animation is allowed occasionally when the music lane fits.
 - Use Seedance/Dreamina `2.0 Fast`, first-frame only, `16:9`, `720p`, exactly `6 seconds`.
 - Queue final render with `--video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
