@@ -23,7 +23,8 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
 - Do not put `Cinematic Pulse`, the channel name, a channel logo, or a brand line on the cover/first-frame image.
-- If text is useful, use only a short integrated cinematic style phrase such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
+- Cinematic Pulse cover/first-frame art should usually include one short integrated cinematic style phrase in the lower-left area so the video does not feel empty. Use phrases such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
+- Keep that style phrase tasteful and movie-poster-like: integrated typography, subtle shadow, thin outline, or local contrast is fine; do not use detached black boxes, badges, plaques, stickers, channel labels, or long title sentences.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the playlist concept: movie-poster landscape, final battle, dark fantasy confrontation, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, or trailer-poster scene.
 
@@ -31,7 +32,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Add short readable click text, for example `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`.
+- Use the same lower-left style phrase family as the cover/first-frame, with thumbnail readability adjustments only if needed. Examples: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`.
 - Avoid juvenile game-menu wording such as `BOSS BGM`, `FINAL BOSS`, `보스`, or `보스전` unless the human explicitly asks for game-combat packaging. Cinematic Pulse should read as grand film-score / cinematic orchestra first.
 - Do not add `CINEMATIC PULSE`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
@@ -39,6 +40,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 ## Render Visual
 
 - Create a very high quality 16:9 photorealistic cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080.
+- The uploaded first-frame image for the provider loop should be this cover image with the lower-left style phrase already integrated.
 - Create a subtle provider loop video from that first frame. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
 - Dreamina/Seedance clips should use the normal `2.0 Fast`, `16:9`, `720p`, exactly `7 seconds` setting. Gemini clips are uploaded as generated after inspection.
 - Queue final render with:
