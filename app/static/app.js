@@ -10,6 +10,7 @@ const state = {
   autoRefreshInFlight: false,
   youtubeStatus: null,
   channelSummaries: [],
+  trackReuseSummaries: [],
   workspacesLoading: false,
   editingMetadataReleaseId: "",
   metadataExpandedByRelease: {},
@@ -19,6 +20,8 @@ const state = {
   channelFilter: "__all_channels__",
   releaseSortKey: "published",
   releaseSortDirection: "desc",
+  trackReuseDirection: "desc",
+  trackReuseReusedOnly: true,
   workspacePages: {
     active: 1,
     archive: 1,
@@ -30,6 +33,11 @@ const quickUploadPanel = document.querySelector(".quick-upload-panel");
 const boardShell = document.querySelector(".board-shell");
 const channelOverviewSection = document.querySelector(".channel-overview-section");
 const channelSummaryGrid = document.querySelector("#channel-summary-grid");
+const trackReuseSummary = document.querySelector("#track-reuse-summary");
+const trackReuseList = document.querySelector("#track-reuse-list");
+const trackReuseRefreshButton = document.querySelector("#track-reuse-refresh-button");
+const trackReuseReusedOnlyCheckbox = document.querySelector("#track-reuse-reused-only");
+const trackReuseSortButtons = [...document.querySelectorAll("[data-track-reuse-direction]")];
 const workspaceGrid = document.querySelector("#workspace-grid");
 const workspacePager = document.querySelector("#workspace-pager");
 const workspaceSection = document.querySelector(".workspace-section");
@@ -2002,6 +2010,16 @@ async function fetchWorkspaceSummary() {
   return summary?.channels || [];
 }
 
+async function fetchTrackReuseSummaries() {
+  const params = new URLSearchParams({
+    limit: "300",
+    reused_only: String(state.trackReuseReusedOnly),
+    sort: "reuse_count",
+    direction: state.trackReuseDirection,
+  });
+  return api(`/api/tracks/reuse?${params.toString()}`);
+}
+
 async function ensureWorkspaceDetailLoaded(workspaceId) {
   const workspace = state.workspaces.find((item) => item.id === workspaceId);
   if (!workspace || !workspace.__compact) return workspace || null;
@@ -2381,6 +2399,79 @@ function renderChannelFilter() {
     },
     ...options,
   ]);
+}
+
+function renderTrackReuseControls() {
+  trackReuseSortButtons.forEach((button) => {
+    const direction = button.dataset.trackReuseDirection || "desc";
+    const active = direction === state.trackReuseDirection;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+  if (trackReuseReusedOnlyCheckbox) {
+    trackReuseReusedOnlyCheckbox.checked = state.trackReuseReusedOnly;
+  }
+}
+
+function renderTrackReuseList() {
+  renderTrackReuseControls();
+  if (!trackReuseList) return;
+  const summaries = state.trackReuseSummaries || [];
+  trackReuseList.innerHTML = "";
+  if (trackReuseSummary) {
+    const mode = state.trackReuseReusedOnly ? "reused tracks" : "tracks";
+    const direction = state.trackReuseDirection === "desc" ? "most used first" : "least used first";
+    trackReuseSummary.textContent = `${summaries.length} ${mode} · ${direction}`;
+  }
+  if (!summaries.length) {
+    const empty = document.createElement("div");
+    empty.className = "track-reuse-empty";
+    empty.textContent = state.trackReuseReusedOnly
+      ? "아직 재사용된 곡 기록이 없습니다."
+      : "표시할 곡이 없습니다.";
+    trackReuseList.appendChild(empty);
+    return;
+  }
+
+  summaries.forEach((track, index) => {
+    const row = document.createElement("div");
+    row.className = "track-reuse-row";
+    row.dataset.trackId = track.track_id;
+
+    const order = document.createElement("span");
+    order.className = "track-reuse-index";
+    order.textContent = String(index + 1).padStart(2, "0");
+
+    const title = document.createElement("span");
+    title.className = "track-reuse-title";
+    title.textContent = displayTitle(track.title, "Untitled Track");
+    title.title = displayTitle(track.title, "Untitled Track");
+
+    const count = document.createElement("span");
+    count.className = "track-reuse-count";
+    count.textContent = `${track.reuse_count || 0} uses`;
+
+    const duration = document.createElement("span");
+    duration.className = "track-reuse-duration";
+    duration.textContent = formatLongDuration(track.reused_seconds || 0);
+
+    const last = document.createElement("span");
+    last.className = "track-reuse-last";
+    last.textContent = formatPublishedDate(track.last_reused_at) || "not reused";
+
+    row.appendChild(order);
+    row.appendChild(title);
+    row.appendChild(count);
+    row.appendChild(duration);
+    row.appendChild(last);
+    trackReuseList.appendChild(row);
+  });
+}
+
+async function refreshTrackReuseList() {
+  const summaries = await fetchTrackReuseSummaries();
+  state.trackReuseSummaries = summaries;
+  renderTrackReuseList();
 }
 
 function setChannelFilter(channelKey, scrollToList = false) {
@@ -3760,15 +3851,18 @@ function applyBoardData(tracks, workspaces) {
   renderLayoutMode();
   updateToolbarSummary();
   renderTrackWorkspaceOptions();
+  renderTrackReuseList();
   renderWorkspaceTiles();
   renderWorkspaceDetail();
 }
 
 async function refreshBoard() {
-  const [tracks, workspaces] = await Promise.all([
+  const [tracks, workspaces, trackReuseSummaries] = await Promise.all([
     fetchReviewTracks(),
     fetchWorkspaceList(),
+    fetchTrackReuseSummaries().catch(() => state.trackReuseSummaries),
   ]);
+  state.trackReuseSummaries = trackReuseSummaries;
   applyBoardData(tracks, workspaces);
   if (state.releaseFocus && state.selectedWorkspaceId) {
     ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
@@ -3782,25 +3876,30 @@ async function refreshBoard() {
 
 async function refresh() {
   state.workspacesLoading = true;
-  const [sessionStatus, youtubeStatus, channelSummaries] = await Promise.all([
+  const [sessionStatus, youtubeStatus, channelSummaries, trackReuseSummaries] = await Promise.all([
     api("/api/suno/session-status"),
     api("/api/youtube/status"),
     fetchWorkspaceSummary(),
+    fetchTrackReuseSummaries().catch(() => state.trackReuseSummaries),
   ]);
   state.youtubeStatus = youtubeStatus;
   state.channelSummaries = channelSummaries;
+  state.trackReuseSummaries = trackReuseSummaries;
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
   ensureChannelFilter();
   renderLayoutMode();
   updateToolbarSummary();
+  renderTrackReuseList();
   renderWorkspaceTiles();
   renderWorkspaceDetail();
 
-  const [tracks, workspaces] = await Promise.all([
+  const [tracks, workspaces, latestTrackReuseSummaries] = await Promise.all([
     fetchReviewTracks(),
     fetchWorkspaceList(),
+    fetchTrackReuseSummaries().catch(() => state.trackReuseSummaries),
   ]);
+  state.trackReuseSummaries = latestTrackReuseSummaries;
   applyBoardData(tracks, workspaces);
   if (state.releaseFocus && state.selectedWorkspaceId) {
     ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
@@ -3876,6 +3975,19 @@ workspaceTabButtons.forEach((button) => {
 });
 workspaceSortButtons.forEach((button) => {
   button.addEventListener("click", () => setReleaseSort(button.dataset.releaseSort));
+});
+trackReuseSortButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    state.trackReuseDirection = button.dataset.trackReuseDirection || "desc";
+    refreshTrackReuseList().catch((error) => alert(error.message));
+  });
+});
+trackReuseReusedOnlyCheckbox?.addEventListener("change", () => {
+  state.trackReuseReusedOnly = trackReuseReusedOnlyCheckbox.checked;
+  refreshTrackReuseList().catch((error) => alert(error.message));
+});
+trackReuseRefreshButton?.addEventListener("click", () => {
+  refreshTrackReuseList().catch((error) => alert(error.message));
 });
 channelFilterSelect?.addEventListener("change", () => {
   setChannelFilter(channelFilterSelect.value || CHANNEL_FILTER_ALL);

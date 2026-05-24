@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/assets/styles.css?v=20260519a" />
+    <link rel="stylesheet" href="/assets/styles.css?v=20260524a" />
   </head>
   <body>
     <div class="shell">
@@ -229,6 +229,26 @@
           <div id="channel-summary-grid" class="channel-summary-grid"></div>
         </section>
 
+        <section class="track-reuse-section">
+          <div class="section-headline">
+            <div>
+              <p class="section-kicker">Track Reuse</p>
+              <h2>노래 재사용 현황</h2>
+              <p id="track-reuse-summary" class="detail-copy">재사용 기록을 불러오는 중입니다.</p>
+            </div>
+            <div class="track-reuse-controls" role="group" aria-label="Track reuse sort">
+              <button class="track-reuse-sort-button active" type="button" data-track-reuse-direction="desc" aria-pressed="true">Most Used</button>
+              <button class="track-reuse-sort-button" type="button" data-track-reuse-direction="asc" aria-pressed="false">Least Used</button>
+              <label class="track-reuse-toggle">
+                <input id="track-reuse-reused-only" type="checkbox" checked />
+                <span>Reused only</span>
+              </label>
+              <button id="track-reuse-refresh-button" class="toolbar-button" type="button">Refresh</button>
+            </div>
+          </div>
+          <div id="track-reuse-list" class="track-reuse-list"></div>
+        </section>
+
         <section class="workspace-section">
           <div class="section-headline">
             <div>
@@ -399,6 +419,6 @@
       </article>
     </template>
 
-    <script src="/assets/app.js?v=20260519a" defer></script>
+    <script src="/assets/app.js?v=20260524a" defer></script>
   </body>
 </html>

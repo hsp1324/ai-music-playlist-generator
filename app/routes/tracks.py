@@ -495,6 +495,8 @@ def _serialize_track_reuse_event(event: TrackReuseEvent) -> TrackReuseEventRead:
 def list_track_reuse_summary(
     limit: int = Query(default=100, ge=1, le=1000),
     reused_only: bool = False,
+    sort: str = Query(default="reuse_count"),
+    direction: str = Query(default="desc"),
     db: Session = Depends(get_db),
 ) -> list[TrackReuseSummaryRead]:
     event_rollup = _track_reuse_event_rollup(db)
@@ -526,7 +528,15 @@ def list_track_reuse_summary(
             )
         )
 
-    summaries.sort(key=lambda item: (item.reuse_count, item.reused_seconds, item.title.lower()))
+    clean_sort = sort.strip().lower()
+    clean_direction = direction.strip().lower()
+    reverse = clean_direction != "asc"
+    if clean_sort in {"title", "name"}:
+        summaries.sort(key=lambda item: item.title.lower(), reverse=reverse)
+    elif clean_sort in {"reused_seconds", "seconds", "duration"}:
+        summaries.sort(key=lambda item: (item.reused_seconds, item.reuse_count, item.title.lower()), reverse=reverse)
+    else:
+        summaries.sort(key=lambda item: (item.reuse_count, item.reused_seconds, item.title.lower()), reverse=reverse)
     return summaries[:limit]
 
 
