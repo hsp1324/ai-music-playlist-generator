@@ -278,65 +278,16 @@ def build_next_playlist_request_message(
     prompt_override: str | None = None,
     trigger_prefix: str | None = "OPENCLAW_RUN:",
 ) -> str:
-    meta = dict(playlist.metadata_json or {})
-    channel_title = str(meta.get("youtube_channel_title") or "").strip() or str(meta.get("youtube_channel_id") or "").strip()
-    youtube_link = f"https://youtu.be/{playlist.youtube_video_id}" if playlist.youtube_video_id else "not uploaded yet"
     if prompt_override and prompt_override.strip():
         return _with_trigger_prefix(prompt_override, trigger_prefix)
 
-    previous_context = [
-        "OpenClaw Next Release Publisher Skill을 실행해줘.",
-        "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
-        "필요하면 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-youtube-metadata.md도 참고해줘.",
-        "",
-        "이전 자동화 완료 정보:",
-        f"- release: {playlist.title}",
-        f"- youtube: {youtube_link}",
-    ]
-    if channel_title:
-        previous_context.append(f"- channel: {channel_title}")
-
-    previous_context.extend(["", "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘."])
-    return _with_trigger_prefix("\n".join(previous_context), trigger_prefix)
-
-
-def _backlog_priority_channel_lines(channel_payload: dict[str, Any], max_per_channel: int) -> list[str]:
-    candidates: list[tuple[float, int, int, int, str, dict[str, Any]]] = []
-    for title, payload in channel_payload.items():
-        if not isinstance(payload, dict):
-            continue
-        count = int(payload.get("count") or 0)
-        if count >= max_per_channel:
-            continue
-        if int(payload.get("auth_blocked") or 0) > 0:
-            continue
-        scheduled_public = int(payload.get("youtube_scheduled_public_count") or 0)
-        last_scheduled_at = str(payload.get("last_youtube_scheduled_public_at") or "").strip()
-        if last_scheduled_at:
-            try:
-                horizon = datetime.fromisoformat(last_scheduled_at.replace("Z", "+00:00")).timestamp()
-            except ValueError:
-                horizon = float("inf")
-        else:
-            horizon = 0.0
-        deferred = int(payload.get("deferred") or 0)
-        candidates.append((horizon, scheduled_public, count, deferred, str(title), payload))
-
-    if not candidates:
-        return []
-
     lines = [
-        "먼저 채울 채널 우선순위(예약 horizon 짧은 순, 모든 채널 날짜 균등):",
+        "다음 playlist 제작해줘.",
+        "reason: publish_completed",
+        "앱 API로 backlog/status와 lock 상태를 확인하고 docs/openclaw-backlog-queue.md 기준으로 진행해줘.",
+        "완료/중단 보고: release id, YouTube video id, blocker",
     ]
-    for _horizon, scheduled_public, count, deferred, title, payload in sorted(candidates)[:10]:
-        last_date = payload.get("last_youtube_scheduled_public_local_date") or "none"
-        lines.append(
-            f"- {title}: {count} unfinished"
-            f", {deferred} deferred"
-            f", {scheduled_public} future scheduled-public YouTube uploads"
-            f", scheduled-through {last_date}"
-        )
-    return lines
+    return _with_trigger_prefix("\n".join(lines), trigger_prefix)
 
 
 def build_backlog_queue_request_message(
@@ -350,82 +301,25 @@ def build_backlog_queue_request_message(
         return _with_trigger_prefix(prompt_override, trigger_prefix)
 
     summary = backlog_summary or {}
-    channel_payload = summary.get("channels") if isinstance(summary, dict) else {}
-    unknown_releases = summary.get("unknown_channel_releases") if isinstance(summary, dict) else []
     target_per_channel = int(summary.get("target_per_channel") or 10) if isinstance(summary, dict) else 10
     max_per_channel = int(summary.get("max_per_channel") or target_per_channel) if isinstance(summary, dict) else target_per_channel
     manual_blocker = summary.get("manual_blocker") if isinstance(summary, dict) else {}
     if reason == "resume_openclaw_manual_blocker" and isinstance(manual_blocker, dict):
-        last_lock = manual_blocker.get("last_finished_lock") if isinstance(manual_blocker, dict) else {}
-        last_lock = last_lock if isinstance(last_lock, dict) else {}
         lines = [
-            "OpenClaw blocked release resume를 실행해줘.",
-            f"scheduler_reason: {reason}",
-            "",
-            "중요: 새 workspace, 새 release, 다음 곡을 만들지 말고 방금 막힌 같은 작업을 계속 진행해줘.",
-            "Suno hCaptcha/manual verification이면 사람이 인증을 끝낸 뒤 같은 release에서 이어서 음악/이미지/loop video/upload를 진행해줘.",
-            "이미 로컬 산출물이 있으면 새로 만들지 말고 먼저 재사용하거나 누락분만 채워줘.",
-            "",
-            f"blocked_release_id: {last_lock.get('release_id') or 'unknown'}",
-            f"blocked_channel: {last_lock.get('channel_title') or 'unknown'}",
-            f"blocked_operation: {last_lock.get('operation') or 'unknown'}",
-            f"blocked_run_id: {last_lock.get('run_id') or 'unknown'}",
-            f"blocked_message: {last_lock.get('finish_message') or last_lock.get('message') or 'unknown'}",
-            "",
-            "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md와 해당 채널 profile/concept docs를 읽고 이어서 진행해줘.",
-            "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
+            "중단된 OpenClaw 작업 이어서 진행해줘.",
+            f"reason: {reason}",
+            "앱 API로 manual blocker/backlog/lock 상태를 확인하고 같은 release부터 복구해줘.",
+            "완료/중단 보고: release id, YouTube video id, blocker",
         ]
         return _with_trigger_prefix("\n".join(lines), trigger_prefix)
 
     lines = [
-        "OpenClaw Next Release Publisher Skill을 실행해줘.",
-        f"scheduler_reason: {reason}",
-        f"backlog_target_per_channel: {target_per_channel}",
-        f"backlog_max_per_channel: {max_per_channel}",
-        "",
-        "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
-        "현재 backlog는 `scripts/openclaw-release openclaw-backlog-status`로 확인해줘.",
-        (
-            "이번 요청은 예약 horizon이 가장 짧은 채널을 먼저 채우는 것이 우선이야. "
-            "다른 채널의 metadata/publish finishable 항목만 처리하고 새 release 생성을 건너뛰지 말아줘."
-            if reason == "zero_scheduled_public_backlog"
-            else "새 workspace를 만들기 전에 기존 미완성 workspace와 로컬 OpenClaw 산출물을 먼저 확인하고 이어서 복구/업로드해줘."
-        ),
-        "새 release를 만들 때는 모든 자동화 채널의 scheduled-through 날짜가 균등해지게 가장 짧은 채널부터 채워줘.",
-        "예: 모든 채널이 21일 예약을 가진 뒤 22일, 그다음 23일 순서로 채우고, 이미 27일까지 찬 채널은 뒤로 미뤄줘.",
-        "채널별 unfinished Playlist Release가 target에 도달할 때까지 계속 만들되 max를 넘기지 말아줘.",
-        "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고해줘.",
+        "다음 playlist 제작해줘.",
+        f"reason: {reason}",
+        f"target/max: {target_per_channel}/{max_per_channel}",
+        "앱 API로 backlog/status와 lock 상태를 확인하고 docs/openclaw-backlog-queue.md 기준으로 진행해줘.",
+        "완료/중단 보고: release id, YouTube video id, blocker",
     ]
-    if isinstance(channel_payload, dict) and channel_payload:
-        priority_lines = _backlog_priority_channel_lines(channel_payload, max_per_channel)
-        if priority_lines:
-            lines.extend(["", *priority_lines])
-        reconnect_lines = [
-            f"- {title}: {payload.get('auth_blocked', 0)} failed publish item(s)"
-            for title, payload in sorted(channel_payload.items())
-            if int(payload.get("auth_blocked") or 0) > 0
-        ]
-        if reconnect_lines:
-            lines.extend(
-                [
-                    "",
-                    "YouTube 재연결 전까지 새 release를 만들지 말아야 할 채널:",
-                    *reconnect_lines,
-                ]
-            )
-    if isinstance(unknown_releases, list) and unknown_releases:
-        lines.extend(["", "먼저 확인할 채널 미지정/미완성 workspace:"])
-        for release in unknown_releases[:10]:
-            if not isinstance(release, dict):
-                continue
-            lines.append(
-                f"- {release.get('title') or release.get('id')}:"
-                f" {release.get('workflow_state') or 'unknown'}"
-                f", id {release.get('id') or 'unknown'}"
-                f", channel {release.get('channel_title') or 'unknown'}"
-            )
-        if len(unknown_releases) > 10:
-            lines.append(f"- ...and {len(unknown_releases) - 10} more")
     return _with_trigger_prefix("\n".join(lines), trigger_prefix)
 
 

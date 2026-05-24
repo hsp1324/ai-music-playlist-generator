@@ -488,6 +488,7 @@ Goal:
 - On each retry, make the prompt safer and more original: remove named artists, studios, franchises, copyrighted characters, brands, logos, celebrity names, exact song/video titles, `in the style of` phrases, real-person likenesses, sexualized wording, minors, weapons, gore, and other moderation-risk terms. Keep the same broad mood, first-frame continuity, and motion direction.
 - If the first-frame image itself appears to be blocked, regenerate a safer first-frame/cover image and then retry. If Dreamina/Seedance still cannot create the clip, try Gemini if quota is available. If Gemini quota is exhausted, defer this release, report the deferral in Slack, and continue with the next eligible release before render/publish unless the human explicitly accepts a still-image fallback. If accepted, pass `--allow-still-image-video`.
 - If Dreamina login, CAPTCHA, payment, face detection, or human approval blocks browser automation, do not create a local motion-loop substitute. Try Gemini if quota is available; if Gemini quota is exhausted, defer this release and move on.
+- For HaruHaru photorealistic releases, prompt for the adult subject's face to be hidden or obscured, but do not reject a successfully generated/downloaded clip only because an adult face is visible. Use it unless it is explicit, minor-coded, celebrity-like, policy-blocked, badly distorted, or visually unusable; the human will request a remake later if needed.
 - Do not let the app's local draft cover stand in for final cover art.
 - Render playlist audio.
 - Approve the cover.
@@ -570,10 +571,12 @@ When the app asks again after external video render completion, finish the rende
 ```bash
 scripts/openclaw-release metadata-context --release-id RELEASE_ID
 scripts/openclaw-release approve-metadata --release-id RELEASE_ID --title "..." --description-file DESCRIPTION.md --tags "comma, separated, tags" ...
-scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title "SELECTED_CHANNEL_TITLE"
+scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title "SELECTED_CHANNEL_TITLE" --no-wait
 ```
 
 For New Testament scripture releases, `SELECTED_CHANNEL_TITLE` is still `BibliaCanto`.
+
+In continuous automation, `publish-release --no-wait` is required. Once the app accepts the publish request and queues `upload_youtube`, do not poll Slack or the app waiting for the YouTube id. Release the OpenClaw lock and continue on the next eligible backlog pass while the app upload worker handles the API upload.
 
 Only use `--force-under-target` if the human explicitly accepted a shorter playlist.
 

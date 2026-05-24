@@ -23,6 +23,7 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - Seoul/Korea setting cues are useful when relevant, but do not repeat the same skyline, street, or idol-practice-room scene every time.
 - Photorealistic styling may be attractive and mildly sexy through adult fashion choices such as tasteful swimwear, summer tops, backless dresses, shorts, or light beachwear, but keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no sexual acts, no minors or teen-looking subjects, no school-uniform/childlike cues, and no celebrity likenesses.
 - The desired photorealistic mood is adult, stylish, pretty, cute, confident, and slightly mysterious, not pornographic.
+- Hidden/obscured face remains the prompt target, but a generated clip is not invalid just because an adult face is visible. Do not spend extra credits regenerating solely for visible face exposure; accept the successful clip unless it is explicit, minor-coded, celebrity-like, policy-blocked, badly distorted, or otherwise unusable.
 
 ## Cover
 

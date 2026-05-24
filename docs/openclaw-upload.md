@@ -261,6 +261,7 @@ Dreamina website workflow for OpenClaw:
 - Download the generated MP4 to the VM or OpenClaw workspace.
 - Confirm the file exists locally before passing it to `--loop-video`.
 - If login, CAPTCHA, subscription limits, face detection, moderation, or manual approval blocks Dreamina/Seedance generation/download, do not create a local motion-loop substitute. Try Gemini if quota is available. If Gemini has already created 3 videos in the active 24 hour window, defer this release and move on to another eligible release. When uploading any successful Dreamina/Seedance fallback clip, pass `--loop-video-provider dreamina` or `--loop-video-provider seedance`.
+- For HaruHaru photorealistic clips, a visible adult face in a successfully generated/downloaded Seedance/Dreamina/Gemini result is not by itself a reason to regenerate. The prompt should still aim for hidden/obscured face, but use the successful clip unless it is explicit, minor-coded, celebrity-like, policy-blocked, badly distorted, or visually unusable.
 
 Dreamina/Seedance fallback rejection recovery:
 
@@ -574,7 +575,7 @@ Pass exactly one --audio/--title/--lyrics-file/--style per auto-publish-single r
 ## Safety Rules
 
 - Do not call `Approve Publish` automatically unless the human explicitly asks for full publishing.
-- Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release publish-release` or the app's local `/approve-publish` API for playlist finish passes. The app performs the real YouTube upload through the YouTube Data API.
+- Do not upload videos directly through `youtube.com` or YouTube Studio. Use `scripts/openclaw-release publish-release --no-wait` or the app's local `/approve-publish` API for playlist finish passes. The app performs the real YouTube upload through the YouTube Data API. In continuous automation, do not wait for the YouTube id after the app queues `upload_youtube`; release the OpenClaw lock and continue on the next backlog pass.
 - Do not use an existing `--release-id` that already has `youtube_video_id` for a normal new publish. Create a new release instead. Re-upload escape hatches should be used only when the human explicitly asks to upload the same release again.
 - YouTube Studio is only for human final review after the API upload, such as watching the result, confirming the scheduled public time, reviewing app-uploaded CC captions, or manual fixes.
 - Do not try to turn on captions through browser automation. For vocal releases with saved lyrics, the app uploads YouTube CC caption tracks through the API at publish time using faster-whisper line timing and Codex translations. For BGM/instrumental/no-vocal releases, leave captions/audio language alone unless the human explicitly asks for manual captions.

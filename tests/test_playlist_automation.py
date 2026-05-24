@@ -263,12 +263,13 @@ def test_openclaw_next_playlist_request_posts_to_configured_slack_channel(tmp_pa
         assert response.json()["ok"] is True
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
-        assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
+        assert "다음 playlist 제작해줘" in calls[0]["text"]
+        assert "reason: publish_completed" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
-        assert "docs/openclaw-next-release-planner.md" in calls[0]["text"]
-        assert "완료/중단 시 release id, YouTube video id, blocker만 간단히 보고" in calls[0]["text"]
-        assert "https://youtu.be/yt-next-123" in calls[0]["text"]
-        assert "Soft Hour Radio" in calls[0]["text"]
+        assert "앱 API로 backlog/status와 lock 상태" in calls[0]["text"]
+        assert "완료/중단 보고: release id, YouTube video id, blocker" in calls[0]["text"]
+        assert "https://youtu.be/yt-next-123" not in calls[0]["text"]
+        assert "Soft Hour Radio" not in calls[0]["text"]
         with SessionLocal() as db:
             updated = db.get(Playlist, playlist_id)
             assert updated.metadata_json["openclaw_next_request_youtube_video_id"] == "yt-next-123"
@@ -362,8 +363,8 @@ def test_publish_completion_requests_next_even_with_video_event_requests_enabled
             time.sleep(0.05)
         assert len(calls) == 1
         assert calls[0]["channel"] == "C0AVBUYP150"
-        assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
-        assert "scheduler_reason: publish_completed" in calls[0]["text"]
+        assert "다음 playlist 제작해줘" in calls[0]["text"]
+        assert "reason: publish_completed" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
         metadata_deadline = time.monotonic() + 3
         while time.monotonic() < metadata_deadline:
@@ -472,12 +473,13 @@ def test_backlog_request_message_prioritizes_incomplete_unknown_workspaces() -> 
         },
     )
 
-    assert "새 workspace를 만들기 전에 기존 미완성 workspace" in message
-    assert "먼저 확인할 채널 미지정/미완성 workspace" in message
-    assert "[playlist] Backyard Pool Party Pop: collecting, id workspace-1, channel unknown" in message
+    assert "다음 playlist 제작해줘" in message
+    assert "앱 API로 backlog/status와 lock 상태" in message
+    assert "먼저 확인할 채널 미지정/미완성 workspace" not in message
+    assert "[playlist] Backyard Pool Party Pop" not in message
 
 
-def test_backlog_request_message_includes_future_scheduled_public_upload_counts() -> None:
+def test_backlog_request_message_is_compact_and_defers_details_to_api() -> None:
     message = build_backlog_queue_request_message(
         reason="underfilled_backlog",
         backlog_summary={
@@ -507,13 +509,16 @@ def test_backlog_request_message_includes_future_scheduled_public_upload_counts(
         },
     )
 
-    assert "scheduled-through 날짜가 균등해지게 가장 짧은 채널부터" in message
-    assert "현재 backlog는 `scripts/openclaw-release openclaw-backlog-status`로 확인해줘." in message
-    assert "The New Verse: 0 unfinished, 0 deferred, 0 future scheduled-public YouTube uploads, scheduled-through none" in message
-    assert "Club Bloom: 0 unfinished, 0 deferred, 2 future scheduled-public YouTube uploads, scheduled-through 2099-05-20" in message
+    assert message.startswith("OPENCLAW_RUN:\n")
+    assert "다음 playlist 제작해줘" in message
+    assert "reason: underfilled_backlog" in message
+    assert "target/max: 10/10" in message
+    assert "앱 API로 backlog/status와 lock 상태" in message
+    assert "The New Verse:" not in message
+    assert "Club Bloom:" not in message
 
 
-def test_backlog_request_message_skips_auth_blocked_channels_in_priority_list() -> None:
+def test_backlog_request_message_omits_channel_priority_lists_from_slack() -> None:
     message = build_backlog_queue_request_message(
         reason="underfilled_backlog",
         backlog_summary={
@@ -543,14 +548,14 @@ def test_backlog_request_message_skips_auth_blocked_channels_in_priority_list() 
         },
     )
 
-    priority_section = message.split("YouTube 재연결 전까지", 1)[0]
-    assert "The New Verse: 0 unfinished" in priority_section
-    assert "Solwave Radio: 1 unfinished" not in priority_section
-    assert "YouTube 재연결 전까지 새 release를 만들지 말아야 할 채널" in message
-    assert "Solwave Radio: 1 failed publish item(s)" in message
+    assert "다음 playlist 제작해줘" in message
+    assert "앱 API로 backlog/status와 lock 상태" in message
+    assert "The New Verse:" not in message
+    assert "Solwave Radio:" not in message
+    assert "YouTube 재연결 전까지 새 release를 만들지 말아야 할 채널" not in message
 
 
-def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() -> None:
+def test_backlog_request_message_does_not_inline_zero_scheduled_priority() -> None:
     message = build_backlog_queue_request_message(
         reason="underfilled_backlog",
         backlog_summary={
@@ -596,16 +601,14 @@ def test_backlog_request_message_lists_zero_scheduled_lowest_unfinished_first() 
         },
     )
 
-    priority_header = message.index("먼저 채울 채널 우선순위")
-    new_index = message.index("- The New Verse: 0 unfinished", priority_header)
-    old_index = message.index("- The Old Verse: 0 unfinished", priority_header)
-    sundaze_index = message.index("- sundaze: 2 unfinished", priority_header)
-    assert new_index < sundaze_index
-    assert old_index < sundaze_index
-    assert "먼저 채울 채널 우선순위(예약 horizon 짧은 순, 모든 채널 날짜 균등)" in message
+    assert "다음 playlist 제작해줘" in message
+    assert "먼저 채울 채널 우선순위" not in message
+    assert "The New Verse:" not in message
+    assert "The Old Verse:" not in message
+    assert "sundaze:" not in message
 
 
-def test_backlog_request_message_prioritizes_shortest_schedule_horizon() -> None:
+def test_backlog_request_message_does_not_inline_schedule_horizon_snapshot() -> None:
     message = build_backlog_queue_request_message(
         reason="underfilled_backlog",
         backlog_summary={
@@ -647,13 +650,11 @@ def test_backlog_request_message_prioritizes_shortest_schedule_horizon() -> None
         },
     )
 
-    priority_header = message.index("먼저 채울 채널 우선순위")
-    storylight_index = message.index("- Storylight OST: 0 unfinished", priority_header)
-    club_index = message.index("- Club Bloom: 0 unfinished", priority_header)
-    bulsong_index = message.index("- 불송: 2 unfinished", priority_header)
-    assert storylight_index < club_index < bulsong_index
-    assert "Storylight OST: 0 unfinished, 0 deferred, 1 future scheduled-public YouTube uploads, scheduled-through 2026-05-21" in message
-    assert "불송: 2 unfinished, 0 deferred, 7 future scheduled-public YouTube uploads, scheduled-through 2026-05-27" in message
+    assert "다음 playlist 제작해줘" in message
+    assert "먼저 채울 채널 우선순위" not in message
+    assert "Storylight OST:" not in message
+    assert "Club Bloom:" not in message
+    assert "불송:" not in message
 
 
 def test_backlog_request_message_resumes_manual_blocker_instead_of_next_release() -> None:
@@ -681,10 +682,9 @@ def test_backlog_request_message_resumes_manual_blocker_instead_of_next_release(
         },
     )
 
-    assert "blocked release resume" in message
-    assert "다음 곡을 만들지 말고" in message
-    assert "같은 작업을 계속 진행해줘" in message
-    assert "blocked_release_id: release-captcha" in message
+    assert "중단된 OpenClaw 작업 이어서 진행해줘" in message
+    assert "앱 API로 manual blocker/backlog/lock 상태" in message
+    assert "blocked_release_id: release-captcha" not in message
     assert "OpenClaw Next Release Publisher Skill" not in message
 
 
@@ -1319,8 +1319,9 @@ def test_openclaw_backlog_scheduler_posts_when_channel_is_underfilled(tmp_path) 
         assert len(calls) == 1
         assert calls[0]["channel"] == "C0AVBUYP150"
         assert calls[0]["text"].startswith("OPENCLAW_RUN:\n")
-        assert "OpenClaw Next Release Publisher Skill" in calls[0]["text"]
-        assert "Soft Hour Radio: 0 unfinished" in calls[0]["text"]
+        assert "다음 playlist 제작해줘" in calls[0]["text"]
+        assert "앱 API로 backlog/status와 lock 상태" in calls[0]["text"]
+        assert "Soft Hour Radio: 0 unfinished" not in calls[0]["text"]
         assert "MusicSun:" not in calls[0]["text"]
     finally:
         clear_isolated_client_env()
@@ -1562,10 +1563,10 @@ def test_video_render_completed_event_posts_openclaw_request_after_lock_is_free(
 
         assert len(calls) == 1
         assert calls[0]["channel"] == "C0AVBUYP150"
-        assert "scheduler_reason: video_render_completed" in calls[0]["text"]
+        assert "reason: video_render_completed" in calls[0]["text"]
         assert "docs/openclaw-backlog-queue.md" in calls[0]["text"]
-        assert "Soft Hour Radio: 1 unfinished" in calls[0]["text"]
-        assert "Tokyo Daydream Radio: 0 unfinished" in calls[0]["text"]
+        assert "Soft Hour Radio: 1 unfinished" not in calls[0]["text"]
+        assert "Tokyo Daydream Radio: 0 unfinished" not in calls[0]["text"]
         with SessionLocal() as db:
             updated = db.get(Playlist, playlist_id)
             assert updated.metadata_json["openclaw_video_render_completed_request_job_id"] == job_id

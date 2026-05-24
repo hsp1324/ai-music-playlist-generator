@@ -29,6 +29,8 @@ Do not count archived releases, deleted releases, failed releases that require h
 
 On each `OPENCLAW_RUN:` backlog request:
 
+Slack command text is intentionally compact. Treat it as a trigger, then fetch details from the app API instead of expecting channel priorities or release lists in Slack: run `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status`.
+
 1. Update the repo and confirm `AIMP_LOCAL_API_BASE` points at the deployed VM app API.
 2. Acquire the app-side OpenClaw lock before opening Suno, Dreamina, or creating a release.
 3. Keep the lock alive with heartbeat while working.
@@ -37,7 +39,8 @@ On each `OPENCLAW_RUN:` backlog request:
    Do not open `/youtube/status`, `/api/youtube/status`, `/youtube/connect`, `/api/youtube/connect`, Google OAuth, or YouTube Studio in a browser. If YouTube status is not ready, report the blocker instead of trying to authenticate.
 6. First finish existing releases that are already past video render:
     - `metadata_review`: write/approve final YouTube metadata, then approve publish.
-    - `publish_ready` or `publish_queued`: retry/continue publish if safe.
+    - `publish_ready`: approve publish through the app, but use `scripts/openclaw-release publish-release --no-wait` during continuous automation so the app upload worker owns the YouTube upload.
+    - `publish_queued`: do not sit idle polling for a YouTube id. If an `upload_youtube` job is already queued/running, report it compactly, release the OpenClaw lock, and continue with the next eligible backlog item on the next request.
     - `youtube_upload_failed`: retry only if the error is transient or already fixed. If the error says the stored YouTube channel token expired/was revoked or asks to reconnect the channel, report it as a human-auth blocker. Do not make new releases for that same channel until the human reconnects it; continue only with other eligible channels.
     - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
     - loop-video deferred because Dreamina/Seedance failed and Gemini quota was exhausted: if the Gemini 24 hour cooldown has cleared, make/upload the Gemini loop video first and queue render before starting any new release. Do not replace the missing provider video with a local motion-loop workaround.
@@ -117,6 +120,7 @@ The render worker pool owns production video rendering. The Oracle VM app only q
 - If the human flags a published release's cover, thumbnail, or loop video as weak, treat it as a visual repair task, not a new music release. Keep the existing songs/audio unless the human explicitly asks for new tracks.
 - For visual-only repair, replace the final cover, text YouTube thumbnail, and short loop video together, then approve the cover and queue a fresh video render. Try Gemini first for the loop video, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. If Dreamina/Seedance cannot create the repair clip and Gemini quota is exhausted, defer the repair until Gemini can create videos again; when cooldown clears, finish the deferred repair before new loop-video work. After render completion, update or re-publish through the app's normal YouTube flow.
 - If Dreamina/Seedance fails because of face detection, moderation, payment, quota, CAPTCHA, or browser automation issues, do not make an interim local motion loop. Either make the clip in Gemini, or defer the release if Gemini quota is exhausted, then continue with the next eligible backlog item.
+- For HaruHaru photorealistic work, face-hidden/obscured is the prompt target, but a successful Seedance/Dreamina/Gemini clip with a visible adult face should still be used unless it is explicit, minor-coded, celebrity-like, policy-blocked, badly distorted, or visually unusable. Do not spend extra credits regenerating only because the face is visible.
 - Do not spend image/video-generation credits while the human says credits are unavailable. Keep the repair note and resume only after the human says credits or generation capacity are available again.
 - Current human repair note from 2026-05-15: the currently uploaded `Club Bloom` release has cover/thumbnail visuals that are too mild. Later, remake only its Club Bloom visual assets with a stronger, more click-stopping club look, then re-render from the existing music.
 - Current human repair note from 2026-05-16: `[playlist] 비 오는 서울 K-POP 드라이브 | 밤공기, 자신감, 반짝이는 보컬` has the wrong uploaded 8-second loop video attached. Treat this as a loop-video-only repair: keep the existing songs, audio render, cover, and thumbnail unless the human says otherwise. First clear the bad uploaded loop video with `scripts/openclaw-release delete-loop-video --release-title "[playlist] 비 오는 서울 K-POP 드라이브 | 밤공기, 자신감, 반짝이는 보컬"`, then create the correct replacement loop video from the existing cover/first-frame. Try Gemini first with no duration wording; if Gemini is unavailable/on cooldown/blocked after retries, use Dreamina/Seedance with duration set to exactly `7 seconds`. If Dreamina/Seedance also cannot create it and Gemini quota is exhausted, defer this repair until Gemini cooldown clears, then make/upload the Gemini loop video first. Upload the replacement with `upload-loop-video`, render video again, then continue metadata/publish through the normal app flow.
@@ -130,10 +134,10 @@ When a release has completed video render and the external worker has uploaded t
 3. Preserve the rendered timeline exactly.
 4. Include all supported localizations.
 5. Approve metadata through `scripts/openclaw-release approve-metadata`.
-6. Publish through `scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title CHANNEL_TITLE`.
+6. Publish through `scripts/openclaw-release publish-release --release-id RELEASE_ID --youtube-channel-title CHANNEL_TITLE --no-wait`.
 7. If phone/account verification blocks a 14+ minute upload, keep the release intact, report the deferred upload, and continue with backlog work.
 
-After a successful publish, finish the current OpenClaw lock normally. The app will wait for that lock to clear and may send a compact `publish_completed` backlog request if the pipeline still has unfinished work, such as a release waiting at `audio_ready`, or a channel below target backlog. Treat that request like any other backlog pass.
+After publish is queued, finish the current OpenClaw lock normally instead of waiting for the app upload worker to return a YouTube id. The app will upload in the background, then wait for the lock to clear and may send a compact `publish_completed` backlog request if the pipeline still has unfinished work, such as a release waiting at `audio_ready`, or a channel below target backlog. Treat that request like any other backlog pass.
 
 ## Slack Reporting
 
