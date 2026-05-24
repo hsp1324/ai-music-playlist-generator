@@ -52,6 +52,7 @@ from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
     evaluate_openclaw_backlog_scheduler,
     get_openclaw_lock_status,
+    openclaw_recent_request_without_acknowledgement,
     record_openclaw_backlog_scheduler_request,
 )
 
@@ -1780,6 +1781,18 @@ class BackgroundJobWorker:
                 result={"ok": False, "skipped": True, "reason": "auto_loop_stopped", "loop_state": loop_state},
             )
             return
+        cooldown = openclaw_recent_request_without_acknowledgement(
+            storage_root=self.settings.storage_root,
+            cooldown_seconds=self.settings.openclaw_backlog_request_cooldown_seconds,
+        )
+        if cooldown:
+            self._record_openclaw_publish_event_request(
+                playlist_id=playlist_id,
+                youtube_video_id=youtube_video_id,
+                reason=reason,
+                result={"ok": False, "skipped": True, "reason": "backlog_request_cooldown", **cooldown},
+            )
+            return
 
         with SessionLocal() as db:
             playlist = db.get(Playlist, playlist_id)
@@ -1902,6 +1915,18 @@ class BackgroundJobWorker:
                 job_id=job_id,
                 event=event,
                 result={"ok": False, "skipped": True, "reason": "auto_loop_stopped", "loop_state": loop_state},
+            )
+            return
+        cooldown = openclaw_recent_request_without_acknowledgement(
+            storage_root=self.settings.storage_root,
+            cooldown_seconds=self.settings.openclaw_backlog_request_cooldown_seconds,
+        )
+        if cooldown:
+            self._record_openclaw_video_event_request(
+                playlist_id=playlist_id,
+                job_id=job_id,
+                event=event,
+                result={"ok": False, "skipped": True, "reason": "backlog_request_cooldown", **cooldown},
             )
             return
 

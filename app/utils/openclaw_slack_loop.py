@@ -384,7 +384,7 @@ def build_backlog_queue_request_message(
         f"backlog_max_per_channel: {max_per_channel}",
         "",
         "최신 main을 pull한 뒤 docs/openclaw-backlog-queue.md를 먼저 읽고 그대로 진행해줘.",
-        "필요하면 docs/openclaw-next-release-planner.md, docs/openclaw-skills.md, docs/openclaw-youtube-metadata.md도 참고해줘.",
+        "현재 backlog는 `scripts/openclaw-release openclaw-backlog-status`로 확인해줘.",
         (
             "이번 요청은 예약 horizon이 가장 짧은 채널을 먼저 채우는 것이 우선이야. "
             "다른 채널의 metadata/publish finishable 항목만 처리하고 새 release 생성을 건너뛰지 말아줘."
@@ -400,17 +400,6 @@ def build_backlog_queue_request_message(
         priority_lines = _backlog_priority_channel_lines(channel_payload, max_per_channel)
         if priority_lines:
             lines.extend(["", *priority_lines])
-        lines.extend(["", "현재 웹앱 backlog snapshot:"])
-        for title, payload in sorted(channel_payload.items()):
-            lines.append(
-                f"- {title}: {payload.get('count', 0)} unfinished"
-                f", {payload.get('finishable', 0)} finishable"
-                f", {payload.get('deferred', 0)} deferred"
-                f", {payload.get('auth_blocked', 0)} YouTube reconnect needed"
-                f", {payload.get('youtube_scheduled_public_count', 0)} future scheduled-public YouTube uploads"
-                f", scheduled-through {payload.get('last_youtube_scheduled_public_local_date') or 'none'}"
-                f", {payload.get('youtube_uploaded_count', 0)} total YouTube uploads"
-            )
         reconnect_lines = [
             f"- {title}: {payload.get('auth_blocked', 0)} failed publish item(s)"
             for title, payload in sorted(channel_payload.items())

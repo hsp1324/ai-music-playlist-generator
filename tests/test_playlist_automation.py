@@ -508,8 +508,9 @@ def test_backlog_request_message_includes_future_scheduled_public_upload_counts(
     )
 
     assert "scheduled-through 날짜가 균등해지게 가장 짧은 채널부터" in message
-    assert "The New Verse: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 0 future scheduled-public YouTube uploads, scheduled-through none" in message
-    assert "Club Bloom: 0 unfinished, 0 finishable, 0 deferred, 0 YouTube reconnect needed, 2 future scheduled-public YouTube uploads, scheduled-through 2099-05-20" in message
+    assert "현재 backlog는 `scripts/openclaw-release openclaw-backlog-status`로 확인해줘." in message
+    assert "The New Verse: 0 unfinished, 0 deferred, 0 future scheduled-public YouTube uploads, scheduled-through none" in message
+    assert "Club Bloom: 0 unfinished, 0 deferred, 2 future scheduled-public YouTube uploads, scheduled-through 2099-05-20" in message
 
 
 def test_backlog_request_message_skips_auth_blocked_channels_in_priority_list() -> None:
@@ -542,7 +543,7 @@ def test_backlog_request_message_skips_auth_blocked_channels_in_priority_list() 
         },
     )
 
-    priority_section = message.split("현재 웹앱 backlog snapshot:", 1)[0]
+    priority_section = message.split("YouTube 재연결 전까지", 1)[0]
     assert "The New Verse: 0 unfinished" in priority_section
     assert "Solwave Radio: 1 unfinished" not in priority_section
     assert "YouTube 재연결 전까지 새 release를 만들지 말아야 할 채널" in message
@@ -1200,6 +1201,19 @@ def test_openclaw_backlog_scheduler_bypasses_cooldown_after_backlog_state_change
                 storage_root=services.settings.storage_root,
                 result=initial_evaluation,
             )
+            client.post(
+                "/api/openclaw/lock/start",
+                json={"owner": "openclaw", "run_id": "run-ack", "operation": "backlog-pass"},
+            )
+            client.post(
+                "/api/openclaw/lock/finish",
+                json={
+                    "owner": "openclaw",
+                    "run_id": "run-ack",
+                    "status": "completed",
+                    "message": "Acknowledged previous request.",
+                },
+            )
             db.add(
                 Playlist(
                     title="Newly Queued Video Release",
@@ -1238,6 +1252,19 @@ def test_openclaw_backlog_scheduler_bypasses_cooldown_for_new_finishable_release
             record_openclaw_backlog_scheduler_request(
                 storage_root=services.settings.storage_root,
                 result={"reason": "underfilled_backlog"},
+            )
+            client.post(
+                "/api/openclaw/lock/start",
+                json={"owner": "openclaw", "run_id": "run-ack", "operation": "backlog-pass"},
+            )
+            client.post(
+                "/api/openclaw/lock/finish",
+                json={
+                    "owner": "openclaw",
+                    "run_id": "run-ack",
+                    "status": "completed",
+                    "message": "Acknowledged previous request.",
+                },
             )
             db.add(
                 Playlist(

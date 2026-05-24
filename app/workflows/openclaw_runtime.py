@@ -230,6 +230,44 @@ def _channels_have_backlog_state_changed_since_last_request(
     )
 
 
+def _openclaw_lock_started_after_request(state: dict[str, Any], last_request_at: datetime | None) -> bool:
+    if not last_request_at:
+        return False
+    for key in ("lock", "last_finished_lock"):
+        payload = state.get(key)
+        if not isinstance(payload, dict):
+            continue
+        started_at = _parse_datetime(payload.get("started_at"))
+        if started_at and started_at > last_request_at:
+            return True
+    return False
+
+
+def openclaw_recent_request_without_acknowledgement(
+    *,
+    storage_root: Path,
+    cooldown_seconds: int,
+    now: datetime | None = None,
+) -> dict[str, Any] | None:
+    current = now or _utcnow()
+    cooldown = max(int(cooldown_seconds or 0), 0)
+    if cooldown <= 0:
+        return None
+    state = read_runtime_state(storage_root)
+    scheduler_state = dict(state.get("scheduler") or {})
+    last_request_at = _parse_datetime(scheduler_state.get("last_request_at"))
+    if not last_request_at or last_request_at + timedelta(seconds=cooldown) <= current:
+        return None
+    if _openclaw_lock_started_after_request(state, last_request_at):
+        return None
+    return {
+        "cooldown_reason": "recent_openclaw_request_without_acknowledgement",
+        "last_request_at": last_request_at.isoformat(),
+        "cooldown_seconds": cooldown,
+        "retry_after": (last_request_at + timedelta(seconds=cooldown)).isoformat(),
+    }
+
+
 def runtime_state_path(storage_root: Path) -> Path:
     return Path(storage_root) / OPENCLAW_RUNTIME_STATE_FILE
 
@@ -751,6 +789,35 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     overfull_channels = [
         title for title, payload in channel_data.items() if int(payload.get("count") or 0) >= maximum
     ]
+    unacknowledged_request = openclaw_recent_request_without_acknowledgement(
+        storage_root=settings.storage_root,
+        cooldown_seconds=cooldown_seconds,
+        now=now,
+    )
+    if unacknowledged_request:
+        pending_reason = (
+            "finishable_releases"
+            if finishable_channels
+            else "zero_scheduled_public_backlog"
+            if zero_scheduled_public_channels
+            else "underfilled_backlog"
+            if underfilled_channels
+            else unacknowledged_request["cooldown_reason"]
+        )
+        return {
+            "should_request": False,
+            "reason": "backlog_request_cooldown",
+            "pending_reason": pending_reason,
+            "target_per_channel": target,
+            "max_per_channel": maximum,
+            "finishable_channels": finishable_channels,
+            "underfilled_channels": underfilled_channels,
+            "auth_blocked_channels": auth_blocked_channels,
+            "zero_scheduled_public_channels": zero_scheduled_public_channels,
+            "overfull_channels": overfull_channels,
+            "summary": summary,
+            **unacknowledged_request,
+        }
     manual_blocker = _openclaw_manual_blocker(
         state,
         now=now,
