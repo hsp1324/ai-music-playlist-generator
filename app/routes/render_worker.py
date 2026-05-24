@@ -245,6 +245,72 @@ def _asset_path(playlist: Playlist, kind: str) -> Path:
     return resolved
 
 
+def _rendered_audio_asset_exists(playlist: Playlist) -> bool:
+    path = str(playlist.output_audio_path or "").strip()
+    return bool(path and Path(path).is_file())
+
+
+def _repair_video_job_missing_audio(
+    db: Session,
+    job: Job,
+    playlist: Playlist,
+    *,
+    now: datetime,
+) -> None:
+    pending_payload = dict(job.payload_json or {})
+    pending_payload.setdefault("playlist_id", playlist.id)
+    pending_payload.setdefault("actor", "system:render-worker-claim-guard")
+    pending_payload.setdefault("trigger", "missing-rendered-audio-before-video")
+
+    result = dict(job.result_json or {})
+    result["missing_audio_repair_at"] = now.isoformat()
+    result["missing_audio_repair_reason"] = "output_audio_path_missing_or_missing_on_disk"
+    job.status = JobStatus.failed
+    job.finished_at = now
+    job.error_text = "Rendered audio is missing; queued audio render before video render."
+    job.result_json = result
+    db.add(job)
+
+    active_audio = db.scalars(
+        select(Job).where(
+            Job.playlist_id == playlist.id,
+            Job.type == JobType.build_playlist,
+            Job.status.in_([JobStatus.queued, JobStatus.running]),
+        )
+    ).first()
+    if active_audio is None:
+        db.add(
+            Job(
+                type=JobType.build_playlist,
+                status=JobStatus.queued,
+                source="system:render-worker-claim-guard",
+                payload_json={
+                    "playlist_id": playlist.id,
+                    "actor": "system:render-worker-claim-guard",
+                    "trigger": "missing-rendered-audio-before-video",
+                },
+                result_json={},
+                playlist=playlist,
+            )
+        )
+
+    meta = dict(playlist.metadata_json or {})
+    meta["workflow_state"] = "render_queued"
+    meta["render_ready"] = False
+    meta["video_render_pending_after_audio"] = True
+    meta["pending_video_render_payload"] = pending_payload
+    meta["video_render_requested_at"] = now.isoformat()
+    meta["video_render_requested_by"] = "system:render-worker-claim-guard"
+    meta["note"] = "Video render was deferred because rendered audio is missing; audio render is queued first."
+    meta.pop("video_build_error", None)
+    playlist.output_audio_path = None
+    playlist.output_video_path = None
+    playlist.youtube_video_id = None
+    playlist.status = PlaylistStatus.building
+    playlist.metadata_json = meta
+    db.add(playlist)
+
+
 def _upload_paths(services: ServiceRegistry, job_id: str) -> tuple[Path, Path]:
     directory = services.settings.temp_dir / "render-worker"
     directory.mkdir(parents=True, exist_ok=True)
@@ -788,6 +854,10 @@ def claim_render_job(
         worker = result.get("external_render_worker")
         if isinstance(worker, dict) and worker.get("worker_id") == payload.worker_id:
             job, playlist = _load_render_job(db, job.id)
+            if not _rendered_audio_asset_exists(playlist):
+                _repair_video_job_missing_audio(db, job, playlist, now=now)
+                db.commit()
+                continue
             worker = dict(worker)
             worker["hostname"] = payload.hostname or worker.get("hostname") or ""
             worker["capabilities"] = payload.capabilities or worker.get("capabilities") or {}
@@ -842,6 +912,10 @@ def claim_render_job(
     claimable_jobs = []
     for job in candidate_jobs:
         if job.playlist is None:
+            continue
+        if not _rendered_audio_asset_exists(job.playlist):
+            _repair_video_job_missing_audio(db, job, job.playlist, now=now)
+            db.commit()
             continue
         if _job_will_render_still_image(job, job.playlist) and not _worker_supports_smooth_still_image_render(
             payload.capabilities or {}

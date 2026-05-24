@@ -2105,6 +2105,90 @@ def test_external_render_worker_auto_queues_youtube_upload_after_rerender(tmp_pa
         clear_isolated_client_env()
 
 
+def test_external_render_worker_defers_claim_when_rendered_audio_is_missing(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        storage = tmp_path / "storage"
+        playlist_dir = storage / "playlists"
+        track_dir = storage / "tracks"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        cover_path = playlist_dir / "missing-audio-cover.png"
+        loop_path = playlist_dir / "missing-audio-loop.mp4"
+        track_path = track_dir / "missing-audio-track.mp3"
+        cover_path.write_bytes(b"cover")
+        loop_path.write_bytes(b"loop")
+        track_path.write_bytes(b"track-audio")
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Missing Audio Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "test"},
+            )
+            playlist = Playlist(
+                title="[playlist] Missing Audio Release",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=None,
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "loop_video_smooth": True,
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            video_job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={"video_spectrum_overlay_style": "bars"},
+                result_json={},
+            )
+            db.add(video_job)
+            db.commit()
+            playlist_id = playlist.id
+            video_job_id = video_job.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={"worker_id": "test-worker", "hostname": "test-host"},
+        )
+        assert claim.status_code == 200
+        assert claim.json()["job"] is None
+
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, playlist_id)
+            failed_video_job = db.get(Job, video_job_id)
+            audio_job = db.scalars(
+                select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_playlist)
+            ).first()
+            meta = playlist.metadata_json or {}
+            assert failed_video_job.status == JobStatus.failed
+            assert "Rendered audio is missing" in failed_video_job.error_text
+            assert audio_job is not None
+            assert audio_job.status == JobStatus.queued
+            assert playlist.output_audio_path is None
+            assert meta["workflow_state"] == "render_queued"
+            assert meta["video_render_pending_after_audio"] is True
+            assert meta["pending_video_render_payload"]["video_spectrum_overlay_style"] == "bars"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_external_render_worker_claim_clears_stale_partial_upload(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -5067,7 +5151,7 @@ def test_workspace_audio_render_can_be_queued_before_target_duration(tmp_path) -
         workspaces_response = client.get("/api/playlists/workspaces")
         workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert workspace["output_audio_path"].endswith(".mp3")
-        assert workspace["workflow_state"] == "rendered"
+        assert workspace["workflow_state"] == "video_required"
         assert workspace["cover_image_path"] == str(cover_path)
         assert workspace["cover_approved"] is True
         assert workspace["render_job"]["status"] == "succeeded"
@@ -6318,6 +6402,113 @@ def test_cover_image_can_be_uploaded_for_review(tmp_path) -> None:
         workspace = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
         assert workspace["workflow_state"] == "metadata_review"
         assert workspace["output_video_path"].endswith(".mp4")
+    finally:
+        clear_isolated_client_env()
+
+
+def test_cover_can_be_staged_before_audio_render(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+
+        def fake_build_audio(tracks, output_path):
+            output_path.write_bytes(b"fake-mp3")
+            return output_path
+
+        services.playlist_builder.build_audio = fake_build_audio
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Cover Before Audio Workspace",
+                "target_duration_seconds": 60,
+            },
+        )
+        workspace_id = workspace_response.json()["id"]
+
+        local_audio = tmp_path / "cover-before-audio-source.mp3"
+        local_audio.write_bytes(b"fake source")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Cover Before Audio Track",
+                "prompt": "warm latin pop",
+                "duration_seconds": 60,
+                "audio_path": str(local_audio),
+                "metadata": {"source": "test"},
+            },
+        )
+        track_id = track_response.json()["id"]
+
+        approve_response = client.post(
+            f"/api/tracks/{track_id}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        upload_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/upload",
+            data={"actor": "test-suite"},
+            files={"cover_file": ("early-cover.png", b"fake-png", "image/png")},
+        )
+        assert upload_response.status_code == 200
+        uploaded = upload_response.json()
+        assert uploaded["workflow_state"] == "cover_review"
+        assert uploaded["output_audio_path"] is None
+        assert uploaded["cover_image_path"].endswith(".png")
+
+        approve_cover_response = client.post(
+            f"/api/playlists/{workspace_id}/cover/approve",
+            json={"actor": "test-suite", "approved": True},
+        )
+        assert approve_cover_response.status_code == 200
+        approved = approve_cover_response.json()
+        assert approved["workflow_state"] == "pending_audio_render"
+        assert approved["cover_approved"] is True
+
+        render_video_response = client.post(
+            f"/api/playlists/{workspace_id}/video/render",
+            json={"actor": "test-suite", "allow_still_image_fallback": True},
+        )
+        assert render_video_response.status_code == 200
+        pending_video = render_video_response.json()
+        assert pending_video["workflow_state"] == "pending_audio_render"
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            assert playlist is not None
+            meta = playlist.metadata_json or {}
+            assert meta["video_render_pending_after_audio"] is True
+            assert meta["pending_video_render_payload"]["allow_still_image_fallback"] is True
+            assert db.scalars(
+                select(Job).where(Job.playlist_id == workspace_id, Job.type == JobType.build_video)
+            ).first() is None
+
+        render_audio_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_audio_response.status_code == 200
+        assert render_audio_response.json()["workflow_state"] == "render_queued"
+        assert client.app.state.services.worker.process_pending_once(job_types=(JobType.build_playlist,)) is True
+        assert client.app.state.services.worker.process_pending_once(job_types=(JobType.build_playlist,)) is False
+        workspaces_response = client.get("/api/playlists/workspaces")
+        assert workspaces_response.status_code == 200
+        audio_ready = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
+        assert audio_ready["workflow_state"] == "video_queued"
+        assert audio_ready["cover_approved"] is True
+        with SessionLocal() as db:
+            job = db.scalars(
+                select(Job).where(Job.playlist_id == workspace_id, Job.type == JobType.build_video)
+            ).first()
+            assert job is not None
+            assert job.status == JobStatus.queued
+            assert job.source == "system:pending-video-render"
+            assert job.payload_json["allow_still_image_fallback"] is True
     finally:
         clear_isolated_client_env()
 

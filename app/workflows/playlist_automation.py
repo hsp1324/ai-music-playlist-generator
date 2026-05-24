@@ -2527,8 +2527,6 @@ def attach_uploaded_playlist_cover(
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
         raise ValueError("Playlist not found")
-    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
-        raise ValueError("Rendered audio is required before uploading cover art.")
     if not Path(cover_image_path).exists():
         raise ValueError("Uploaded cover image is missing on disk.")
 
@@ -2549,12 +2547,16 @@ def attach_uploaded_playlist_cover(
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
     meta["workflow_state"] = "cover_review"
-    meta["note"] = "Cover image uploaded. Review and approve it before rendering video."
+    if playlist.output_audio_path and Path(playlist.output_audio_path).exists():
+        meta["note"] = "Cover image uploaded. Review and approve it before rendering video."
+    else:
+        meta["note"] = "Cover image uploaded. Render audio and approve the cover before rendering video."
     meta.pop("publish_approved_by", None)
     playlist.output_video_path = None
     playlist.youtube_video_id = None
     playlist.metadata_json = meta
-    playlist.status = PlaylistStatus.ready
+    if playlist.output_audio_path and Path(playlist.output_audio_path).exists():
+        playlist.status = PlaylistStatus.ready
     db.add(playlist)
     db.commit()
     return _load_playlist_with_tracks(db, playlist.id)
@@ -2730,15 +2732,23 @@ def approve_playlist_cover(
     meta["cover_approved"] = approved
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
-    meta["workflow_state"] = "video_required" if approved else "cover_review"
-    meta["note"] = note or (
-        "Cover approved. Render video next." if approved else "Cover returned for review."
-    )
+    audio_ready = bool(playlist.output_audio_path and Path(playlist.output_audio_path).exists())
+    if approved:
+        meta["workflow_state"] = "video_required" if audio_ready else "pending_audio_render"
+        meta["note"] = note or (
+            "Cover approved. Render video next."
+            if audio_ready
+            else "Cover approved. Waiting for rendered audio before video render."
+        )
+    else:
+        meta["workflow_state"] = "cover_review"
+        meta["note"] = note or "Cover returned for review."
     meta.pop("publish_approved_by", None)
     playlist.output_video_path = None
     playlist.youtube_video_id = None
     playlist.metadata_json = meta
-    playlist.status = PlaylistStatus.ready
+    if audio_ready:
+        playlist.status = PlaylistStatus.ready
     db.add(playlist)
     db.commit()
     return _load_playlist_with_tracks(db, playlist.id)
@@ -2760,10 +2770,6 @@ def queue_workspace_video_render(
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
         raise ValueError("Playlist not found")
-    if not playlist.output_audio_path or not Path(playlist.output_audio_path).exists():
-        raise ValueError("Rendered audio is required before rendering video.")
-    if not _rendered_audio_matches_current_tracks(playlist):
-        raise ValueError("Rendered audio is stale because the track list changed. Re-render audio before rendering video.")
 
     meta = _playlist_meta(playlist)
     cover_image_path = meta.get("cover_image_path")
@@ -2786,10 +2792,6 @@ def queue_workspace_video_render(
     visualizer_style = apply_video_spectrum_channel_policy(visualizer_style, meta, title=playlist.title)
     track_policy_payloads = _playlist_track_policy_payloads(playlist)
     apply_release_vocal_metadata(meta, track_policy_payloads)
-    meta["workflow_state"] = "video_queued"
-    meta["metadata_approved"] = False
-    meta["publish_approved"] = False
-    meta["note"] = "Video render queued from the web dashboard."
     meta["video_spectrum_overlay_style"] = visualizer_style
     meta["video_render_resolution"] = render_resolution
     meta["video_render_source_mode"] = source_mode
@@ -2833,6 +2835,38 @@ def queue_workspace_video_render(
         "video_lyrics_alignment_mode": str(meta.get("video_lyrics_alignment_mode") or "whisper"),
         **release_vocal_metadata(meta, track_policy_payloads),
     }
+
+    audio_ready = bool(playlist.output_audio_path and Path(playlist.output_audio_path).exists())
+    if not audio_ready:
+        meta["workflow_state"] = "pending_audio_render"
+        meta["metadata_approved"] = False
+        meta["publish_approved"] = False
+        meta["note"] = "Video render requested. Waiting for rendered audio before queuing final video render."
+        meta["video_render_pending_after_audio"] = True
+        meta["pending_video_render_payload"] = render_payload
+        meta["video_render_requested_at"] = _utcnow().isoformat()
+        meta["video_render_requested_by"] = actor
+        meta.pop("video_build_error", None)
+        meta.pop("publish_approved_by", None)
+        playlist.output_video_path = None
+        playlist.youtube_video_id = None
+        playlist.metadata_json = meta
+        playlist.status = PlaylistStatus.building
+        db.add(playlist)
+        db.commit()
+        return _load_playlist_with_tracks(db, playlist.id)
+
+    if not _rendered_audio_matches_current_tracks(playlist):
+        raise ValueError("Rendered audio is stale because the track list changed. Re-render audio before rendering video.")
+
+    meta["workflow_state"] = "video_queued"
+    meta["metadata_approved"] = False
+    meta["publish_approved"] = False
+    meta["note"] = "Video render queued from the web dashboard."
+    meta.pop("video_render_pending_after_audio", None)
+    meta.pop("pending_video_render_payload", None)
+    meta.pop("video_render_requested_at", None)
+    meta.pop("video_render_requested_by", None)
 
     if active_job is None:
         db.add(
@@ -3237,7 +3271,10 @@ async def _update_publish_state(
                     meta["note"] = meta.get("note") or "Cover image uploaded. Review and approve it before rendering video."
                 elif meta.get("cover_image_path") and meta.get("cover_approved") and not playlist.output_video_path:
                     meta["workflow_state"] = "video_required"
-                    meta["note"] = meta.get("note") or "Cover approved. Render video next."
+                    if str(meta.get("note") or "").startswith("Cover approved. Waiting for rendered audio"):
+                        meta["note"] = "Cover approved. Render video next."
+                    else:
+                        meta["note"] = meta.get("note") or "Cover approved. Render video next."
                 else:
                     meta["workflow_state"] = "audio_ready"
                     meta["note"] = meta.get("note") or "Audio render is complete. Generate cover art next."

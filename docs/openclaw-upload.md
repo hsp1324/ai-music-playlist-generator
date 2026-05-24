@@ -533,10 +533,12 @@ scripts/openclaw-release upload-audio --new-single --audio ABSOLUTE_AUDIO_PATH -
 
 Return the JSON result, especially release.id and track.id.
 Do not approve, render, or publish unless explicitly asked.
-If a 16:9 cover image is also ready and the release already has rendered audio, run:
+If a 16:9 cover image is ready, run this as soon as possible; the app accepts uploaded covers before rendered audio is available:
 
 scripts/openclaw-release upload-cover --release-id RELEASE_ID --cover ABSOLUTE_COVER_PATH
 ```
+
+After uploading the cover, approve it. If audio render is still pending, the release will wait in `pending_audio_render`. Once the approved cover and required loop video are present, OpenClaw may call `render-video` before audio render completes; the app stores the request in metadata and automatically queues the final `build_video` job when rendered audio becomes available. If audio is already rendered, `render-video` queues `build_video` immediately.
 
 If the human explicitly asks OpenClaw to publish one single all the way to YouTube, use the automatic single publisher instead:
 

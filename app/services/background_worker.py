@@ -417,6 +417,104 @@ class BackgroundJobWorker:
                 return True
         return False
 
+    @staticmethod
+    def _find_active_video_job(db: Session, playlist_id: str) -> Job | None:
+        return db.scalars(
+            select(Job).where(
+                Job.playlist_id == playlist_id,
+                Job.type == JobType.build_video,
+                Job.status.in_([JobStatus.queued, JobStatus.running]),
+            )
+        ).first()
+
+    @staticmethod
+    def _pending_video_render_needs_loop(payload: dict, meta: dict) -> bool:
+        source_mode = str(
+            payload.get("video_render_source_mode")
+            or meta.get("video_render_source_mode")
+            or "auto"
+        ).strip().lower().replace("-", "_")
+        if source_mode in {"still", "image", "cover"}:
+            source_mode = "still_image"
+        elif source_mode in {"loop", "video"}:
+            source_mode = "loop_video"
+        elif source_mode not in {"auto", "loop_video", "still_image"}:
+            source_mode = "auto"
+        allow_still_image_fallback = bool(payload.get("allow_still_image_fallback"))
+        if source_mode == "still_image":
+            allow_still_image_fallback = True
+        return source_mode != "still_image" and not allow_still_image_fallback
+
+    def _queue_pending_video_render_after_audio(
+        self,
+        db: Session,
+        playlist: Playlist,
+        meta: dict,
+    ) -> Job | None:
+        if not meta.get("video_render_pending_after_audio"):
+            return None
+
+        payload = dict(meta.get("pending_video_render_payload") or {})
+        if not payload:
+            meta["workflow_state"] = "video_required"
+            meta["note"] = "Audio render completed, but the pending video render request was missing. Queue video render again."
+            meta.pop("video_render_pending_after_audio", None)
+            return None
+
+        cover_image_path = str(meta.get("cover_image_path") or "").strip()
+        if not cover_image_path or not Path(cover_image_path).exists():
+            meta["workflow_state"] = "cover_review"
+            meta["note"] = "Audio render completed, but approved cover art is missing. Upload cover art before video render."
+            return None
+        if not meta.get("cover_approved"):
+            meta["workflow_state"] = "cover_review"
+            meta["note"] = "Audio render completed. Review and approve cover before video render."
+            return None
+
+        loop_video_path = str(meta.get("loop_video_path") or "").strip()
+        if self._pending_video_render_needs_loop(payload, meta) and (
+            not loop_video_path or not Path(loop_video_path).exists()
+        ):
+            meta["workflow_state"] = "video_required"
+            meta["note"] = "Audio render completed, but the requested video render needs an uploaded loop video."
+            return None
+
+        active_job = self._find_active_video_job(db, playlist.id)
+        payload = {
+            **payload,
+            "playlist_id": playlist.id,
+            "trigger": payload.get("trigger") or "pending-video-render-after-audio",
+        }
+        meta["workflow_state"] = "video_queued"
+        meta["metadata_approved"] = False
+        meta["publish_approved"] = False
+        meta["note"] = "Audio render completed. Pending video render queued."
+        meta.pop("video_render_pending_after_audio", None)
+        meta.pop("pending_video_render_payload", None)
+        meta.pop("video_build_error", None)
+        meta.pop("publish_approved_by", None)
+        playlist.output_video_path = None
+        playlist.youtube_video_id = None
+        playlist.status = PlaylistStatus.building
+
+        if active_job is not None:
+            if active_job.status == JobStatus.queued:
+                active_job.payload_json = {**dict(active_job.payload_json or {}), **payload}
+                active_job.source = active_job.source or "system:pending-video-render"
+            db.add(active_job)
+            return active_job
+
+        job = Job(
+            type=JobType.build_video,
+            status=JobStatus.queued,
+            source="system:pending-video-render",
+            payload_json=payload,
+            result_json={},
+            playlist=playlist,
+        )
+        db.add(job)
+        return job
+
     def _adopt_recent_existing_youtube_upload(
         self,
         db: Session,
@@ -808,11 +906,26 @@ class BackgroundJobWorker:
             "updated_at": _utcnow().isoformat(),
         }
         meta.pop("stale_audio_render", None)
-        meta["workflow_state"] = "audio_ready" if meta.get("publish_ready") else "rendered"
+        pending_video_requested = bool(meta.get("video_render_pending_after_audio"))
+        pending_video_job = None
+        if pending_video_requested:
+            pending_video_job = self._queue_pending_video_render_after_audio(db, playlist, meta)
+        if not pending_video_requested and meta.get("cover_image_path") and meta.get("cover_approved"):
+            meta["workflow_state"] = "video_required"
+            meta["note"] = "Audio render completed. Approved cover is ready; queue video render next."
+        elif not pending_video_requested and meta.get("cover_image_path"):
+            meta["workflow_state"] = "cover_review"
+            meta["note"] = "Audio render completed. Review and approve cover before video render."
+        elif not pending_video_requested:
+            meta["workflow_state"] = "audio_ready" if meta.get("publish_ready") else "rendered"
+            meta["note"] = "Audio render completed in background. Generate cover art next."
         meta.pop("render_error", None)
-        meta["note"] = "Audio render completed in background. Generate cover art next."
         playlist.metadata_json = meta
-        playlist.status = PlaylistStatus.ready if meta.get("publish_ready") else PlaylistStatus.draft
+        playlist.status = (
+            PlaylistStatus.building
+            if pending_video_job is not None
+            else PlaylistStatus.ready if meta.get("publish_ready") else PlaylistStatus.draft
+        )
 
         job.result_json = {
             **(job.result_json or {}),
