@@ -3490,7 +3490,7 @@ def test_video_render_queue_posts_ops_slack(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
+def test_cinematic_pulse_video_render_uses_loop_video_when_requested(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         settings = client.app.state.settings
@@ -3501,8 +3501,10 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
 
         audio_path = playlist_dir / "cinematic-audio.mp3"
         cover_path = playlist_dir / "cinematic-cover.png"
+        loop_path = playlist_dir / "cinematic-loop.mp4"
         track_path = track_dir / "cinematic-track.mp3"
         audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
         track_path.write_bytes(b"fake-track")
         Image.new("RGB", (1280, 720), "black").save(cover_path)
 
@@ -3526,6 +3528,7 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
                     "workflow_state": "audio_ready",
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
+                    "loop_video_path": str(loop_path),
                 },
             )
             db.add_all([track, playlist])
@@ -3539,25 +3542,27 @@ def test_cinematic_pulse_video_render_forces_bar_spectrum(tmp_path) -> None:
             json={
                 "actor": "test-suite",
                 "video_spectrum_overlay_style": "radial",
+                "video_render_source_mode": "loop_video",
+                "video_render_resolution": "720p",
             },
         )
 
         assert response.status_code == 200
         assert response.json()["video_spectrum_overlay_style"] == "bars"
-        assert response.json()["video_render_source_mode"] == "still_image"
-        assert response.json()["video_render_resolution"] == "2k"
+        assert response.json()["video_render_source_mode"] == "loop_video"
+        assert response.json()["video_render_resolution"] == "720p"
         with SessionLocal() as db:
             job = db.scalars(
                 select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_video)
             ).one()
             playlist = db.get(Playlist, playlist_id)
             assert playlist.metadata_json["video_spectrum_overlay_style"] == "bars"
-            assert playlist.metadata_json["video_render_source_mode"] == "still_image"
-            assert playlist.metadata_json["video_render_resolution"] == "2k"
-            assert job.payload_json["allow_still_image_fallback"] is True
+            assert playlist.metadata_json["video_render_source_mode"] == "loop_video"
+            assert playlist.metadata_json["video_render_resolution"] == "720p"
+            assert job.payload_json["allow_still_image_fallback"] is False
             assert job.payload_json["video_spectrum_overlay_style"] == "bars"
-            assert job.payload_json["video_render_source_mode"] == "still_image"
-            assert job.payload_json["video_render_resolution"] == "2k"
+            assert job.payload_json["video_render_source_mode"] == "loop_video"
+            assert job.payload_json["video_render_resolution"] == "720p"
     finally:
         clear_isolated_client_env()
 

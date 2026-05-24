@@ -84,8 +84,8 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### Cinematic Pulse
 
 - No-vocal cinematic orchestra, movie OST, film score, trailer, heroic, sci-fi, dark fantasy, mystery, or emotional cinematic music.
-- Use photorealistic cinematic still-image / premium movie-poster realism. Do not create a normal provider loop video; render from the high-resolution still image.
-- Queue still-image renders with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
+- Use photorealistic cinematic first-frame / premium movie-poster realism and create a restrained provider loop video.
+- Queue renders with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly approves a still-image fallback.
 - If text is useful, use `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
 
 ### Club Bloom

@@ -325,8 +325,6 @@ def _job_render_resolution(job: Job, playlist: Playlist) -> str:
         or meta.get("video_render_resolution")
         or "720p"
     )
-    if is_cinematic_pulse_release(meta) and resolution == "720p":
-        return "2k"
     return resolution
 
 
@@ -338,8 +336,6 @@ def _job_will_render_still_image(job: Job, playlist: Playlist) -> bool:
         or meta.get("video_render_source_mode")
         or "auto"
     )
-    if is_cinematic_pulse_release(meta):
-        return True
     if source_mode == "still_image":
         return True
     loop_video_path = Path(str(meta.get("loop_video_path") or "")) if meta.get("loop_video_path") else None
@@ -583,9 +579,6 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_render_source_mode")
         or "auto"
     )
-    is_cinematic_pulse = is_cinematic_pulse_release(meta)
-    if is_cinematic_pulse:
-        source_mode = "still_image"
     if is_storylight_ost_release(meta) and source_mode == "still_image":
         raise HTTPException(status_code=409, detail="Storylight OST requires an uploaded loop video.")
     if source_mode == "still_image":
@@ -808,9 +801,6 @@ def claim_render_job(
             meta = dict(playlist.metadata_json or {})
             if is_cinematic_pulse_release(meta):
                 meta["video_spectrum_overlay_style"] = "bars"
-                meta["video_render_source_mode"] = "still_image"
-                current_resolution = _normalize_render_resolution(meta.get("video_render_resolution"))
-                meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
             elif is_religious_no_spectrum_release(meta, title=playlist.title):
                 meta["video_spectrum_overlay_style"] = "none"
             playlist.metadata_json = meta
@@ -914,9 +904,6 @@ def claim_render_job(
     job.result_json = result
     if is_cinematic_pulse_release(meta):
         meta["video_spectrum_overlay_style"] = "bars"
-        meta["video_render_source_mode"] = "still_image"
-        current_resolution = _normalize_render_resolution(meta.get("video_render_resolution"))
-        meta["video_render_resolution"] = "2k" if current_resolution == "720p" else current_resolution
     elif is_religious_no_spectrum_release(meta, title=playlist.title):
         meta["video_spectrum_overlay_style"] = "none"
     meta["video_base_duration_seconds"] = base_duration_seconds or 0

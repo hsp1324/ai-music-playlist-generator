@@ -17,7 +17,7 @@ The production source of truth is [openclaw-channel-profiles](openclaw-channel-p
 - Do not include spectrum bars, waveform graphics, equalizers, or audio meters in generated assets. The app adds the audio-reactive visualizer during final render.
 - Available app-rendered visualizer presets are `bars`, `mirror-bars`, `calm-bars`, and `none`. Do not use removed busy presets: small dots/particles, thin waveform, multiwave, radial, pulse, or the spectrum style used on `창세기 창조의 빛`. `BibliaCanto` must use `none`; `불송` must use `calm-bars`.
 - Human visual requests override the channel default when they are safe and compatible with the channel.
-- All generated visuals should look animated, anime, illustrated, or stylized unless a channel profile says otherwise. `Cinematic Pulse` uses original photorealistic cinematic stills. `불송` uses photorealistic/premium Buddhist visuals by default, with occasional gentle animation only when the music lane fits.
+- All generated visuals should look animated, anime, illustrated, or stylized unless a channel profile says otherwise. `Cinematic Pulse` uses original photorealistic cinematic first-frame art and restrained cinematic motion. `불송` uses photorealistic/premium Buddhist visuals by default, with occasional gentle animation only when the music lane fits.
 
 ## Loop Video Rules
 
@@ -46,7 +46,7 @@ The production source of truth is [openclaw-channel-profiles](openclaw-channel-p
 - `Solwave Radio`: Latin/Spanish pop visuals; use Spanish/Latin lane text such as Pop Latino, Reggaeton Suave, Bachata Pop, Latin R&B, or Verano Latino when useful.
 - `HaruHaru`: Korean pop visuals; keep one coherent lane per video. Photorealistic adult-fashion/lifestyle visuals are allowed at a 2:1 photorealistic-to-animation ratio, with stable subject scale and no explicit sexual content.
 - `Storylight OST`: playful game/anime BGM visuals; sell happy mood, cozy gaming, arcade/game OST, or light focus instead of narrow mechanic words.
-- `Cinematic Pulse`: photorealistic cinematic still-image render, preferably 2560x1440 or at least 1920x1080; final render uses `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars`.
+- `Cinematic Pulse`: photorealistic cinematic cover/first-frame art, preferably 2560x1440 or at least 1920x1080. Create a subtle 7 second provider loop video from that first frame, then queue final render with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly asks for still-image fallback or higher resolution.
 - `Club Bloom`: no-vocal club/EDM visuals; prefer active DJ/performance scenes, rooftop/beach/festival/nightclub energy, bold neon, and style text such as Tech House, Bass House, Trance Mix, EDM Mix, or Club Mix.
 - `BibliaCanto`: Bible scripture music; use exact passage range and music lane as visual text when useful, never `Old Verse`, `New Verse`, or channel names. Render with `--video-spectrum-overlay-style none`.
 - `불송`: Buddhist scripture-inspired vocal music; cover/thumbnail/first-frame should use a short Korean passage/theme + style phrase such as `팔정도 명상팝`, `자비 트립합`, or `무상 불교 재즈`, never `불송`. Use calm 6 second Seedance/Dreamina `2.0 Fast` motion and final render with `--video-spectrum-overlay-style calm-bars`.

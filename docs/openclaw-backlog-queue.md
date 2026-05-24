@@ -2,7 +2,7 @@
 
 Use this skill when the AI Music app asks OpenClaw to produce the next release through the deployed Oracle VM app.
 
-The current production mode is external-render lookahead: the Oracle VM app owns state, Slack, and YouTube publish, while OpenClaw prepares the next release's audio, cover, thumbnail, and usually a short loop video. A separate render worker machine claims queued video jobs and uploads the finished MP4 back to the app. Cinematic Pulse is the exception: OpenClaw should prepare a high-resolution still cover image instead of a provider loop video.
+The current production mode is external-render lookahead: the Oracle VM app owns state, Slack, and YouTube publish, while OpenClaw prepares the next release's audio, cover, thumbnail, and short loop video. A separate render worker machine claims queued video jobs and uploads the finished MP4 back to the app. Cinematic Pulse still uses photorealistic high-resolution first-frame art, but it also needs a restrained provider loop video by default.
 
 ## Core Rule
 
@@ -102,11 +102,11 @@ When creating a new release, OpenClaw should produce assets and queue rendering 
    - Pass `--youtube-channel-title "$CHANNEL_TITLE"` when using `scripts/openclaw-release create-release`.
    - This lets the web app count the release against the correct channel backlog before publish.
 4. Generate and upload roughly 15 minutes of new approved audio for normal non-scripture channels, or roughly 40 minutes for BibliaCanto/불송 passage-based releases. When audio render is queued, the web app automatically tries to extend non-scripture base blocks to roughly 40 minutes by reusing previous same-channel, similar-genre tracks from the back half of already uploaded YouTube videos. BibliaCanto and 불송 are excluded from reuse. During the trial period, final video repeat is disabled and render workers upload the base block only.
-5. Upload final cover, YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if Gemini has already used all 3 successful videos in the current 24 hour window, defer this release and resume it first after cooldown. For Cinematic Pulse, skip loop-video creation and upload a high-resolution photorealistic cover instead.
+5. Upload final cover, YouTube thumbnail, and short loop video. Try Gemini first, then use Dreamina/Seedance when Gemini is on cooldown, unavailable, or blocked after retries. If Dreamina/Seedance cannot create the clip, try Gemini again when quota is available; if Gemini has already used all 3 successful videos in the current 24 hour window, defer this release and resume it first after cooldown. For Cinematic Pulse, use photorealistic cinematic cover/first-frame art and still create a subtle loop video by default.
 6. Render audio with `scripts/openclaw-release render-audio --release-id RELEASE_ID --randomize-order`.
 7. Approve the uploaded cover with `scripts/openclaw-release approve-cover --release-id RELEASE_ID`.
 8. Queue video render with `scripts/openclaw-release render-video --release-id RELEASE_ID --video-spectrum-overlay-style PRESET`.
-9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset. For `Cinematic Pulse`, queue `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 2k --video-spectrum-overlay-style bars` unless a human explicitly asks otherwise.
+9. Choose the visualizer preset that fits the release art; do not rely on the default when the visual mood clearly calls for another preset. For `Cinematic Pulse`, queue `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly asks for a still-image fallback or higher resolution.
 10. Do not pass `--wait` in normal automation. Do not approve metadata or publish until the app later asks again after external render completion.
 11. Release the OpenClaw lock and report the queued release id.
 

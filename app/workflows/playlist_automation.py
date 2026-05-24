@@ -2771,14 +2771,8 @@ def queue_workspace_video_render(
         raise ValueError("Approved cover image is required before rendering video.")
     if not meta.get("cover_approved"):
         raise ValueError("Cover image must be approved before rendering video.")
-    is_cinematic_pulse = is_cinematic_pulse_release(meta)
     source_mode = _normalize_video_render_source_mode(video_render_source_mode)
     render_resolution = _normalize_video_render_resolution(video_render_resolution)
-    if is_cinematic_pulse:
-        source_mode = "still_image"
-        if render_resolution == "720p":
-            render_resolution = "2k"
-        allow_still_image_fallback = True
     if is_storylight_ost_release(meta) and source_mode == "still_image":
         raise ValueError("Storylight OST requires an uploaded loop video; still-image video render is not allowed.")
 

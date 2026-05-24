@@ -22,7 +22,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
-- Do not put `Cinematic Pulse`, the channel name, a channel logo, or a brand line on the cover/still image.
+- Do not put `Cinematic Pulse`, the channel name, a channel logo, or a brand line on the cover/first-frame image.
 - If text is useful, use only a short integrated cinematic style phrase such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the playlist concept: movie-poster landscape, final battle, dark fantasy confrontation, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, or trailer-poster scene.
@@ -38,23 +38,23 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 
 ## Render Visual
 
-- Do not create or upload a Gemini/Dreamina/Seedance loop video for normal Cinematic Pulse releases. Those providers usually reduce the moving clip to 720p, which weakens the channel's premium film-score look.
-- Instead, create a very high quality 16:9 photorealistic cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080. Use that still image as the final video source.
+- Create a very high quality 16:9 photorealistic cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080.
+- Create a subtle provider loop video from that first frame. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
+- Dreamina/Seedance clips should use the normal `2.0 Fast`, `16:9`, `720p`, exactly `7 seconds` setting. Gemini clips are uploaded as generated after inspection.
 - Queue final render with:
 
 ```bash
 scripts/openclaw-release render-video \
   --release-id RELEASE_ID \
-  --allow-still-image-video \
-  --video-render-source-mode still_image \
-  --video-render-resolution 2k \
+  --video-render-source-mode loop_video \
+  --video-render-resolution 720p \
   --video-spectrum-overlay-style bars
 ```
 
-- The app/render worker will render from the high-resolution image and add only the clean bar spectrum overlay. Do not bake spectrum graphics into the image itself.
-- If a human explicitly asks for a moving Cinematic Pulse clip, follow the request, but default automation should prefer the high-resolution still-image render.
+- The app/render worker will use the uploaded loop video and add only the clean bar spectrum overlay. Do not bake spectrum graphics into the image or provider video itself.
+- Use `--allow-still-image-video --video-render-source-mode still_image` only when the human explicitly approves a static-cover fallback for that release.
 
-Still-image prompt shape:
+First-frame prompt shape:
 
 ```text
 Create a 16:9 original photorealistic cinematic film-still / premium movie-poster image for a Cinematic Pulse instrumental film-score release.

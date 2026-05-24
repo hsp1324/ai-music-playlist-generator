@@ -940,10 +940,6 @@ class BackgroundJobWorker:
         )
         if is_cinematic_pulse_release(meta):
             video_spectrum_overlay_style = "bars"
-            video_render_source_mode = "still_image"
-            allow_still_image_fallback = True
-            if not video_render_resolution or video_render_resolution == "720p":
-                video_render_resolution = "2k"
         else:
             video_spectrum_overlay_style = apply_video_spectrum_channel_policy(
                 video_spectrum_overlay_style,
