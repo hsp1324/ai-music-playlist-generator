@@ -1393,6 +1393,7 @@ def test_openclaw_backlog_scheduler_skips_when_lock_is_active(tmp_path) -> None:
 
 
 def test_openclaw_backlog_scheduler_backs_off_after_manual_blocker(tmp_path) -> None:
+    os.environ.pop("AIMP_OPENCLAW_SHARED_TOKEN", None)
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_INTERVAL_SECONDS"] = "30"
     os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
@@ -1443,6 +1444,7 @@ def test_openclaw_backlog_scheduler_backs_off_after_manual_blocker(tmp_path) -> 
 
 
 def test_openclaw_backlog_scheduler_backs_off_finishable_release_after_manual_blocker(tmp_path) -> None:
+    os.environ.pop("AIMP_OPENCLAW_SHARED_TOKEN", None)
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
     os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "1800"
@@ -1487,6 +1489,59 @@ def test_openclaw_backlog_scheduler_backs_off_finishable_release_after_manual_bl
         assert evaluation["should_request"] is False
         assert evaluation["reason"] == "recent_openclaw_manual_blocker"
         assert evaluation["finishable_channels"] == ["Soft Hour Radio"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_backs_off_after_youtube_quota_blocker(tmp_path) -> None:
+    os.environ.pop("AIMP_OPENCLAW_SHARED_TOKEN", None)
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
+    os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_SOL", "title": "Solwave Radio"}],
+        }
+        client.post(
+            "/api/openclaw/lock/start",
+            json={"owner": "openclaw", "run_id": "run-quota", "operation": "publish-retry"},
+        )
+        client.post(
+            "/api/openclaw/lock/finish",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-quota",
+                "status": "blocked",
+                "message": (
+                    "YouTube API upload quota is exceeded; Solwave remains under target "
+                    "and needs explicit force-under-target human acceptance."
+                ),
+            },
+        )
+        with SessionLocal() as db:
+            db.add(
+                Playlist(
+                    title="Retryable Upload Failure",
+                    status=PlaylistStatus.ready,
+                    metadata_json={
+                        "workflow_state": "youtube_upload_failed",
+                        "youtube_channel_title": "Solwave Radio",
+                    },
+                )
+            )
+            db.commit()
+
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is False
+        assert evaluation["reason"] == "recent_openclaw_manual_blocker"
+        assert evaluation["manual_blocker_backoff_seconds"] == 1800
     finally:
         clear_isolated_client_env()
 
