@@ -30,7 +30,7 @@ KNOWN_OAUTH_PUBLIC_HOSTS = {"ai-music.168.107.34.175.sslip.io"}
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 120
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
-DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 20 * 60
+DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 15 * 60
 DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 40 * 60
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
 LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
@@ -3142,7 +3142,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
     )
-    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 1200 seconds for normal channels, 2400 seconds for BibliaCanto/불송. Ignored for single releases.")
+    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 900 seconds for normal channels, 2400 seconds for BibliaCanto/불송. Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
     create_parser.set_defaults(func=create_release)
@@ -3232,7 +3232,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 1200 seconds for normal channels, 2400 seconds for BibliaCanto/불송.")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 900 seconds for normal channels, 2400 seconds for BibliaCanto/불송.")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 120 seconds.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")

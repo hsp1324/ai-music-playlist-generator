@@ -5495,7 +5495,7 @@ def test_workspace_audio_render_prefers_least_reused_back_half_track(tmp_path) -
         clear_isolated_client_env()
 
 
-def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_block_with_reuse(tmp_path) -> None:
+def test_workspace_audio_render_extends_fifteen_minute_release_to_sixty_minute_block_with_reuse(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         with SessionLocal() as db:
@@ -5506,7 +5506,7 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
                 track = Track(
                     title=f"Source UK Garage {index + 1}",
                     prompt="uk garage night drive club groove",
-                    duration_seconds=600,
+                    duration_seconds=675,
                     audio_path=str(audio_path),
                     status=TrackStatus.approved,
                     metadata_json={"style": "uk garage, club instrumental", "tags": "uk garage"},
@@ -5517,8 +5517,8 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
             source_playlist = Playlist(
                 title="UK Garage Night Drive Mix",
                 status=PlaylistStatus.uploaded,
-                target_duration_seconds=4800,
-                actual_duration_seconds=4800,
+                target_duration_seconds=5400,
+                actual_duration_seconds=5400,
                 youtube_video_id="yt-ukg-source",
                 metadata_json={
                     "workspace_mode": "playlist",
@@ -5527,8 +5527,8 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
                         {
                             "track_id": track.id,
                             "title": track.title,
-                            "start_seconds": index * 600,
-                            "duration_seconds": 600,
+                            "start_seconds": index * 675,
+                            "duration_seconds": 675,
                         }
                         for index, track in enumerate(source_tracks)
                     ],
@@ -5542,7 +5542,7 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
                         playlist=source_playlist,
                         track=track,
                         order_index=index,
-                        included_duration_seconds=600,
+                        included_duration_seconds=675,
                     )
                 )
             db.commit()
@@ -5551,7 +5551,7 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
             "/api/playlists/workspaces",
             json={
                 "title": "UK Garage Night Drive Mix",
-                "target_duration_seconds": 1200,
+                "target_duration_seconds": 900,
                 "description": "UK garage night drive and city lights.",
                 "target_youtube_channel_title": "Club Bloom",
             },
@@ -5566,7 +5566,7 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
             json={
                 "title": "New UK Garage Hour Lead",
                 "prompt": "uk garage night drive groove",
-                "duration_seconds": 1200,
+                "duration_seconds": 900,
                 "audio_path": str(new_audio_path),
                 "metadata": {"style": "uk garage", "tags": "uk garage"},
             },
@@ -5589,7 +5589,7 @@ def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_bl
         )
         assert render_response.status_code == 200
         queued = render_response.json()
-        assert queued["target_duration_seconds"] == 1200
+        assert queued["target_duration_seconds"] == 900
         assert queued["actual_duration_seconds"] == 3600
         assert [track["title"] for track in queued["tracks"]] == [
             "New UK Garage Hour Lead",
