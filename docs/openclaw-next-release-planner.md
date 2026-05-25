@@ -92,7 +92,7 @@ Treat `list-releases` as the app's known YouTube upload catalog. It contains rel
 ## Backlog-Aware Rotation Rules
 
 1. Inspect recent Playlist Releases from `scripts/openclaw-release list-releases`.
-2. Apply `docs/openclaw-backlog-queue.md` first: finish ready releases, then fill channels with backlog below target.
+2. Apply `docs/openclaw-backlog-queue.md` first: finish ready releases, skip quota-blocked YouTube upload retries as deferred work, then fill channels with backlog below target.
 3. Prefer active automated channels with the shortest future scheduled-public horizon in the app's backlog snapshot. Future scheduled-public means the release has a YouTube video id and a scheduled public publish time or YouTube `publishAt` that is still in the future. Fill channels by date evenly: every channel should have a release for the earliest upcoming date before any channel is pushed further out to the next date. A channel scheduled through May 21 comes before a channel already scheduled through May 27.
 4. Within channels with the same scheduled-through horizon, prefer the active channel with the lowest unfinished backlog count. Do not create a new release for a channel with backlog `10` or more.
 5. If multiple eligible channels are tied, prefer the channel with the oldest recent scheduled/public playlist unless the human explicitly asks for a channel.
