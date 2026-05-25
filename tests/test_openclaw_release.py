@@ -82,6 +82,34 @@ def _auto_publish_args(audio_path: str, **overrides):
     return SimpleNamespace(**values)
 
 
+def test_public_oauth_api_base_requires_cookie(monkeypatch) -> None:
+    monkeypatch.setenv("AIMP_PUBLIC_BASE_URL", "https://ai-music.168.107.34.175.sslip.io")
+
+    with pytest.raises(RuntimeError, match="AIMP_API_COOKIE is unset"):
+        openclaw_release.validate_api_base_auth(
+            "https://ai-music.168.107.34.175.sslip.io/api",
+            headers={"X-OpenClaw-Token": "token"},
+        )
+
+    openclaw_release.validate_api_base_auth(
+        "http://127.0.0.1:8000/api",
+        headers={"X-OpenClaw-Token": "token"},
+    )
+
+
+def test_request_json_rejects_oauth_html_response() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/html; charset=utf-8"},
+            text="<html><body>Sign in with Google</body></html>",
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    with pytest.raises(RuntimeError, match="HTML instead of JSON"):
+        openclaw_release.request_json(client, "GET", "/openclaw/status")
+
+
 def test_playlist_track_duration_allows_two_minute_tracks_by_default() -> None:
     args = _auto_publish_args("song.mp3")
 

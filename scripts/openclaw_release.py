@@ -17,6 +17,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 
@@ -25,6 +26,7 @@ from app.utils.timeline import timeline_from_track_dicts
 
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
+KNOWN_OAUTH_PUBLIC_HOSTS = {"ai-music.168.107.34.175.sslip.io"}
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 120
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
@@ -636,6 +638,23 @@ def api_base(value: str | None) -> str:
     return (value or os.environ.get("AIMP_LOCAL_API_BASE") or DEFAULT_API_BASE).rstrip("/")
 
 
+def api_base_needs_browser_cookie(base_url: str) -> bool:
+    parsed = urlparse(base_url)
+    public_base = os.environ.get("AIMP_PUBLIC_BASE_URL", "").strip()
+    public_host = urlparse(public_base).hostname if public_base else ""
+    host = parsed.hostname or ""
+    return bool(host and (host == public_host or host in KNOWN_OAUTH_PUBLIC_HOSTS))
+
+
+def validate_api_base_auth(base_url: str, headers: dict[str, str]) -> None:
+    if api_base_needs_browser_cookie(base_url) and not headers.get("Cookie"):
+        raise RuntimeError(
+            "AIMP_LOCAL_API_BASE points at the public Google-login protected URL, but AIMP_API_COOKIE is unset. "
+            "Use a direct VM/tunnel API base such as http://127.0.0.1:8000/api on the VM, or set AIMP_API_COOKIE "
+            "from a logged-in browser session if you intentionally use the public URL."
+        )
+
+
 def print_json(payload: Any) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2))
 
@@ -646,6 +665,14 @@ def request_json(client: httpx.Client, method: str, path: str, **kwargs) -> Any:
         payload = response.json()
     except ValueError:
         payload = response.text
+    if isinstance(payload, str):
+        content_type = response.headers.get("content-type", "")
+        trimmed = payload.strip().lower()
+        if "text/html" in content_type or trimmed.startswith("<!doctype html") or trimmed.startswith("<html"):
+            raise RuntimeError(
+                "API returned HTML instead of JSON. AIMP_LOCAL_API_BASE is probably pointing at the public "
+                "Google-login protected URL without a valid AIMP_API_COOKIE; use the VM direct/tunnel API."
+            )
     if response.is_error:
         detail = payload.get("detail") if isinstance(payload, dict) else payload
         raise RuntimeError(f"{response.status_code} {response.reason_phrase}: {detail}")
@@ -3587,7 +3614,9 @@ def main() -> int:
     if os.environ.get("AIMP_OPENCLAW_SHARED_TOKEN"):
         headers["X-OpenClaw-Token"] = os.environ["AIMP_OPENCLAW_SHARED_TOKEN"]
     try:
-        with httpx.Client(base_url=api_base(args.api_base), timeout=120.0, headers=headers) as client:
+        base_url = api_base(args.api_base)
+        validate_api_base_auth(base_url, headers)
+        with httpx.Client(base_url=base_url, timeout=120.0, headers=headers) as client:
             result = args.func(client, args)
         print_json(result)
         return 0
