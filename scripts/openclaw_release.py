@@ -719,8 +719,12 @@ def validate_local_audio_file(audio_path: Path) -> None:
         raise RuntimeError(f"Audio file is empty: {audio_path}")
 
 
+def list_release_summaries(client: httpx.Client) -> list[dict[str, Any]]:
+    return request_json(client, "GET", "/playlists/workspaces", params={"compact": "true"})
+
+
 def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
-    releases = request_json(client, "GET", "/playlists/workspaces")
+    releases = list_release_summaries(client)
     return {
         "releases": [
             {
@@ -729,7 +733,7 @@ def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, 
                 "type": "single" if release["workspace_mode"] == "single_track_video" else "playlist",
                 "workflow_state": release["workflow_state"],
                 "archived": release.get("hidden", False),
-                "tracks": len(release["tracks"]),
+                "tracks": int(release.get("track_count") or len(release.get("tracks") or [])),
                 "duration_seconds": release.get("actual_duration_seconds", 0),
                 "youtube_video_id": release.get("youtube_video_id"),
                 "youtube_channel_id": release.get("youtube_channel_id"),
@@ -793,23 +797,19 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
 
 
 def find_release_by_title(client: httpx.Client, title: str) -> dict[str, Any]:
-    releases = request_json(client, "GET", "/playlists/workspaces")
+    releases = list_release_summaries(client)
     matches = [release for release in releases if release["title"] == title]
     if not matches:
         raise RuntimeError(f"No release found with exact title: {title}")
     if len(matches) > 1:
         ids = ", ".join(release["id"] for release in matches)
         raise RuntimeError(f"Multiple releases share title {title!r}. Use --release-id. Matches: {ids}")
-    return matches[0]
+    return get_release(client, matches[0]["id"])
 
 
 def resolve_release(client: httpx.Client, *, release_id: str = "", release_title: str = "") -> dict[str, Any]:
     if release_id:
-        releases = request_json(client, "GET", "/playlists/workspaces")
-        release = next((item for item in releases if item["id"] == release_id), None)
-        if not release:
-            raise RuntimeError(f"No release found with id: {release_id}")
-        return release
+        return get_release(client, release_id)
     if release_title:
         return find_release_by_title(client, release_title)
     raise RuntimeError("Use --release-id or --release-title.")
@@ -1195,10 +1195,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
         )
         created_release = True
     elif args.release_id:
-        release = request_json(client, "GET", "/playlists/workspaces")
-        release = next((item for item in release if item["id"] == args.release_id), None)
-        if not release:
-            raise RuntimeError(f"No release found with id: {args.release_id}")
+        release = get_release(client, args.release_id)
     elif args.release_title:
         release = find_release_by_title(client, args.release_title)
     else:
@@ -1433,11 +1430,12 @@ def create_playlist_release(
 
 
 def get_release(client: httpx.Client, release_id: str) -> dict[str, Any]:
-    releases = request_json(client, "GET", "/playlists/workspaces")
-    release = next((item for item in releases if item["id"] == release_id), None)
-    if not release:
-        raise RuntimeError(f"No release found with id: {release_id}")
-    return release
+    try:
+        return request_json(client, "GET", f"/playlists/workspaces/{release_id}")
+    except RuntimeError as exc:
+        if str(exc).startswith("404 "):
+            raise RuntimeError(f"No release found with id: {release_id}") from exc
+        raise
 
 
 def wait_for_release(

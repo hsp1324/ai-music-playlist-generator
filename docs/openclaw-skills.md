@@ -428,7 +428,7 @@ Use randomized audio render when Suno two-output pairs are adjacent and the huma
 
 Generate enough material before publishing:
 
-- Create roughly `900` seconds / 15 minutes of new approved audio for non-scripture channels. The app will try to extend the base block to roughly `2400` seconds / 40 minutes by reusing tracks from the back half of previous same-channel, similar-genre YouTube uploads.
+- Create roughly `900` seconds / 15 minutes of new approved audio for non-scripture channels. The app will try to extend the base block to roughly `3600` seconds / 60 minutes by reusing tracks from the back half of previous same-channel, similar-genre YouTube uploads. If similar reuse material is not available, a release over `2400` seconds / 40 minutes is still publishable.
 - For `BibliaCanto` and `불송`, create roughly `2400` seconds / 40 minutes of new passage-based audio and do not rely on reuse. Those channels are excluded from back-half reuse so Bible/Buddhist passage content is not mixed with unrelated previous chapters.
 - During the trial period, final video repeat is disabled by default, so render workers upload the rendered base block only. The repeat feature remains available behind an app setting for later testing.
 - If no similar back-half reuse candidates exist on non-scripture channels, render proceeds with the uploaded new tracks instead of blocking. Do not keep making unrelated songs just to force reuse.
@@ -438,7 +438,7 @@ Generate enough material before publishing:
 ### OpenClaw Skill Prompt
 
 ```text
-You are creating and publishing a Playlist Release through the AI Music app. For non-scripture channels, create roughly 15 minutes of new audio; the app will try to extend the base block to about 40 minutes through same-channel similar-genre reuse. During the trial period, final video repeat is disabled.
+You are creating and publishing a Playlist Release through the AI Music app. For non-scripture channels, create roughly 15 minutes of new audio; the app will try to extend the base block to about 60 minutes through same-channel similar-genre reuse, while allowing publish once it is over 40 minutes if reuse is limited. During the trial period, final video repeat is disabled.
 
 Work in the OpenClaw repo checkout selected by docs/openclaw-next-release-planner.md.
 Use scripts/openclaw-release only.
@@ -446,7 +446,7 @@ Use scripts/openclaw-release only.
 Goal:
 - Create or select one Playlist Release workspace before opening Suno or generating audio.
 - Select Suno v5.5 for every new generation whenever it is available. If the UI/API shows a higher credit cost than v5 for the same request, stop and report the exact difference instead of silently using v5.
-- Generate songs in batches until the new approved audio duration is roughly 15 minutes for normal non-scripture channels. The app workspace target is 900 seconds for that new material, then audio render automatically tries to extend the base block toward 2400 seconds / 40 minutes from previous same-channel, similar-genre back-half tracks. If it cannot find suitable reuse candidates, it renders the uploaded new tracks instead of blocking. For BibliaCanto and 불송, generate roughly 40 minutes of new passage-based audio instead; these channels must not use back-half reuse.
+- Generate songs in batches until the new approved audio duration is roughly 15 minutes for normal non-scripture channels. The app workspace target is 900 seconds for that new material, then audio render automatically tries to extend the base block toward 3600 seconds / 60 minutes from previous same-channel, similar-genre back-half tracks. If it cannot find suitable reuse candidates, it renders the uploaded new tracks instead of blocking; anything over 2400 seconds / 40 minutes is publishable. For BibliaCanto and 불송, generate roughly 40 minutes of new passage-based audio instead; these channels must not use back-half reuse.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, generate instrumental/no-vocal tracks by default unless the human explicitly asks for vocals. For Soft Hour Radio instrumental work, Suno's lyrics/custom-lyrics field must use the bracket-only format from `docs/suno-v55-instrumental-format.md`; never paste unbracketed arrangement prose into that field.
 - For Soft Hour Radio lofi / lo-fi releases, put lofi in the Suno style/settings for each track and in the YouTube title/description/localizations so viewers immediately understand the genre.
 - For BGM/background/lofi/study/sleep/cafe playlist requests, use Suno Advanced Options excluded styles to suppress vocals: `vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir, choral, humming, hum, whisper, spoken word, speech, narration, rap, ad-libs, scat, vocal chops, ooh, aah, la la, lyrics, sung lyrics, topline`.

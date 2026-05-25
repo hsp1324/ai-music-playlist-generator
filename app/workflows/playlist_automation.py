@@ -39,6 +39,7 @@ from app.utils.video_render_policy import (
 
 
 ARCHIVE_RETENTION_DAYS = 7
+DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS = 40 * 60
 FAILED_WORKFLOW_STATES = {
     "render_failed",
     "video_build_failed",
@@ -784,11 +785,30 @@ def _auto_publish_when_ready(playlist: Playlist) -> bool:
     return bool(_playlist_meta(playlist).get("auto_publish_when_ready"))
 
 
-def _publish_is_ready(playlist: Playlist) -> bool:
+def _playlist_publish_target_seconds(
+    playlist: Playlist,
+    *,
+    min_publish_seconds: int = DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
+) -> int:
+    target_seconds = max(int(playlist.target_duration_seconds or 0), 0)
+    minimum_seconds = max(int(min_publish_seconds or 0), 0)
+    if minimum_seconds and target_seconds > minimum_seconds:
+        return minimum_seconds
+    return target_seconds
+
+
+def _publish_is_ready(
+    playlist: Playlist,
+    *,
+    min_publish_seconds: int = DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
+) -> bool:
     mode = _workspace_mode(playlist)
     if mode == "single_track_video":
         return len(playlist.items) == 1
-    return playlist.actual_duration_seconds >= playlist.target_duration_seconds
+    return int(playlist.actual_duration_seconds or 0) >= _playlist_publish_target_seconds(
+        playlist,
+        min_publish_seconds=min_publish_seconds,
+    )
 
 
 def _final_publish_is_ready(playlist: Playlist) -> bool:
@@ -1250,7 +1270,6 @@ def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[st
 
 
 def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]:
-    purge_expired_archived_workspaces(db)
     playlists = db.scalars(select(Playlist)).all()
     playlist_ids = [playlist.id for playlist in playlists]
     item_counts = _playlist_item_counts(db, playlist_ids)
@@ -1274,7 +1293,6 @@ def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]
 
 
 def list_workspace_channel_summaries(db: Session) -> list[dict]:
-    purge_expired_archived_workspaces(db)
     channels: dict[str, dict] = {}
     playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
     channel_ids_by_title: dict[str, str] = {}
@@ -3251,7 +3269,14 @@ async def _update_publish_state(
             db.refresh(playlist)
             return
 
-    if _publish_is_ready(playlist):
+    if _publish_is_ready(
+        playlist,
+        min_publish_seconds=getattr(
+            services.settings,
+            "playlist_publish_min_seconds",
+            DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
+        ),
+    ):
         meta["workflow_state"] = "audio_ready" if playlist.output_audio_path else "pending_audio_render"
         meta["publish_ready"] = True
         meta["publish_ready_trigger"] = trigger
@@ -3851,7 +3876,14 @@ def approve_playlist_publish(
     meta = _playlist_meta(playlist)
     if not playlist.items:
         raise ValueError("Playlist has no tracks to publish.")
-    under_target = not _publish_is_ready(playlist)
+    under_target = not _publish_is_ready(
+        playlist,
+        min_publish_seconds=getattr(
+            services.settings,
+            "playlist_publish_min_seconds",
+            DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
+        ),
+    )
     if not meta.get("publish_ready") and not (force_under_target and under_target):
         raise ValueError("Playlist has not reached its target duration yet.")
     if under_target and not force_under_target:

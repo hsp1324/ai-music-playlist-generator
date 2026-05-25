@@ -784,17 +784,25 @@ def _update_video_progress(
     previous_progress = dict(result.get("progress") or {})
     if not _should_commit_video_progress(previous_progress, payload, now_dt, force=force):
         return False
+    should_update_playlist_progress = (
+        force
+        or not previous_progress
+        or bool(payload.get("upload_complete") and not previous_progress.get("upload_complete"))
+        or payload.get("stage") != previous_progress.get("stage")
+        or payload.get("status") != previous_progress.get("status")
+    )
     worker = dict(result.get("external_render_worker") or {})
     worker["heartbeat_at"] = now
     result["external_render_worker"] = worker
     result["progress"] = payload
     job.result_json = result
-    meta = dict(playlist.metadata_json or {})
-    meta["video_render_progress"] = payload
-    meta["note"] = str(payload.get("message") or "External video render in progress.")
-    playlist.metadata_json = meta
+    if should_update_playlist_progress:
+        meta = dict(playlist.metadata_json or {})
+        meta["video_render_progress"] = payload
+        meta["note"] = str(payload.get("message") or "External video render in progress.")
+        playlist.metadata_json = meta
+        db.add(playlist)
     db.add(job)
-    db.add(playlist)
     db.commit()
     return True
 

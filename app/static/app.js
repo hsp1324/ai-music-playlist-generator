@@ -1,4 +1,5 @@
 const initialReleaseId = new URLSearchParams(window.location.search).get("release") || "";
+const PLAYLIST_PUBLISH_MIN_SECONDS = 40 * 60;
 
 const state = {
   tracks: [],
@@ -3458,10 +3459,11 @@ function renderWorkspaceDetail() {
           let forceUnderTarget = false;
           const underTarget = !isSingleRelease(workspace)
             && workspace.target_duration_seconds > 0
-            && workspace.actual_duration_seconds < workspace.target_duration_seconds;
+            && workspace.actual_duration_seconds < Math.min(workspace.target_duration_seconds, PLAYLIST_PUBLISH_MIN_SECONDS);
           if (underTarget) {
+            const publishTargetSeconds = Math.min(workspace.target_duration_seconds, PLAYLIST_PUBLISH_MIN_SECONDS);
             const proceed = window.confirm(
-              `이 playlist는 아직 목표 길이보다 짧습니다.\n\n현재: ${formatDuration(workspace.actual_duration_seconds)}\n목표: ${formatDuration(workspace.target_duration_seconds)}\n\n그래도 YouTube publish를 진행할까요?`
+              `이 playlist는 아직 publish 허용 길이보다 짧습니다.\n\n현재: ${formatDuration(workspace.actual_duration_seconds)}\n허용 기준: ${formatDuration(publishTargetSeconds)}\n\n그래도 YouTube publish를 진행할까요?`
             );
             if (!proceed) return;
             forceUnderTarget = true;

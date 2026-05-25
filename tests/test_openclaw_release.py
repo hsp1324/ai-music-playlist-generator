@@ -247,6 +247,8 @@ def test_upload_loop_video_sends_provider_tag(tmp_path) -> None:
     }
 
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(200, json=release)
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(200, json=[release])
         if request.method == "POST" and request.url.path.endswith("/playlists/release-1/loop-video/upload"):
@@ -580,6 +582,16 @@ def test_upload_single_candidates_can_target_existing_precreated_release(tmp_pat
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-123"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "release-123",
+                    "title": "Precreated Single",
+                    "workspace_mode": "single_track_video",
+                    "tracks": [{"id": "existing-track"}],
+                },
+            )
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(
                 200,
@@ -780,6 +792,17 @@ def test_auto_publish_playlist_requires_final_cover_before_side_effects(tmp_path
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "release-1",
+                    "title": "Playlist",
+                    "workspace_mode": "playlist",
+                    "cover_image_path": None,
+                    "cover_source": None,
+                },
+            )
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(
                 200,
@@ -810,6 +833,19 @@ def test_auto_publish_playlist_requires_thumbnail_before_side_effects(tmp_path) 
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "release-1",
+                    "title": "Playlist",
+                    "workspace_mode": "playlist",
+                    "cover_image_path": "/tmp/final-cover.png",
+                    "cover_source": "manual-upload",
+                    "youtube_thumbnail_path": None,
+                    "youtube_thumbnail_source": None,
+                },
+            )
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(
                 200,
@@ -842,6 +878,20 @@ def test_auto_publish_playlist_rejects_existing_youtube_video_without_allow_reup
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "release-1",
+                    "title": "Playlist",
+                    "workspace_mode": "playlist",
+                    "youtube_video_id": "yt-existing",
+                    "cover_image_path": "/tmp/final-cover.png",
+                    "cover_source": "manual-upload",
+                    "youtube_thumbnail_path": "/tmp/final-thumbnail.png",
+                    "youtube_thumbnail_source": "manual-upload",
+                },
+            )
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(
                 200,
@@ -974,6 +1024,8 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal failed_upload_attempts, render_requested
         requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(200, json=release)
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(200, json=[release])
         if request.method == "POST" and request.url.path.endswith("/tracks/manual-upload"):
@@ -1052,6 +1104,8 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_allowed_limit(tmp_path
 
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal render_requested
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(200, json=release)
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(200, json=[release])
         if request.method == "POST" and request.url.path.endswith("/tracks/manual-upload"):
@@ -1199,6 +1253,21 @@ def test_auto_publish_single_rejects_existing_youtube_video_without_allow_reuplo
 
     def handler(request: httpx.Request) -> httpx.Response:
         requested_paths.append(request.url.path)
+        if request.method == "GET" and request.url.path.endswith("/playlists/workspaces/release-1"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "release-1",
+                    "title": "Single",
+                    "workspace_mode": "single_track_video",
+                    "youtube_video_id": "yt-existing",
+                    "tracks": [],
+                    "cover_image_path": "/tmp/final-cover.png",
+                    "cover_source": "manual-upload",
+                    "youtube_thumbnail_path": "/tmp/final-thumbnail.png",
+                    "youtube_thumbnail_source": "manual-upload",
+                },
+            )
         if request.method == "GET" and request.url.path.endswith("/playlists/workspaces"):
             return httpx.Response(
                 200,

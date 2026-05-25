@@ -34,8 +34,9 @@ class Settings(BaseSettings):
     video_lyrics_alignment_min_score: float = 0.30
     playlist_target_minutes: int = 15
     playlist_reuse_back_half_enabled: bool = True
-    playlist_reuse_back_half_target_seconds: int = 40 * 60
+    playlist_reuse_back_half_target_seconds: int = 60 * 60
     playlist_reuse_back_half_min_seconds: int = 25 * 60
+    playlist_publish_min_seconds: int = 40 * 60
     playlist_final_video_repeat_enabled: bool = False
     playlist_final_video_repeat_count: int = 3
     playlist_final_video_min_seconds: int = 2 * 60 * 60
