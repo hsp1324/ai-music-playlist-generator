@@ -202,6 +202,7 @@ If you apply the protected config before HTTPS is ready, Google login will fail 
 ## Operational notes
 
 - `oauth2-proxy` protects browser access to the app
+- The repo template sets `cookie_expire = "8760h"` and `cookie_refresh = "1h"`, so a normal browser login can last about 1 year instead of the oauth2-proxy default 7 days. This is not truly unlimited: a user may still need to re-login sooner if Google revokes the session, the browser cookie is cleared, or the proxy cookie secret changes.
 - this does not secure SSH access
 - if you later add API clients or webhooks that must bypass login, explicitly exempt only those paths in Nginx
 - if you want to limit access to one Google account, replace `email_domains = ["*"]` with a tighter policy
