@@ -3884,8 +3884,6 @@ def approve_playlist_publish(
             DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
         ),
     )
-    if not meta.get("publish_ready") and not (force_under_target and under_target):
-        raise ValueError("Playlist has not reached its target duration yet.")
     if under_target and not force_under_target:
         raise ValueError("Playlist has not reached its target duration yet.")
     if force_under_target and under_target:
@@ -3893,6 +3891,8 @@ def approve_playlist_publish(
         meta["publish_under_target_confirmed"] = True
         meta["publish_under_target_confirmed_by"] = actor
         meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
+    elif not under_target:
+        meta["publish_ready"] = True
     if youtube_video_id:
         published_at = _utcnow().isoformat()
         playlist.youtube_video_id = youtube_video_id

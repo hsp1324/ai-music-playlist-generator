@@ -1429,9 +1429,19 @@ class BackgroundJobWorker:
 
         if not playlist.items:
             raise ValueError("Playlist has no tracks to publish.")
-        under_target = playlist.actual_duration_seconds < playlist.target_duration_seconds
-        if not meta.get("publish_ready") and not (force_under_target and under_target):
-            raise ValueError("Playlist has not reached its target duration yet.")
+        from app.workflows.playlist_automation import (
+            DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
+            _publish_is_ready,
+        )
+
+        under_target = not _publish_is_ready(
+            playlist,
+            min_publish_seconds=getattr(
+                self.settings,
+                "playlist_publish_min_seconds",
+                DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS,
+            ),
+        )
         if under_target and not force_under_target:
             raise ValueError("Playlist has not reached its target duration yet.")
         if playlist.youtube_video_id and not allow_reupload:
@@ -1443,6 +1453,8 @@ class BackgroundJobWorker:
             meta["publish_under_target_confirmed"] = True
             meta["publish_under_target_confirmed_by"] = actor
             meta["publish_under_target_confirmed_at"] = _utcnow().isoformat()
+        elif not under_target:
+            meta["publish_ready"] = True
         if not playlist.output_video_path or not Path(playlist.output_video_path).exists():
             raise ValueError("Rendered video is required before final YouTube upload.")
         if not _rendered_snapshot_matches_current_tracks(playlist, "rendered_video_track_ids"):

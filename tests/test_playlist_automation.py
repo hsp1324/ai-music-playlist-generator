@@ -5495,12 +5495,12 @@ def test_workspace_audio_render_prefers_least_reused_back_half_track(tmp_path) -
         clear_isolated_client_env()
 
 
-def test_workspace_audio_render_extends_fifteen_minute_release_to_forty_minute_block_with_reuse(tmp_path) -> None:
+def test_workspace_audio_render_extends_twenty_minute_release_to_sixty_minute_block_with_reuse(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         with SessionLocal() as db:
             source_tracks = []
-            for index in range(6):
+            for index in range(8):
                 audio_path = tmp_path / f"source-ukg-{index}.mp3"
                 audio_path.write_bytes(b"fake-audio")
                 track = Track(
@@ -5517,8 +5517,8 @@ def test_workspace_audio_render_extends_fifteen_minute_release_to_forty_minute_b
             source_playlist = Playlist(
                 title="UK Garage Night Drive Mix",
                 status=PlaylistStatus.uploaded,
-                target_duration_seconds=2400,
-                actual_duration_seconds=2400,
+                target_duration_seconds=4800,
+                actual_duration_seconds=4800,
                 youtube_video_id="yt-ukg-source",
                 metadata_json={
                     "workspace_mode": "playlist",
@@ -5551,7 +5551,7 @@ def test_workspace_audio_render_extends_fifteen_minute_release_to_forty_minute_b
             "/api/playlists/workspaces",
             json={
                 "title": "UK Garage Night Drive Mix",
-                "target_duration_seconds": 900,
+                "target_duration_seconds": 1200,
                 "description": "UK garage night drive and city lights.",
                 "target_youtube_channel_title": "Club Bloom",
             },
@@ -5566,7 +5566,7 @@ def test_workspace_audio_render_extends_fifteen_minute_release_to_forty_minute_b
             json={
                 "title": "New UK Garage Hour Lead",
                 "prompt": "uk garage night drive groove",
-                "duration_seconds": 900,
+                "duration_seconds": 1200,
                 "audio_path": str(new_audio_path),
                 "metadata": {"style": "uk garage", "tags": "uk garage"},
             },
@@ -5589,15 +5589,16 @@ def test_workspace_audio_render_extends_fifteen_minute_release_to_forty_minute_b
         )
         assert render_response.status_code == 200
         queued = render_response.json()
-        assert queued["target_duration_seconds"] == 900
-        assert queued["actual_duration_seconds"] == 2700
+        assert queued["target_duration_seconds"] == 1200
+        assert queued["actual_duration_seconds"] == 3600
         assert [track["title"] for track in queued["tracks"]] == [
             "New UK Garage Hour Lead",
-            "Source UK Garage 4",
             "Source UK Garage 5",
             "Source UK Garage 6",
+            "Source UK Garage 7",
+            "Source UK Garage 8",
         ]
-        assert "Added 3 reused back-half track(s)" in queued["note"]
+        assert "Added 4 reused back-half track(s)" in queued["note"]
     finally:
         clear_isolated_client_env()
 
@@ -7398,12 +7399,21 @@ def test_publish_approval_allows_playlist_over_min_publish_duration(tmp_path) ->
 
         prepare_release_for_final_publish(client, workspace_id)
 
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, workspace_id)
+            meta = dict(playlist.metadata_json or {})
+            meta["publish_ready"] = False
+            playlist.metadata_json = meta
+            db.add(playlist)
+            db.commit()
+
         publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
             json={"actor": "test-suite"},
         )
         assert publish_response.status_code == 200
         assert publish_response.json()["workflow_state"] == "publish_queued"
+        assert drain_background_jobs(client) == 1
     finally:
         clear_isolated_client_env()
 

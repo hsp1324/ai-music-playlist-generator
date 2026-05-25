@@ -597,7 +597,7 @@ def test_create_release_uses_channel_aware_playlist_target_defaults() -> None:
         ),
     )
 
-    assert captured_payloads[0]["target_duration_seconds"] == 900
+    assert captured_payloads[0]["target_duration_seconds"] == 1200
     assert captured_payloads[1]["target_duration_seconds"] == 2400
 
 

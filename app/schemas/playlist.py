@@ -8,13 +8,13 @@ from app.models.enums import PlaylistStatus
 
 class PlaylistBuildRequest(BaseModel):
     title: str
-    target_duration_seconds: int = Field(default=900, ge=60)
+    target_duration_seconds: int = Field(default=1200, ge=60)
     execute_render: bool = False
 
 
 class PlaylistWorkspaceCreateRequest(BaseModel):
     title: str
-    target_duration_seconds: int = Field(default=900, ge=0)
+    target_duration_seconds: int = Field(default=1200, ge=0)
     workspace_mode: str = "playlist"
     auto_publish_when_ready: bool | None = None
     description: str | None = None
