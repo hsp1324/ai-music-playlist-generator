@@ -578,7 +578,7 @@ For New Testament scripture releases, `SELECTED_CHANNEL_TITLE` is still `BibliaC
 
 In continuous automation, `publish-release --no-wait` is required. Once the app accepts the publish request and queues `upload_youtube`, do not poll Slack or the app waiting for the YouTube id. Release the OpenClaw lock and continue on the next eligible backlog pass while the app upload worker handles the API upload.
 
-Only use `--force-under-target` if the human explicitly accepted a shorter playlist.
+Only use `--force-under-target` if the release is below the 40-minute publish minimum and the human explicitly accepted a shorter playlist. Releases over 40 minutes can publish without force even when they are shorter than the older workspace target.
 
 ### Required Output
 

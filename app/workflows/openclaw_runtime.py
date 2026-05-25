@@ -84,8 +84,6 @@ OPENCLAW_MANUAL_BLOCKER_PATTERNS = (
     "quota is exceeded",
     "upload quota",
     "youtube api upload quota",
-    "force-under-target",
-    "explicit human acceptance",
     "사람이",
     "수동",
     "자동 게시 중단",
