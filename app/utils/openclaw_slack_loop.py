@@ -312,6 +312,15 @@ def build_backlog_queue_request_message(
             "완료/중단 보고: release id, YouTube video id, blocker",
         ]
         return _with_trigger_prefix("\n".join(lines), trigger_prefix)
+    if reason == "finishable_releases":
+        lines = [
+            "완료 가능한 release 처리해줘.",
+            f"reason: {reason}",
+            f"target/max: {target_per_channel}/{max_per_channel}",
+            "앱 API로 backlog/status와 lock 상태를 확인하고 metadata/publish/retry 가능한 release를 먼저 처리해줘.",
+            "완료/중단 보고: release id, YouTube video id, blocker",
+        ]
+        return _with_trigger_prefix("\n".join(lines), trigger_prefix)
 
     lines = [
         "다음 playlist 제작해줘.",

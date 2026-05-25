@@ -518,6 +518,38 @@ def test_backlog_request_message_is_compact_and_defers_details_to_api() -> None:
     assert "Club Bloom:" not in message
 
 
+def test_backlog_request_message_uses_finishable_release_wording() -> None:
+    message = build_backlog_queue_request_message(
+        reason="finishable_releases",
+        backlog_summary={
+            "target_per_channel": 10,
+            "max_per_channel": 10,
+            "channels": {
+                "Cinematic Pulse": {
+                    "count": 1,
+                    "finishable": 1,
+                    "deferred": 0,
+                    "releases": [
+                        {
+                            "id": "release-1",
+                            "title": "[playlist] Grand Journey Film Score",
+                            "workflow_state": "metadata_review",
+                        }
+                    ],
+                }
+            },
+            "unknown_channel_releases": [],
+        },
+    )
+
+    assert message.startswith("OPENCLAW_RUN:\n")
+    assert "완료 가능한 release 처리해줘" in message
+    assert "reason: finishable_releases" in message
+    assert "metadata/publish/retry 가능한 release를 먼저 처리" in message
+    assert "다음 playlist 제작해줘" not in message
+    assert "Grand Journey Film Score" not in message
+
+
 def test_backlog_request_message_omits_channel_priority_lists_from_slack() -> None:
     message = build_backlog_queue_request_message(
         reason="underfilled_backlog",
