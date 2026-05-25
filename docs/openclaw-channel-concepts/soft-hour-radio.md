@@ -44,7 +44,7 @@ When the selected lane uses lofi / lo-fi textures, make that genre explicit thro
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
 - For lofi releases, include lofi / lo-fi as a real genre in Suno style/settings, for example alongside Rhodes, soft drums, mellow keys, cafe BGM, study BGM, or warm chillhop. Keep it clean and restful, not noisy or cluttered.
 - Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
-- Do not force Soft Hour Radio tracks under 4 minutes. Longer complete tracks are allowed, and OpenClaw should not reject a good track just because it exceeds the usual 4:20 playlist helper limit.
+- Do not force Soft Hour Radio tracks under 4 minutes. Prompt for full-length complete cues of at least 2 minutes, then verify the downloaded duration. Longer complete tracks, including 5+ minute cues, are allowed.
 - Prioritize low listener fatigue, smooth flow, and practical usefulness.
 
 ## Visual Direction

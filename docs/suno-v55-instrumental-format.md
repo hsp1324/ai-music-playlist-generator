@@ -48,9 +48,7 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno prompts, style strings, lyrics, or bracketed metatags unless the human explicitly asks for that cap. Those caps can cause Suno to end too early. Prompt for a complete instrumental cue instead: natural intro, developed middle, variation/breakdown where useful, and a resolved ending. The helper rejects playlist tracks shorter than 2:00 by default and allows tracks up to 4:20 by default for most channels.
-
-- `Soft Hour Radio` and `Cinematic Pulse` are exempt from the max-track rule. Do not add duration wording just to keep those tracks under 4 minutes, and do not reject complete longer tracks because of duration alone.
+Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno prompts, style strings, lyrics, or bracketed metatags unless the human explicitly asks for that cap. Those caps can cause Suno to end too early. Prompt for a full-length complete instrumental cue instead: at least 2 minutes, natural intro, developed middle, variation/breakdown where useful, and a resolved ending. Suno has no guaranteed minimum-duration field, so verify the downloaded duration. The helper rejects playlist tracks shorter than 2:00 by default and has no default maximum duration. Complete 5+ minute cues are acceptable.
 - If Suno repeatedly returns tracks over the allowed helper max for a non-exempt channel, stop and report the issue instead of adding duration caps to every prompt.
 - Do not use short-loop, jingle, intro, bumper, sting, teaser, or snippet wording for full playlist tracks.
 

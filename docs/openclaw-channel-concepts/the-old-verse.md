@@ -85,7 +85,7 @@ New Testament branch:
 - If the chosen lane is jazz, all tracks should be jazz-based. If it is R&B/soul, all tracks should stay R&B/soul-based. The lane must be specific enough that the final title can truthfully name it.
 - Metadata must tell viewers the branch, selected passage/theme, and broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a complete scripture-inspired song with a natural intro, developed verses/chorus or refrain, and resolved ending; regenerate or explicitly report tracks shorter than 2:00.
+- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete scripture-inspired song of at least 2 minutes with a natural intro, developed verses/chorus or refrain, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
 - Avoid producer tags, specific artist references, protected worship brands, church names, celebrity pastors, and modern Bible translation names.
 
 ## YouTube Playlist Assignment

@@ -57,7 +57,7 @@ Good style lanes:
 - In Suno advanced/excluded styles, add vocal and artificial-noise blockers such as `vocals, vocal, voice, singer, singing, lyrics, words, rap, spoken word, chant, chanting, humming, choir, crowd chant, vocal chops, acapella, topline, producer tag, white noise, static noise, vinyl crackle, record crackle, LP crackle, tape hiss, cassette hiss, analog hiss, noise floor, old record noise, dust noise, crackle, hiss`.
 - Use bracketed instrumental arrangement cues only, for example `[Intro: kick and filtered bass]`, `[Build: rising synth arp]`, `[Drop: no-vocal bass house groove]`, `[Breakdown: pads and drums only]`.
 - If the human asks for vocal dance-pop, route it to sundaze, HaruHaru, Tokyo Daydream Radio, or Solwave Radio depending on language/style instead of Club Bloom.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a complete club track with a natural intro, groove development, breakdown/drop variation, and resolved ending; regenerate or explicitly report tracks shorter than 2:00.
+- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete club track of at least 2 minutes with a natural intro, groove development, breakdown/drop variation, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
 - Prioritize strong groove, clean drops, energy changes, and replayable rhythm inside the selected style lane.
 - Avoid muddy mixes, overly long intros, generic mixed-genre EDM, and tracks that feel like unfinished loops.
 

@@ -29,7 +29,7 @@ DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 KNOWN_OAUTH_PUBLIC_HOSTS = {"ai-music.168.107.34.175.sslip.io"}
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 120
-DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 260
+DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 0
 DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 15 * 60
 DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 40 * 60
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
@@ -1003,8 +1003,8 @@ def require_playlist_track_duration(
     ):
         raise RuntimeError(
             f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
-            f"Playlist tracks must be {format_timestamp(max_seconds)} or shorter. "
-            "Regenerate a shorter Suno track or pass --allow-long-track only when the human explicitly accepts a longer track."
+            f"Playlist tracks must be {format_timestamp(max_seconds)} or shorter because --max-track-seconds was set. "
+            "Regenerate a shorter Suno track or pass --allow-long-track only when the human explicitly accepts that cap override."
         )
 
 
@@ -3185,9 +3185,9 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
     audio_parser.add_argument("--pending-review", action="store_true", help="For Playlist Releases only, skip the default auto-approve behavior.")
     audio_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum auto-approved Playlist Release track length. Default: 120 seconds.")
-    audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 260.")
+    audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 0, no maximum.")
     audio_parser.add_argument("--allow-short-track", action="store_true", help="Allow a playlist track shorter than --min-track-seconds. Use only with explicit human approval.")
-    audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds. Use only with explicit human approval.")
+    audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds when an explicit maximum is configured.")
     audio_parser.add_argument("--actor", default="openclaw", help="Actor name recorded when playlist uploads are auto-approved.")
     audio_parser.set_defaults(func=upload_audio)
 
@@ -3234,9 +3234,9 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 900 seconds for normal channels, 2400 seconds for BibliaCanto/불송.")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 120 seconds.")
-    auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 260.")
+    auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 0, no maximum.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
-    auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds. Use only with explicit human approval.")
+    auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds when an explicit maximum is configured.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")

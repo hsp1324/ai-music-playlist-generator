@@ -183,8 +183,18 @@ def test_playlist_track_duration_uses_existing_release_channel_for_long_track_ex
     )
 
 
-def test_playlist_track_duration_rejects_long_tracks_for_non_exempt_channels() -> None:
+def test_playlist_track_duration_allows_long_tracks_by_default_for_all_channels() -> None:
     args = _auto_publish_args("song.mp3", youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE)
+
+    openclaw_release.require_playlist_track_duration(
+        {"title": "Long J-pop Track", "duration_seconds": 360},
+        args=args,
+        context="duration check",
+    )
+
+
+def test_playlist_track_duration_rejects_long_tracks_when_max_configured() -> None:
+    args = _auto_publish_args("song.mp3", youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE, max_track_seconds=260)
 
     with pytest.raises(RuntimeError, match="04:20 or shorter"):
         openclaw_release.require_playlist_track_duration(
@@ -1111,7 +1121,7 @@ def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_fa
     assert not render_requested
 
 
-def test_auto_publish_playlist_rejects_tracks_longer_than_allowed_limit(tmp_path) -> None:
+def test_auto_publish_playlist_rejects_tracks_longer_than_explicit_limit(tmp_path) -> None:
     audio_path = tmp_path / "long.mp3"
     audio_path.write_bytes(b"long audio")
     render_requested = False
@@ -1165,6 +1175,7 @@ def test_auto_publish_playlist_rejects_tracks_longer_than_allowed_limit(tmp_path
                 description="instrumental cafe BGM",
                 tags="BGM,instrumental",
                 youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE,
+                max_track_seconds=260,
             ),
         )
 

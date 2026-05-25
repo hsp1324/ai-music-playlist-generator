@@ -46,7 +46,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Follow `../suno-v55-instrumental-format.md`.
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
 - Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
-- Do not force Cinematic Pulse tracks under 4 minutes. Longer complete cues are allowed, and OpenClaw should not reject a strong cinematic track just because it exceeds the usual 4:20 playlist helper limit.
+- Do not force Cinematic Pulse tracks under 4 minutes. Prompt for full-length complete cues of at least 2 minutes, then verify the downloaded duration. Longer complete cues, including 5+ minute tracks, are allowed.
 - Make each track feel complete, not like a short unfinished cue. Avoid abrupt fade-outs if possible.
 - The playlist should feel like a coherent film-score album. It can move between huge, quiet, tense, and emotional cues, but should keep a large cinematic scale and remain listenable across a 40-minute release.
 
