@@ -1493,7 +1493,7 @@ def test_openclaw_backlog_scheduler_backs_off_finishable_release_after_manual_bl
         clear_isolated_client_env()
 
 
-def test_openclaw_backlog_scheduler_backs_off_after_youtube_quota_blocker(tmp_path) -> None:
+def test_openclaw_backlog_scheduler_continues_after_youtube_quota_blocker(tmp_path) -> None:
     os.environ.pop("AIMP_OPENCLAW_SHARED_TOKEN", None)
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
@@ -1519,8 +1519,8 @@ def test_openclaw_backlog_scheduler_backs_off_after_youtube_quota_blocker(tmp_pa
                 "run_id": "run-quota",
                 "status": "blocked",
                 "message": (
-                    "YouTube API upload quota is exceeded; Solwave remains under target "
-                    "and needs explicit force-under-target human acceptance."
+                    "YouTube API Video Uploads per day quota exceeded "
+                    "(429 rateLimitExceeded)."
                 ),
             },
         )
@@ -1532,6 +1532,7 @@ def test_openclaw_backlog_scheduler_backs_off_after_youtube_quota_blocker(tmp_pa
                     metadata_json={
                         "workflow_state": "youtube_upload_failed",
                         "youtube_channel_title": "Solwave Radio",
+                        "youtube_upload_error": "Video Uploads per day quota exceeded (429 rateLimitExceeded).",
                     },
                 )
             )
@@ -1539,9 +1540,12 @@ def test_openclaw_backlog_scheduler_backs_off_after_youtube_quota_blocker(tmp_pa
 
             evaluation = evaluate_openclaw_backlog_scheduler(db, services)
 
-        assert evaluation["should_request"] is False
-        assert evaluation["reason"] == "recent_openclaw_manual_blocker"
-        assert evaluation["manual_blocker_backoff_seconds"] == 1800
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "underfilled_backlog"
+        assert evaluation["finishable_channels"] == []
+        assert evaluation["underfilled_channels"] == ["Solwave Radio"]
+        assert evaluation["summary"]["channels"]["Solwave Radio"]["finishable"] == 0
+        assert evaluation["summary"]["channels"]["Solwave Radio"]["deferred"] == 1
     finally:
         clear_isolated_client_env()
 

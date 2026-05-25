@@ -578,6 +578,8 @@ For New Testament scripture releases, `SELECTED_CHANNEL_TITLE` is still `BibliaC
 
 In continuous automation, `publish-release --no-wait` is required. Once the app accepts the publish request and queues `upload_youtube`, do not poll Slack or the app waiting for the YouTube id. Release the OpenClaw lock and continue on the next eligible backlog pass while the app upload worker handles the API upload.
 
+If YouTube API upload quota is exhausted (`Video Uploads per day`, `rateLimitExceeded`, `quotaExceeded`, HTTP 403 quota, or HTTP 429 rate limit), do not retry publish in the same pass and do not stop playlist production. Leave the release intact with its rendered video and metadata, report only `release id`, `YouTube video id: none`, and the quota blocker, then release the lock and continue with the next eligible unfinished workspace or new playlist. OpenClaw should keep making music, covers, thumbnails, and loop videos even while YouTube API uploads are quota-blocked.
+
 Only use `--force-under-target` if the release is below the 40-minute publish minimum and the human explicitly accepted a shorter playlist. Releases over 40 minutes can publish without force even when they are shorter than the older workspace target.
 
 ### Required Output

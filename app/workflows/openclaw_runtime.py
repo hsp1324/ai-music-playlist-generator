@@ -50,7 +50,6 @@ BACKLOG_WORKFLOW_STATES = {
 FINISHABLE_WORKFLOW_STATES = {
     "metadata_review",
     "publish_ready",
-    "publish_queued",
     "youtube_upload_failed",
 }
 DEFERRED_WORKFLOW_STATES = {
@@ -68,6 +67,17 @@ NON_RETRYABLE_YOUTUBE_AUTH_ERROR_PATTERNS = (
     "token has been expired or revoked",
     "token expired or was revoked",
 )
+YOUTUBE_UPLOAD_QUOTA_ERROR_PATTERNS = (
+    "quota exceeded",
+    "quotaexceeded",
+    "rate limit exceeded",
+    "ratelimitexceeded",
+    "upload quota",
+    "video uploads per day",
+    "uploads per day quota",
+    "youtube api quota",
+    "youtube api upload quota",
+)
 OPENCLAW_MANUAL_BLOCKER_PATTERNS = (
     "hcaptcha",
     "captcha challenge",
@@ -80,10 +90,6 @@ OPENCLAW_MANUAL_BLOCKER_PATTERNS = (
     "stored youtube channel token expired",
     "token expired or was revoked",
     "connect this channel again",
-    "quota exceeded",
-    "quota is exceeded",
-    "upload quota",
-    "youtube api upload quota",
     "사람이",
     "수동",
     "자동 게시 중단",
@@ -550,6 +556,26 @@ def _youtube_upload_failure_needs_auth(
     )
 
 
+def _youtube_upload_is_quota_blocked(meta: dict[str, Any]) -> bool:
+    workflow_state = str(meta.get("workflow_state") or "").strip()
+    if workflow_state not in {"youtube_upload_failed", "publish_queued"}:
+        return False
+    error_text = " ".join(
+        str(meta.get(key) or "")
+        for key in (
+            "youtube_upload_error",
+            "youtube_post_upload_error",
+            "youtube_upload_deferred_reason",
+            "note",
+        )
+    ).lower()
+    compact_error_text = "".join(ch for ch in error_text if ch.isalnum())
+    return any(
+        pattern in error_text or pattern in compact_error_text
+        for pattern in YOUTUBE_UPLOAD_QUOTA_ERROR_PATTERNS
+    )
+
+
 def _playlist_is_finishable(
     workflow_state: str,
     meta: dict[str, Any],
@@ -563,6 +589,8 @@ def _playlist_is_finishable(
         failed_at=failed_at,
     ):
         return False
+    if _youtube_upload_is_quota_blocked(meta):
+        return False
     return workflow_state in FINISHABLE_WORKFLOW_STATES
 
 
@@ -573,10 +601,14 @@ def _playlist_is_deferred(
     channel_status: dict[str, Any] | None = None,
     failed_at: datetime | None = None,
 ) -> bool:
-    return workflow_state in DEFERRED_WORKFLOW_STATES or _youtube_upload_failure_needs_auth(
-        meta,
-        channel_status=channel_status,
-        failed_at=failed_at,
+    return (
+        workflow_state in DEFERRED_WORKFLOW_STATES
+        or _youtube_upload_is_quota_blocked(meta)
+        or _youtube_upload_failure_needs_auth(
+            meta,
+            channel_status=channel_status,
+            failed_at=failed_at,
+        )
     )
 
 
