@@ -75,8 +75,9 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 
 - Korean K-pop/Korean pop vocal channel.
 - Default visual package is now photorealistic Korean lifestyle still images, not animated/anime rotation and not provider loop video.
-- Use attractive clearly adult women, handsome stylish adult men, or tasteful adult couple/friend scenes in natural Instagram-style daily-life settings such as Hongdae, Itaewon, Seoul cafe streets, seaside roads, beaches, Han River sunset, rooftops, boutiques, or rainy city streets.
-- Faces may be visible, including side profile, three-quarter view, soft eye contact, or candid looking-away poses. Do not hide faces by default.
+- Use attractive clearly adult women, handsome stylish adult men, or tasteful adult couple/friend scenes in natural Instagram-style daily-life settings such as Hongdae, Itaewon, Seoul cafe streets, seaside roads, beaches, coastal overlooks, flower gardens, Han River sunset, rooftops, boutiques, or rainy city streets.
+- Prefer friend-taken adult day-trip/cafe/seaside snapshots over studio or fashion-campaign portraits. Faces may be visible, but avoid tight straight-on AI-beauty close-ups. Prefer side profile, three-quarter view, candid looking-away, laughing/smiling travel moments, or medium/farther framing where the place and mood also matter.
+- A fresh 청순 idol-inspired adult woman can work for bright K-pop concepts, but keep her fictional, natural, and varied; no real idol/member lookalikes, no minors, no school uniforms, no doll-like symmetry, and no over-retouched skin.
 - Do not add channel names, logos, style text, title text, badges, or stickers to the cover/thumbnail by default.
 - Queue final render as still image with app spectrum lower-right and app lyric overlay lower-left. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
 

@@ -54,10 +54,11 @@ Use one broad K-pop listening promise plus one explicit K-pop genre lane. Keep t
 ## Visual Direction
 
 - HaruHaru now uses photorealistic still-image visual packaging by default.
-- Cover and thumbnail should follow the specific playlist concept, but they should look like natural lifestyle photos rather than graphic posters.
+- Cover and thumbnail should follow the specific playlist concept, but they should look like natural lifestyle photos or casual friend-taken travel snapshots rather than graphic posters, studio portraits, or fashion-campaign images.
 - Use attractive clearly adult Korean/Korean-fashion lifestyle subjects: a stylish woman, handsome stylish man, or tasteful adult couple/friend pair. Faces may be visible, including natural side profile, three-quarter view, soft eye contact, or candid looking-away poses.
-- Do not prompt for hidden faces by default. Do not hide the face with hair, phone, sunglasses, crop, or turned-back poses unless the concept naturally calls for it.
-- Good scene families: Hongdae cafe window, Itaewon evening street, Seoul cafe terrace, seaside road, beach walk, Han River sunset, rainy city crosswalk, rooftop, record shop, boutique, subway exit, summer travel photo, or quiet cafe street.
+- Do not prompt for hidden faces by default. Do not hide the face with hair, phone, sunglasses, crop, or turned-back poses unless the concept naturally calls for it. Also avoid tight straight-on face close-ups that feel like AI headshots; prefer three-quarter/side/candid angles, medium or farther framing, and enough environment to make the image feel real.
+- Good scene families: Hongdae cafe window, Itaewon evening street, Seoul cafe terrace, seaside road, beach walk, coastal overlook, flower garden, Han River sunset, rainy city crosswalk, rooftop, record shop, boutique, subway exit, summer travel photo, or quiet cafe street.
+- For bright chill pop, groove pop, or feel-good K-pop, use ordinary phone-photo details: adult day-trip energy, flowers or a small bouquet when natural, wind-touched hair, relaxed smile/laugh, slight overexposure, imperfect crop, mild motion softness, and a non-studio background.
 - Keep styling adult, fashionable, pretty/cool, and non-explicit. No minors, school uniforms, childlike styling, celebrity likenesses, nudity, fetish framing, or pornographic posing.
 - Do not put logos, channel names, title text, style labels, badges, stickers, or typography on the image package by default.
 - Do not create a moving loop video for normal HaruHaru releases. The release should render from the still cover image in the app.

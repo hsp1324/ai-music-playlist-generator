@@ -15,9 +15,11 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 ## Visual Identity
 
 - HaruHaru now defaults to photorealistic Korean lifestyle still-image visuals, not animated/anime rotation.
-- The visual should feel like an attractive adult's natural Instagram-style daily-life photo: Hongdae street, Itaewon night/cafe street, Seoul cafe terrace, seaside trip, beach road, Han River sunset, city crosswalk, rooftop, subway exit, record shop, boutique, or rainy window.
+- The visual should feel like an attractive adult's natural Instagram-style daily-life photo or casual travel snapshot: Hongdae street, Itaewon night/cafe street, Seoul cafe terrace, seaside trip, beach road, flower garden, Han River sunset, city crosswalk, rooftop, subway exit, record shop, boutique, or rainy window.
+- Prefer an ordinary-person camera feel over a professional model shoot. The image should look like a friend took it during a fun adult day trip, cafe outing, seaside walk, or school-trip-like travel moment, not like a studio photographer, fashion campaign, or glossy AI portrait.
 - Main subjects can be a stylish adult woman, a handsome stylish adult man, or a tasteful adult couple/friend pair when the release concept supports it.
-- Faces do not need to be hidden. A natural face, three-quarter view, side profile, soft eye contact, or candid looking-away pose is allowed and preferred when it feels like real daily life.
+- Faces do not need to be hidden, but avoid tight straight-on beauty close-ups where the face fills the frame. Prefer a natural three-quarter view, side profile, candid looking-away pose, laughing/smiling travel moment, or slightly farther medium/waist-up framing where the scene also matters.
+- A fresh, innocent, idol-inspired adult woman can work for bright K-pop/chill pop releases, but she must be fictional and natural: no real celebrity/idol lookalikes, no plastic-perfect AI face, no doll-like symmetry, and no over-retouched skin. Vary face shapes, expressions, distance from camera, hair, outfits, and scene types across releases.
 - Keep the subject clearly adult. Do not use minors, teen-coded styling, school uniforms, childlike poses, celebrity likenesses, or idol-member lookalikes.
 - Styling should be fashionable, pretty, cool, and natural: casual streetwear, cafe outfit, beach resort outfit, leather jacket, knitwear, denim, coat, summer dress, or clean Korean fashion editorial styling.
 - Keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no sexual acts, and no pornographic posing.
@@ -32,7 +34,9 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - Do not put `HaruHaru`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - Do not put Korean pop lane text such as `K-POP`, `K-R&B`, `DANCE POP`, `SYNTH POP`, or `POP ROCK` on the cover unless the human explicitly asks.
 - Leave safe negative space around the lower-left and lower-right when possible, because the app may place lyrics at lower-left and spectrum at lower-right in the final render.
-- Good cover directions: stylish adult woman in profile at a Hongdae cafe window; handsome stylish adult man on an Itaewon evening street; adult woman on a seaside road with wind in hair; fashionable adult couple near a Seoul cafe street; natural candid portrait at a rainy city crosswalk.
+- Good cover directions: adult woman smiling with a small bouquet on a sunny seaside overlook; adult woman farther from camera on a beach road with wind in hair; friend-taken travel snapshot at a flower garden; stylish adult woman in profile at a Hongdae cafe window; handsome stylish adult man on an Itaewon evening street; fashionable adult couple near a Seoul cafe street; natural candid portrait at a rainy city crosswalk.
+- For bright/chill/groove pop, default to casual phone-photo energy: daylight, slight overexposure, imperfect crop, mild motion softness, realistic compression, wind-touched hair, relaxed smile, and a real travel/cafe background. Do not make the person look like an AI model posing for a headshot.
+- Keep the subject visible but not always close. Medium-wide, waist-up, or farther full-body framing is acceptable and often better than a centered face close-up, especially when the location and mood add click value.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, spectrum bars, waveform graphics, or unrelated words to the cover.
 
 ## YouTube Thumbnail
@@ -40,6 +44,7 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same face, subject placement, lighting, palette, props, clothing colors, and camera angle from the cover.
 - By default, do not add thumbnail text. The HaruHaru thumbnail should look like a premium natural lifestyle photo, not a graphic poster.
+- The thumbnail may crop slightly closer for readability, but it should still feel like a normal friend-taken travel/cafe photo. Do not turn the derivative into a straight-on AI beauty portrait.
 - If the human explicitly requests text later, keep it very small and integrated; never add the channel name or a logo.
 - Do not add `HARUHARU`, the channel name, or a channel logo.
 - Keep the main subject visually important; text must fit around the subject and must not push the subject into an awkward crop.

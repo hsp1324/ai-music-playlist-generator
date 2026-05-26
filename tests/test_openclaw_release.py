@@ -31,6 +31,7 @@ from scripts.openclaw_release import (
     resolve_lyrics_items,
     resolve_exclude_style_items,
     resolve_style_items,
+    should_enable_lyrics_overlay_for_release,
     slack_notify_command,
     upload_audio_file_to_release,
     upload_loop_video,
@@ -94,6 +95,23 @@ def test_public_oauth_api_base_requires_cookie(monkeypatch) -> None:
     openclaw_release.validate_api_base_auth(
         "http://127.0.0.1:8000/api",
         headers={"X-OpenClaw-Token": "token"},
+    )
+
+
+def test_still_image_pop_channels_enable_lyrics_overlay_by_default() -> None:
+    args = SimpleNamespace(lyrics_overlay=False)
+
+    assert should_enable_lyrics_overlay_for_release(
+        args,
+        release={"youtube_channel_title": HARUHARU_YOUTUBE_CHANNEL_TITLE},
+    )
+    assert should_enable_lyrics_overlay_for_release(
+        args,
+        release={"youtube_channel_title": SOLWAVE_YOUTUBE_CHANNEL_TITLE},
+    )
+    assert not should_enable_lyrics_overlay_for_release(
+        args,
+        release={"youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE},
     )
 
 

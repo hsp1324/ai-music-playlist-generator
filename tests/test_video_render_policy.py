@@ -89,6 +89,10 @@ def test_release_vocal_mode_uses_channel_before_track_fallback() -> None:
 def test_auto_lyrics_overlay_uses_channel_policy_and_respects_disable_flag() -> None:
     assert should_auto_enable_video_lyrics_overlay({"youtube_channel_title": "불송"}, [])
     assert not should_auto_enable_video_lyrics_overlay({"youtube_channel_title": "Club Bloom"}, [{"lyrics": "line"}])
+    assert should_auto_enable_video_lyrics_overlay(
+        {"youtube_channel_title": "Solwave Radio"},
+        [{"lyrics": "line"}],
+    )
     assert not should_auto_enable_video_lyrics_overlay(
         {"youtube_channel_title": "불송", "video_lyrics_overlay_disabled": True},
         [{"lyrics": "line"}],

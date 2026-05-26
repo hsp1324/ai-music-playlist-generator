@@ -132,6 +132,10 @@ CHANNEL_TITLE_ALIASES = {
         SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
     ),
 }
+STILL_IMAGE_LYRICS_OVERLAY_CHANNEL_TITLES = {
+    HARUHARU_YOUTUBE_CHANNEL_TITLE,
+    SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+}
 REQUIRED_METADATA_LANGUAGES = (
     "ko",
     "ja",
@@ -1640,6 +1644,16 @@ def is_storylight_channel_title(value: str | None) -> bool:
     return title.lower() in aliases
 
 
+def is_still_image_lyrics_overlay_channel_title(value: str | None) -> bool:
+    title = str(value or "").strip()
+    if not title:
+        return False
+    aliases = {channel.lower() for channel in STILL_IMAGE_LYRICS_OVERLAY_CHANNEL_TITLES}
+    for channel in STILL_IMAGE_LYRICS_OVERLAY_CHANNEL_TITLES:
+        aliases.update(alias.lower() for alias in CHANNEL_TITLE_ALIASES.get(channel, ()))
+    return title.lower() in aliases
+
+
 def release_youtube_channel_title(release: dict[str, Any], fallback: str = "") -> str:
     meta = release.get("metadata_json") if isinstance(release.get("metadata_json"), dict) else {}
     return str(
@@ -1665,6 +1679,20 @@ def require_video_render_source_allowed(
             "Storylight OST requires a provider-generated loop video. "
             "Upload the loop video first and render with --video-render-source-mode loop_video or auto."
         )
+
+
+def should_enable_lyrics_overlay_for_release(
+    args: argparse.Namespace,
+    *,
+    release: dict[str, Any],
+    channel_title: str = "",
+) -> bool:
+    return bool(
+        getattr(args, "lyrics_overlay", False)
+        or is_still_image_lyrics_overlay_channel_title(
+            release_youtube_channel_title(release, fallback=channel_title)
+        )
+    )
 
 
 def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
@@ -2064,7 +2092,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         raise RuntimeError(
             "auto-publish-playlist requires --loop-video when creating a new moving-video Playlist Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "Pass --allow-still-image-video only for HaruHaru still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
 
@@ -2100,7 +2128,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         raise RuntimeError(
             "auto-publish-playlist requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Pass --allow-still-image-video only for HaruHaru still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -2284,7 +2312,11 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
-            "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
+            "video_lyrics_overlay_enabled": should_enable_lyrics_overlay_for_release(
+                args,
+                release=release,
+                channel_title=release_channel_title,
+            ),
             "video_lyrics_overlay_style": getattr(args, "lyrics_overlay_style", "auto"),
             "video_lyrics_alignment_mode": getattr(args, "lyrics_alignment_mode", "whisper"),
         },
@@ -2413,7 +2445,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires --loop-video when creating a new moving-video Single Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "For HaruHaru still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
+            "For HaruHaru/Solwave Radio still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-single")
 
@@ -2450,7 +2482,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Pass --allow-still-image-video only for HaruHaru still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -2614,7 +2646,11 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
-            "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
+            "video_lyrics_overlay_enabled": should_enable_lyrics_overlay_for_release(
+                args,
+                release=release,
+                channel_title=release_channel_title,
+            ),
             "video_lyrics_overlay_style": getattr(args, "lyrics_overlay_style", "auto"),
             "video_lyrics_alignment_mode": getattr(args, "lyrics_alignment_mode", "whisper"),
         },
@@ -2890,7 +2926,11 @@ def render_video(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "video_spectrum_overlay_style": args.video_spectrum_overlay_style,
             "video_render_resolution": args.video_render_resolution,
             "video_render_source_mode": args.video_render_source_mode,
-            "video_lyrics_overlay_enabled": bool(args.lyrics_overlay),
+            "video_lyrics_overlay_enabled": should_enable_lyrics_overlay_for_release(
+                args,
+                release=release,
+                channel_title=str(getattr(args, "youtube_channel_title", "") or ""),
+            ),
             "video_lyrics_overlay_style": getattr(args, "lyrics_overlay_style", "auto"),
             "video_lyrics_alignment_mode": getattr(args, "lyrics_alignment_mode", "whisper"),
         },
@@ -3280,10 +3320,10 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
     auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable title/use-case text; HaruHaru should normally be text-free; Solwave Radio should use a friend-taken phone-photo look with one integrated Latin/Spanish lane phrase when useful; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru still-image renders.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/Solwave Radio still-image renders.")
     auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru still-image renders or a human-approved fallback.")
+    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/Solwave Radio still-image renders or a human-approved fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
@@ -3314,13 +3354,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/Solwave Radio still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/Solwave Radio still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-overlay",
@@ -3331,7 +3371,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and channel policy for other lyric releases; use editorial-lower-left for HaruHaru.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/Solwave Radio.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3354,10 +3394,10 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover/first-frame image without channel names or logos unless an uploaded final cover already exists on the release.")
     auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable text; HaruHaru should normally be text-free; Solwave Radio should use a friend-taken phone-photo look with one integrated Latin/Spanish lane phrase when useful; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru still-image renders.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/Solwave Radio still-image renders.")
     auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru still-image renders or a human-approved fallback.")
+    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/Solwave Radio still-image renders or a human-approved fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
@@ -3382,13 +3422,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/Solwave Radio still-image renders.",
     )
     auto_single_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/Solwave Radio still-image renders.",
     )
     auto_single_parser.add_argument(
         "--lyrics-overlay",
@@ -3399,7 +3439,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and channel policy for other lyric releases; use editorial-lower-left for HaruHaru.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/Solwave Radio.",
     )
     auto_single_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3463,7 +3503,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser = subparsers.add_parser("render-video", help="Queue video render for an existing release.")
     render_video_parser.add_argument("--release-id", default="", help="Existing release id.")
     render_video_parser.add_argument("--release-title", default="", help="Existing release title.")
-    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru still-image renders or a human-approved fallback.")
+    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/Solwave Radio still-image renders or a human-approved fallback.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
         choices=["bars", "mirror-bars", "calm-bars", "none"],
@@ -3474,13 +3514,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/Solwave Radio still-image renders.",
     )
     render_video_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/Solwave Radio still-image renders.",
     )
     render_video_parser.add_argument(
         "--lyrics-overlay",
@@ -3491,7 +3531,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and channel policy for other lyric releases; use editorial-lower-left for HaruHaru.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/Solwave Radio.",
     )
     render_video_parser.add_argument(
         "--lyrics-alignment-mode",
