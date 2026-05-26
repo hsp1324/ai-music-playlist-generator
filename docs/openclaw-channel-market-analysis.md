@@ -108,8 +108,9 @@ What gets views:
 Our direction:
 
 - Title shape: `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`.
-- Song direction: English vocal pop with standalone song concepts, sticky chorus, emotional clarity, modern production, and no BGM-like flatness.
-- Thumbnail text: `POP DRIVE`, `FEEL-GOOD POP`, `HEARTBREAK POP`, `SUMMER POP`.
+- Channel shape: English/American pop playlist hub, not a narrow English-pop-only channel. Use one clear lane per release: Pop R&B, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie/bedroom/alt-pop, singer-songwriter/folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop.
+- Song direction: English-forward vocal pop with standalone song concepts, sticky chorus, emotional clarity, modern production, and no BGM-like flatness.
+- Thumbnail text: `POP DRIVE`, `FEEL-GOOD POP`, `HEARTBREAK POP`, `SUMMER POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, or `AMAPIANO POP`.
 - Keep the channel brand as plain integrated text. Avoid pill/capsule/button badges for `SUNDAZE`; they read like pasted UI and can make the thumbnail feel less premium.
 - Avoid: generic `English Pop` or lyrics that only paraphrase the playlist title.
 

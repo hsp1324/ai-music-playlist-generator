@@ -1,15 +1,15 @@
 # OpenClaw Visual Asset Skills
 
-Use this when OpenClaw creates cover images, YouTube thumbnails, or short loop videos for this repo.
+Use this when OpenClaw creates cover images, YouTube thumbnails, short loop videos, or still-image render packages for this repo.
 
 The production source of truth is [openclaw-channel-profiles](openclaw-channel-profiles/README.md). Run `scripts/openclaw-release channel-profile` first, then read the returned `profile_doc`.
 
 ## Shared Asset Contract
 
 - Create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina.
-- Use Gemini first for moving loop videos, then Dreamina/Seedance when Gemini is unavailable, blocked after retries, or in its 24 hour cooldown after 3 successful video generations.
+- Use Gemini first for moving loop videos, then Dreamina/Seedance when Gemini is unavailable, blocked after retries, or in its 24 hour cooldown after 3 successful video generations. HaruHaru skips provider loop videos during normal automation and uses `still_image` render.
 - Always create the final 16:9 cover/first-frame first, then create the YouTube thumbnail from that image as a reference/edit derivative.
-- Keep cover, thumbnail, and loop video visually continuous: same subject count, subject placement, silhouettes, clothing colors, props, background landmarks, lighting, palette, and camera angle.
+- Keep cover, thumbnail, and loop video or still-image render visuals visually continuous: same subject count, subject placement, silhouettes, clothing colors, props, background landmarks, lighting, palette, and camera angle.
 - Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
 - If text is useful, use only a short natural style, genre, use-case, or passage phrase. Examples: `J-POP`, `LOFI`, `TECH HOUSE`, `CINEMATIC ORCHESTRA`, `GAME OST`, `Genesis 1:1-5`, `Matthew 1:18-25`, `팔정도 명상팝`, `자비 트립합`. The phrase should feel integrated into the image, not like a pasted badge.
 - Do not add title sentences, lyrics, subtitles, duration text, UI, logos, watermarks, or unrelated words to the cover/first-frame or loop video.
@@ -17,14 +17,14 @@ The production source of truth is [openclaw-channel-profiles](openclaw-channel-p
 - Do not include spectrum bars, waveform graphics, equalizers, or audio meters in generated assets. The app adds the audio-reactive visualizer during final render.
 - Available app-rendered visualizer presets are `bars`, `mirror-bars`, `calm-bars`, and `none`. Do not use removed busy presets: small dots/particles, thin waveform, multiwave, radial, pulse, or the spectrum style used on `창세기 창조의 빛`. `BibliaCanto` must use `none`; `불송` must use `calm-bars`.
 - Human visual requests override the channel default when they are safe and compatible with the channel.
-- All generated visuals should look animated, anime, illustrated, or stylized unless a channel profile says otherwise. `Cinematic Pulse` uses original photorealistic cinematic first-frame art and restrained cinematic motion. `불송` uses photorealistic/premium Buddhist visuals by default, with occasional gentle animation only when the music lane fits.
+- All generated visuals should look animated, anime, illustrated, or stylized unless a channel profile says otherwise. `HaruHaru` uses photorealistic Korean lifestyle still images by default. `Cinematic Pulse` uses original photorealistic cinematic first-frame art and restrained cinematic motion. `불송` uses photorealistic/premium Buddhist visuals by default, with occasional gentle animation only when the music lane fits.
 
 ## Loop Video Rules
 
 - Normal Dreamina/Seedance browser clips use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`.
 - If the Seedance/Dreamina duration control is hidden when the screen opens, gently drag/scroll the settings/control row to the right until the duration option is visible, then set it to exactly `7 seconds`. Do not Generate while the duration is hidden, set to 5 seconds, or uncertain.
 - `불송` clips use Seedance/Dreamina `2.0 Fast`, first-frame only, `16:9`, `720p`, exactly `6 seconds`.
-- HaruHaru photorealistic clips use Seedance `2.0`, first-frame only, `16:9`, `1080p`, exactly `7 seconds`, then final render `--video-render-resolution 1080p`.
+- HaruHaru normal releases do not use provider clips. Upload photorealistic still cover/thumbnail images, then render with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style bars --lyrics-overlay --lyrics-overlay-style editorial-lower-left`.
 - Gemini clips are uploaded as generated after inspection. Do not mention duration in Gemini prompts.
 - Do not put `7 seconds`, `6 seconds`, `16:9`, `720p`, `1080p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Set those in provider controls when available.
 - Do not use a local pan/zoom, app still-image animation, or other workaround when video generation fails unless the human explicitly approves a still-image fallback.
@@ -42,9 +42,9 @@ The production source of truth is [openclaw-channel-profiles](openclaw-channel-p
 
 - `Tokyo Daydream Radio`: illustrated J-pop visuals; default exactly three people walking toward the viewer while the camera moves backward at the same speed so subject size stays stable. Text, if any, should be a short J-pop/style phrase, not the channel name.
 - `Soft Hour Radio`: calm BGM visuals; often best with locked camera, natural environmental motion, and `none` or restrained spectrum for very quiet releases. Use lofi wording when the lane is lofi.
-- `sundaze`: English pop visuals; style/use-case text should name the pop lane naturally, such as pop R&B, dance-pop, synth-pop, pop-rock, or feel-good pop.
+- `sundaze`: English/American pop playlist visuals; style/use-case text should name the lane naturally, such as pop R&B, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, Afropop, Amapiano-pop, or feel-good pop.
 - `Solwave Radio`: Latin/Spanish pop visuals; use Spanish/Latin lane text such as Pop Latino, Reggaeton Suave, Bachata Pop, Latin R&B, or Verano Latino when useful.
-- `HaruHaru`: Korean pop visuals; keep one coherent lane per video. Photorealistic adult-fashion/lifestyle visuals are allowed at a 2:1 photorealistic-to-animation ratio, with stable subject scale and no explicit sexual content.
+- `HaruHaru`: Korean pop visuals now default to photorealistic Korean lifestyle still images. Use stylish clearly adult women/men or tasteful adult couple/friend scenes in Hongdae, Itaewon, Seoul cafe streets, seaside roads, beaches, Han River sunset, rooftops, boutiques, or rainy city streets. Faces may be visible, including side profile or three-quarter view. Do not add logos, channel names, style words, title text, badges, spectrum bars, or lyrics to the image. Render from still image with app spectrum lower-right and app lyrics lower-left; do not create a provider loop video unless the human explicitly requests motion.
 - `Storylight OST`: playful game/anime BGM visuals; sell happy mood, cozy gaming, arcade/game OST, or light focus instead of narrow mechanic words.
 - `Cinematic Pulse`: photorealistic cinematic cover/first-frame art, preferably 2560x1440 or at least 1920x1080. Include one tasteful upper-left cinematic style phrase such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`, never the channel name. Create a subtle 7 second provider loop video from that text-integrated first frame, then queue final render with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly asks for still-image fallback or higher resolution.
 - `Club Bloom`: no-vocal club/EDM visuals; prefer active DJ/performance scenes, rooftop/beach/festival/nightclub energy, bold neon, and style text such as Tech House, Bass House, Trance Mix, EDM Mix, or Club Mix.

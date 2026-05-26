@@ -4,11 +4,11 @@ Use this after the selected channel is `sundaze`. This document decides the next
 
 ## Channel Promise
 
-sundaze is an English-language pop channel: English/American/US-UK pop, dance-pop, synth-pop, pop-rock, bright summer pop, night-drive pop, and emotional pop ballads.
+sundaze is an English/American pop playlist channel, not a narrow single-subgenre channel. It covers mainstream English vocal pop and pop-adjacent American/global lanes that fit English playlist packaging: dance-pop, synth-pop, Pop R&B, pop hip-hop, pop-rock, indie pop, bedroom pop, alt-pop, acoustic pop, singer-songwriter pop, folk-pop, country pop, Americana pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, and Amapiano-pop.
 
-The audience should immediately understand: English vocal pop for a specific everyday scene or emotion.
+The audience should immediately understand: English-forward vocal pop playlist music for a specific everyday scene, mood, or emotion.
 
-Titles should be mainstream English/American pop packaging first. Use the specific visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
+Titles should be playlist-first mainstream English/American pop packaging. Use the specific visual scene as atmosphere unless it is the strongest public hook; do not make narrow scene names the main title by default.
 
 Before finalizing metadata, check the English/default title and every localized title in its own language. Reject raw workspace labels or abstract noun chains such as `Golden Hour Drive Pop`, `City Night Confidence Energy`, `Weekend Work Pop`, or literal equivalents. Use a natural pop promise: road trip, feel-good, heartbreak, getting ready, night drive, summer, confidence, workout, party warmup, or work/walk only when the audio fits, rewritten naturally per language.
 
@@ -26,7 +26,7 @@ If the latest sundaze title could be summarized by the same two nouns as the new
 
 ## Concept Lanes
 
-Use a vivid situation or emotion plus one explicit English-pop genre lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
+Use a vivid situation or emotion plus one explicit English/American pop playlist lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
 
 - Pop R&B / R&B pop: smooth vocals, late-night emotion, groove, romance, heartbreak.
 - Pop hip-hop / rap-pop: confident hooks, 808s, city/night drive, workout or getting ready.
@@ -35,11 +35,18 @@ Use a vivid situation or emotion plus one explicit English-pop genre lane. Keep 
 - Pop-rock / guitar pop: road trip, weekend, confidence, friends, open-road energy.
 - Soul-pop / neo-soul pop: warm vocals, mature groove, romantic tension, Sunday mood.
 - Acoustic pop / ballad-pop: rainy bedroom, heartbreak, healing, late texts.
+- Country pop: highway drive, small-town night, bar lights, heartbreak, summer road, singable chorus.
+- Americana pop / folk-pop: warm acoustic guitars, road-trip reflection, porchlight mood, hopeful storytelling.
+- Indie pop / bedroom pop / alt-pop: intimate vocals, quirky hooks, soft synths or guitars, late-night self-discovery.
+- Singer-songwriter pop / soft rock / adult-contemporary pop: polished storytelling, piano or guitar center, mature emotion, easy replay.
+- Pop-punk / upbeat guitar pop: youthful energy, friends, breakup confidence, weekend release, bright choruses.
+- Y2K / recession pop / disco-pop / funk-pop: carefree hooks, danceable nostalgia, getting ready, party warmup, feel-good energy.
+- Afrobeats / Afropop / Amapiano-pop: English-forward global pop vocals, warm percussion, log-drum or Afro-groove movement, summer nights, beach, dance, or drive energy.
 
 ## Music Direction
 
 - Original English lyrics by default.
-- One release must stay in one clear genre lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, neo-soul pop, acoustic pop, or ballad-pop. Do not make one playlist a generic mixed English-pop sampler unless the human explicitly asks.
+- One release must stay in one clear genre lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, singer-songwriter pop, folk-pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop. Do not make one playlist a generic mixed English-pop sampler unless the human explicitly asks.
 - Put the selected genre lane in the YouTube title and metadata in natural English and localized equivalents. The title should make both the genre and the listening reason obvious.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for driving, getting ready, running, workout, night walk, work, or a party warmup, the beat, tempo, energy, and vocal attitude should fit that context, but the lyrics do not need to literally mention those activities.
@@ -55,19 +62,23 @@ Use a vivid situation or emotion plus one explicit English-pop genre lane. Keep 
 - No fixed recurring visual signature yet.
 - Cover, thumbnail, and loop video should follow the specific playlist concept.
 - Keep visuals modern, bright, pop-friendly, stylized, and readable at thumbnail size.
-- Thumbnail text should match the mood, such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
+- Thumbnail text should match the mood and lane, such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `POP R&B`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
 
 ## Good Fresh Concept Shapes
 
 - `[playlist] Late Night Pop R&B Mix | City Lights, Heartbreak and Drive Music`
 - `[playlist] Feel-Good Pop-Rock Essentials | Summer Drive, Walk and Good Days`
+- `[playlist] Country Pop Road Trip | Highway Songs for Summer Nights`
+- `[playlist] Americana Pop Drive | Warm Guitar Songs for Open Roads`
+- `[playlist] Afropop Summer Nights | English Pop Dance Songs for Beach Drives`
+- `[playlist] Indie Pop Evening Mix | Bedroom Pop, Soft Hooks and Late-Night Thoughts`
 - `[playlist] Rooftop Dance-Pop Mix | Weekend Party Warmup and City Lights`
 - `[playlist] Rainy Bedroom Acoustic Pop | Heartbreak, Late Texts and Moving On`
 
 ## Bad Directions
 
 - Short generic titles like `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
-- Titles that hide the genre lane. Avoid generic `English Pop Mix` when the release is specifically Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, or acoustic pop.
+- Titles that hide the genre lane. Avoid generic `English Pop Mix` when the release is specifically Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, Afropop, Amapiano-pop, soul-pop, or acoustic pop.
 - Titles that translate into awkward keyword piles instead of natural English-pop playlist copy.
 - Mismatched use cases, such as calling a club-like rooftop dance-pop playlist `focus`, `study`, or `quiet work` music.
 - Lyrics that literally describe the playlist setting instead of working as a standalone song.

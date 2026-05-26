@@ -365,6 +365,20 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
+            release_title="Country Pop Road Trip",
+            description="Americana pop playlist with English vocals",
+        )
+    ) == SUNDAZE_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Afropop Summer Nights",
+            description="Amapiano pop playlist with English vocals",
+        )
+    ) == SUNDAZE_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
             release_title="Verano Latino Reggaeton Pop",
             description="Spanish vocal pop playlist",
         )
@@ -752,6 +766,8 @@ def test_upload_audio_file_retries_and_returns_probed_duration(tmp_path, monkeyp
 def test_pop_family_vocal_detection_allows_explicit_bgm_exception() -> None:
     assert is_pop_family_vocal_request("Tokyo J-pop single", "bright anime opening")
     assert is_pop_family_vocal_request("Summer English pop single", "mainstream American pop")
+    assert is_pop_family_vocal_request("Country Pop Road Trip", "Americana pop")
+    assert is_pop_family_vocal_request("Afropop Summer Nights", "Amapiano pop")
     assert is_pop_family_vocal_request("Verano Latino", "Spanish reggaeton pop")
     assert not is_pop_family_vocal_request("J-pop style BGM", "가사 없는 배경음악")
 

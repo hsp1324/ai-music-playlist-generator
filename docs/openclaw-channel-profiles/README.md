@@ -32,7 +32,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Text must be integrated into the artwork with safe margins. Do not use hard black boxes, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks.
 - The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
 - The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
-- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default clips are `7 seconds`; `불송` clips are `6 seconds`; HaruHaru photorealistic clips use 1080p. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set the required duration before Generate.
+- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default moving-video clips are `7 seconds`; `불송` clips are `6 seconds`. HaruHaru does not use provider clips by default; render it from the still cover image. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set the required duration before Generate.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
 - Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
@@ -57,9 +57,10 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 
 ### sundaze
 
-- English/US-pop counterpart to Tokyo Daydream Radio.
+- English/American pop playlist counterpart to Tokyo Daydream Radio.
+- Covers mainstream English pop plus pop-adjacent playlist lanes such as Pop R&B, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie/bedroom/alt-pop, singer-songwriter/folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, and Amapiano-pop.
 - Let the concept decide the scene; do not force a recurring visual.
-- If text is useful, name the pop lane or use case: `POP R&B`, `DANCE POP`, `SYNTH POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
+- If text is useful, name the pop lane or use case: `POP R&B`, `DANCE POP`, `SYNTH POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
 
 ### Solwave Radio
 
@@ -70,10 +71,11 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### HaruHaru
 
 - Korean K-pop/Korean pop vocal channel.
-- Keep a 2:1 photorealistic-to-animated visual ratio when recent history allows.
-- Photorealistic visuals can feature a clearly adult woman in tasteful fashion/lifestyle scenes with face hidden or obscured. Keep it non-explicit and avoid minors, school-uniform cues, celebrity likenesses, or fetish framing.
-- In photorealistic loop videos, keep the subject the same size and crop for the full clip. The camera tracks at the same speed/distance if she moves; background parallax and environment provide motion.
-- If text is useful, use short lane text such as `K-POP`, `K-R&B`, `K-POP HIPHOP`, `DANCE POP`, `SYNTH POP`, or `POP ROCK`.
+- Default visual package is now photorealistic Korean lifestyle still images, not animated/anime rotation and not provider loop video.
+- Use attractive clearly adult women, handsome stylish adult men, or tasteful adult couple/friend scenes in natural Instagram-style daily-life settings such as Hongdae, Itaewon, Seoul cafe streets, seaside roads, beaches, Han River sunset, rooftops, boutiques, or rainy city streets.
+- Faces may be visible, including side profile, three-quarter view, soft eye contact, or candid looking-away poses. Do not hide faces by default.
+- Do not add channel names, logos, style text, title text, badges, or stickers to the cover/thumbnail by default.
+- Queue final render as still image with app spectrum lower-right and app lyric overlay lower-left. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
 
 ### Storylight OST
 

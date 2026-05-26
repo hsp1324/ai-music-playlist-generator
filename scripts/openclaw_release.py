@@ -220,20 +220,54 @@ LATIN_CHANNEL_KEYWORDS = (
     "レゲトン",
 )
 ENGLISH_POP_CHANNEL_KEYWORDS = (
+    "acoustic pop",
+    "adult contemporary pop",
+    "afrobeats",
+    "afro pop",
+    "afropop",
+    "amapiano",
+    "amapiano pop",
+    "americana",
+    "americana pop",
     "american pop",
+    "alt-pop",
+    "alt pop",
+    "bedroom pop",
+    "country pop",
+    "disco pop",
     "english pop",
     "english vocal",
+    "folk pop",
+    "folk-pop",
+    "funk pop",
+    "indie pop",
     "mainstream pop",
+    "pop punk",
+    "pop-punk",
+    "pop rock",
+    "pop-rock",
     "pop song",
     "pop vocal",
+    "recession pop",
+    "singer-songwriter pop",
+    "soft rock",
     "sundaze",
     "uk pop",
     "us pop",
+    "y2k pop",
     "western pop",
+    "아프로팝",
+    "아프로비츠",
+    "아메리카나",
+    "컨트리 팝",
+    "컨트리팝",
     "미국 팝",
     "미국팝",
+    "인디 팝",
     "영어 팝",
     "영어팝",
+    "팝 록",
+    "팝펑크",
     "팝송",
     "英語ポップ",
     "洋楽ポップ",
@@ -561,13 +595,30 @@ SIGNAL_ROOM_CHANNEL_KEYWORDS = (
     "느와르",
 )
 POP_FAMILY_KEYWORDS = (
+    "acoustic pop",
+    "adult contemporary pop",
+    "afrobeats",
+    "afro pop",
+    "afropop",
+    "amapiano",
+    "amapiano pop",
     "anime pop",
     "anime-pop",
     "anime opening",
+    "americana pop",
     "american pop",
+    "alt-pop",
+    "alt pop",
     "bachata",
+    "bedroom pop",
+    "country pop",
+    "disco pop",
     "english pop",
     "english vocal",
+    "folk pop",
+    "folk-pop",
+    "funk pop",
+    "indie pop",
     "j-pop",
     "jpop",
     "japanese pop",
@@ -577,9 +628,16 @@ POP_FAMILY_KEYWORDS = (
     "latin pop",
     "latino pop",
     "mainstream pop",
+    "pop punk",
+    "pop-punk",
+    "pop rock",
+    "pop-rock",
     "pop latino",
     "pop song",
     "pop vocal",
+    "recession pop",
+    "singer-songwriter pop",
+    "soft rock",
     "reggaeton",
     "reggaetón",
     "spanish pop",
@@ -588,6 +646,11 @@ POP_FAMILY_KEYWORDS = (
     "urbano latino",
     "us pop",
     "western pop",
+    "y2k pop",
+    "아프로팝",
+    "아프로비츠",
+    "컨트리 팝",
+    "컨트리팝",
     "제이팝",
     "일본 팝",
     "케이팝",
@@ -1616,7 +1679,7 @@ def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
         "explicit_channel_requested": bool(str(getattr(args, "youtube_channel_title", "") or "").strip()),
         "metadata_doc": "docs/openclaw-youtube-metadata.md",
         "shared_upload_doc": "docs/openclaw-upload.md",
-        "rule": "Pick the channel first, then read that channel's concept_doc for next-release planning and profile_doc for cover, thumbnail, and loop-video visuals. Do not mix signatures across channels.",
+        "rule": "Pick the channel first, then read that channel's concept_doc for next-release planning and profile_doc for cover, thumbnail, loop-video, and still-image render visuals. Do not mix signatures across channels.",
     }
 
 
@@ -1999,9 +2062,9 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     still_image_render = bool(args.allow_still_image_video or args.video_render_source_mode == "still_image")
     if not loop_video_path and not args.release_id and not still_image_render:
         raise RuntimeError(
-            "auto-publish-playlist requires --loop-video when creating a new Playlist Release. "
+            "auto-publish-playlist requires --loop-video when creating a new moving-video Playlist Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
 
@@ -2035,9 +2098,9 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         )
     if not loop_video_path and not release_has_uploaded_loop_video(release) and not still_image_render:
         raise RuntimeError(
-            "auto-publish-playlist requires an uploaded loop video before video render. "
+            "auto-publish-playlist requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -2348,8 +2411,9 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     still_image_render = bool(args.allow_still_image_video or args.video_render_source_mode == "still_image")
     if not loop_video_path and not args.release_id and not still_image_render:
         raise RuntimeError(
-            "auto-publish-single requires --loop-video when creating a new Single Release. "
-            "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4."
+            "auto-publish-single requires --loop-video when creating a new moving-video Single Release. "
+            "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
+            "For HaruHaru still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-single")
 
@@ -2384,9 +2448,9 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         )
     if not loop_video_path and not release_has_uploaded_loop_video(release) and not still_image_render:
         raise RuntimeError(
-            "auto-publish-single requires an uploaded loop video before video render. "
+            "auto-publish-single requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Only pass --allow-still-image-video if the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -2889,16 +2953,16 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "If total_seconds is 3600 or greater, keep every timestamp in HH:MM:SS form such as 00:00:00 and 01:02:03 so YouTube can link chapters past one hour. "
             "If you rewrite a displayed title, keep its timestamp fixed. "
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
-            "For every localized video title, use natural transcreation for that language rather than literal translation. If direct translation sounds awkward, weak, too long, or less clickable, change the wording, order, or exact hook while keeping the release identity, genre/lane, and use case truthful. For sundaze/English pop releases, localized video titles may be adapted per language; keep English track titles in every localized timestamped timeline row and translate only the surrounding prose, use-case text, and hashtags. sundaze titles must name one clear release-level genre lane when accurate, such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, soul-pop, neo-soul pop, acoustic pop, or ballad-pop, instead of generic English pop wording. "
+            "For every localized video title, use natural transcreation for that language rather than literal translation. If direct translation sounds awkward, weak, too long, or less clickable, change the wording, order, or exact hook while keeping the release identity, genre/lane, and use case truthful. For sundaze/English/American pop playlist releases, localized video titles may be adapted per language; keep English track titles in every localized timestamped timeline row and translate only the surrounding prose, use-case text, and hashtags. sundaze titles must name one clear release-level genre lane when accurate, such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, singer-songwriter pop, folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop, instead of generic English pop wording. "
             "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. HaruHaru titles must name one clear release-level genre lane when accurate, such as K-pop hip-hop, Korean R&B, K-pop dance-pop, synth-pop, pop-rock, soul/neo-soul pop, or ballad-pop, instead of generic K-pop wording. "
             "For Solwave Radio releases, write Spanish default metadata and name one clear release-level genre lane when accurate, such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul, instead of generic Latin pop wording. "
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
             "For Cinematic Pulse releases, write English default metadata and position it as no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, final battle scene, orchestral battle, emotional film score, mystery-tension, dark fantasy, sci-fi, heroic, or epic scene music. Do not use juvenile game-menu title wording such as Boss BGM, Final Boss Music, Final Boss Focus Music, 보스, 보스전, or bare BGM. Rotate among varied cinematic title lanes such as final battle, dark fantasy, heroic trailer, emotional score, sci-fi action, mystery tension, grand journey, orchestral battle, writing music, and movie OST focus; examples are style references, not fixed templates to repeat. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. Club Bloom titles must put the exact genre, subgenre, or genre fusion immediately after [playlist] using mainstream mix language such as Progressive Trance x EDM Mix, Tech House Workout Mix, Hype Trap x EDM Mix, Melodic Techno Night Drive, Bass House Club Mix, or Festival EDM Mix; put only one or two public use cases after the separator and avoid awkward lists like Progressive Trance for Night Roads, Gaming Focus and Club Drive. "
             "For BibliaCanto scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament/Gospel/worship music from Matthew onward. New Testament scripture releases now upload to BibliaCanto too, not 불송. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent lane, rotating across uploads instead of defaulting to generic holy worship every time; lanes can include scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. "
             "For 불송 Buddhist releases, write Korean default metadata and position it as modern Buddhist scripture-inspired vocal music. Name the Buddhist source or theme carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired, and do not claim exact chapter/verse coverage unless verified. Name one coherent release-level lane such as Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic dharma songs, or cinematic meditation pop. State that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation. "
-            "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video, and metadata. "
+            "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video or still-image visual, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
-            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/Buddhist scripture, sundaze/English pop, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
+            "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/Buddhist scripture, sundaze/English-American pop playlist, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
             "Use --default-language ko for HaruHaru and 불송, --default-language es for Solwave Radio, and --default-language en for sundaze, Storylight OST, Cinematic Pulse, Club Bloom, and BibliaCanto."
         ),
     }
@@ -3215,11 +3279,11 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
-    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable title/use-case text unless an uploaded thumbnail already exists on the release. For 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
+    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable title/use-case text; HaruHaru should normally be text-free; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru still-image renders.")
     auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
+    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru still-image renders or a human-approved fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
@@ -3238,7 +3302,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds when an explicit maximum is configured.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3250,13 +3314,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 2k for Cinematic Pulse still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
+        help="Final render visual source. Use still_image for HaruHaru still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-overlay",
@@ -3267,7 +3331,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and soft-bottom-fade for other lyric releases.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and channel policy for other lyric releases; use editorial-lower-left for HaruHaru.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3289,11 +3353,11 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Use exactly one; run this command again for a second good Suno output.")
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover/first-frame image without channel names or logos unless an uploaded final cover already exists on the release.")
-    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image with readable text unless an uploaded thumbnail already exists on the release. For 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for the rendered video unless an uploaded loop video already exists on the release.")
+    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable text; HaruHaru should normally be text-free; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru still-image renders.")
     auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video. Do not use unless the human accepts this fallback.")
+    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru still-image renders or a human-approved fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
@@ -3306,7 +3370,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English pop uses sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3318,13 +3382,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 2k for Cinematic Pulse still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru still-image renders.",
     )
     auto_single_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
+        help="Final render visual source. Use still_image for HaruHaru still-image renders.",
     )
     auto_single_parser.add_argument(
         "--lyrics-overlay",
@@ -3335,7 +3399,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and soft-bottom-fade for other lyric releases.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and channel policy for other lyric releases; use editorial-lower-left for HaruHaru.",
     )
     auto_single_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3399,7 +3463,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser = subparsers.add_parser("render-video", help="Queue video render for an existing release.")
     render_video_parser.add_argument("--release-id", default="", help="Existing release id.")
     render_video_parser.add_argument("--release-title", default="", help="Existing release title.")
-    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Explicitly allow rendering from the still cover image without a loop video.")
+    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru still-image renders or a human-approved fallback.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
         choices=["bars", "mirror-bars", "calm-bars", "none"],
@@ -3410,13 +3474,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 2k for Cinematic Pulse still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru still-image renders.",
     )
     render_video_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for Cinematic Pulse high-resolution cover renders.",
+        help="Final render visual source. Use still_image for HaruHaru still-image renders.",
     )
     render_video_parser.add_argument(
         "--lyrics-overlay",
@@ -3427,7 +3491,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and soft-bottom-fade for other lyric releases.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and channel policy for other lyric releases; use editorial-lower-left for HaruHaru.",
     )
     render_video_parser.add_argument(
         "--lyrics-alignment-mode",

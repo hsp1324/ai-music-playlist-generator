@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: HaruHaru
 
-Use this after the selected channel is `HaruHaru`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/haruharu.md` afterward for cover, thumbnail, and short loop-video production rules.
+Use this after the selected channel is `HaruHaru`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/haruharu.md` afterward for cover, thumbnail, and still-image render production rules.
 
 ## Channel Promise
 
@@ -8,7 +8,7 @@ HaruHaru is a Korean-language K-pop vocal channel. It is for original K-pop, Kor
 
 The audience should immediately understand: Korean vocal pop with lyrics, built around a mainstream emotion, energy level, or listening use case.
 
-Visual scenes can be specific, such as a rooftop, Seoul street, practice room, bus stop, cafe, or rainy window, but the public title should usually be broader than the visual. Lead with searchable K-pop listening reasons such as workout, running, getting ready, party warmup, dance-pop, heartbreak, night drive, confidence boost, or feel-good K-pop. Mention a niche visual scene only when it is a strong mainstream hook.
+Visual scenes can be specific, such as Hongdae, Itaewon, a Seoul cafe street, seaside road, beach trip, rooftop, bus stop, rainy window, or Han River sunset, but the public title should usually be broader than the visual. Lead with searchable K-pop listening reasons such as workout, running, getting ready, party warmup, dance-pop, heartbreak, night drive, confidence boost, or feel-good K-pop. Mention a niche visual scene only when it is a strong mainstream hook.
 
 Before finalizing metadata, read the Korean/default title as normal Korean playlist copy and check every localized title in its own language. Reject direct keyword piles like `연습실 밤과 운동 에너지`, `Seoul Music`, `Korean Pop`, or any localized title that sounds like nouns pasted together. The title should feel like something local viewers would actually click, using natural equivalents of 신나는 K-POP, 기분전환, 운동/러닝, 외출 준비, 밤 드라이브, 이별 감성, 설렘, 자신감, or party warmup when the music fits.
 
@@ -53,17 +53,15 @@ Use one broad K-pop listening promise plus one explicit K-pop genre lane. Keep t
 
 ## Visual Direction
 
-- No fixed recurring visual signature yet.
-- Cover, thumbnail, and loop video should follow the specific playlist concept.
-- Rotate HaruHaru visual mode at roughly a 2:1 ratio: make two photorealistic adult fashion/lifestyle releases, then one illustrated/anime/stylized release, then repeat. Check recent HaruHaru releases before choosing so the channel does not drift away from this photorealistic-heavy pattern.
-- Illustrated mode should stay anime/stylized, Korean pop-friendly, fashion-aware, bright, emotional, and readable at thumbnail size.
-- Photorealistic mode should be high-quality, glossy, and click-stopping like a premium Korean pop/fashion thumbnail: clearly adult woman, face hidden or mostly obscured by side/back angle, hat, hair, sunglasses, phone, car frame, yacht railing, beach shade, or camera crop. Use fashion, beach, yacht, car, rooftop, night city, summer resort, or luxury lifestyle settings when they fit the music lane.
-- Photorealistic styling may be alluring and show skin through tasteful swimwear, summer tops, backless dresses, shorts, or light white beachwear, but keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no sexual acts, no minors or teen-looking subjects, and no school-uniform/childlike cues.
-- In photorealistic mode, the subject should feel adult, confident, pretty, stylish, and slightly mysterious rather than pornographic. The face can be unseen, side-profile, turned away, cropped, shaded by a hat, or blocked by props.
-- Prompt for a hidden or obscured face, but do not reject an otherwise usable Seedance/Dreamina/Gemini result only because an adult face is visible. Credits are limited, so use the successful clip unless it is explicit, childlike/minor-coded, celebrity-like, policy-blocked, badly distorted, or visually unusable. The human will request a later remake if a published result feels wrong.
-- In photorealistic loop-video planning, choose motion that keeps the main adult subject the same size and crop for the full clip. If the subject walks, turns, rides, or shifts, the camera should track with her at the same speed/distance; movement should come from background parallax, hair/clothing, lights, water, vehicle motion, or environment. Avoid concepts that require zooming into the subject, pushing the camera forward, pulling back, or changing her scale, because those loops look awkward.
-- Seoul/Korean setting cues are good when they fit the concept, but do not force Seoul landmarks into every release.
-- Thumbnail text should be short and click-readable, and should name the selected genre lane when possible: `K-POP HIPHOP`, `K-R&B`, `DANCE POP`, `SYNTH POP`, `K-POP SOUL`, `POP ROCK`, `HEARTBREAK`, `SUMMER KPOP`, or `K-POP DRIVE`.
+- HaruHaru now uses photorealistic still-image visual packaging by default.
+- Cover and thumbnail should follow the specific playlist concept, but they should look like natural lifestyle photos rather than graphic posters.
+- Use attractive clearly adult Korean/Korean-fashion lifestyle subjects: a stylish woman, handsome stylish man, or tasteful adult couple/friend pair. Faces may be visible, including natural side profile, three-quarter view, soft eye contact, or candid looking-away poses.
+- Do not prompt for hidden faces by default. Do not hide the face with hair, phone, sunglasses, crop, or turned-back poses unless the concept naturally calls for it.
+- Good scene families: Hongdae cafe window, Itaewon evening street, Seoul cafe terrace, seaside road, beach walk, Han River sunset, rainy city crosswalk, rooftop, record shop, boutique, subway exit, summer travel photo, or quiet cafe street.
+- Keep styling adult, fashionable, pretty/cool, and non-explicit. No minors, school uniforms, childlike styling, celebrity likenesses, nudity, fetish framing, or pornographic posing.
+- Do not put logos, channel names, title text, style labels, badges, stickers, or typography on the image package by default.
+- Do not create a moving loop video for normal HaruHaru releases. The release should render from the still cover image in the app.
+- Plan the cover composition so the final app video can place the spectrum near the lower-right and lyrics near the lower-left without covering the face or important subject details. Do not bake spectrum bars or lyrics into the generated image.
 
 ## Good Fresh Concept Shapes
 

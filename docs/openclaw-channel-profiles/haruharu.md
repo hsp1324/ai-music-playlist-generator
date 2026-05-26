@@ -14,60 +14,58 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 
 ## Visual Identity
 
-- No fixed recurring visual signature yet.
-- Let the playlist concept decide the cover, thumbnail, and loop-video scene.
-- Rotate HaruHaru releases with a photorealistic-heavy 2:1 visual ratio: two photorealistic adult fashion/lifestyle releases, then one illustrated/anime/stylized release, then repeat. Check recent HaruHaru releases first and choose the mode that keeps this ratio closest.
-- Illustrated mode should use anime, stylized, graphic, or painterly Korean pop visuals.
-- Photorealistic mode is allowed for HaruHaru only when it fits the music concept. Use high-quality realistic fashion, beach, yacht, car, rooftop, nightlife, summer resort, or luxury lifestyle imagery with a clearly adult woman whose face is hidden, turned away, partly cropped, shaded by a hat, covered by hair/sunglasses/phone, or seen only from the side/back.
-- The visuals should feel Korean pop-friendly: expressive fashion, clean composition, strong color mood, and easy thumbnail readability.
-- Seoul/Korea setting cues are useful when relevant, but do not repeat the same skyline, street, or idol-practice-room scene every time.
-- Photorealistic styling may be attractive and mildly sexy through adult fashion choices such as tasteful swimwear, summer tops, backless dresses, shorts, or light beachwear, but keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no sexual acts, no minors or teen-looking subjects, no school-uniform/childlike cues, and no celebrity likenesses.
-- The desired photorealistic mood is adult, stylish, pretty, cute, confident, and slightly mysterious, not pornographic.
-- Hidden/obscured face remains the prompt target, but a generated clip is not invalid just because an adult face is visible. Do not spend extra credits regenerating solely for visible face exposure; accept the successful clip unless it is explicit, minor-coded, celebrity-like, policy-blocked, badly distorted, or otherwise unusable.
+- HaruHaru now defaults to photorealistic Korean lifestyle still-image visuals, not animated/anime rotation.
+- The visual should feel like an attractive adult's natural Instagram-style daily-life photo: Hongdae street, Itaewon night/cafe street, Seoul cafe terrace, seaside trip, beach road, Han River sunset, city crosswalk, rooftop, subway exit, record shop, boutique, or rainy window.
+- Main subjects can be a stylish adult woman, a handsome stylish adult man, or a tasteful adult couple/friend pair when the release concept supports it.
+- Faces do not need to be hidden. A natural face, three-quarter view, side profile, soft eye contact, or candid looking-away pose is allowed and preferred when it feels like real daily life.
+- Keep the subject clearly adult. Do not use minors, teen-coded styling, school uniforms, childlike poses, celebrity likenesses, or idol-member lookalikes.
+- Styling should be fashionable, pretty, cool, and natural: casual streetwear, cafe outfit, beach resort outfit, leather jacket, knitwear, denim, coat, summer dress, or clean Korean fashion editorial styling.
+- Keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no sexual acts, and no pornographic posing.
+- Do not add logos, channel names, style words, title text, sticker-like labels, UI, captions, or decorative badges to the cover, thumbnail, or still frame by default.
+- HaruHaru no longer needs a provider loop video during normal automation. Use a high-quality still cover/thumbnail package and let the app render the final video from the still image.
+- The final app render should add only the app-managed audio spectrum near the lower-right and app-managed lyric subtitles near the lower-left. OpenClaw must not bake spectrum bars, waveform graphics, or lyric text into the static cover/thumbnail.
 
 ## Cover
 
-- Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- Create one final photorealistic 16:9 cover first, preferably 1920x1080 or higher.
+- The cover is the playback visual for the still-image render.
 - Do not put `HaruHaru`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- If text is useful, use only a short integrated Korean pop lane phrase such as `K-POP`, `K-R&B`, `K-POP HIPHOP`, `DANCE POP`, `SYNTH POP`, or `POP ROCK`.
-- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Do not put Korean pop lane text such as `K-POP`, `K-R&B`, `DANCE POP`, `SYNTH POP`, or `POP ROCK` on the cover unless the human explicitly asks.
+- Leave safe negative space around the lower-left and lower-right when possible, because the app may place lyrics at lower-left and spectrum at lower-right in the final render.
+- Good cover directions: stylish adult woman in profile at a Hongdae cafe window; handsome stylish adult man on an Itaewon evening street; adult woman on a seaside road with wind in hair; fashionable adult couple near a Seoul cafe street; natural candid portrait at a rainy city crosswalk.
+- Do not add title sentences, duration text, lyrics, subtitles, UI, logos, spectrum bars, waveform graphics, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
-- Preserve the same scene, subject placement, lighting, palette, props, clothing colors, and camera angle from the cover.
-- Add short readable K-pop click text matched to the playlist concept, for example `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, `SUMMER KPOP`, `RAINY KPOP`, or `K-POP DRIVE`.
-- Prefer thumbnail text that names the selected genre lane when accurate: `K-POP HIPHOP`, `K-R&B`, `DANCE POP`, `SYNTH POP`, `K-POP SOUL`, `POP ROCK`, `HEARTBREAK`, `SUMMER KPOP`, or `K-POP DRIVE`.
+- Preserve the same face, subject placement, lighting, palette, props, clothing colors, and camera angle from the cover.
+- By default, do not add thumbnail text. The HaruHaru thumbnail should look like a premium natural lifestyle photo, not a graphic poster.
+- If the human explicitly requests text later, keep it very small and integrated; never add the channel name or a logo.
 - Do not add `HARUHARU`, the channel name, or a channel logo.
 - Keep the main subject visually important; text must fit around the subject and must not push the subject into an awkward crop.
-- Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
+- Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers.
 
-## Loop Video
+## Still-Image Video Render
 
-- Use Dreamina/Seedance or Gemini only for the moving clip.
-- For illustrated/anime/stylized HaruHaru releases, use Seedance/Dreamina `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`.
-- For photorealistic HaruHaru releases only, use Seedance `2.0` instead of `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `1080p`, exactly `7 seconds`; then queue the final render with `--video-render-resolution 1080p` so the realistic image/video quality is not thrown away. Do not use the 1080p photorealistic path for animated HaruHaru releases.
-- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
-- Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
-- In photorealistic mode, keep motion subtle and realistic: light wind in hair or clothing, sunlight/water reflections, car/yacht movement, city lights, fabric movement, or gentle camera/subject tracking. Avoid exaggerated body motion or sexualized posing.
-- In photorealistic mode with an adult woman as the main subject, the subject must stay the same size in frame for the whole clip. If she walks, turns, rides in a car/yacht, or shifts position, the camera should track at the same speed/distance so her body scale, crop, and placement remain stable. Do not allow zoom-in, push-in, pull-back, lens breathing, camera drift toward/away from her, or subject scale growth/shrinkage. Let the background, side parallax, hair, clothing, light, water, city, or vehicle motion create the loop while the subject remains visually anchored.
-- If the first frame has a short Korean pop style phrase, keep it stable and readable. Do not invent a channel name.
-- The final moment should stay close to the opening composition, crop, lighting, palette, camera distance, subject size, and subject placement. The app handles smooth repetition with a 1.5 second crossfade. Reject/regenerate photorealistic clips where the subject noticeably becomes larger/smaller, drifts toward/away from camera, or ends in a different crop.
+- Do not create a Gemini, Dreamina, or Seedance loop video for normal HaruHaru releases.
+- Do not upload `--loop-video` for normal HaruHaru releases.
+- Queue the app render as still image:
 
-Prompt shape:
-
-```text
-Use the uploaded first-frame image as the exact starting frame.
-Create one uninterrupted animated Korean pop visual take.
-Preserve the opening composition, lighting, palette, subject placement, fashion details, and selected visual language, whether illustrated/stylized or photorealistic.
-Animate natural motion that fits the specific playlist concept and K-pop mood.
-For photorealistic adult-woman shots, keep the main subject visually anchored at the same size and crop for the full clip. If she moves, the camera tracks with her at the same speed and distance; background/parallax/environment motion provides movement. No zoom-in, no push-in, no pull-back, no lens breathing, no camera drift toward or away from the subject, no subject scale change.
-If the first frame already contains a short Korean pop style phrase, keep it stable and readable. Do not invent a channel name.
-The final moment should remain close to the opening composition, camera distance, lighting, palette, subject size, and subject placement without becoming frozen.
-No unsafe minors, nudity, visible nipples/genitals, transparent clothing revealing intimate areas, sexual acts, fetish framing, celebrity likenesses, new text, subtitles, logos, or UI.
+```bash
+scripts/openclaw-release render-video \
+  --release-id RELEASE_ID \
+  --allow-still-image-video \
+  --video-render-source-mode still_image \
+  --video-render-resolution 1080p \
+  --video-spectrum-overlay-style bars \
+  --lyrics-overlay \
+  --lyrics-overlay-style editorial-lower-left
 ```
+
+- The app spectrum overlay belongs near the lower-right of the final rendered MP4.
+- The app lyric overlay belongs near the lower-left of the final rendered MP4.
+- If the cover composition would make lower-left lyrics or lower-right spectrum unreadable, remake the static cover/thumbnail with more clean space in those areas instead of baking text boxes into the image.
+- Only use a provider loop video for HaruHaru when the human explicitly asks for a moving visual. In that exception, follow the general provider-video safety rules and still avoid channel names/logos/text.
 
 ## Metadata
 
