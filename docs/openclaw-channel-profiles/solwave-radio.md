@@ -11,49 +11,67 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 
 ## Visual Identity
 
-- No fixed recurring visual signature yet.
-- Let the playlist concept decide the cover, thumbnail, and loop-video scene.
-- Keep the visual language animated, illustrated, anime, or stylized. Avoid photorealistic/live-action looks.
-- The visuals should feel warm, rhythmic, sunlit, night-city, beach, dance, or tropical when the concept supports it, but do not force the same scene every time.
-- If the concept naturally involves beach, summer, dance, nightlife, romance, fiesta, fashion, confidence, or a similar Latin-pop hook, it is acceptable to feature clearly adult women with tasteful, mildly sexy styling or light revealing fashion for stronger thumbnail appeal.
-- Do not force people into every visual. Only use this when it fits the title and music concept.
-- Keep it non-explicit: no nudity, no underwear-focus, no fetish framing, no minors or teen-looking characters, and no sexual acts. The subject should read as confident/pop-stylish rather than pornographic.
+- Solwave Radio now defaults to photorealistic Latin/Spanish lifestyle visuals with a casual friend-taken Instagram phone-photo feeling: travel, nightlife, romance, beach, terrace, road-trip, or city-street moments that feel posted by a friend rather than shot by a professional photographer.
+- Let the playlist concept decide the exact scene, but keep the image warm, rhythmic, natural, and immediately Latin/Spanish-pop-coded. Avoid studio portraits, glossy fashion campaigns, commercial ads, and over-polished photographer/editorial lighting.
+- Good scene families: Latin coastal cafe terrace, warm city street after rain, beach road at golden hour, rooftop fiesta, tropical rain window, plaza dance night, seaside drive, open-air bar, summer balcony, night-market street, or poolside resort walkway.
+- Main subjects can be a stylish clearly adult Latina woman, stylish adult Latino man, tasteful adult couple, or adult friend pair when the release concept supports it. Faces may be visible, including natural side profile, three-quarter view, soft eye contact, candid looking-away poses, laughing, dancing lightly, or glancing at the phone.
+- Styling should be fashionable, confident, warm, and natural: summer-night outfit, resort outfit, linen, satin blouse, light jacket, denim, streetwear, or tastefully layered beachwear that feels like a real night out, not an editorial shoot.
+- Prefer ordinary smartphone snapshot details: slightly imperfect framing, mild motion softness, natural phone-camera depth, warm mixed street/cafe lighting, small real-world imperfections, and enough background environment to feel like a real night out. Avoid tight straight-on AI-beauty close-ups, face-filling model portraits, doll-like symmetry, plastic skin, and professional photoshoot poses.
+- Keep it non-explicit: no nudity, no visible nipples/genitals, no transparent clothing revealing intimate areas, no underwear-focus, no fetish framing, no minors or teen-looking subjects, and no sexual acts. The subject should read as confident/pop-stylish rather than pornographic.
+- Do not add logos, channel names, title sentences, lyric text, subtitles, UI, badges, stickers, waveform graphics, spectrum bars, or unrelated words to the cover, thumbnail, first frame, or still-image render source.
+- Solwave Radio no longer needs a provider loop video during normal automation. Use a high-quality still cover/thumbnail package and let the app render the final video from the still image with app-managed lyrics at lower-left and spectrum at lower-right.
 
 ## Cover
 
-- Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- Create one final photorealistic 16:9 cover first, preferably 1920x1080 or higher.
+- The cover is the playback visual for the still-image render.
 - Do not put `Solwave Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- If text is useful, use only a short integrated Latin/Spanish lane phrase such as `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- By default, keep the cover clean and text-free. If text is useful for the release concept, use only one small integrated upper-left Latin/Spanish lane phrase such as `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- The cover should feel like a friend snapped it on a recent phone for Instagram: candid, relaxed, slightly imperfect, and place-aware. Do not make it look like a studio shoot, fashion editorial, luxury ad, or professional photographer portfolio image.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
+- Leave clean lower-left and lower-right space when possible, because the app places lyric subtitles near the lower-left and the spectrum overlay near the lower-right in the final render.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Add short readable Latin/Spanish click text matched to the playlist concept, for example `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
+- Keep the same photorealistic friend-taken Instagram phone-photo image package. Add one short readable Latin/Spanish click phrase matched to the playlist concept, preferably integrated in upper-left negative space, for example `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, `BACHATA POP`, `LATIN R&B`, or `NOCHE LATINA`.
+- The thumbnail may slightly improve contrast/readability, but it should still feel like a real friend/phone photo, not a polished campaign key visual.
+- Text should feel integrated into the photo, not like a pasted sticker, badge, button, or hard box. Keep the main subject visually important and do not push the subject into an awkward crop.
 - Do not add `SOLWAVE RADIO`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
-## Loop Video
+## Still-Image Video Render
 
-- Use Dreamina/Seedance or Gemini only for the moving clip.
-- For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
-- Animate the cover/first-frame according to the playlist concept. There is no fixed walking/person/scene requirement.
-- If the first frame has a short Latin/Spanish style phrase, keep it stable and readable. Do not invent a channel name.
-- The final moment should stay close to the opening composition, crop, lighting, palette, and subject placement. The app handles smooth repetition with a 1.5 second crossfade.
+- Do not create a Gemini, Dreamina, or Seedance loop video for normal Solwave Radio releases.
+- Do not upload `--loop-video` for normal Solwave Radio releases.
+- Queue the app render as a still image with lower-left lyrics and lower-right spectrum:
 
-Prompt shape:
+```bash
+scripts/openclaw-release render-video \
+  --release-id RELEASE_ID \
+  --allow-still-image-video \
+  --video-render-source-mode still_image \
+  --video-render-resolution 1080p \
+  --video-spectrum-overlay-style bars \
+  --lyrics-overlay \
+  --lyrics-overlay-style editorial-lower-left
+```
+
+- The app lyric subtitles belong near the lower-left and the spectrum overlay belongs near the lower-right of the final rendered MP4.
+- If the cover composition would make the lower-left lyrics or lower-right spectrum unreadable, remake the static cover/thumbnail with cleaner space instead of baking boxes, waveform graphics, or lyrics into the image.
+- Only use a provider loop video for Solwave Radio when the human explicitly asks for a moving visual. In that exception, follow the general provider-video safety rules and still avoid channel names/logos/text.
+
+Provider-video prompt shape, only when a human explicitly requests motion:
 
 ```text
 Use the uploaded first-frame image as the exact starting frame.
 Create one uninterrupted animated Latin/Spanish pop visual take.
-Preserve the opening composition, lighting, palette, subject placement, and illustrated/stylized visual language.
-Animate natural motion that fits the specific playlist concept and Latin pop mood.
+Preserve the opening composition, lighting, palette, subject placement, casual friend-taken phone-photo Latin/Spanish lifestyle language, clothing colors, face identity, and camera distance.
+Animate natural motion that fits the specific playlist concept and Latin pop mood: rain shimmer, terrace lights, palm leaves, city reflections, ocean wind, fabric/hair movement, dancing background silhouettes, or warm cafe/bar light flicker when present.
 If the first frame already contains a short Latin/Spanish style phrase, keep it stable and readable. Do not invent a channel name.
 The final moment should remain close to the opening composition, camera distance, lighting, palette, and subject placement without becoming frozen.
-No new text, subtitles, logos, UI, photorealism, or live action.
+No new text, subtitles, logos, UI, channel branding, title sentences, lyrics, waveform graphics, or spectrum bars.
 ```
 
 ## Metadata

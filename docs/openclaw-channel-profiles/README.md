@@ -65,8 +65,11 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### Solwave Radio
 
 - Latin/Spanish vocal pop.
-- Use warm, rhythmic, beach, night-city, dance, or tropical visuals when the concept supports it.
-- If text is useful, use natural Latin/Spanish lane text: `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- Default visual package is photorealistic Latin/Spanish lifestyle still images, not provider loop video.
+- Prefer casual friend-taken smartphone/Instagram snapshots: clearly adult night-out, travel, cafe terrace, beach road, plaza dance, rooftop, open-air bar, or city-street moments with natural side/three-quarter/phone-glance angles, medium or farther framing, slight phone-photo imperfection, and enough environment to feel real.
+- Avoid professional photographer shoots, studio portraits, glossy fashion campaigns, tight straight-on AI-beauty close-ups, minors, celebrity lookalikes, and over-retouched model faces.
+- If text is useful, use one natural integrated Latin/Spanish lane phrase, preferably upper-left: `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
 
 ### HaruHaru
 

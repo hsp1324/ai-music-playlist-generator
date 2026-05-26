@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: Solwave Radio
 
-Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and short loop-video production rules.
+Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and still-image render rules.
 
 ## Channel Promise
 
@@ -53,10 +53,12 @@ Use a vivid Latin scene plus one explicit Latin/Spanish genre lane. Keep the who
 
 ## Visual Direction
 
-- No fixed recurring visual signature yet.
-- Cover, thumbnail, and loop video should follow the specific playlist concept.
-- Keep visuals warm, rhythmic, stylized, and readable at thumbnail size.
-- Thumbnail text should match the mood, such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, or `NOCHE LATINA`.
+- Solwave Radio now defaults to photorealistic Latin/Spanish lifestyle still images with a casual friend-taken Instagram phone-photo feeling: travel, nightlife, romance, beach, terrace, road-trip, or city-street moments that feel real rather than professionally staged.
+- Cover and thumbnail should follow the specific playlist concept, but they should look like ordinary friend-shot lifestyle snapshots rather than graphic posters, studio portraits, fashion campaigns, or photographer/editorial shoots.
+- Use clearly adult Latin/Spanish lifestyle subjects when people fit the concept: a stylish adult woman/man, tasteful adult couple, or adult friend pair. Faces may be visible, but prefer candid side/three-quarter/phone-glance angles, laughing or relaxed moments, medium or farther framing, slight phone-photo imperfection, and enough environment to make the scene believable.
+- Good scene families: Latin coastal cafe terrace, warm city street after rain, beach road at golden hour, rooftop fiesta, tropical rain window, plaza dance night, seaside drive, open-air bar, summer balcony, night-market street, or poolside resort walkway.
+- Normal Solwave Radio releases do not need provider loop videos. Render from the still cover image with app-managed lower-left lyric subtitles and lower-right `bars` spectrum, matching HaruHaru's final video layout.
+- Thumbnail text should match the mood, preferably as one integrated upper-left phrase, such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, `BACHATA POP`, `LATIN R&B`, or `NOCHE LATINA`.
 
 ## Good Fresh Concept Shapes
 
