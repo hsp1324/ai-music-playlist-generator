@@ -415,6 +415,8 @@ async def manual_upload_track(
 def list_tracks(
     status_filter: TrackStatus | None = None,
     user_rating: str | None = None,
+    q: str | None = Query(default=None, max_length=200),
+    limit: int = Query(default=0, ge=0, le=1000),
     db: Session = Depends(get_db),
 ) -> list[TrackRead]:
     statement = select(Track).order_by(Track.created_at.desc())
@@ -427,7 +429,35 @@ def list_tracks(
             for track in tracks
             if str((track.metadata_json or {}).get("user_rating") or "") == user_rating
         ]
+    query = str(q or "").strip().lower()
+    if query:
+        terms = [term for term in query.split() if term]
+        tracks = [
+            track
+            for track in tracks
+            if all(term in _track_search_text(track) for term in terms)
+        ]
+    if limit:
+        tracks = tracks[:limit]
     return [TrackRead.model_validate(track) for track in tracks]
+
+
+def _track_search_text(track: Track) -> str:
+    meta = dict(track.metadata_json or {})
+    values = [
+        track.title,
+        track.prompt,
+        track.source_track_id,
+        track.audio_path,
+        track.preview_url,
+        meta.get("tags"),
+        meta.get("lyrics"),
+        meta.get("style"),
+        meta.get("exclude_style"),
+        meta.get("source_playlist_title"),
+        meta.get("source_youtube_video_id"),
+    ]
+    return " ".join(str(value or "") for value in values).lower()
 
 
 def _safe_int(value: object) -> int:

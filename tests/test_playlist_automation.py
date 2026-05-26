@@ -4425,6 +4425,16 @@ def test_track_rating_updates_metadata_and_can_be_filtered(tmp_path) -> None:
         )
         assert response.status_code == 201
         track_id = response.json()["id"]
+        other_response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Quiet Different Song",
+                "prompt": "other track",
+                "style": "soft piano",
+            },
+            files={"audio_file": ("other.mp3", b"fake-audio-data", "audio/mpeg")},
+        )
+        assert other_response.status_code == 201
 
         liked = client.post(f"/api/tracks/{track_id}/rating", json={"rating": "like", "actor": "web-ui"})
         assert liked.status_code == 200
@@ -4435,6 +4445,14 @@ def test_track_rating_updates_metadata_and_can_be_filtered(tmp_path) -> None:
         liked_list = client.get("/api/tracks?user_rating=like")
         assert liked_list.status_code == 200
         assert any(track["id"] == track_id for track in liked_list.json())
+
+        search_list = client.get("/api/tracks", params={"q": "rating candidate", "limit": 10})
+        assert search_list.status_code == 200
+        assert [track["id"] for track in search_list.json()] == [track_id]
+
+        liked_search_list = client.get("/api/tracks", params={"q": "rating", "user_rating": "like"})
+        assert liked_search_list.status_code == 200
+        assert [track["id"] for track in liked_search_list.json()] == [track_id]
 
         disliked_list = client.get("/api/tracks?user_rating=dislike")
         assert disliked_list.status_code == 200

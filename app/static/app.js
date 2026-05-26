@@ -13,6 +13,10 @@ const state = {
   youtubeStatus: null,
   channelSummaries: [],
   trackReuseSummaries: [],
+  trackLibraryTracks: [],
+  trackLibraryQuery: "",
+  trackLibraryLikedOnly: false,
+  trackLibraryLoading: false,
   workspacesLoading: false,
   editingMetadataReleaseId: "",
   metadataExpandedByRelease: {},
@@ -40,6 +44,12 @@ const trackReuseList = document.querySelector("#track-reuse-list");
 const trackReuseRefreshButton = document.querySelector("#track-reuse-refresh-button");
 const trackReuseReusedOnlyCheckbox = document.querySelector("#track-reuse-reused-only");
 const trackReuseSortButtons = [...document.querySelectorAll("[data-track-reuse-direction]")];
+const trackLibrarySection = document.querySelector("#track-library-section");
+const trackLibrarySummary = document.querySelector("#track-library-summary");
+const trackLibraryList = document.querySelector("#track-library-list");
+const trackLibrarySearchInput = document.querySelector("#track-library-search");
+const trackLibraryLikedOnlyCheckbox = document.querySelector("#track-library-liked-only");
+const trackLibraryRefreshButton = document.querySelector("#track-library-refresh-button");
 const workspaceGrid = document.querySelector("#workspace-grid");
 const workspacePager = document.querySelector("#workspace-pager");
 const workspaceSection = document.querySelector(".workspace-section");
@@ -114,6 +124,7 @@ const RELEASE_SORT_OPTIONS = [
   { key: "updated", label: "Updated" },
   { key: "created", label: "Created" },
 ];
+let trackLibrarySearchTimer = 0;
 const LEGACY_YOUTUBE_CHANNEL_TITLES = {
   "ai썰전": "Club Bloom",
   "ai sseoljeon": "Club Bloom",
@@ -1302,6 +1313,9 @@ function mergeTrackUpdate(updatedTrack) {
   state.tracks = state.tracks.map((track) => (
     track.id === updatedTrack.id ? { ...track, ...updatedTrack, user_rating: nextRating } : track
   ));
+  state.trackLibraryTracks = state.trackLibraryTracks.map((track) => (
+    track.id === updatedTrack.id ? { ...track, ...updatedTrack, user_rating: nextRating } : track
+  ));
   state.workspaces.forEach((workspace) => {
     if (!workspace.tracks) return;
     workspace.tracks = workspace.tracks.map((track) => {
@@ -1331,6 +1345,7 @@ async function setTrackUserRating(track, nextRating) {
   mergeTrackUpdate(updatedTrack);
   renderWorkspaceTiles();
   renderWorkspaceDetail();
+  renderTrackLibraryList();
 }
 
 function appendTrackRatingButtons(actions, track) {
@@ -2029,6 +2044,16 @@ async function fetchTrackReuseSummaries() {
   return api(`/api/tracks/reuse?${params.toString()}`);
 }
 
+async function fetchTrackLibraryTracks() {
+  const params = new URLSearchParams({
+    limit: "120",
+  });
+  const query = state.trackLibraryQuery.trim();
+  if (query) params.set("q", query);
+  if (state.trackLibraryLikedOnly) params.set("user_rating", "like");
+  return api(`/api/tracks?${params.toString()}`);
+}
+
 async function ensureWorkspaceDetailLoaded(workspaceId) {
   const workspace = state.workspaces.find((item) => item.id === workspaceId);
   if (!workspace || !workspace.__compact) return workspace || null;
@@ -2483,6 +2508,95 @@ async function refreshTrackReuseList() {
   renderTrackReuseList();
 }
 
+function renderTrackLibraryControls() {
+  if (trackLibrarySearchInput && trackLibrarySearchInput.value !== state.trackLibraryQuery) {
+    trackLibrarySearchInput.value = state.trackLibraryQuery;
+  }
+  if (trackLibraryLikedOnlyCheckbox) {
+    trackLibraryLikedOnlyCheckbox.checked = state.trackLibraryLikedOnly;
+  }
+}
+
+function renderTrackLibraryList() {
+  renderTrackLibraryControls();
+  if (!trackLibraryList) return;
+  const tracks = (state.trackLibraryTracks || []).filter((track) => (
+    !state.trackLibraryLikedOnly || trackUserRating(track) === "like"
+  ));
+  trackLibraryList.innerHTML = "";
+  if (trackLibrarySummary) {
+    const mode = state.trackLibraryLikedOnly ? "liked tracks" : "tracks";
+    const query = state.trackLibraryQuery.trim();
+    trackLibrarySummary.textContent = state.trackLibraryLoading
+      ? "검색 중입니다."
+      : `${tracks.length} ${mode}${query ? ` matching "${query}"` : ""}`;
+  }
+  if (!tracks.length) {
+    const empty = document.createElement("div");
+    empty.className = "track-reuse-empty";
+    empty.textContent = state.trackLibraryLoading
+      ? "검색 중입니다."
+      : state.trackLibraryLikedOnly
+        ? "아직 좋아요한 곡이 없습니다."
+        : "검색 결과가 없습니다.";
+    trackLibraryList.appendChild(empty);
+    return;
+  }
+
+  tracks.forEach((track) => {
+    const row = document.createElement("div");
+    row.className = `track-library-row${trackUserRating(track) === "like" ? " liked" : ""}`;
+    row.dataset.trackId = track.id;
+
+    const main = document.createElement("div");
+    main.className = "track-library-main";
+
+    const title = document.createElement("div");
+    title.className = "track-library-title";
+    title.textContent = displayTitle(track.title, "Untitled Track");
+    title.title = displayTitle(track.title, "Untitled Track");
+
+    const meta = document.createElement("div");
+    meta.className = "track-library-meta";
+    meta.textContent = [
+      statusLabel(track.status),
+      formatDuration(track.duration_seconds),
+      track.style || track.metadata_json?.style ? "style saved" : "",
+      track.lyrics || track.metadata_json?.lyrics ? "lyrics saved" : "",
+    ].filter(Boolean).join(" · ");
+
+    main.append(title, meta);
+
+    const audioUrl = normalizeMediaUrl(track.audio_path) || track.preview_url || "";
+    if (audioUrl) {
+      const audio = document.createElement("audio");
+      audio.className = "track-library-audio";
+      audio.controls = true;
+      audio.src = audioUrl;
+      row.append(main, audio);
+    } else {
+      row.appendChild(main);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "track-library-actions";
+    appendTrackRatingButtons(actions, track);
+    row.appendChild(actions);
+    trackLibraryList.appendChild(row);
+  });
+}
+
+async function refreshTrackLibraryList() {
+  state.trackLibraryLoading = true;
+  renderTrackLibraryList();
+  try {
+    state.trackLibraryTracks = await fetchTrackLibraryTracks();
+  } finally {
+    state.trackLibraryLoading = false;
+    renderTrackLibraryList();
+  }
+}
+
 function setChannelFilter(channelKey, scrollToList = false) {
   state.channelFilter = channelKey || CHANNEL_FILTER_ALL;
   state.workspaceTab = "active";
@@ -2618,6 +2732,7 @@ function toolPanelForAction(action) {
   if (action === "manual-track") return manualTrackPanel;
   if (action === "create-release") return createReleasePanel;
   if (action === "youtube") return youtubeToolsPanel;
+  if (action === "track-library") return trackLibrarySection;
   if (action === "track-reuse") return trackReuseSection;
   return utilityDrawer;
 }
@@ -2627,6 +2742,9 @@ function openToolPanel(action) {
   setToolsMenuOpen(false);
   const panel = toolPanelForAction(action);
   panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (action === "track-library") {
+    refreshTrackLibraryList().catch((error) => alert(error.message));
+  }
   if (action === "track-reuse") {
     refreshTrackReuseList().catch((error) => alert(error.message));
   }
@@ -4031,6 +4149,20 @@ trackReuseReusedOnlyCheckbox?.addEventListener("change", () => {
 });
 trackReuseRefreshButton?.addEventListener("click", () => {
   refreshTrackReuseList().catch((error) => alert(error.message));
+});
+trackLibrarySearchInput?.addEventListener("input", () => {
+  state.trackLibraryQuery = trackLibrarySearchInput.value || "";
+  window.clearTimeout(trackLibrarySearchTimer);
+  trackLibrarySearchTimer = window.setTimeout(() => {
+    refreshTrackLibraryList().catch((error) => alert(error.message));
+  }, 250);
+});
+trackLibraryLikedOnlyCheckbox?.addEventListener("change", () => {
+  state.trackLibraryLikedOnly = trackLibraryLikedOnlyCheckbox.checked;
+  refreshTrackLibraryList().catch((error) => alert(error.message));
+});
+trackLibraryRefreshButton?.addEventListener("click", () => {
+  refreshTrackLibraryList().catch((error) => alert(error.message));
 });
 channelFilterSelect?.addEventListener("change", () => {
   setChannelFilter(channelFilterSelect.value || CHANNEL_FILTER_ALL);
