@@ -35,6 +35,7 @@ from app.workflows.playlist_automation import (
 )
 from app.workflows.review_dispatch import dispatch_track_review, post_track_review_to_slack
 from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_review_request
+from app.utils.track_titles import clean_track_display_title, upload_track_title
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
@@ -446,6 +447,8 @@ def _track_search_text(track: Track) -> str:
     meta = dict(track.metadata_json or {})
     values = [
         track.title,
+        clean_track_display_title(track.title),
+        upload_track_title(track.title),
         track.prompt,
         track.source_track_id,
         track.audio_path,
