@@ -1700,6 +1700,21 @@ class BackgroundJobWorker:
                         meta["youtube_localizations_upload_error"] = result.response["localizations_upload_error"]
                     else:
                         meta.pop("youtube_localizations_upload_error", None)
+                    if meta.get("relocation_delete_original_after_new_upload"):
+                        original_video_id = str(meta.get("relocation_original_youtube_video_id") or "").strip()
+                        original_channel_id = str(meta.get("relocation_original_youtube_channel_id") or "").strip()
+                        if original_video_id and original_video_id != (playlist.youtube_video_id or ""):
+                            try:
+                                delete_result = self.services.youtube.delete_video(
+                                    video_id=original_video_id,
+                                    youtube_channel_id=original_channel_id or None,
+                                )
+                                meta["relocation_original_youtube_delete_result"] = delete_result
+                                meta["relocation_original_youtube_deleted_at"] = _utcnow().isoformat()
+                                meta["relocation_delete_original_after_new_upload"] = False
+                                meta.pop("relocation_original_youtube_delete_error", None)
+                            except Exception as exc:  # noqa: BLE001
+                                meta["relocation_original_youtube_delete_error"] = str(exc)
                     for item in playlist.items:
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)

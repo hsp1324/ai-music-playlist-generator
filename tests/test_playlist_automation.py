@@ -7465,6 +7465,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         upload_video_ids = ["yt-auto-123"]
         upload_channel_ids = []
         upload_localizations = []
+        delete_calls = []
 
         def fake_upload_playlist_video(*args, **kwargs):
             upload_channel_ids.append(kwargs.get("youtube_channel_id"))
@@ -7483,6 +7484,10 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             )
 
         services.youtube.upload_playlist_video = fake_upload_playlist_video
+        services.youtube.delete_video = lambda **kwargs: delete_calls.append(kwargs) or {
+            "id": kwargs["video_id"],
+            "deleted": True,
+        }
 
         workspace_response = client.post(
             "/api/playlists/workspaces",
@@ -7561,6 +7566,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             playlist = db.get(Playlist, workspace_id)
             meta = dict(playlist.metadata_json or {})
             meta["youtube_upload_error"] = "old thumbnail failure"
+            meta["relocation_delete_original_after_new_upload"] = True
+            meta["relocation_original_youtube_video_id"] = "yt-wrong-channel"
+            meta["relocation_original_youtube_channel_id"] = "UCWRONG"
             playlist.metadata_json = meta
             db.add(playlist)
             db.commit()
@@ -7606,6 +7614,10 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             assert playlist.metadata_json["local_video_retained_after_youtube_upload"] == first_video_path
             assert playlist.metadata_json["local_video_retention_days"] == 7
             assert "local_video_deleted_after_youtube_upload" not in playlist.metadata_json
+            assert playlist.metadata_json["relocation_original_youtube_deleted_at"]
+            assert playlist.metadata_json["relocation_delete_original_after_new_upload"] is False
+            assert "relocation_original_youtube_delete_error" not in playlist.metadata_json
+            assert delete_calls == [{"video_id": "yt-wrong-channel", "youtube_channel_id": "UCWRONG"}]
 
         loop_replaced = upload_test_loop_video(client, workspace_id)
         assert loop_replaced["workflow_state"] == "video_required"
