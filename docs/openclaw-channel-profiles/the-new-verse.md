@@ -4,10 +4,18 @@ Use this profile only after channel selection returns `불송`, or when the huma
 
 ## Routing Contract
 
-- This profile is for Buddhist scripture-inspired vocal releases: Dhammapada/법구경-inspired songs, Heart Sutra/반야심경-inspired songs, Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, dharma songs, mindfulness songs, compassion songs, and modern sutra-inspired music.
+- This profile is for Buddhist scripture-inspired vocal releases: Dhammapada/법구경-inspired songs, Heart Sutra/반야심경-inspired songs, emotional Buddhist pop, Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic/indie dharma pop, mindfulness songs, compassion songs, and modern sutra-inspired music.
 - Do not route Bible, Gospel, Old Testament, or New Testament worship here. Those now upload to `BibliaCanto`.
 - Do not route normal Korean pop/hip-hop here unless the lyrics are explicitly Buddhist scripture/teaching based. Normal Korean pop and hip-hop belong on `HaruHaru`.
 - Publish through the app on the `불송` channel. The app schedules 불송 releases as public daily at 07:00 Asia/Seoul. Do not force private visibility unless the human explicitly pauses public scheduling.
+
+## Music And Suno Style
+
+- Choose one modern release-level lane before Suno generation and keep every track inside it.
+- Preferred lanes: emotional Buddhist pop, Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic/indie dharma pop, warm lo-fi pop, chill pop, gentle city-pop, or cinematic meditation pop.
+- Avoid trot, ppongjjak, and old Korean cabaret-pop completely unless the human explicitly asks for them. Do not use Korean trot rhythm, two-beat ppongjjak bounce, trot vocal ornaments, accordion/brass trot clichés, nightclub/cabaret trot arrangement, or old-TV trot mood.
+- In Suno Advanced Options / excluded styles, include blockers such as `trot, Korean trot, ppongjjak, 뽕짝, 트로트, trot vocal, cabaret trot, old Korean trot, two-beat trot bounce, accordion trot, brass trot`.
+- If a generated track comes out with strong trot/ppongjjak feel, reject it and regenerate in a clearer modern pop, jazz, hip-hop, R&B/soul, neo-soul, or chill-pop lane.
 
 ## Visual Identity
 
@@ -66,7 +74,7 @@ No new text, subtitles, lyrics, UI, added logos, disrespectful religious imagery
 - Include the selected Buddhist source/theme and release-level music lane in the title and first description paragraph.
 - If using a scripture source, name it carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired. Do not claim exact chapter/verse coverage unless verified.
 - The description must state that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation.
-- Keep each release in one coherent style family and name it naturally: Buddhist jazz, dharma R&B, mindful hip-hop, Buddhist neo-soul, acoustic dharma songs, cinematic meditation pop, warm lo-fi, or gentle city-pop.
+- Keep each release in one coherent style family and name it naturally: emotional Buddhist pop, Buddhist jazz, dharma R&B, mindful hip-hop, Buddhist neo-soul, acoustic/indie dharma pop, cinematic meditation pop, warm lo-fi pop, chill pop, or gentle city-pop. Avoid trot/ppongjjak wording and sound unless the human explicitly asks for it.
 - If choosing a cute/gentle animation visual direction, choose a compatible music lane and make that lane clear in the title/description. The visual style and music style must feel like one package.
 - Provide localized metadata for all configured languages, but keep Korean as the default top-level title/description.
 - Uploads should be app-scheduled public daily at 07:00 Asia/Seoul unless the human explicitly pauses 불송 public scheduling.

@@ -6,7 +6,7 @@ Use this after the selected channel is `불송`. `불송` is the Buddhist script
 
 불송 is for modern Buddhist scripture-inspired vocal music. It turns Buddhist teachings, sutra themes, Dhammapada-style wisdom, mindfulness, compassion, impermanence, non-attachment, suffering and release, and awakening imagery into original modern songs.
 
-This is not a chanting archive, sermon channel, or literal scripture-reading channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language, using one clear release-level music lane such as Buddhist jazz, Buddhist hip-hop, Buddhist R&B/soul, neo-soul meditation songs, acoustic dharma songs, cinematic meditation pop, warm lo-fi, or gentle city-pop.
+This is not a chanting archive, sermon channel, literal scripture-reading channel, trot channel, or old Korean cabaret-pop channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language, using one clear release-level music lane such as emotional Buddhist pop, Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, neo-soul meditation songs, acoustic/indie dharma pop, cinematic meditation pop, warm lo-fi pop, or gentle city-pop.
 
 The audience should immediately understand: Buddhist wisdom and sutra-inspired teachings reworked as modern songs.
 
@@ -43,7 +43,9 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Buddhist jazz prayer songs: warm jazz chords, soft drums, reflective vocal melodies.
 - Buddhist R&B/soul: gentle groove, compassion, healing, letting go.
 - Neo-soul meditation songs: intimate vocals, spacious keys, inward reflection.
+- Emotional Buddhist pop: modern Korean pop writing, clean vocal hooks, soft but contemporary drums, and a clear emotional chorus.
 - Acoustic dharma songs: guitar/piano, simple chorus, calm teaching tone.
+- Warm lo-fi / chill pop dharma songs: soft beat, intimate vocal, clean low-noise texture, relaxed modern mood.
 - Cinematic meditation pop: soft strings, pads, emotional release, broad accessible melody.
 - Cute acoustic dharma pop / gentle city-pop: bright, soft, friendly songs that can naturally fit occasional cute animation visuals.
 
@@ -52,6 +54,9 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Vocal songs with original lyrics are the default.
 - Korean lyrics are the default unless the human explicitly asks for another language.
 - Every track in one release must stay inside one coherent style family. If the title says Buddhist hip-hop, all tracks should be hip-hop/rap-based. If it says Buddhist R&B, all tracks should stay R&B/soul-based.
+- Avoid trot, ppongjjak, and old Korean cabaret-pop completely unless the human explicitly asks for them. Do not use Korean trot rhythm, two-beat ppongjjak bounce, trot vocal ornaments, accordion/brass trot clichés, nightclub/cabaret trot arrangement, or old-TV trot mood.
+- In Suno Advanced Options / excluded styles for 불송, include blockers such as `trot, Korean trot, ppongjjak, 뽕짝, 트로트, trot vocal, cabaret trot, old Korean trot, two-beat trot bounce, accordion trot, brass trot`.
+- Prefer modern emotional pop, jazz, hip-hop, R&B/soul, neo-soul, acoustic/indie pop, chill pop, lo-fi pop, and cinematic meditation pop vocabulary in Suno style prompts.
 - Lyrics should sound like real songs, not a lecture. Use images, hooks, and emotional arcs while keeping the teaching clear.
 - Do not copy long scripture text, modern translations, temple liturgy, or chants.
 - Avoid naming living teachers, temples, sectarian claims, protected songs, or specific artist styles.
@@ -72,6 +77,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - `[playlist] 마음을 다스리는 불경 힙합 | 법구경에서 영감을 받은 한국어 랩`
 - `[playlist] Buddhist Jazz for Letting Go | Dhammapada-Inspired Songs`
 - `[playlist] 반야심경 R&B | 집착을 내려놓는 불교 노래`
+- `[playlist] 무상 감성팝 | 변화를 받아들이는 불교 노래`
 - `[playlist] Dharma Soul Songs | Compassion, Mindfulness and Quiet Strength`
 
 ## Bad Directions
@@ -79,6 +85,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 - Generic meditation BGM with no lyrics or teaching.
 - Literal scripture reading, chanting, or sermon format.
 - Randomly mixing jazz, hip-hop, R&B, folk, and cinematic pop in one release.
+- Any trot, ppongjjak, cabaret trot, old-TV trot, or accordion/brass trot feel.
 - Copying long translated sutra passages.
 - Using Buddhist words as decoration while the lyrics say nothing about the teaching.
 - Forcing private visibility or bypassing the app's daily 07:00 Asia/Seoul schedule without an explicit human pause.
