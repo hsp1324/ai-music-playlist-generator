@@ -295,6 +295,7 @@ class SlackService:
         text: str,
         token: str | None = None,
         channel: str | None = None,
+        thread_ts: str | None = None,
     ) -> SlackPostResult:
         target_channel = channel or self.settings.slack_review_channel_id
         auth_token = token or self.settings.slack_bot_token
@@ -304,6 +305,7 @@ class SlackService:
         payload = {
             "channel": target_channel,
             "text": text,
+            **({"thread_ts": thread_ts} if thread_ts else {}),
             "blocks": [
                 {
                     "type": "section",

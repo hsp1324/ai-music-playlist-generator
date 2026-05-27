@@ -92,6 +92,8 @@ The production VM intentionally separates operational status messages from OpenC
 
 Do not set `AIMP_SLACK_OPS_CHANNEL_ID` to `C0AVBUYP150`. Render-worker status reports are not OpenClaw commands and must not be posted into `#openclaw`.
 
+The ops channel also acts as the human-to-Codex Q&A channel when `AIMP_SLACK_CODEX_QA_ENABLED=true`. Human messages in `#all-ai-music-playlist-generator` / `C0ATYMCMLLE` are queued as read-only Codex answer jobs, and the final answer is posted back in the Slack thread. Bot/app messages, including the app's own render and publish notices, are ignored so the bridge does not answer itself.
+
 ## Current Runtime State
 
 The app is deployed and externally reachable at:

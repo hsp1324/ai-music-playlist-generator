@@ -10,7 +10,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.enums import DecisionSource, DecisionValue, TrackStatus
+from app.models.enums import DecisionSource, DecisionValue, JobStatus, JobType, TrackStatus
+from app.models.job import Job
 from app.models.playlist import Playlist
 from app.models.slack_installation import SlackInstallation
 from app.models.track import Track
@@ -46,6 +47,47 @@ def _status_counts(db: Session) -> dict[str, int]:
 def _bot_token_for_team(services: ServiceRegistry, db: Session, team_id: str | None = None) -> str | None:
     installation = services.slack_installations.get_active_installation(db, team_id)
     return installation.bot_token if installation else services.settings.slack_bot_token
+
+
+def _slack_codex_channel_matches(configured: str, channel_id: str, event: dict) -> bool:
+    target = configured.strip()
+    if not target:
+        return False
+    if target == channel_id:
+        return True
+    if target.startswith("#"):
+        event_channel_name = str(event.get("channel_name") or "").strip().lstrip("#")
+        return bool(event_channel_name and event_channel_name == target.lstrip("#"))
+    return False
+
+
+def _queue_slack_codex_qa_job(db: Session, *, payload: dict, event: dict) -> tuple[bool, str | None]:
+    channel_id = str(event.get("channel") or "").strip()
+    event_ts = str(event.get("ts") or "").strip()
+    external_id = f"slack-codex-qa:{channel_id}:{event_ts}" if channel_id and event_ts else None
+    if external_id:
+        existing = db.scalar(select(Job.id).where(Job.external_id == external_id))
+        if existing:
+            return False, existing
+
+    job = Job(
+        type=JobType.slack_codex_qa,
+        status=JobStatus.queued,
+        source="slack:codex_qa",
+        external_id=external_id,
+        payload_json={
+            "team_id": payload.get("team_id"),
+            "channel_id": channel_id,
+            "thread_ts": event.get("thread_ts") or event_ts,
+            "message_ts": event_ts,
+            "user_id": event.get("user"),
+            "text": str(event.get("text") or "").strip(),
+        },
+        result_json={},
+    )
+    db.add(job)
+    db.commit()
+    return True, job.id
 
 
 def _interaction_message_target(payload: dict) -> tuple[str | None, str | None]:
@@ -156,7 +198,20 @@ async def slack_events(
     if event.get("type") == "message":
         channel_id = str(event.get("channel") or "").strip()
         configured_openclaw_channel = services.settings.openclaw_slack_channel_id.strip()
+        configured_codex_channel = (
+            services.settings.slack_codex_qa_channel_id.strip()
+            or services.settings.slack_ops_channel_id.strip()
+        )
         is_human_message = not event.get("bot_id") and not event.get("subtype")
+        text = str(event.get("text") or "").strip()
+        if (
+            services.settings.slack_codex_qa_enabled
+            and is_human_message
+            and text
+            and _slack_codex_channel_matches(configured_codex_channel, channel_id, event)
+        ):
+            queued, job_id = _queue_slack_codex_qa_job(db, payload=payload, event=event)
+            return JSONResponse({"ok": True, "slack_codex_qa": {"queued": queued, "job_id": job_id}})
         if is_human_message and configured_openclaw_channel and channel_id == configured_openclaw_channel:
             control_result = handle_auto_loop_control_message(
                 storage_root=services.settings.storage_root,

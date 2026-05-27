@@ -39,6 +39,7 @@ class JobType(str, Enum):
     build_video = "build_video"
     upload_youtube = "upload_youtube"
     sync_slack = "sync_slack"
+    slack_codex_qa = "slack_codex_qa"
 
 
 class JobStatus(str, Enum):

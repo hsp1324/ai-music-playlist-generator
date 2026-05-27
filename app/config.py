@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     slack_single_message_audio_reviews: bool = False
     slack_image_upload_max_edge: int = 120
     slack_image_upload_jpeg_quality: int = 82
+    slack_codex_qa_enabled: bool = True
+    slack_codex_qa_channel_id: str = ""
+    slack_codex_qa_command: str = "codex"
+    slack_codex_qa_model: str = ""
+    slack_codex_qa_timeout_seconds: int = 900
+    slack_codex_qa_max_answer_chars: int = 2500
     public_base_url: str = "http://127.0.0.1:8000"
     cache_remote_audio_on_intake: bool = True
 

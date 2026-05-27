@@ -222,9 +222,11 @@ class BackgroundJobWorker:
         self.services = None
         self._thread: threading.Thread | None = None
         self._upload_thread: threading.Thread | None = None
+        self._slack_codex_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._state = WorkerLoopState()
         self._upload_state = WorkerLoopState()
+        self._slack_codex_state = WorkerLoopState()
         self._last_openclaw_backlog_scheduler_check = 0.0
         self._last_local_video_cleanup_check = 0.0
 
@@ -232,7 +234,12 @@ class BackgroundJobWorker:
         self.services = services
 
     def start(self) -> None:
-        if not self.settings.worker_autostart or self._thread is not None or self._upload_thread is not None:
+        if (
+            not self.settings.worker_autostart
+            or self._thread is not None
+            or self._upload_thread is not None
+            or self._slack_codex_thread is not None
+        ):
             return
         if self.services is None:
             raise RuntimeError("Background worker is not bound to services.")
@@ -262,8 +269,19 @@ class BackgroundJobWorker:
             name="aimp-upload-worker",
             daemon=True,
         )
+        self._slack_codex_thread = threading.Thread(
+            target=self._run_loop,
+            kwargs={
+                "job_types": (JobType.slack_codex_qa,),
+                "state": self._slack_codex_state,
+                "run_backlog_scheduler": False,
+            },
+            name="aimp-slack-codex-worker",
+            daemon=True,
+        )
         self._thread.start()
         self._upload_thread.start()
+        self._slack_codex_thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -273,6 +291,9 @@ class BackgroundJobWorker:
         if self._upload_thread is not None:
             self._upload_thread.join(timeout=5)
             self._upload_thread = None
+        if self._slack_codex_thread is not None:
+            self._slack_codex_thread.join(timeout=5)
+            self._slack_codex_thread = None
 
     def process_pending_once(self, job_types: tuple[JobType, ...] | None = None) -> bool:
         job_id = self._claim_next_job_id(job_types)
@@ -293,7 +314,15 @@ class BackgroundJobWorker:
                 .options(selectinload(Job.playlist))
                 .where(
                     Job.status == JobStatus.running,
-                    Job.type.in_([JobType.build_playlist, JobType.build_video, JobType.upload_youtube, JobType.sync_slack]),
+                    Job.type.in_(
+                        [
+                            JobType.build_playlist,
+                            JobType.build_video,
+                            JobType.upload_youtube,
+                            JobType.sync_slack,
+                            JobType.slack_codex_qa,
+                        ]
+                    ),
                 )
             ).all()
             now = _utcnow()
@@ -695,6 +724,7 @@ class BackgroundJobWorker:
                 JobType.build_video,
                 JobType.upload_youtube,
                 JobType.sync_slack,
+                JobType.slack_codex_qa,
             )
             if self.settings.video_render_execution_mode == "external":
                 claimable_job_types = tuple(
@@ -738,6 +768,8 @@ class BackgroundJobWorker:
                     self._process_publish_job(db, job)
                 elif job.type == JobType.sync_slack:
                     self._process_sync_slack_job(db, job)
+                elif job.type == JobType.slack_codex_qa:
+                    self._process_slack_codex_qa_job(db, job)
                 else:
                     raise ValueError(f"Unsupported background job type: {job.type.value}")
                 if job.type == JobType.upload_youtube:
@@ -1410,6 +1442,53 @@ class BackgroundJobWorker:
             "slack_channel_id": updated.slack_channel_id,
             "slack_message_ts": updated.slack_message_ts,
         }
+
+    def _process_slack_codex_qa_job(self, db: Session, job: Job) -> None:
+        if self.services is None:
+            raise RuntimeError("Background worker services are not bound.")
+
+        payload = dict(job.payload_json or {})
+        text = str(payload.get("text") or "").strip()
+        if not text:
+            raise ValueError("Slack Codex QA job is missing text.")
+
+        from app.services.slack_codex_qa import run_slack_codex_answer
+
+        answer = run_slack_codex_answer(
+            self.settings,
+            user_text=text,
+            user_id=str(payload.get("user_id") or ""),
+        )
+        team_id = str(payload.get("team_id") or "").strip() or None
+        installation = self.services.slack_installations.get_active_installation(db, team_id)
+        token = installation.bot_token if installation else self.settings.slack_bot_token
+        channel_id = (
+            str(payload.get("channel_id") or "").strip()
+            or self.settings.slack_codex_qa_channel_id.strip()
+            or self.settings.slack_ops_channel_id.strip()
+        )
+        thread_ts = str(payload.get("thread_ts") or payload.get("message_ts") or "").strip() or None
+        result = asyncio.run(
+            self.services.slack.post_plain_message(
+                text=answer,
+                token=token,
+                channel=channel_id,
+                thread_ts=thread_ts,
+            )
+        )
+        job.result_json = {
+            **(job.result_json or {}),
+            "channel_id": channel_id,
+            "thread_ts": thread_ts,
+            "slack_post": {
+                "ok": result.ok,
+                "channel": result.channel,
+                "ts": result.ts,
+                "raw": result.raw,
+            },
+        }
+        if not result.ok:
+            raise RuntimeError(f"Slack Codex answer post failed: {result.raw}")
 
     def _process_publish_job(self, db: Session, job: Job) -> None:
         playlist = db.scalars(
