@@ -723,13 +723,8 @@ class YouTubeService:
         }
 
     def _list_video_captions(self, youtube: Any, video_id: str) -> list[dict[str, Any]]:
-        items: list[dict[str, Any]] = []
-        request = youtube.captions().list(part="snippet", videoId=video_id)
-        while request is not None:
-            response = request.execute()
-            items.extend(response.get("items") or [])
-            request = youtube.captions().list_next(request, response)
-        return items
+        response = youtube.captions().list(part="id,snippet", videoId=video_id).execute()
+        return list(response.get("items") or [])
 
     def _execute_video_insert(
         self,

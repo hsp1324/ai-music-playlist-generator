@@ -8084,9 +8084,6 @@ def test_youtube_service_replaces_caption_track(tmp_path, monkeypatch) -> None:
                 }
             )
 
-        def list_next(self, _request, _response):
-            return None
-
         def delete(self, *, id):
             captured["deleted"].append(id)
             return FakeRequest({})
@@ -8113,6 +8110,7 @@ def test_youtube_service_replaces_caption_track(tmp_path, monkeypatch) -> None:
     )
 
     assert result["id"] == "new-caption"
+    assert captured["list"] == {"part": "id,snippet", "videoId": "yt-caption-test"}
     assert captured["deleted"] == ["old-caption"]
     assert captured["insert"]["body"]["snippet"] == {
         "videoId": "yt-caption-test",
