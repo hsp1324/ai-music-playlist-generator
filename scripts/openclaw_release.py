@@ -1666,6 +1666,11 @@ def release_youtube_channel_title(release: dict[str, Any], fallback: str = "") -
     ).strip()
 
 
+def release_youtube_channel_id(release: dict[str, Any]) -> str:
+    meta = release.get("metadata_json") if isinstance(release.get("metadata_json"), dict) else {}
+    return str(release.get("youtube_channel_id") or meta.get("youtube_channel_id") or "").strip()
+
+
 def require_video_render_source_allowed(
     *,
     release: dict[str, Any],
@@ -1870,11 +1875,17 @@ def publish_release(client: httpx.Client, args: argparse.Namespace) -> dict[str,
     if not release.get("metadata_approved"):
         raise RuntimeError("publish-release requires approved metadata. Run approve-metadata first.")
 
-    youtube_channel_title = infer_youtube_channel_title(args)
+    explicit_channel_title = str(getattr(args, "youtube_channel_title", "") or "").strip()
+    release_channel_title = release_youtube_channel_title(release)
+    youtube_channel_title = (
+        infer_youtube_channel_title(args)
+        if explicit_channel_title or not release_channel_title
+        else release_channel_title
+    )
     channel_id = resolve_youtube_channel_id(
         client,
         title=youtube_channel_title,
-        channel_id=args.youtube_channel_id,
+        channel_id=args.youtube_channel_id or release_youtube_channel_id(release),
     )
     release = request_json(
         client,

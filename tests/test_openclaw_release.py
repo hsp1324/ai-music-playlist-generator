@@ -24,9 +24,11 @@ from scripts.openclaw_release import (
     infer_youtube_channel_title,
     is_bulsong_channel_title,
     is_pop_family_vocal_request,
+    publish_release,
     release_has_uploaded_cover,
     release_has_uploaded_loop_video,
     release_has_uploaded_thumbnail,
+    release_youtube_channel_id,
     resolve_youtube_channel_id,
     resolve_lyrics_items,
     resolve_exclude_style_items,
@@ -538,6 +540,66 @@ def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:
         resolve_youtube_channel_id(client, title=SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE)
         == "legacy-signal-desk"
     )
+
+
+def test_publish_release_uses_existing_release_channel_without_explicit_channel() -> None:
+    captured_payloads = []
+    release = {
+        "id": "release-1",
+        "title": "[playlist] Solwave Release",
+        "workflow_state": "youtube_upload_failed",
+        "output_video_path": "/tmp/release.mp4",
+        "metadata_approved": True,
+        "youtube_video_id": None,
+        "youtube_title": "[playlist] Solwave Release",
+        "youtube_channel_id": "solwave-id",
+        "youtube_channel_title": SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+        "metadata_json": {
+            "youtube_channel_id": "solwave-id",
+            "youtube_channel_title": SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+        },
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/api/playlists/workspaces/release-1":
+            return httpx.Response(200, json=release)
+        if request.method == "POST" and request.url.path == "/api/playlists/release-1/approve-publish":
+            payload = json.loads(request.read())
+            captured_payloads.append(payload)
+            return httpx.Response(
+                200,
+                json={
+                    **release,
+                    "workflow_state": "publish_queued",
+                    "youtube_scheduled_publish_at": None,
+                },
+            )
+        if request.method == "GET" and request.url.path == "/api/youtube/status":
+            raise AssertionError("publish-release should not fall back to the default YouTube channel")
+        raise AssertionError(f"unexpected request: {request.method} {request.url.path}")
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = publish_release(
+        client,
+        SimpleNamespace(
+            release_id="release-1",
+            release_title="",
+            youtube_channel_title="",
+            youtube_channel_id="",
+            actor="test",
+            note="retry",
+            force_under_target=False,
+            allow_reupload=False,
+            no_wait=True,
+            wait_timeout_seconds=10,
+            poll_seconds=1,
+        ),
+    )
+
+    assert result["release"]["youtube_channel_id"] == "solwave-id"
+    assert result["release"]["youtube_channel_title"] == SOLWAVE_YOUTUBE_CHANNEL_TITLE
+    assert captured_payloads[0]["youtube_channel_id"] == "solwave-id"
+    assert release_youtube_channel_id(release) == "solwave-id"
 
 
 def test_slack_notify_command_posts_plain_message() -> None:
