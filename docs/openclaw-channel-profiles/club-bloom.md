@@ -13,9 +13,10 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 
 - Mood: energetic, neon, glossy, rhythmic, nightlife, movement, dance.
 - Style must be animated, anime, illustrated, stylized, or graphic poster-art. Avoid photorealistic/live-action looks.
-- Let the playlist concept decide the exact venue and subject, but default Club Bloom visuals should look like an active DJ/performance moment in a desirable dance-music location, not generic abstract neon.
+- Let the playlist concept decide the exact venue, but default Club Bloom visuals should look like an active beautiful adult female DJ/BJ or club-streamer performance moment in a desirable dance-music location, not generic abstract neon.
 - Strong default locations: beach club or sunset seaside deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, neon city terrace, or cyber club venue. Rotate these locations across releases.
-- Prefer a visible adult DJ, DJ booth, mixer/decks, crowd, stage lighting, or performance action unless the human explicitly asks for a non-DJ visual. A stylish adult DJ or dancer can be a strong subject when the concept fits, but this is a direction, not a fixed template. Bold adult club glamour, revealing club fashion, confident poses, and sexy nightlife energy are allowed when they match the release. Vary subject identity, pose, camera angle, venue, lighting, outfit color, crowd size, and action so Club Bloom does not keep generating the same woman-at-DJ-booth image.
+- Prefer a visible adult female DJ/BJ, DJ booth, mixer/decks, crowd, stage lighting, and performance action unless the human explicitly asks for a non-DJ visual. Bold adult club glamour, revealing club fashion, confident poses, glossy hair/makeup, and sexy nightlife energy are expected for new Club Bloom assets. Vary subject identity, pose, camera angle, venue, lighting, outfit color, crowd size, and action so Club Bloom does not keep generating the same woman-at-DJ-booth image.
+- Revealing outfits are allowed and preferred for this channel when they stay YouTube-safe: crop tops, metallic mini dresses, sheer outer layers, bikini-style festival tops, bodycon silhouettes, high boots, club gloves, and dramatic stage lighting. Do not use full nudity, visible genitals, exposed nipples, sexual acts, minors, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
 - Club Bloom visuals must be more click-stopping than calm BGM channels. Avoid timid, soft, polite, empty, or wallpaper-like covers and thumbnails. If the image would not grab attention in a mobile YouTube feed, reject it and regenerate before upload.
 - Use high-contrast crops, dramatic stage lighting, saturated neon, glossy skin/fabric highlights, expressive movement, strong silhouettes, crowd heat, DJ/performance action, rooftop skyline drama, beach-club sunset color, nightclub laser haze, concert/festival-scale lighting, or open-air party atmosphere when they fit the lane.
 - Visuals should feel clean and premium, not cluttered with random neon objects.
@@ -27,17 +28,18 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Do not put `Club Bloom`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - If text is useful, use only a short integrated EDM/club style phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
-- Match the scene to the selected club style lane. The image should feel like a real DJ/performance context through venue, booth/decks, lighting, performers, movement, crowd energy, fashion, or nightlife atmosphere, while still staying original and varied.
-- Do not accept a cover that reads as generic ambient neon, quiet lounge art, abstract wallpaper, empty venue, random glowing background, or a low-energy image. Unless the human asked otherwise, reject covers that do not clearly show DJ/performance context or a premium dance venue. The cover should already feel energetic enough to justify a strong thumbnail.
+- Match the scene to the selected club style lane. The image should feel like a real adult female DJ/BJ performance context through venue, booth/decks, lighting, performer, movement, crowd energy, revealing club fashion, or nightlife atmosphere, while still staying original and varied.
+- Do not accept a cover that reads as generic ambient neon, quiet lounge art, abstract wallpaper, empty venue, random glowing background, or a low-energy image. Unless the human asked otherwise, reject covers that do not clearly show an adult female DJ/BJ performance context or a premium dance venue. The cover should already feel energetic and sexy enough to justify a strong thumbnail.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable click text that matches the selected style lane, for example `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `UK GARAGE`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`.
+- Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `CLUB BLOOM`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
-- The thumbnail should be bolder than the cover: larger subject/action, stronger contrast, clearer facial/body silhouette when a person is present, and text that feels like a club mix hook rather than a neutral label.
+- The thumbnail should be bolder than the cover: larger adult female DJ/BJ subject/action, stronger contrast, clearer face/body silhouette, more click-stopping club glamour, and text that feels like a club mix hook rather than a neutral label.
 
 ## Loop Video
 
@@ -47,7 +49,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Animate the selected cover concept with visible rhythmic motion tied to the DJ/performance location: DJ hand movement, mixer/deck LEDs, crowd movement, light sweeps, neon reflections, LED pulses, laser haze, stage lighting, ocean/sunset reflections for beach clubs, skyline light motion for rooftops, concert strobes, or dance-floor glow.
 - If the first frame has a short EDM/club style phrase, keep it stable and readable. Do not invent a channel name.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
-- Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, sexual acts, unsafe minors, protected brands, or real club footage.
+- Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, exposed nipples, visible genitals, sexual acts, unsafe minors, protected brands, or real club footage.
 - The loop video must visibly move. Reject weak clips where only tiny background particles move, the scene feels static, there is no DJ/performance or premium venue read, or the club energy drops below the still cover.
 
 ## Visual Rework Note

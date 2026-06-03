@@ -22,9 +22,9 @@ This covers the active automatic-release channels. `MusicSun` is manual-only and
 
 Reference set:
 
-- Lofi Girl: massive lo-fi/study category signal; 15M+ subscribers and 2B+ views in 2026 snapshots.
-- Chillhop Music: seasonal `Essentials`, `lofi hip hop beats`, `chill instrumentals` packaging.
-- Cafe Music BGM channel: cafe, bossa nova, fireplace, work/study title shapes.
+- Lofi Girl: massive study/category signal; use it for intent and packaging, not for lofi-beat instrumentation.
+- Chillhop Music: seasonal `Essentials` packaging signal; do not copy beat-based music direction for Soft Hour.
+- Cafe Music BGM channel: cafe, piano, fireplace, work/study title shapes.
 - Relaxing Jazz Piano: `4K Cozy Coffee Shop`, `Background Music for Relaxing and Working` top-video language.
 - Yellow Brick Cinema: long sleep, relaxation, meditation, study music packaging.
 - Soothing Relaxation: calm instrumental/ambient music and long-listening sleep/relaxation intent.
@@ -37,9 +37,9 @@ What gets views:
 
 Our direction:
 
-- Title shape: `[playlist] Cozy Cafe Piano | Study, Work and Quiet Reading Music`.
-- Song direction: soft piano, mellow jazz, lofi beats, warm guitar, light bossa, ambient pads; no sudden drops, vocals, dramatic crescendos, or busy percussion.
-- Thumbnail text: `CAFE PIANO`, `STUDY MUSIC`, `SLEEP MUSIC`, `FOCUS MUSIC`, `RAINY CAFE`.
+- Title shape: `[playlist] 조용히 집중하고 싶을 때 듣는 피아노 BGM | 공부와 작업을 위한 솔로 피아노` or `[playlist] Rainy Window Piano BGM | Soft Solo Piano for Reading and Quiet Work`.
+- Song direction: solo piano only: felt piano, upright piano, quiet piano, cafe piano, sleep piano, reading piano, and warm room tone; no lofi beats, guitar, Rhodes, strings, pads, jazz trio, bossa, vocals, dramatic crescendos, or busy percussion.
+- Thumbnail text: `SOLO PIANO`, `CAFE PIANO`, `STUDY PIANO`, `SLEEP PIANO`, `FOCUS PIANO`, `RAINY PIANO`.
 - Avoid: poetic object-first titles like `Ceramic Window Morning` when the release is really study/work BGM.
 
 ## Tokyo Daydream Radio
@@ -84,9 +84,9 @@ What gets views:
 
 Our direction:
 
-- Title shape: `[playlist] 신나는 K-POP 믹스 | 운동, 러닝, 외출 준비, 파티 웜업`.
-- Song direction: Korean vocal pop, clean hooks, strong chorus, dance-pop/synth-pop/R&B-pop lanes, polished idol-style structure.
-- Thumbnail text: `K-POP`, `DANCE POP`, `WORKOUT K-POP`, `HEARTBREAK K-POP`.
+- Title shape: `[playlist] 짧은 한국어 클릭 훅 | 상황에 듣기 좋은 장르 노래모음`. Lead with a natural emotional line or question, then explain the real use case and genre. Examples: `[playlist] 나랑 데이트 할래? | 데이트하기 전 기분 좋아지는 K-POP 힙합 노래모음`, `[playlist] 오늘 좀 예뻐 보이고 싶어 | 약속 전 자신감 올리는 K-POP 트랩 노래모음`, `[playlist] 전남친이 후회하게 | 외출 준비할 때 듣기 좋은 랩팝 노래모음`.
+- Song direction: Korean vocal pop with rap/hip-hop/R&B attitude, clean hooks, strong chorus, and a clear single lane such as K-pop hip-hop, rap-pop, trap-pop, boom bap K-pop, Korean R&B, neo-soul pop, or dark street-pop.
+- Thumbnail direction: normally no text. Use the image itself to match the title hook: date/crush hooks should feel like a stylish adult Hongdae meet-up or getting-ready moment; confidence/glow-up hooks should feel like a friend-taken night-out streetwear photo; breakup-recovery hooks should feel cool and self-possessed, not sad stock imagery.
 - Avoid: forcing `운동`, `드라이브`, or `댄스 연습실` into lyrics unless it naturally belongs to the song.
 
 ## sundaze
@@ -158,7 +158,7 @@ Our direction:
 
 - Title shape: `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`.
 - Song direction: one club style lane per release; no-vocal, clean drops, strong groove, 40-minute playlist flow.
-- Visual direction: sell the channel as a real DJ/performance destination, not abstract neon. Prefer active DJ sets in premium places such as beach clubs, rooftop skylines, packed nightclubs, concert/festival stages, warehouse raves, pool-party decks, open-air stages, yacht/harbor parties, neon city terraces, or cyber clubs.
+- Visual direction: sell the channel as a real adult female DJ/BJ performance destination, not abstract neon. Prefer beautiful adult female DJ/BJ sets in premium places such as beach clubs, rooftop skylines, packed nightclubs, concert/festival stages, warehouse raves, pool-party decks, open-air stages, yacht/harbor parties, neon city terraces, or cyber clubs. Use bold revealing club fashion and sexy nightlife energy while staying YouTube-safe: no full nudity, exposed nipples/genitals, sexual acts, minors, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
 - Thumbnail text: `TRANCE MIX`, `TECH HOUSE`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`.
 - Avoid: keyword-stuffed strings like `for Night Roads, Gaming Focus and Club Drive`.
 
@@ -214,65 +214,52 @@ Our direction:
 
 Reference set:
 
-- Shane & Shane: scripture-based worship, Psalms, acoustic congregational song model.
-- Poor Bishop Hooper / EveryPsalm: direct Psalm sequence concept; highly relevant even if smaller than megachurch worship channels.
-- Christian Worship & Scripture Songs (Esther Mui): passage-first scripture song channel; vidIQ shows 166K subscribers and 110M+ total views, with top videos titled by exact passage plus song hook.
-- DappyTKeys Piano Worship: Christian instrumental/prayer audience signal; the channel positions piano instrumentals for prayer, meditation, and relaxation at 1M+ subscribers / 300M+ views.
-- Sovereign Grace Music: doctrinal/scripture worship packaging.
-- Hillsong Worship: global worship channel; 10M+ subscribers and 5B+ views in 2026 stats.
-- Worship Together: worship song discovery and lyric/session format.
 - BibleProject: not a music channel, but useful for biblical book/passage clarity and public scripture packaging.
+- Mainstream hip-hop, R&B, rap-pop, alt-R&B, and K-pop playlist packaging: useful for how young listeners discover trendy music by mood, genre, and situation.
+- Scripture-song channels remain useful only for passage clarity and reference discipline, not for sound direction.
 
 What gets views:
 
-- Worship audiences need trust: passage clarity, theological seriousness, singable chorus, prayer/reflection use case.
-- Old Testament titles should not be generic `Bible Music`; the passage reference and theme must be explicit.
-- Successful scripture-song packaging usually says exactly what text inspired the song, then gives a simple listening purpose such as worship, prayer, meditation, reflection, sleep, healing, or study.
+- Viewers need to know exactly which passage inspired the songs; Old Testament titles should not be generic `Bible Music`.
+- The sound should feel like modern playlist music someone would not expect from a normal church service: hip-hop, R&B, K-pop-inspired pop, trap-soul, boom bap, alt-R&B, neo-soul, Afropop/Amapiano-pop, or synth-pop.
 - Style should be named in the description, not hidden. Keep each release in one coherent style family, then vary track dynamics inside that lane.
 
 Our direction:
 
-- Title shape: `[playlist] Genesis 1:1-5 Creation Songs | Old Testament Music for Worship and Reflection`.
-- Song direction: original English lyric songs grounded in the selected Old Testament passage, with paraphrase instead of long copied scripture text. Choose one style family per release, such as cinematic scripture worship, acoustic folk prayer songs, ancient-worship ballads, or psalm-like piano worship.
-- Description direction: first paragraph states the passage and theme; second paragraph or style line names the music style family in natural language.
-- Thumbnail text: passage-aware Bible/worship wording, not only a broad genre tag. Use the selected book, passage theme, or worship/reflection lane when it improves clarity; `GENESIS SONGS`, `PSALMS WORSHIP`, `OLD TESTAMENT`, or `SCRIPTURE SONGS` can support the layout but should not be the only hook if the passage has a clearer theme.
-- Avoid: skipping canonical sequence, vague worship titles without passage reference, or copying long Bible text.
+- Title shape: `[playlist] Genesis 1:1-5 Creation Hip-Hop | Old Testament Rap & R&B Songs`.
+- Song direction: original English lyric songs grounded in the selected Old Testament passage, with paraphrase instead of long copied scripture text. Choose one modern style family per release, such as scripture hip-hop, trap-soul, boom-bap Bible rap, Bible R&B, alt-R&B, K-pop-inspired scripture pop, or neo-soul scripture songs.
+- Description direction: first paragraph states the passage and theme; second paragraph or style line names the modern music style family in natural language.
+- Thumbnail text: passage-aware modern Bible music wording, not church/worship wording. Use the selected book, passage theme, or style lane when it improves clarity; `OLD TESTAMENT HIP-HOP`, `GENESIS 1:1-5`, `SCRIPTURE RAP`, or `BIBLE R&B` can support the layout but should not be the only hook if the passage has a clearer theme.
+- Avoid: skipping canonical sequence, gospel/worship/holy/church style music, vague titles without passage reference, or copying long Bible text.
 
 ## BibliaCanto New Testament Branch
 
 Reference set:
 
-- Elevation Worship: contemporary worship scale; large current worship discovery channel.
-- Hillsong Worship: global worship channel; 10M+ subscriber / 5B+ view scale.
-- Bethel Music: worship/live/session channel; 6M+ subscribers and 3B+ views in 2026 SocialBlade stats.
-- Maverick City Music: modern Gospel/worship collaboration model.
-- Worship Together: worship discovery and lyric/session model.
-- Housefires or Phil Wickham: singable modern worship and prayer-focused titles.
-- Dandelion Praise: Bible-centered worship packaging that explicitly states the source passage, theme, use case, and style family in the song description.
-- Christian Worship & Scripture Songs (Esther Mui): scripture-song title pattern built around exact reference plus memorable hook.
+- BibleProject and passage-first scripture resources: useful for reference clarity and avoiding vague Bible packaging.
+- Mainstream New Testament-adjacent storytelling should borrow its sound from current hip-hop, R&B, K-pop-inspired pop, rap-pop, trap-soul, alt-R&B, and neo-soul playlist trends, not from church worship channels.
 
 What gets views:
 
-- New Testament worship works best when the title promises Jesus, grace, Gospel, prayer, hope, worship, and the exact passage.
-- Live/session reference channels get views from known worship leaders; our substitute is passage clarity plus singable original worship.
-- New Testament descriptions should not make viewers guess what passage was used. Say the passage, the Gospel theme, and the broad music style.
-- One coherent worship style family per release is better than random genre switching. Rotate the style lane between releases, not within one release.
+- New Testament descriptions should not make viewers guess what passage was used. Say the passage, the adapted theme, and the broad modern music style.
+- The sound should be surprising for a Bible channel in a good way: trendy, melodic, urban, hook-driven, and not something that sounds like a normal church service.
+- One coherent modern style family per release is better than random genre switching. Rotate the style lane between releases, not within one release.
 
 Our direction:
 
-- Title shape: `[playlist] Matthew 5:1-12 Beatitudes Worship | New Testament Music for Hope and Prayer`.
-- Song direction: original English worship songs with clear chorus, congregational melody, grace/Gospel/prayer language, and New Testament passage sequence. Choose one style family per release, such as modern worship pop, warm gospel ballads, acoustic prayer songs, cinematic worship, or intimate piano worship.
-- Description direction: first paragraph states the passage and Gospel theme; second paragraph or style line names the music style family in natural language.
-- Thumbnail text: passage-aware Gospel/worship wording, not only a broad genre tag. Use the selected passage, Gospel theme, or prayer/worship lane when it improves clarity; `GOSPEL SONGS`, `GRACE WORSHIP`, `NEW TESTAMENT`, or `SCRIPTURE WORSHIP` can support the layout but should not be the only hook if the passage has a clearer theme.
-- Avoid: generic `Christian music`, Old Testament passage confusion, or worship titles without the passage reference.
+- Title shape: `[playlist] Matthew 5:1-12 Beatitudes R&B | New Testament Alt-R&B Songs`.
+- Song direction: original English scripture-inspired songs with strong hooks, melodic rap or sung choruses, and New Testament passage sequence. Choose one style family per release, such as Bible R&B, K-pop-inspired scripture pop, scripture rap-pop, trap-soul scripture songs, boom-bap Bible rap, alt-R&B scripture songs, or neo-soul scripture songs.
+- Description direction: first paragraph states the passage and adapted theme; second paragraph or style line names the modern music style family in natural language.
+- Thumbnail text: passage-aware modern Bible music wording, not Gospel/worship wording. Use the selected passage, theme, or style lane when it improves clarity; `NEW TESTAMENT R&B`, `BIBLE K-POP`, `SCRIPTURE RAP`, or `MATTHEW 5:1-12` can support the layout but should not be the only hook if the passage has a clearer theme.
+- Avoid: generic `Christian music`, Old Testament passage confusion, gospel/worship/holy/church style music, or titles without the passage reference.
 
 ## 불송 Buddhist Scripture
 
 Reference set:
 
-- Dharma Talks and Buddhist teaching channels: clear source/theme naming matters more than vague meditation wording.
+- Buddhist teaching channels: clear source/theme naming matters more than vague meditation wording.
 - Buddhist chant/meditation channels: viewers respond to calm, respectful visuals and practical promises such as peace, letting go, mindfulness, compassion, and release from anxiety.
-- Modern spiritual music channels: genre clarity helps discovery when the title names the lane, such as jazz, R&B, hip-hop, soul, or acoustic meditation songs.
+- Modern spiritual music channels: genre clarity helps discovery when the title names the lane. For 불송, default to hip-hop/rap wording first, such as `불교 힙합`, `불경 힙합`, `Buddhist hip-hop`, or `Korean Buddhist rap`; avoid obscure coined genre wording.
 
 What gets views:
 
@@ -282,10 +269,10 @@ What gets views:
 
 Our direction:
 
-- Title shape: Korean default title that combines source/theme plus genre lane, for example Buddhist hip-hop, dharma R&B, Buddhist jazz, or neo-soul meditation songs.
+- Title shape: Korean default title that combines source/theme plus a public hip-hop lane, for example `불경 힙합`, `불교 힙합`, `마음챙김 랩`, `Buddhist hip-hop`, or `Korean Buddhist rap`. Do not use obscure coined genre labels in public metadata.
 - Song direction: original Korean lyrics inspired by Buddhist teaching, not direct scripture recitation or chanting. Keep one lane per release and rotate lanes across uploads.
 - Description direction: first paragraph states the Buddhist source/theme; second paragraph names the music lane and notes that lyrics are original paraphrases inspired by Buddhist teaching.
-- Thumbnail direction: use the same calm photorealistic/premium cinematic-real Buddhist or dharma cover/first-frame package as the thumbnail. It may contain one short Korean passage/theme + style phrase, but do not add the `불송` channel label, badges, hard text boxes, or separate channel branding.
+- Thumbnail direction: use the same calm photorealistic/premium cinematic-real Buddhist cover/first-frame package as the thumbnail. It may contain one short Korean passage/theme + hip-hop style phrase, but do not add the `불송` channel label, badges, hard text boxes, or separate channel branding.
 - Avoid: claiming exact chapter/verse coverage without verification, copying long sutra passages, sermon/chant format, disrespectful religious imagery, or public scheduling before human review.
 
 ## Source Index
@@ -316,12 +303,6 @@ Our direction:
 - Two Steps From Hell stats: https://socialcounts.org/youtube-channel-analytics/UC3swwxiALG5c0Tvom83tPGg
 - GameChops stats: https://hypeauditor.com/youtube/UCDVKYPXwdYUQfgA05CkyFSg/
 - GlitchxCity stats: https://vidiq.com/youtube-stats/channel/UC-lmdv0OTb4uQQSzwbzhLsg/
-- Hillsong Worship stats: https://vidiq.com/youtube-stats/channel/UC4q12NoPNySbVqwpw4iO5Vg
-- Bethel Music stats: https://socialblade.com/youtube/handle/bethelmusic
-- Worship Together stats: https://www.speakrj.com/audit/report/UCsTOvGh6rj41bHRkq2ZpIiQ/youtube/summary
-- Sovereign Grace Music stats: https://socialcounts.org/youtube-live-subscriber-count/UCYOuiDQ9vmBa5k-nLZ_HDwg
 - Poor Bishop Hooper EveryPsalm video signal: https://www.viberate.com/artist/songs/poor-bishop-hooper-top-songs/
 - EveryPsalm project: https://www.everypsalm.com/
-- Christian Worship & Scripture Songs (Esther Mui) stats: https://vidiq.com/youtube-stats/channel/UCLWHNkhCKvijdq59bFq0bQw/
-- DappyTKeys Piano Worship background: https://www.timoladeru.com/about
 - Dandelion Praise scripture-song packaging: https://praise.dandelionbible.org/

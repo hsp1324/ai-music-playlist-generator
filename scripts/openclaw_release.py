@@ -8,6 +8,7 @@ local API by default, bypassing public Google OAuth protection.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import mimetypes
 import os
@@ -15,6 +16,7 @@ import re
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -28,12 +30,14 @@ from app.utils.timeline import timeline_from_track_dicts
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 KNOWN_OAUTH_PUBLIC_HOSTS = {"ai-music.168.107.34.175.sslip.io"}
 MAX_AUDIO_UPLOAD_ATTEMPTS = 3
-DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 120
+DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 60
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 0
 DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 15 * 60
 DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 40 * 60
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
 LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
+OPENCLAW_PROVIDER_VIDEO_WAIT_SECONDS = 20 * 60
+OPENCLAW_PROVIDER_VIDEO_STATE_PATH = "storage/openclaw-provider-video-state.json"
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
@@ -134,6 +138,7 @@ CHANNEL_TITLE_ALIASES = {
 }
 STILL_IMAGE_LYRICS_OVERLAY_CHANNEL_TITLES = {
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
+    SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
 }
 REQUIRED_METADATA_LANGUAGES = (
@@ -473,12 +478,12 @@ OLD_VERSE_CHANNEL_KEYWORDS = (
     "new testament",
     "genesis",
     "matthew",
-    "mark gospel",
-    "luke gospel",
-    "john gospel",
+    "mark",
+    "luke",
+    "john",
     "acts of the apostles",
     "epistles",
-    "revelation worship",
+    "revelation",
     "exodus",
     "leviticus",
     "numbers",
@@ -488,7 +493,7 @@ OLD_VERSE_CHANNEL_KEYWORDS = (
     "isaiah",
     "jeremiah",
     "bible verse music",
-    "scripture-inspired worship",
+    "scripture-inspired songs",
     "ancient biblical music",
     "genesis songs",
     "psalms music",
@@ -519,16 +524,13 @@ NEW_VERSE_CHANNEL_KEYWORDS = (
     "sutra song",
     "sutra songs",
     "dhammapada",
-    "dharma",
     "lotus sutra",
     "heart sutra",
     "prajnaparamita",
     "zen",
     "meditation sutra",
     "mindfulness song",
-    "buddhist jazz",
     "buddhist hip hop",
-    "buddhist r&b",
     "불경",
     "불교",
     "불교 경전",
@@ -1057,7 +1059,7 @@ def require_playlist_track_duration(
     if not bool(getattr(args, "allow_short_track", False)) and min_seconds > 0 and duration_seconds < min_seconds:
         raise RuntimeError(
             f"{context} rejected `{title}` because its duration is {format_timestamp(duration_seconds)}. "
-            f"Playlist tracks should be at least {format_timestamp(min_seconds)}. "
+            f"The configured minimum accepted playlist track length is {format_timestamp(min_seconds)}. "
             "Use --allow-short-track only when the human explicitly accepts a shorter track."
         )
 
@@ -1767,6 +1769,96 @@ def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id
     )
 
 
+def track_reuse_summary(track: dict[str, Any]) -> dict[str, Any]:
+    meta = track.get("metadata_json") if isinstance(track.get("metadata_json"), dict) else {}
+    return {
+        "id": track.get("id"),
+        "title": track.get("title"),
+        "status": track.get("status"),
+        "duration_seconds": track.get("duration_seconds"),
+        "user_rating": track.get("user_rating") or meta.get("user_rating") or "",
+        "style": track.get("style") or meta.get("style") or "",
+        "tags": meta.get("tags") or "",
+        "reuse_count": meta.get("playlist_reuse_count") or 0,
+        "reused_seconds": meta.get("playlist_reused_seconds") or 0,
+        "last_reused_in_playlist_id": meta.get("playlist_last_reused_in_playlist_id") or "",
+        "audio_path": track.get("audio_path"),
+        "created_at": track.get("created_at"),
+        "updated_at": track.get("updated_at"),
+    }
+
+
+def track_duration_seconds_value(track: dict[str, Any]) -> int:
+    try:
+        return int(track.get("duration_seconds") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def search_tracks(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    requested_limit = max(int(args.limit or 0), 0)
+    min_track_seconds = max(int(getattr(args, "min_track_seconds", 0) or 0), 0)
+    filter_short_tracks = bool(min_track_seconds and not getattr(args, "allow_short_track", False))
+    api_limit = min(max(requested_limit * 4, requested_limit), 1000) if filter_short_tracks and requested_limit else requested_limit
+    params: dict[str, Any] = {
+        "limit": api_limit,
+        "compact": str(not args.full).lower(),
+    }
+    if args.q:
+        params["q"] = args.q
+    if args.status_filter:
+        params["status_filter"] = args.status_filter
+    if args.user_rating:
+        params["user_rating"] = args.user_rating
+    tracks = request_json(client, "GET", "/tracks", params=params)
+    if filter_short_tracks:
+        tracks = [track for track in tracks if track_duration_seconds_value(track) >= min_track_seconds]
+    if requested_limit:
+        tracks = tracks[:requested_limit]
+    return {
+        "ok": True,
+        "action": "search-tracks",
+        "query": args.q,
+        "status_filter": args.status_filter,
+        "count": len(tracks),
+        "tracks": tracks if args.full else [track_reuse_summary(track) for track in tracks],
+        "next": "Attach selected existing tracks with `scripts/openclaw-release reuse-track --release-id RELEASE_ID --track-id TRACK_ID`.",
+    }
+
+
+def reuse_track(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    if release.get("workspace_mode") != "playlist":
+        raise RuntimeError("reuse-track requires a Playlist Release.")
+
+    attached_tracks = []
+    for track_id in args.track_id:
+        track = approve_track_to_playlist(
+            client,
+            track_id=track_id,
+            release_id=release["id"],
+            actor=args.actor,
+        )
+        attached_tracks.append(track_reuse_summary(track))
+
+    release = get_release(client, release["id"])
+    return {
+        "ok": True,
+        "action": "reuse-track",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "track_count": int(release.get("track_count") or len(release.get("tracks") or [])),
+            "actual_duration_seconds": release.get("actual_duration_seconds", 0),
+            "target_duration_seconds": release.get("target_duration_seconds", 0),
+            "target_youtube_channel_title": release.get("target_youtube_channel_title"),
+        },
+        "tracks": attached_tracks,
+        "next": "After enough same-lane tracks are attached, upload visuals, render audio, approve cover, and render video.",
+    }
+
+
 def approve_generated_metadata(client: httpx.Client, *, release: dict[str, Any], actor: str) -> dict[str, Any]:
     title = (release.get("youtube_title") or "").strip()
     description = (release.get("youtube_description") or "").strip()
@@ -1990,6 +2082,211 @@ def youtube_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str,
     return request_json(client, "GET", "/youtube/status", headers={"Accept": "application/json"})
 
 
+def _provider_video_state_path() -> Path:
+    return Path(
+        os.environ.get("AIMP_OPENCLAW_PROVIDER_VIDEO_STATE_PATH")
+        or OPENCLAW_PROVIDER_VIDEO_STATE_PATH
+    ).expanduser().resolve()
+
+
+def _provider_video_now() -> tuple[float, str]:
+    now = time.time()
+    return now, datetime.fromtimestamp(now, tz=timezone.utc).isoformat()
+
+
+def _read_provider_video_state() -> dict[str, Any]:
+    path = _provider_video_state_path()
+    if not path.exists():
+        return {"jobs": {}}
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            state = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return {"jobs": {}}
+    if not isinstance(state, dict):
+        return {"jobs": {}}
+    jobs = state.get("jobs")
+    if not isinstance(jobs, dict):
+        state["jobs"] = {}
+    return state
+
+
+def _write_provider_video_state(state: dict[str, Any]) -> None:
+    path = _provider_video_state_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(path.suffix + ".tmp")
+    with temporary_path.open("w", encoding="utf-8") as handle:
+        json.dump(state, handle, ensure_ascii=False, indent=2, sort_keys=True)
+        handle.write("\n")
+    temporary_path.replace(path)
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _provider_video_reference(args: argparse.Namespace) -> dict[str, Any]:
+    release_id = str(args.release_id or "").strip()
+    if not release_id:
+        raise ValueError("--release-id is required.")
+    first_frame_path = Path(args.first_frame).expanduser().resolve()
+    if not first_frame_path.exists() or not first_frame_path.is_file():
+        raise ValueError(f"--first-frame does not exist: {first_frame_path}")
+    first_frame_sha256 = _file_sha256(first_frame_path)
+    key = f"{release_id}:{first_frame_sha256}"
+    return {
+        "key": key,
+        "release_id": release_id,
+        "first_frame_path": str(first_frame_path),
+        "first_frame_sha256": first_frame_sha256,
+    }
+
+
+def _provider_video_active_job(
+    state: dict[str, Any],
+    key: str,
+    *,
+    now: float,
+) -> tuple[dict[str, Any] | None, int, int]:
+    job = dict((state.get("jobs") or {}).get(key) or {})
+    if str(job.get("status") or "") != "running":
+        return None, 0, 0
+    try:
+        started_at_epoch = float(job.get("started_at_epoch") or 0)
+    except (TypeError, ValueError):
+        started_at_epoch = 0
+    elapsed_seconds = max(int(now - started_at_epoch), 0) if started_at_epoch else 0
+    wait_seconds = max(int(job.get("wait_seconds") or OPENCLAW_PROVIDER_VIDEO_WAIT_SECONDS), 1)
+    remaining_seconds = max(wait_seconds - elapsed_seconds, 0)
+    return job, elapsed_seconds, remaining_seconds
+
+
+def provider_video_start(_client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    reference = _provider_video_reference(args)
+    provider = str(args.provider or "").strip().lower()
+    if provider not in {"gemini", "dreamina", "seedance"}:
+        raise ValueError("--provider must be gemini, dreamina, or seedance.")
+    now, now_iso = _provider_video_now()
+    state = _read_provider_video_state()
+    jobs = state.setdefault("jobs", {})
+    active_job, elapsed_seconds, remaining_seconds = _provider_video_active_job(
+        state,
+        reference["key"],
+        now=now,
+    )
+    previous_job = None
+    if active_job and remaining_seconds > 0 and not args.force:
+        active_provider = active_job.get("provider")
+        raise RuntimeError(
+            "Provider video generation is already running for this release and first frame: "
+            f"{active_provider} started {elapsed_seconds}s ago. Wait {remaining_seconds}s more "
+            "before starting Dreamina/Seedance or another provider."
+        )
+    if active_job and remaining_seconds <= 0:
+        previous_job = {
+            **active_job,
+            "status": "timed_out",
+            "timed_out_at": now_iso,
+            "elapsed_seconds": elapsed_seconds,
+            "timeout_reason": "fallback_provider_started_after_wait",
+        }
+
+    job = {
+        **reference,
+        "provider": provider,
+        "status": "running",
+        "started_at": now_iso,
+        "started_at_epoch": now,
+        "wait_seconds": OPENCLAW_PROVIDER_VIDEO_WAIT_SECONDS,
+        "note": str(args.note or "").strip(),
+    }
+    if previous_job:
+        job["previous_timed_out_job"] = previous_job
+    jobs[reference["key"]] = job
+    state["updated_at"] = now_iso
+    _write_provider_video_state(state)
+    return {
+        "ok": True,
+        "action": "provider-video-start",
+        "job": job,
+        "previous_timed_out_job": previous_job,
+        "state_path": str(_provider_video_state_path()),
+    }
+
+
+def provider_video_status(_client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    reference = _provider_video_reference(args)
+    now, now_iso = _provider_video_now()
+    state = _read_provider_video_state()
+    job = dict((state.get("jobs") or {}).get(reference["key"]) or {})
+    active_job, elapsed_seconds, remaining_seconds = _provider_video_active_job(
+        state,
+        reference["key"],
+        now=now,
+    )
+    return {
+        "ok": True,
+        "action": "provider-video-status",
+        "checked_at": now_iso,
+        "release_id": reference["release_id"],
+        "first_frame_sha256": reference["first_frame_sha256"],
+        "job": job or None,
+        "running": active_job is not None,
+        "elapsed_seconds": elapsed_seconds,
+        "wait_remaining_seconds": remaining_seconds,
+        "fallback_allowed": active_job is None or remaining_seconds <= 0,
+    }
+
+
+def provider_video_finish(_client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    reference = _provider_video_reference(args)
+    status = str(args.status or "").strip().lower()
+    if status not in {"succeeded", "failed", "timed_out", "cancelled"}:
+        raise ValueError("--status must be succeeded, failed, timed_out, or cancelled.")
+    provider = str(args.provider or "").strip().lower()
+    if provider not in {"gemini", "dreamina", "seedance"}:
+        raise ValueError("--provider must be gemini, dreamina, or seedance.")
+    now, now_iso = _provider_video_now()
+    state = _read_provider_video_state()
+    jobs = state.setdefault("jobs", {})
+    job = dict(jobs.get(reference["key"]) or reference)
+    if job.get("provider") and job.get("provider") != provider and not args.force:
+        raise RuntimeError(
+            f"Active provider video job is for {job.get('provider')}, not {provider}. "
+            "Pass --force only if you are intentionally correcting stale state."
+        )
+    try:
+        started_at_epoch = float(job.get("started_at_epoch") or now)
+    except (TypeError, ValueError):
+        started_at_epoch = now
+    job.update(
+        {
+            **reference,
+            "provider": provider,
+            "status": status,
+            "finished_at": now_iso,
+            "elapsed_seconds": max(int(now - started_at_epoch), 0),
+            "output_video_path": str(Path(args.output_video).expanduser().resolve())
+            if args.output_video
+            else str(job.get("output_video_path") or ""),
+            "note": str(args.note or job.get("note") or "").strip(),
+        }
+    )
+    jobs[reference["key"]] = job
+    state["updated_at"] = now_iso
+    _write_provider_video_state(state)
+    return {
+        "ok": True,
+        "action": "provider-video-finish",
+        "job": job,
+        "state_path": str(_provider_video_state_path()),
+    }
+
+
 def openclaw_backlog_request(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     return request_json(
         client,
@@ -2103,7 +2400,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         raise RuntimeError(
             "auto-publish-playlist requires --loop-video when creating a new moving-video Playlist Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "Pass --allow-still-image-video only for HaruHaru/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
 
@@ -2139,7 +2436,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         raise RuntimeError(
             "auto-publish-playlist requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Pass --allow-still-image-video only for HaruHaru/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -2456,7 +2753,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires --loop-video when creating a new moving-video Single Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "For HaruHaru/Solwave Radio still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
+            "For HaruHaru/sundaze/Solwave Radio still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-single")
 
@@ -2493,7 +2790,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Pass --allow-still-image-video only for HaruHaru/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -3005,12 +3302,13 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "If you rewrite a displayed title, keep its timestamp fixed. "
             "For Japan/J-pop/Tokyo Daydream Radio releases, write localized timeline rows as follows: Korean description uses Japanese title plus Korean translation in parentheses, Japanese description uses Japanese title only, and English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese descriptions use translated title text only. "
             "For every localized video title, use natural transcreation for that language rather than literal translation. If direct translation sounds awkward, weak, too long, or less clickable, change the wording, order, or exact hook while keeping the release identity, genre/lane, and use case truthful. For sundaze/English/American pop playlist releases, localized video titles may be adapted per language; keep English track titles in every localized timestamped timeline row and translate only the surrounding prose, use-case text, and hashtags. sundaze titles must name one clear release-level genre lane when accurate, such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, singer-songwriter pop, folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop, instead of generic English pop wording. "
-            "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. HaruHaru titles must name one clear release-level genre lane when accurate, such as K-pop hip-hop, Korean R&B, K-pop dance-pop, synth-pop, pop-rock, soul/neo-soul pop, or ballad-pop, instead of generic K-pop wording. "
+            "For HaruHaru/K-pop releases, write original Korean titles and Korean lyrics by default. Localized descriptions may translate track titles naturally, but timestamps and row order must stay exactly the same. HaruHaru Korean/default titles should be click-led: [playlist] SHORT_KOREAN_HOOK | SITUATION에 듣기 좋은 GENRE 노래모음. Lead with a tasteful emotional line or question, such as 나랑 데이트 할래?, 오늘 좀 예뻐 보이고 싶어, 전남친이 후회하게, 너도 나 좋아하잖아, 오늘은 내가 주인공, then name the truthful listening situation and one clear release-level genre lane, preferably K-pop hip-hop, rap-pop, K-pop trap, boom bap K-pop, Korean R&B, neo-soul pop, or dark street-pop instead of generic K-pop wording. The hook must match the thumbnail/cover mood and must not be explicit, misleading, or unrelated to the music. Do not use city-pop/city pop/시티팝 for new HaruHaru metadata by default unless the human explicitly requested that lane or the uploaded/reused track set is already clearly city-pop. If the HaruHaru release is city-pop, keep metadata and any backfill city-pop-related; if it is not city-pop, do not mix city-pop wording or tracks into it. "
             "For Solwave Radio releases, write Spanish default metadata and name one clear release-level genre lane when accurate, such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul, instead of generic Latin pop wording. "
+            "For Soft Hour Radio releases, write Korean default metadata that clearly signals piano/solo piano and a real listening use case. Use natural clickable wording such as 조용히 집중하고 싶을 때 듣는 피아노 BGM, 공부와 작업을 위한 솔로 피아노, 잠들기 전 틀어놓는 잔잔한 피아노, 비 오는 밤 책 읽을 때 좋은 피아노 연주곡, or equivalent localized transcreations. Do not describe Soft Hour as lofi beats, guitar, jazz trio, Rhodes, strings, pads, or generic mixed-instrument BGM unless the human explicitly changed the channel direction. "
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
             "For Cinematic Pulse releases, write English default metadata and position it as no-vocal large-scale cinematic orchestra, movie OST, film score, trailer, final battle scene, orchestral battle, emotional film score, mystery-tension, dark fantasy, sci-fi, heroic, or epic scene music. Do not use juvenile game-menu title wording such as Boss BGM, Final Boss Music, Final Boss Focus Music, 보스, 보스전, or bare BGM. Rotate among varied cinematic title lanes such as final battle, dark fantasy, heroic trailer, emotional score, sci-fi action, mystery tension, grand journey, orchestral battle, writing music, and movie OST focus; examples are style references, not fixed templates to repeat. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. Club Bloom titles must put the exact genre, subgenre, or genre fusion immediately after [playlist] using mainstream mix language such as Progressive Trance x EDM Mix, Tech House Workout Mix, Hype Trap x EDM Mix, Melodic Techno Night Drive, Bass House Club Mix, or Festival EDM Mix; put only one or two public use cases after the separator and avoid awkward lists like Progressive Trance for Night Roads, Gaming Focus and Club Drive. "
-            "For BibliaCanto scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament/Gospel/worship music from Matthew onward. New Testament scripture releases now upload to BibliaCanto too, not 불송. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent lane, rotating across uploads instead of defaulting to generic holy worship every time; lanes can include scripture jazz, gospel R&B/soul, acoustic scripture folk/gospel, modern worship pop, piano worship ballads, choir-backed worship/gospel, cinematic scripture/Gospel worship, or neo-soul prayer songs. "
-            "For 불송 Buddhist releases, write Korean default metadata and position it as modern Buddhist scripture-inspired vocal music. Name the Buddhist source or theme carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired, and do not claim exact chapter/verse coverage unless verified. Name one coherent modern release-level lane such as emotional Buddhist pop, Buddhist jazz, mindful hip-hop, Buddhist R&B/soul, dharma neo-soul, acoustic/indie dharma pop, warm lo-fi pop, chill pop, gentle city-pop, or cinematic meditation pop. Avoid trot, ppongjjak, old Korean cabaret-pop, trot vocal ornaments, and accordion/brass trot cliches unless the human explicitly asks for that sound. State that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation. "
+            "For BibliaCanto scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament scripture-inspired music from Matthew onward. New Testament scripture releases now upload to BibliaCanto too, not 불송. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent modern lane, rotating across uploads; lanes can include scripture hip-hop, Bible R&B, K-pop-inspired scripture pop, scripture rap-pop, trap-soul scripture songs, boom-bap Bible rap, alt-R&B scripture songs, neo-soul scripture songs, Afropop/Amapiano-pop scripture songs, dark street-pop scripture, or synth-pop scripture songs. Never position BibliaCanto as Gospel music, worship, holy worship, church choir, hymns, praise band, CCM, congregational music, or prayer-ballad worship. "
+            "For 불송 Buddhist releases, write Korean default metadata and position it as Buddhist scripture-inspired Korean hip-hop/rap vocal music by default. Name the Buddhist source or theme carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired, and do not claim exact chapter/verse coverage unless verified. By default, name one coherent Buddhist hip-hop/rap lane such as 불교 힙합, 불경 힙합, mindful hip-hop, Korean Buddhist rap, mellow boom bap, Buddhist hip-hop soul, or restrained Buddhist trap-soul. Use a non-hip-hop Buddhist lane only when the human explicitly asks or when finishing an already-started release in that lane. Do not relabel an already-rendered non-hip-hop 불송 video as hip-hop if the audio and burned-in visual text already say Dharma pop, 다르마팝, acoustic Dharma songs, or 다르마송. Avoid trot, ppongjjak, old Korean cabaret-pop, trot vocal ornaments, and accordion/brass trot cliches unless the human explicitly asks for that sound. State that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation. "
             "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video or still-image visual, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
             "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Storylight OST/game-anime OST, Cinematic Pulse/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/Buddhist scripture, sundaze/English-American pop playlist, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
@@ -3205,7 +3503,6 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
     if not tags:
         raise RuntimeError("--tags is required as a comma-separated string.")
     localizations = metadata_localizations_from_args(args, title=title, description=description)
-
     release = request_json(
         client,
         "POST",
@@ -3285,6 +3582,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
     profile_parser.set_defaults(func=channel_profile)
 
+    search_tracks_parser = subparsers.add_parser(
+        "search-tracks",
+        help="Search existing app tracks so OpenClaw can reuse them in playlist releases.",
+    )
+    search_tracks_parser.add_argument("--q", default="", help="Search text matched against title, prompt, style, tags, and metadata.")
+    search_tracks_parser.add_argument(
+        "--status-filter",
+        choices=["pending_review", "approved", "rejected", "held", "uploaded", "failed"],
+        default="approved",
+        help="Track status filter. Default: approved.",
+    )
+    search_tracks_parser.add_argument("--user-rating", default="", help="Optional user rating filter: like, dislike, or none.")
+    search_tracks_parser.add_argument("--limit", type=int, default=20, help="Maximum tracks to return.")
+    search_tracks_parser.add_argument("--min-track-seconds", type=int, default=0, help="Optional minimum duration filter. Default: 0, show existing tracks even when they are short.")
+    search_tracks_parser.add_argument("--allow-short-track", action="store_true", help="Ignore --min-track-seconds and show short tracks.")
+    search_tracks_parser.add_argument("--full", action="store_true", help="Return full track payloads instead of compact search payloads.")
+    search_tracks_parser.set_defaults(func=search_tracks)
+
+    reuse_track_parser = subparsers.add_parser(
+        "reuse-track",
+        help="Attach one or more existing approved tracks to a Playlist Release.",
+    )
+    reuse_track_parser.add_argument("--release-id", default="", help="Existing Playlist Release id.")
+    reuse_track_parser.add_argument("--release-title", default="", help="Existing Playlist Release title.")
+    reuse_track_parser.add_argument("--track-id", action="append", required=True, help="Existing track id to attach. Repeat in final playlist order.")
+    reuse_track_parser.add_argument("--actor", default="openclaw:reuse-track", help="Actor name recorded in histories.")
+    reuse_track_parser.set_defaults(func=reuse_track)
+
     audio_parser = subparsers.add_parser("upload-audio", help="Upload an audio file to an existing release or new single.")
     audio_parser.add_argument("--audio", required=True, help="Path to generated audio file.")
     audio_parser.add_argument("--title", default="", help="Track title. Defaults to audio filename stem.")
@@ -3299,7 +3624,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     audio_parser.add_argument("--release-title", default="", help="Existing release title, or new release title with --new-single.")
     audio_parser.add_argument("--pending-review", action="store_true", help="For Playlist Releases only, skip the default auto-approve behavior.")
-    audio_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum auto-approved Playlist Release track length. Default: 120 seconds.")
+    audio_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum auto-approved Playlist Release track length. Default: 60 seconds.")
     audio_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum auto-approved Playlist Release track length. Default: 0, no maximum.")
     audio_parser.add_argument("--allow-short-track", action="store_true", help="Allow a playlist track shorter than --min-track-seconds. Use only with explicit human approval.")
     audio_parser.add_argument("--allow-long-track", action="store_true", help="Allow a playlist track longer than --max-track-seconds when an explicit maximum is configured.")
@@ -3330,11 +3655,11 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--audio", action="append", required=True, help="Generated playlist audio path. Repeat for every track.")
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
-    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable title/use-case text; HaruHaru should normally be text-free; Solwave Radio should use a friend-taken phone-photo look with one integrated Latin/Spanish lane phrase when useful; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/Solwave Radio still-image renders.")
+    auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable title/use-case text; HaruHaru should normally be text-free; sundaze/Solwave Radio should use a friend-taken phone-photo look with one integrated lane phrase when useful; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/sundaze/Solwave Radio still-image renders.")
     auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/Solwave Radio still-image renders or a human-approved fallback.")
+    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio still-image renders or a human-approved fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
@@ -3348,12 +3673,12 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
     auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 900 seconds for normal channels, 2400 seconds for BibliaCanto/불송.")
-    auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 120 seconds.")
+    auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 60 seconds.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 0, no maximum.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds when an explicit maximum is configured.")
-    auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order. Soft Hour Radio keeps reused back-half tracks after the fresh solo-piano lead block.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3365,13 +3690,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru/Solwave Radio still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru/Solwave Radio still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-overlay",
@@ -3382,7 +3707,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/Solwave Radio.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/sundaze/Solwave Radio.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3404,11 +3729,11 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--audio", action="append", required=True, help="Generated single audio path. Use exactly one; run this command again for a second good Suno output.")
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover/first-frame image without channel names or logos unless an uploaded final cover already exists on the release.")
-    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable text; HaruHaru should normally be text-free; Solwave Radio should use a friend-taken phone-photo look with one integrated Latin/Spanish lane phrase when useful; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/Solwave Radio still-image renders.")
+    auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable text; HaruHaru should normally be text-free; sundaze/Solwave Radio should use a friend-taken phone-photo look with one integrated lane phrase when useful; for 불송, use the same passage/style first-frame image or pass --allow-cover-as-thumbnail.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/sundaze/Solwave Radio still-image renders.")
     auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/Solwave Radio still-image renders or a human-approved fallback.")
+    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio still-image renders or a human-approved fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same passage/style first-frame image for both.")
@@ -3421,7 +3746,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, otherwise Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3433,13 +3758,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru/Solwave Radio still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio still-image renders.",
     )
     auto_single_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru/Solwave Radio still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio still-image renders.",
     )
     auto_single_parser.add_argument(
         "--lyrics-overlay",
@@ -3450,7 +3775,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/Solwave Radio.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/sundaze/Solwave Radio.",
     )
     auto_single_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3497,7 +3822,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_audio_parser = subparsers.add_parser("render-audio", help="Render playlist audio for an existing release.")
     render_audio_parser.add_argument("--release-id", default="", help="Existing release id.")
     render_audio_parser.add_argument("--release-title", default="", help="Existing release title.")
-    render_audio_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render.")
+    render_audio_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Soft Hour Radio keeps reused back-half tracks after the fresh solo-piano lead block.")
     render_audio_parser.add_argument("--no-wait", action="store_true", help="Return immediately after queueing audio render.")
     render_audio_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for audio render. Default: 6 hours.")
     render_audio_parser.add_argument("--poll-seconds", type=float, default=10.0, help="Polling interval while waiting for audio render.")
@@ -3514,7 +3839,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser = subparsers.add_parser("render-video", help="Queue video render for an existing release.")
     render_video_parser.add_argument("--release-id", default="", help="Existing release id.")
     render_video_parser.add_argument("--release-title", default="", help="Existing release title.")
-    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/Solwave Radio still-image renders or a human-approved fallback.")
+    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio still-image renders or a human-approved fallback.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
         choices=["bars", "mirror-bars", "calm-bars", "none"],
@@ -3525,13 +3850,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru/Solwave Radio still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio still-image renders.",
     )
     render_video_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru/Solwave Radio still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio still-image renders.",
     )
     render_video_parser.add_argument(
         "--lyrics-overlay",
@@ -3542,7 +3867,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--lyrics-overlay-style",
         choices=["auto", "soft-bottom-fade", "editorial-lower-left", "center-breath-serif"],
         default="auto",
-        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/Solwave Radio.",
+        help="Burned lyric subtitle style. auto uses center-breath-serif for 불송 and editorial-lower-left for HaruHaru/sundaze/Solwave Radio.",
     )
     render_video_parser.add_argument(
         "--lyrics-alignment-mode",
@@ -3711,6 +4036,38 @@ def build_parser() -> argparse.ArgumentParser:
 
     youtube_status_parser = subparsers.add_parser("youtube-status", help="Show connected YouTube status/channels as JSON.")
     youtube_status_parser.set_defaults(func=youtube_status)
+
+    provider_start_parser = subparsers.add_parser(
+        "provider-video-start",
+        help="Record a Gemini/Dreamina/Seedance loop-video generation attempt before clicking Generate.",
+    )
+    provider_start_parser.add_argument("--release-id", required=True, help="Release id that will receive the loop video.")
+    provider_start_parser.add_argument("--first-frame", required=True, help="Absolute cover/first-frame image path used for provider video generation.")
+    provider_start_parser.add_argument("--provider", choices=["gemini", "dreamina", "seedance"], required=True)
+    provider_start_parser.add_argument("--note", default="", help="Optional short generation note.")
+    provider_start_parser.add_argument("--force", action="store_true", help="Override the 20 minute same-image provider wait only for manual correction.")
+    provider_start_parser.set_defaults(func=provider_video_start)
+
+    provider_status_parser = subparsers.add_parser(
+        "provider-video-status",
+        help="Check whether a same-release/same-first-frame provider video generation is still inside the 20 minute wait window.",
+    )
+    provider_status_parser.add_argument("--release-id", required=True, help="Release id being checked.")
+    provider_status_parser.add_argument("--first-frame", required=True, help="Absolute cover/first-frame image path used for provider video generation.")
+    provider_status_parser.set_defaults(func=provider_video_status)
+
+    provider_finish_parser = subparsers.add_parser(
+        "provider-video-finish",
+        help="Mark a provider loop-video attempt succeeded, failed, timed out, or cancelled.",
+    )
+    provider_finish_parser.add_argument("--release-id", required=True, help="Release id that will receive the loop video.")
+    provider_finish_parser.add_argument("--first-frame", required=True, help="Absolute cover/first-frame image path used for provider video generation.")
+    provider_finish_parser.add_argument("--provider", choices=["gemini", "dreamina", "seedance"], required=True)
+    provider_finish_parser.add_argument("--status", choices=["succeeded", "failed", "timed_out", "cancelled"], required=True)
+    provider_finish_parser.add_argument("--output-video", default="", help="Downloaded MP4 path when status=succeeded.")
+    provider_finish_parser.add_argument("--note", default="", help="Optional short result note.")
+    provider_finish_parser.add_argument("--force", action="store_true", help="Override provider mismatch only for stale-state correction.")
+    provider_finish_parser.set_defaults(func=provider_video_finish)
 
     backlog_request_parser = subparsers.add_parser("openclaw-backlog-request", help="Ask the app to post one OpenClaw backlog Slack request.")
     backlog_request_parser.add_argument("--reason", default="manual", help="Reason recorded in the Slack request.")

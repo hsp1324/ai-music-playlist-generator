@@ -75,6 +75,18 @@ class TrackRead(BaseModel):
     approvals: list[ApprovalRead] = []
 
 
+class TrackSuggestionRead(BaseModel):
+    id: str
+    title: str
+    status: TrackStatus
+    duration_seconds: int
+    user_rating: str = ""
+    match_type: str = "title"
+    matched_text: str = ""
+    style: str = ""
+    tags: str = ""
+
+
 class TrackReuseEventRead(BaseModel):
     id: str
     track_id: str

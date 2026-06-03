@@ -32,6 +32,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same three people, subject placement, clothing colors, silhouettes, lighting, palette, background landmarks, and camera angle from the cover.
 - Use large natural J-pop click text such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, or `SUMMER J-POP`.
+- Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `TOKYO DAYDREAM RADIO`, the channel name, or a channel logo.
 - Keep the same full-bleed two-line treatment for Tokyo/city, forest/nature, and beach versions.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, `1時間`, clocks, or timers.

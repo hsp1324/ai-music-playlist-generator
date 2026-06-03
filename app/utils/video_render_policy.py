@@ -119,7 +119,6 @@ RELIGIOUS_TITLE_HINTS = (
     "diamond sutra",
     "lotus sutra",
     "buddhist",
-    "dharma",
     "sutra",
     "창세기",
     "성경",

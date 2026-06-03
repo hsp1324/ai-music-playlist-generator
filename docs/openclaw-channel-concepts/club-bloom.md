@@ -19,12 +19,12 @@ Before finalizing metadata, check the main title and every localized title in it
 From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` releases and avoid repeating:
 
 - The same dance lane, such as house, future house, dance-pop, festival EDM, techno-pop, night drive, workout, or gaming mix.
-- The same venue/performance setting, such as beach-club DJ deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, cyber club, gym event stage, highway/night-drive visual, or DJ booth.
+- The same venue/performance setting, such as beach-club adult female DJ/BJ deck, rooftop skyline adult female DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, cyber club, gym event stage, highway/night-drive visual, or DJ booth.
 - The same energy curve, such as warmup, peak-time, late-night, workout sprint, or chill-house.
 - The same thumbnail phrase, such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, or `WORKOUT EDM`.
 - The same visual scene if used recently.
 
-If the latest Club Bloom release was generic neon club or night drive, choose a stronger venue-based DJ/performance setup next, such as beach club, rooftop skyline, concert/festival stage, warehouse rave, pool party, open-air stage, or cyber club.
+If the latest Club Bloom release was generic neon club or night drive, choose a stronger venue-based adult female DJ/BJ performance setup next, such as beach club, rooftop skyline, concert/festival stage, warehouse rave, pool party, open-air stage, or cyber club.
 
 ## Club Style Lanes
 
@@ -57,17 +57,17 @@ Good style lanes:
 - In Suno advanced/excluded styles, add vocal and artificial-noise blockers such as `vocals, vocal, voice, singer, singing, lyrics, words, rap, spoken word, chant, chanting, humming, choir, crowd chant, vocal chops, acapella, topline, producer tag, white noise, static noise, vinyl crackle, record crackle, LP crackle, tape hiss, cassette hiss, analog hiss, noise floor, old record noise, dust noise, crackle, hiss`.
 - Use bracketed instrumental arrangement cues only, for example `[Intro: kick and filtered bass]`, `[Build: rising synth arp]`, `[Drop: no-vocal bass house groove]`, `[Breakdown: pads and drums only]`.
 - If the human asks for vocal dance-pop, route it to sundaze, HaruHaru, Tokyo Daydream Radio, or Solwave Radio depending on language/style instead of Club Bloom.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete club track of at least 2 minutes with a natural intro, groove development, breakdown/drop variation, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
+- Do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete club track with a natural intro, groove development, breakdown/drop variation, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Prioritize strong groove, clean drops, energy changes, and replayable rhythm inside the selected style lane.
 - Avoid muddy mixes, overly long intros, generic mixed-genre EDM, and tracks that feel like unfinished loops.
 
 ## Visual Direction
 
-- Illustrated/anime/stylized neon visuals. Avoid photorealistic/live-action club footage.
-- Visuals should communicate club/dance energy quickly through a concrete premium venue and performance action. Prefer an active DJ/performance scene over abstract neon: beach-club DJ deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, neon city terrace, cyber club, or dance-floor crowd.
-- Unless the human explicitly asks for a non-DJ concept, make the visual read as a DJ set or live club performance through visible decks/mixer, performer, crowd, lighting rig, stage, or dance-floor action.
-- Human figures are allowed when they fit the concept. A stylish adult woman DJing or dancing is a valid Club Bloom direction, including bold club fashion, confident poses, and sexy nightlife energy, but it must not become a repeated formula. Vary the subject, setting, camera, composition, crowd presence, outfit palette, venue type, and action so each release feels fresh.
-- Keep adult nightlife imagery bold but YouTube-safe. Avoid full nudity, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
+- Illustrated/anime/stylized neon visuals. Avoid photorealistic/live-action club footage unless the human explicitly asks for photorealism.
+- Visuals should communicate club/dance energy quickly through a concrete premium venue and performance action. Prefer an active adult female DJ/BJ or club-streamer performance scene over abstract neon: beach-club DJ deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, neon city terrace, cyber club, or dance-floor crowd.
+- Unless the human explicitly asks for a non-DJ concept, make the visual read as a beautiful adult female DJ/BJ performance through visible decks/mixer, performer, crowd, lighting rig, stage, or dance-floor action.
+- Human figures are expected by default when the concept allows it. Use a stylish adult woman DJ/BJ with bold revealing club fashion, confident poses, glossy nightlife styling, and sexy high-energy club presence. Vary the subject, setting, camera, composition, crowd presence, outfit palette, venue type, and action so each release feels fresh.
+- Keep adult nightlife imagery bold and revealing but YouTube-safe. Use daring club outfits, crop tops, metallic mini dresses, sheer outer layers, bikini-style festival tops, bodycon silhouettes, and dramatic stage lighting, but avoid full nudity, visible genitals, exposed nipples, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
 - Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`. The text is the hook; the image should sell the DJ/performance venue.
 
 ## Good Fresh Concept Shapes

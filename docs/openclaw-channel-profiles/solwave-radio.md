@@ -37,7 +37,7 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Keep the same photorealistic friend-taken Instagram phone-photo image package. Add one short readable Latin/Spanish click phrase matched to the playlist concept, preferably integrated in upper-left negative space, for example `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, `BACHATA POP`, `LATIN R&B`, or `NOCHE LATINA`.
 - The thumbnail may slightly improve contrast/readability, but it should still feel like a real friend/phone photo, not a polished campaign key visual.
-- Text should feel integrated into the photo, not like a pasted sticker, badge, button, or hard box. Keep the main subject visually important and do not push the subject into an awkward crop.
+- Text should feel integrated into the photo, not like a pasted sticker, badge, button, or hard box. The text background must stay transparent: letters sit directly on the photo, with readability from font weight, color, subtle shadow, thin outline, or local contrast only. Do not add black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text. Keep the main subject visually important and do not push the subject into an awkward crop.
 - Do not add `SOLWAVE RADIO`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 

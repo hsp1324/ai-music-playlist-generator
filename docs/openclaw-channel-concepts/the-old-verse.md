@@ -11,13 +11,13 @@ It follows two canonical app-managed branches:
 - Old Testament branch: starts from Genesis 1:1 and uploads around 07:00.
 - New Testament branch: starts from Matthew 1:1 and uploads around 16:00.
 
-Each passage's meaning, scene, conflict, promise, lament, wisdom, Gospel message, grace, prayer, or worship mood becomes original songs.
+Each passage's meaning, scene, conflict, promise, lament, wisdom, grace, mercy, discipleship, kingdom teaching, courage, doubt, or hope becomes original songs.
 
-This is not a Bible-reading channel. Do not simply narrate verses. Reinterpret the passage as music: meditation songs, cinematic worship, ancient biblical ballads, psalm-like prayer music, and scripture-inspired story songs.
+This is not a Bible-reading channel. Do not simply narrate verses. Reinterpret the passage as modern playlist-ready music: scripture hip-hop, Bible R&B, K-pop-inspired scripture pop, trap-soul, boom-bap scripture rap, alt-R&B, neo-soul, and other trendy secular-pop-adjacent styles.
 
 The audience should immediately understand: Bible passages turned into original scripture songs, with clear Old Testament or New Testament labeling.
 
-Public titles must include the passage or passage theme and must say Old Testament or New Testament. They should not become generic religious keyword piles. Before finalizing metadata, check every localized title in its own language and reject vague tails such as `Hope Energy`, `Prayer Focus Music`, `Bible Music`, `Worship Music`, or literal equivalents without a clear passage/theme/style. The title should tell viewers what scripture section inspired the release and what kind of worship/scripture music they are getting in natural local wording.
+Public titles must include the passage or passage theme and must say Old Testament or New Testament. They should not become generic religious keyword piles. Before finalizing metadata, check every localized title in its own language and reject vague tails such as `Hope Energy`, `Prayer Focus Music`, `Bible Music`, `Worship Music`, or literal equivalents without a clear passage/theme/style. The title should tell viewers what scripture section inspired the release and what kind of modern scripture hip-hop/R&B/K-pop-style music they are getting in natural local wording.
 
 ## Sequence Rule
 
@@ -29,7 +29,7 @@ Public titles must include the passage or passage theme and must say Old Testame
 - If there is no prior app catalog history, the Old Testament branch starts with `Genesis 1:1-5` and the New Testament branch starts with `Matthew 1:1-17`.
 - Create the release first, then reserve the chosen passage as `in_progress` with `scripts/openclaw-release openclaw-scripture-reserve` before opening Suno.
 - Put the passage reference in the private plan, title, and description, for example `Genesis 1:1-5`.
-- For cover, thumbnail, and loop-video planning, never use `Old Verse`, `New Verse`, `The Old Verse`, or `The New Verse` as visible text. Use the exact selected passage range from the title, such as `Genesis 1:1-5` or `Matthew 1:18-25`, plus `BibliaCanto` branding instead.
+- For cover, thumbnail, and loop-video planning, never use `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, `BibliaCanto`, or any channel branding as visible text. Use the exact selected passage range from the title, such as `Genesis 1:1-5` or `Matthew 1:18-25`, plus a short passage theme or music lane when useful.
 - For a 40-minute playlist, choose a coherent passage block, usually one scene or one short chapter section. Do not cover too much scripture at once.
 - After successful YouTube upload/scheduling, mark the passage as `scheduled` or `published` with `scripts/openclaw-release openclaw-scripture-complete`.
 - Do not compare against a local ledger and do not stop because title wording differs. The web app rejects duplicate active passages; use its response as the source of truth.
@@ -47,7 +47,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `BibliaCanto` rele
 
 - The same passage range.
 - The same biblical scene, such as creation light, Eden garden, flood water, desert road, covenant stars, Exodus sea, tabernacle, temple, psalm lament, or prophetic vision.
-- The same release-level music lane or instrument palette, such as scripture jazz, gospel R&B/soul, acoustic scripture folk, cinematic strings, ancient harp/lyre, frame drums, piano worship ballad, choir-backed worship, flute, or desert percussion.
+- The same release-level music lane or instrument palette, such as scripture hip-hop, trap-soul, boom-bap scripture rap, Bible R&B, alt-R&B, neo-soul, K-pop-inspired scripture pop, dark street-pop, Afropop/Amapiano-pop, synth-pop, 808 drums, or sung-rap hooks.
 - The same emotional direction, such as awe, repentance, covenant hope, lament, wilderness trust, deliverance, wisdom, or prophetic warning.
 - The same thumbnail phrase, such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, or `SCRIPTURE SONGS`.
 
@@ -55,25 +55,25 @@ From `scripts/openclaw-release list-releases`, inspect recent `BibliaCanto` rele
 
 Old Testament branch:
 
-- Creation and wonder: cinematic worship, strings, choir-like pads, light, stars, water, breath.
-- Eden and fall: gentle ballad, garden atmosphere, innocence, warning, loss, mercy.
-- Noah and flood: cinematic story song, rain, ark, judgment, rescue, covenant.
-- Patriarchs: desert road ballads, covenant stars, family, promise, waiting.
-- Exodus: deliverance songs, sea crossing, wilderness trust, pillar of fire/cloud.
-- Law and tabernacle: reverent worship, sacred space, lampstand, altar, holiness.
-- Psalms and wisdom: prayer songs, lament, praise, wisdom, trust, royal/temple imagery.
-- Prophets: cinematic warning and hope, exile, restoration, justice, comfort.
+- Creation and wonder: cinematic alt-R&B, synth-pop, atmospheric trap drums, light, stars, water, breath.
+- Eden and fall: moody R&B, K-pop-style ballad-pop with a rap bridge, garden atmosphere, warning, loss, mercy.
+- Noah and flood: dark hip-hop story song, trap-pop, rain, ark, judgment, rescue, covenant.
+- Patriarchs: desert-road alt-R&B, Afrobeat-pop, family, promise, waiting.
+- Exodus: triumphant hip-hop, trap-soul, percussive rap-pop, sea crossing, wilderness trust.
+- Law and tabernacle: sleek R&B, neo-soul, restrained modern pop, lampstand, altar, covenant order.
+- Psalms and wisdom: boom bap, lofi hip-hop with sung hooks, neo-soul, lament, wisdom, trust.
+- Prophets: dark drill-lite, industrial hip-hop, trap, exile, restoration, justice, warning.
 
 New Testament branch:
 
-- Gospel beginning: promise, lineage, waiting, arrival, fulfillment.
-- Jesus birth and early life: gentle worship ballads, light, family, promise, wonder.
-- Kingdom teaching: modern worship pop, parables, mercy, forgiveness, discipleship.
-- Miracles and healing: hopeful praise, prayer, restoration, trust.
-- Cross and resurrection: reverent ballads, cinematic worship, grace, victory, hope.
-- Acts and early church: movement, courage, Spirit, mission, community.
-- Epistles: prayer songs, grace, love, endurance, wisdom, church encouragement.
-- Revelation: awe, hope, worship, restoration, symbolic cinematic worship.
+- New Testament opening: promise, lineage, waiting, arrival, fulfillment, arranged as alt-R&B or K-pop-inspired pop.
+- Jesus birth and early life: modern R&B/pop, warm synth-pop, family, promise, wonder, not carol or worship music.
+- Kingdom teaching: rap-pop, K-pop hip-hop, parables, mercy, forgiveness, discipleship.
+- Miracles and healing: hopeful R&B, neo-soul, melodic hip-hop, restoration, trust.
+- Cross and resurrection: cinematic trap-soul, alt-pop, R&B, grace, victory, hope, no worship chorus.
+- Acts and early church: energetic hip-hop, Afropop, Amapiano-pop, courage, mission, community.
+- Epistles: R&B, rap-pop, neo-soul, love, endurance, wisdom, encouragement.
+- Revelation: dark synth-pop, trap, cinematic street-pop, awe, hope, restoration, symbolic imagery.
 
 ## Music Direction
 
@@ -81,11 +81,13 @@ New Testament branch:
 - Do not make instrumental/no-vocal BibliaCanto releases unless the human explicitly asks for BGM or instrumental meditation.
 - Lyrics must be in English by default. Do not write Korean, Japanese, Spanish, Latin, Hebrew, or other-language lyrics for BibliaCanto scripture releases unless the human explicitly asks for that language.
 - Lyrics must be original, song-first, and spiritually coherent. The passage inspires the song, but the song should still have a strong hook, emotional arc, and natural melody.
-- Choose one primary style family for each release and write it in the private plan before creating songs. Rotate this lane across uploads instead of defaulting to generic holy worship. Good lanes include scripture jazz, gospel R&B/soul, acoustic scripture folk, cinematic orchestral scripture music, psalm-like prayer ballads, piano worship, choir-backed worship, ancient-folk worship, or gentle desert-road story songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
-- If the chosen lane is jazz, all tracks should be jazz-based. If it is R&B/soul, all tracks should stay R&B/soul-based. The lane must be specific enough that the final title can truthfully name it.
+- Choose one primary style family for each release and write it in the private plan before creating songs. BibliaCanto must not sound like standard church music. Never choose Gospel music, gospel choir, worship, praise band, CCM, hymns, congregational singing, choir-backed worship, piano worship ballads, Christian-rock worship, pipe-organ church music, altar-call music, or generic holy worship.
+- Good lanes include scripture hip-hop, Bible R&B, K-pop-inspired scripture pop, scripture rap-pop, trap-soul scripture songs, boom-bap Bible rap, alt-R&B scripture songs, neo-soul scripture songs, Afropop/Amapiano-pop scripture songs, dark street-pop scripture, or synth-pop scripture songs. Vary tracks inside the chosen lane; do not mix unrelated genres just to create variety.
+- If the chosen lane is hip-hop, all tracks should be hip-hop/rap-pop/trap/boom-bap based. If it is R&B, all tracks should stay R&B/alt-R&B/neo-soul based. If it is K-pop-inspired, use K-pop production, hooks, and rap-pop energy while keeping English lyrics unless the human explicitly asks for another language. The lane must be specific enough that the final title can truthfully name it.
 - Metadata must tell viewers the branch, selected passage/theme, and broad music style family. Put the exact scripture reference and theme in the title/first paragraph, and put the style in the description.
 - Do not force chapter/verse numbers into choruses. Mention references in metadata, not necessarily in lyrics.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete scripture-inspired song of at least 2 minutes with a natural intro, developed verses/chorus or refrain, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
+- Do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete scripture-inspired song with a natural intro, developed verses/chorus or refrain, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
+- Put Suno church-style blockers into excluded styles for every BibliaCanto track: gospel, gospel choir, worship, praise band, CCM, hymn, hymnal, church choir, choir-backed worship, congregational singing, Christian rock worship, piano worship, pipe organ, church service, altar call, sermon, preacher, pastor.
 - Avoid producer tags, specific artist references, protected worship brands, church names, celebrity pastors, and modern Bible translation names.
 
 ## YouTube Playlist Assignment
@@ -93,26 +95,26 @@ New Testament branch:
 - The app automatically adds uploaded scripture videos to testament playlists on `BibliaCanto`.
 - Old Testament branch videos go to `Old Testament Songs`.
 - New Testament branch videos go to `New Testament Songs`.
-- The app also adds each video to one style playlist when the release lane is clear, such as `Scripture Jazz Songs`, `Scripture R&B Songs`, `Gospel Worship Songs`, `Acoustic Scripture Songs`, `Piano Worship Songs`, `Cinematic Worship Songs`, or `Modern Worship Pop Songs`.
-- `Gospel Worship Songs` is a style playlist, not the New Testament branch playlist. Use it only when the release lane/title/description is clearly gospel or choir-based. Every Bible video still goes first into exactly one branch playlist: `Old Testament Songs` or `New Testament Songs`.
+- The app also adds each video to one style playlist when the release lane is clear, such as `Scripture Hip-Hop Songs`, `Scripture R&B Songs`, `Bible K-Pop Songs`, `Scripture Trap Songs`, `Bible Neo-Soul Songs`, `Bible Afropop Songs`, or `Scripture Synth-Pop Songs`.
+- Do not create or choose `Gospel Worship Songs`, `Piano Worship Songs`, `Cinematic Worship Songs`, or `Modern Worship Pop Songs` for new BibliaCanto releases. Every Bible video still goes first into exactly one branch playlist: `Old Testament Songs` or `New Testament Songs`.
 - Make the release-level lane explicit in the plan, title, description, tags, or metadata text so the app and future operators can classify the video. A single video should normally land in two playlists: testament branch plus style.
 
 ## Visual Direction
 
-- Illustrated, anime, painterly, storybook, ancient manuscript, cinematic biblical landscape, or stylized worship-art look.
+- Illustrated, anime, painterly, storybook, ancient manuscript, cinematic biblical landscape, or stylized scripture-art look.
 - Visuals can include creation light over waters, stars, wilderness, tents, scrolls, stone paths, ark silhouettes, desert mountains, olive trees, ancient city gates, temple light, symbolic fire/cloud, Galilee shoreline, empty tomb light, bread and cup symbolism, hillside teaching, prayer hands, or warm doorway light.
 - Do not make photorealistic biblical reenactment footage.
 - Do not use protected film/TV/game designs.
-- Thumbnail text should be clear and searchable and branch-aware: `GENESIS SONGS`, `OLD TESTAMENT`, `NEW TESTAMENT`, `GOSPEL SONGS`, `MATTHEW WORSHIP`, `BIBLE MUSIC`, `PSALMS MUSIC`, `SCRIPTURE SONGS`, or `EXODUS MUSIC`.
+- Thumbnail text should be clear and searchable and branch-aware: `GENESIS 1:1-5`, `OLD TESTAMENT HIP-HOP`, `NEW TESTAMENT R&B`, `BIBLE K-POP`, `SCRIPTURE RAP`, `MATTHEW R&B`, `PSALMS HIP-HOP`, or `EXODUS TRAP`.
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] Genesis 1:1-5 Creation Songs | Old Testament Music for Worship and Reflection`
-- `[playlist] Genesis 2:4-17 Eden Garden Songs | Scripture Music for Prayer and Quiet Focus`
-- `[playlist] Genesis 6:9-22 Noah's Ark Songs | Old Testament Music for Faith and Reflection`
-- `[playlist] Genesis 15 Covenant Songs | Bible Music for Prayer, Hope and Waiting`
-- `[playlist] Matthew 1:18-25 Emmanuel Worship | New Testament Music for Prayer`
-- `[playlist] Matthew Gospel Soul Songs | New Testament R&B Worship for Hope`
+- `[playlist] Genesis 1:1-5 Creation Hip-Hop | Old Testament Rap & R&B Songs`
+- `[playlist] Genesis 2:4-17 Eden Trap-Soul | Old Testament Story Rap`
+- `[playlist] Genesis 6:9-22 Noah's Ark Drill-Pop | Old Testament Hip-Hop Story Songs`
+- `[playlist] Genesis 15 Covenant R&B | Old Testament Neo-Soul Songs`
+- `[playlist] Matthew 1:18-25 Emmanuel K-Pop R&B | New Testament Scripture Songs`
+- `[playlist] Matthew 5:13-16 Salt and Light R&B | New Testament Alt-R&B Songs`
 
 ## Bad Directions
 
@@ -120,5 +122,5 @@ New Testament branch:
 - Long copied Bible passages as lyrics.
 - Debate/apologetics content instead of music.
 - Generic fantasy OST that belongs on Storylight OST.
-- Generic church piano BGM with no clear passage reference.
+- Gospel, worship, holy, hymn, praise-band, church choir, or generic church piano styles.
 - Vague scripture titles that omit the passage/theme/branch or read like abstract keyword tags instead of Bible music.

@@ -170,6 +170,7 @@ class PlaylistWorkspaceRead(BaseModel):
     loop_video_source: str | None = None
     loop_video_provider: str | None = None
     loop_video_smooth: bool = True
+    loop_video_crossfade_seconds: float = 1.5
     video_spectrum_overlay_style: str = "bars"
     video_render_resolution: str = "720p"
     video_render_source_mode: str = "auto"

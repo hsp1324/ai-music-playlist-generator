@@ -24,6 +24,7 @@ from app.schemas.track import (
     TrackReuseEventRead,
     TrackReuseSummaryRead,
     TrackReturnToReviewRequest,
+    TrackSuggestionRead,
 )
 from app.services.registry import ServiceRegistry
 from app.workflows.approvals import apply_track_decision
@@ -35,7 +36,16 @@ from app.workflows.playlist_automation import (
 )
 from app.workflows.review_dispatch import dispatch_track_review, post_track_review_to_slack
 from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_review_request
-from app.utils.track_titles import clean_track_display_title, upload_track_title
+from app.utils.short_track_observations import annotate_short_track_metadata
+from app.utils.genre_tokens import update_track_genre_token_metadata
+from app.utils.track_search import (
+    best_track_match_text,
+    normalize_track_search_terms,
+    search_track_ids,
+    sync_track_search_document,
+    track_matches_terms,
+    user_rating_filter_expression,
+)
 
 router = APIRouter(prefix="/tracks", tags=["tracks"])
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
@@ -61,6 +71,23 @@ def _create_track_record(
         playlist = db.get(Playlist, pending_workspace_id)
         if playlist:
             metadata["pending_workspace_title"] = playlist.title
+    metadata = annotate_short_track_metadata(
+        metadata,
+        duration_seconds=payload.duration_seconds,
+        title=payload.title,
+        prompt=payload.prompt,
+        style=metadata.get("style"),
+        exclude_style=metadata.get("exclude_style"),
+        tags=metadata.get("tags"),
+        lyrics=metadata.get("lyrics"),
+        source=metadata.get("source") or "track-create",
+        context="track_intake",
+        extra={
+            "pending_workspace_id": pending_workspace_id,
+            "pending_workspace_title": metadata.get("pending_workspace_title"),
+        },
+    )
+    metadata = update_track_genre_token_metadata(metadata, title=payload.title, prompt=payload.prompt)
 
     track = Track(
         title=payload.title,
@@ -73,6 +100,7 @@ def _create_track_record(
     )
     db.add(track)
     db.flush()
+    sync_track_search_document(db, track)
 
     job = Job(
         type=JobType.generate_track,
@@ -418,49 +446,152 @@ def list_tracks(
     user_rating: str | None = None,
     q: str | None = Query(default=None, max_length=200),
     limit: int = Query(default=0, ge=0, le=1000),
+    compact: bool = Query(default=False),
     db: Session = Depends(get_db),
 ) -> list[TrackRead]:
-    statement = select(Track).order_by(Track.created_at.desc())
+    query_terms = normalize_track_search_terms(q)
+    statement = _filtered_track_statement(status_filter=status_filter, user_rating=user_rating)
+    if query_terms:
+        candidate_limit = max((limit or 500) * 8, 500)
+        tracks = _search_tracks(
+            db,
+            statement,
+            query=q,
+            terms=query_terms,
+            limit=limit,
+            candidate_limit=candidate_limit,
+        )
+    else:
+        statement = statement.order_by(Track.created_at.desc())
+        if limit:
+            statement = statement.limit(limit)
+        tracks = db.scalars(statement).all()
+    return [_serialize_track_read(track, compact=compact) for track in tracks]
+
+
+@router.get("/suggest", response_model=list[TrackSuggestionRead])
+def suggest_tracks(
+    q: str = Query(default="", max_length=120),
+    status_filter: TrackStatus | None = None,
+    user_rating: str | None = None,
+    limit: int = Query(default=8, ge=1, le=20),
+    db: Session = Depends(get_db),
+) -> list[TrackSuggestionRead]:
+    terms = normalize_track_search_terms(q)
+    if not terms:
+        return []
+    statement = _filtered_track_statement(status_filter=status_filter, user_rating=user_rating)
+    tracks = _search_tracks(
+        db,
+        statement,
+        query=q,
+        terms=terms,
+        limit=limit,
+        candidate_limit=max(limit * 12, 80),
+    )
+    suggestions = []
+    for track in tracks[:limit]:
+        match_type, matched_text = best_track_match_text(track, q)
+        meta = dict(track.metadata_json or {})
+        suggestions.append(
+            TrackSuggestionRead(
+                id=track.id,
+                title=track.title,
+                status=track.status,
+                duration_seconds=track.duration_seconds,
+                user_rating=str(meta.get("user_rating") or ""),
+                match_type=match_type,
+                matched_text=_compact_text(matched_text, 300),
+                style=_compact_text(meta.get("style"), 500),
+                tags=_compact_text(meta.get("tags"), 500),
+            )
+        )
+    return suggestions
+
+
+def _filtered_track_statement(
+    *,
+    status_filter: TrackStatus | None,
+    user_rating: str | None,
+):
+    statement = select(Track)
     if status_filter:
         statement = statement.where(Track.status == status_filter)
-    tracks = db.scalars(statement).all()
-    if user_rating in {"like", "dislike"}:
-        tracks = [
-            track
-            for track in tracks
-            if str((track.metadata_json or {}).get("user_rating") or "") == user_rating
-        ]
-    query = str(q or "").strip().lower()
-    if query:
-        terms = [term for term in query.split() if term]
-        tracks = [
-            track
-            for track in tracks
-            if all(term in _track_search_text(track) for term in terms)
-        ]
-    if limit:
-        tracks = tracks[:limit]
-    return [TrackRead.model_validate(track) for track in tracks]
+    rating_expression = user_rating_filter_expression(user_rating)
+    if rating_expression is not None:
+        statement = statement.where(rating_expression)
+    return statement
 
 
-def _track_search_text(track: Track) -> str:
-    meta = dict(track.metadata_json or {})
-    values = [
-        track.title,
-        clean_track_display_title(track.title),
-        upload_track_title(track.title),
-        track.prompt,
-        track.source_track_id,
-        track.audio_path,
-        track.preview_url,
-        meta.get("tags"),
-        meta.get("lyrics"),
-        meta.get("style"),
-        meta.get("exclude_style"),
-        meta.get("source_playlist_title"),
-        meta.get("source_youtube_video_id"),
-    ]
-    return " ".join(str(value or "") for value in values).lower()
+def _search_tracks(
+    db: Session,
+    statement,
+    *,
+    query: str | None,
+    terms: list[str],
+    limit: int,
+    candidate_limit: int,
+) -> list[Track]:
+    ranked_ids = search_track_ids(db, query, limit=candidate_limit)
+    ordered_tracks: list[Track] = []
+    seen_ids: set[str] = set()
+    requested_limit = limit or 0
+    batch_size = min(max((requested_limit or 60) * 2, 12), 120)
+    for index in range(0, len(ranked_ids), batch_size):
+        batch_ids = ranked_ids[index:index + batch_size]
+        if not batch_ids:
+            continue
+        indexed_tracks = db.scalars(statement.where(Track.id.in_(batch_ids))).all()
+        tracks_by_id = {track.id: track for track in indexed_tracks}
+        for track_id in batch_ids:
+            track = tracks_by_id.get(track_id)
+            if not track or track.id in seen_ids:
+                continue
+            ordered_tracks.append(track)
+            seen_ids.add(track.id)
+            if requested_limit and len(ordered_tracks) >= requested_limit:
+                break
+        if requested_limit and len(ordered_tracks) >= requested_limit:
+            break
+
+    if not requested_limit or len(ordered_tracks) < requested_limit:
+        fallback_limit = max(candidate_limit, requested_limit * 4, 500)
+        fallback_tracks = db.scalars(statement.order_by(Track.created_at.desc()).limit(fallback_limit)).all()
+        for track in fallback_tracks:
+            if track.id in seen_ids:
+                continue
+            if track_matches_terms(track, terms):
+                ordered_tracks.append(track)
+                seen_ids.add(track.id)
+                if requested_limit and len(ordered_tracks) >= requested_limit:
+                    break
+
+    if requested_limit:
+        return ordered_tracks[:requested_limit]
+    return ordered_tracks
+
+
+def _serialize_track_read(track: Track, *, compact: bool) -> TrackRead:
+    payload = TrackRead.model_validate(track)
+    if not compact:
+        return payload
+    metadata = dict(payload.metadata_json or {})
+    if metadata.get("lyrics"):
+        metadata["lyrics_present"] = True
+        metadata["lyrics"] = ""
+    if len(payload.prompt or "") > 500:
+        metadata["prompt_truncated"] = True
+        payload.prompt = f"{payload.prompt[:500]}..."
+    payload.lyrics = ""
+    payload.metadata_json = metadata
+    return payload
+
+
+def _compact_text(value: object, max_length: int) -> str:
+    text_value = str(value or "")
+    if len(text_value) <= max_length:
+        return text_value
+    return f"{text_value[:max_length]}..."
 
 
 def _safe_int(value: object) -> int:

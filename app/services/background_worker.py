@@ -19,6 +19,10 @@ from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.models.track import Track
+from app.utils.channel_genre_playlists import (
+    apply_channel_genre_classification,
+    infer_channel_genre_classification,
+)
 from app.utils.youtube_localizations import (
     ensure_playlist_localization_title_prefix,
     ensure_playlist_title_prefix,
@@ -38,6 +42,7 @@ from app.utils.local_video_cleanup import (
     cleanup_public_uploaded_local_videos,
     mark_local_video_retained_after_youtube_upload,
 )
+from app.utils.loop_video import loop_video_crossfade_seconds_from_meta
 from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_line_lyric_cues
 from app.utils.timeline import build_rendered_timeline_snapshot
 from app.utils.video_render_policy import (
@@ -1100,6 +1105,7 @@ class BackgroundJobWorker:
                     audio_path,
                     video_path,
                     smooth_loop=bool(meta.get("loop_video_smooth", True)),
+                    loop_crossfade_seconds=loop_video_crossfade_seconds_from_meta(meta),
                     render_resolution=video_render_resolution,
                     spectrum_overlay_style=video_spectrum_overlay_style,
                     lyric_cues=lyric_cues,
@@ -1197,6 +1203,7 @@ class BackgroundJobWorker:
             "loop_video_path",
             "loop_video_render_mode",
             "loop_video_smooth",
+            "loop_video_crossfade_seconds",
             "loop_video_source",
             "video_spectrum_overlay_style",
             "video_render_resolution",
@@ -1678,7 +1685,19 @@ class BackgroundJobWorker:
                         video_path=uploaded_video_path,
                         settings=self.settings,
                     )
-                    managed_playlist_titles = scripture_youtube_playlist_titles(meta, title=playlist.title)
+                    ordered_tracks = [
+                        item.track for item in sorted(playlist.items, key=lambda item: item.order_index) if item.track
+                    ]
+                    genre_classification = infer_channel_genre_classification(
+                        meta,
+                        title=playlist.title,
+                        tracks=ordered_tracks,
+                    )
+                    apply_channel_genre_classification(meta, genre_classification)
+                    managed_playlist_titles = [
+                        *scripture_youtube_playlist_titles(meta, title=playlist.title),
+                        *genre_classification.playlist_titles,
+                    ]
                     if managed_playlist_titles and playlist.youtube_video_id and meta.get("youtube_channel_id"):
                         try:
                             assignments = self.services.youtube.ensure_video_in_playlists(

@@ -33,8 +33,10 @@ from scripts.openclaw_release import (
     resolve_lyrics_items,
     resolve_exclude_style_items,
     resolve_style_items,
+    search_tracks,
     should_enable_lyrics_overlay_for_release,
     slack_notify_command,
+    upload_audio,
     upload_audio_file_to_release,
     upload_loop_video,
     upload_single_candidates,
@@ -111,6 +113,10 @@ def test_still_image_pop_channels_enable_lyrics_overlay_by_default() -> None:
         args,
         release={"youtube_channel_title": SOLWAVE_YOUTUBE_CHANNEL_TITLE},
     )
+    assert should_enable_lyrics_overlay_for_release(
+        args,
+        release={"youtube_channel_title": SUNDAZE_YOUTUBE_CHANNEL_TITLE},
+    )
     assert not should_enable_lyrics_overlay_for_release(
         args,
         release={"youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE},
@@ -130,6 +136,63 @@ def test_request_json_rejects_oauth_html_response() -> None:
         openclaw_release.request_json(client, "GET", "/openclaw/status")
 
 
+def test_provider_video_guard_blocks_same_image_fallback_before_wait(tmp_path, monkeypatch) -> None:
+    state_path = tmp_path / "provider-state.json"
+    first_frame = tmp_path / "first-frame.png"
+    first_frame.write_bytes(b"same first frame")
+    monkeypatch.setenv("AIMP_OPENCLAW_PROVIDER_VIDEO_STATE_PATH", str(state_path))
+
+    openclaw_release.provider_video_start(
+        None,
+        SimpleNamespace(
+            release_id="release-1",
+            first_frame=str(first_frame),
+            provider="gemini",
+            note="",
+            force=False,
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="already running"):
+        openclaw_release.provider_video_start(
+            None,
+            SimpleNamespace(
+                release_id="release-1",
+                first_frame=str(first_frame),
+                provider="dreamina",
+                note="",
+                force=False,
+            ),
+        )
+
+    status = openclaw_release.provider_video_status(
+        None,
+        SimpleNamespace(release_id="release-1", first_frame=str(first_frame)),
+    )
+    assert status["running"] is True
+    assert status["wait_remaining_seconds"] > 0
+    assert status["fallback_allowed"] is False
+
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    key = next(iter(state["jobs"]))
+    state["jobs"][key]["started_at_epoch"] -= openclaw_release.OPENCLAW_PROVIDER_VIDEO_WAIT_SECONDS + 1
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    dreamina_start = openclaw_release.provider_video_start(
+        None,
+        SimpleNamespace(
+            release_id="release-1",
+            first_frame=str(first_frame),
+            provider="dreamina",
+            note="",
+            force=False,
+        ),
+    )
+    assert dreamina_start["ok"] is True
+    assert dreamina_start["job"]["provider"] == "dreamina"
+    assert dreamina_start["previous_timed_out_job"]["provider"] == "gemini"
+
+
 def test_playlist_track_duration_allows_two_minute_tracks_by_default() -> None:
     args = _auto_publish_args("song.mp3")
 
@@ -140,10 +203,20 @@ def test_playlist_track_duration_allows_two_minute_tracks_by_default() -> None:
     )
 
 
-def test_playlist_track_duration_rejects_under_two_minutes_by_default() -> None:
+def test_playlist_track_duration_allows_one_minute_tracks_by_default() -> None:
     args = _auto_publish_args("song.mp3")
 
-    with pytest.raises(RuntimeError, match="at least 02:00"):
+    openclaw_release.require_playlist_track_duration(
+        {"title": "One Minute Pop", "duration_seconds": 75},
+        args=args,
+        context="duration check",
+    )
+
+
+def test_playlist_track_duration_rejects_under_one_minute_by_default() -> None:
+    args = _auto_publish_args("song.mp3")
+
+    with pytest.raises(RuntimeError, match="minimum accepted playlist track length is 01:00"):
         openclaw_release.require_playlist_track_duration(
             {"title": "Too Short Pop", "duration_seconds": 59},
             args=args,
@@ -154,7 +227,7 @@ def test_playlist_track_duration_rejects_under_two_minutes_by_default() -> None:
 def test_playlist_track_duration_rejects_short_tracks_when_min_configured() -> None:
     args = _auto_publish_args("song.mp3", min_track_seconds=180)
 
-    with pytest.raises(RuntimeError, match="at least 03:00"):
+    with pytest.raises(RuntimeError, match="minimum accepted playlist track length is 03:00"):
         openclaw_release.require_playlist_track_duration(
             {"title": "Short Pop", "duration_seconds": 150},
             args=args,
@@ -519,6 +592,153 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert custom["profile_doc"] == "docs/openclaw-channel-profiles/custom-channel.md"
     assert custom["concept_doc"] == "docs/openclaw-channel-concepts/custom-channel.md"
     assert custom["explicit_channel_requested"] is True
+
+
+def test_upload_audio_allows_already_generated_storylight_playlist_audio(tmp_path) -> None:
+    audio_path = tmp_path / "storylight.mp3"
+    audio_path.write_bytes(b"fake audio")
+    release = {
+        "id": "release-1",
+        "title": "Cute Arcade Game OST",
+        "workspace_mode": "playlist",
+        "workflow_state": "collecting",
+        "target_youtube_channel_title": STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
+    }
+    requested_paths = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append((request.method, request.url.path))
+        if request.method == "GET" and request.url.path == "/api/playlists/workspaces/release-1":
+            return httpx.Response(200, json=release)
+        if request.method == "POST" and request.url.path == "/api/tracks/manual-upload":
+            return httpx.Response(
+                201,
+                json={
+                    "id": "track-1",
+                    "title": "Already Generated Storylight Cue",
+                    "status": "pending_review",
+                    "duration_seconds": 75,
+                    "metadata_json": {},
+                },
+            )
+        if request.method == "POST" and request.url.path == "/api/tracks/track-1/decisions":
+            return httpx.Response(
+                200,
+                json={
+                    "id": "track-1",
+                    "title": "Already Generated Storylight Cue",
+                    "status": "approved",
+                    "duration_seconds": 75,
+                    "metadata_json": {},
+                },
+            )
+        raise AssertionError(f"unexpected API request: {request.method} {request.url.path}")
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+
+    result = upload_audio(
+        client,
+        SimpleNamespace(
+            audio=str(audio_path),
+            title="Already Generated Storylight Cue",
+            prompt="playful Japanese game BGM",
+            style="game OST",
+            exclude_style="vocals",
+            tags="storylight, game bgm",
+            lyrics="",
+            lyrics_file="",
+            cover="",
+            new_single=False,
+            release_id="release-1",
+            release_title="",
+            pending_review=False,
+            actor="openclaw",
+        ),
+    )
+
+    assert result["ok"] is True
+    assert result["auto_approved"] is True
+    assert requested_paths == [
+        ("GET", "/api/playlists/workspaces/release-1"),
+        ("POST", "/api/tracks/manual-upload"),
+        ("POST", "/api/tracks/track-1/decisions"),
+        ("GET", "/api/playlists/workspaces/release-1"),
+    ]
+
+
+def test_search_tracks_can_filter_under_one_minute_tracks_when_requested() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/api/tracks":
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "short-track",
+                        "title": "Too Short",
+                        "status": "approved",
+                        "duration_seconds": 45,
+                        "metadata_json": {},
+                    },
+                    {
+                        "id": "usable-track",
+                        "title": "Usable Cue",
+                        "status": "approved",
+                        "duration_seconds": 75,
+                        "metadata_json": {},
+                    },
+                ],
+            )
+        raise AssertionError(f"unexpected API request: {request.method} {request.url.path}")
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = search_tracks(
+        client,
+        SimpleNamespace(
+            q="storylight",
+            status_filter="approved",
+            user_rating="",
+            limit=10,
+            full=False,
+            min_track_seconds=60,
+            allow_short_track=False,
+        ),
+    )
+
+    assert [track["id"] for track in result["tracks"]] == ["usable-track"]
+
+
+def test_search_tracks_shows_under_one_minute_tracks_by_default() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/api/tracks":
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "short-track",
+                        "title": "Already Made Short Cue",
+                        "status": "approved",
+                        "duration_seconds": 45,
+                        "metadata_json": {},
+                    }
+                ],
+            )
+        raise AssertionError(f"unexpected API request: {request.method} {request.url.path}")
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = search_tracks(
+        client,
+        SimpleNamespace(
+            q="storylight",
+            status_filter="approved",
+            user_rating="",
+            limit=10,
+            full=False,
+            min_track_seconds=0,
+            allow_short_track=False,
+        ),
+    )
+
+    assert [track["id"] for track in result["tracks"]] == ["short-track"]
 
 
 def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:

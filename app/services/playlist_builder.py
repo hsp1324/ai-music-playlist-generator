@@ -48,10 +48,11 @@ YOUTUBE_STILL_IMAGE_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE, fps=
 YOUTUBE_LOOP_VIDEO_FILTER = youtube_video_filter(DEFAULT_VIDEO_FRAME_SIZE, fps=30)
 DEFAULT_LOOP_VIDEO_SOURCE_SECONDS = 7
 DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS = 1.5
-SPECTRUM_OVERLAY_WIDTH = 560
+SPECTRUM_OVERLAY_WIDTH = 280
 SPECTRUM_OVERLAY_HEIGHT = 90
 SPECTRUM_OVERLAY_FPS = 30
-SPECTRUM_OVERLAY_BARS = 28
+SPECTRUM_OVERLAY_BARS = 18
+CALM_SPECTRUM_OVERLAY_BARS = 14
 SPECTRUM_ANALYSIS_SAMPLE_RATE = 4000
 SPECTRUM_EDGE_FADE_MIN_PX = 64
 SPECTRUM_EDGE_FADE_RATIO = 0.16
@@ -460,6 +461,7 @@ class FFMpegPlaylistBuilder:
         output_path: Path,
         *,
         smooth_loop: bool = True,
+        loop_crossfade_seconds: float | None = None,
         render_resolution: str | None = None,
         spectrum_overlay_style: str | None = None,
         lyric_cues: list[dict[str, Any]] | None = None,
@@ -487,7 +489,10 @@ class FFMpegPlaylistBuilder:
         command: list[str]
         if smooth_loop:
             source_seconds = self._resolve_loop_source_seconds(clip_path)
-            transition_seconds = self._resolve_loop_transition_seconds(source_seconds)
+            transition_seconds = self._resolve_loop_transition_seconds(
+                source_seconds,
+                configured_transition=loop_crossfade_seconds,
+            )
             loop_unit_seconds = source_seconds - transition_seconds
             intro_path, loop_unit_path = self._build_smooth_loop_assets(
                 clip_path,
@@ -1231,9 +1236,9 @@ class FFMpegPlaylistBuilder:
                 timestamp = frame_index / SPECTRUM_OVERLAY_FPS
                 raw_level = self._audio_level_for_time(samples, timestamp)
                 if raw_level > smoothed:
-                    smoothed = (smoothed * 0.45) + (raw_level * 0.55)
+                    smoothed = (smoothed * 0.52) + (raw_level * 0.48)
                 else:
-                    smoothed = (smoothed * 0.82) + (raw_level * 0.18)
+                    smoothed = (smoothed * 0.80) + (raw_level * 0.20)
                 if style == "multiwave":
                     frame = self._draw_wave_spectrum_frame(
                         frame_index,
@@ -1356,7 +1361,7 @@ class FFMpegPlaylistBuilder:
         if not samples:
             return 0.0
         center = int(timestamp * SPECTRUM_ANALYSIS_SAMPLE_RATE)
-        radius = max(int(SPECTRUM_ANALYSIS_SAMPLE_RATE * 0.055), 1)
+        radius = max(int(SPECTRUM_ANALYSIS_SAMPLE_RATE * 0.075), 1)
         start = max(center - radius, 0)
         end = min(center + radius, len(samples))
         if end <= start:
@@ -1369,7 +1374,27 @@ class FFMpegPlaylistBuilder:
             peak = max(peak, magnitude)
         average = total / max(end - start, 1) / 32768
         peak_ratio = peak / 32768
-        return min(((average * 3.9) + (peak_ratio * 0.45)) ** 0.72, 1.0)
+        return min(((average * 4.2) + (peak_ratio * 0.22)) ** 0.76, 1.0)
+
+    def _centered_spectrum_bar_x(
+        self,
+        index: int,
+        bar_count: int,
+        bar_width: int,
+        *,
+        group_width_ratio: float,
+    ) -> int:
+        group_width = int(round(SPECTRUM_OVERLAY_WIDTH * group_width_ratio))
+        group_width = min(SPECTRUM_OVERLAY_WIDTH, max(group_width, bar_count * bar_width))
+        gap = (group_width - (bar_count * bar_width)) / max(bar_count - 1, 1)
+        start_x = (SPECTRUM_OVERLAY_WIDTH - group_width) / 2
+        return int(round(start_x + (index * (bar_width + gap))))
+
+    def _eq_bar_bounce(self, frame_index: int, index: int, *, speed: float, amount: float) -> float:
+        phase = ((index * 37) % 13) * 0.61
+        profile = 0.78 + (0.12 * math.sin(index * 2.17)) + (0.10 * math.cos(index * 1.31))
+        bounce = 1.0 + (amount * math.sin((frame_index * speed) + phase))
+        return max(profile * bounce, 0.42)
 
     def _draw_bar_spectrum_frame(
         self,
@@ -1382,32 +1407,44 @@ class FFMpegPlaylistBuilder:
         image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image, "RGBA")
         bottom = SPECTRUM_OVERLAY_HEIGHT - 12
-        max_height = SPECTRUM_OVERLAY_HEIGHT - 30
+        max_height = SPECTRUM_OVERLAY_HEIGHT - 34
         bar_width = 8
-        total_gap = SPECTRUM_OVERLAY_WIDTH - (SPECTRUM_OVERLAY_BARS * bar_width)
-        gap = total_gap / max(SPECTRUM_OVERLAY_BARS - 1, 1)
-        center = 0.52 + (math.sin(frame_index * 0.055) * 0.08)
+        bar_count = SPECTRUM_OVERLAY_BARS
+        center = 0.50
 
-        for index in range(SPECTRUM_OVERLAY_BARS):
-            ratio = index / max(SPECTRUM_OVERLAY_BARS - 1, 1)
-            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.22**2))
-            ripple = 0.76 + (0.24 * math.sin((frame_index * 0.24) + (index * 1.37)))
-            height = 7 + int(max_height * (0.10 + (level * (0.24 + (0.82 * gaussian)) * ripple)))
+        for index in range(bar_count):
+            ratio = index / max(bar_count - 1, 1)
+            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.19**2))
+            if gaussian < 0.075:
+                continue
+            bounce = self._eq_bar_bounce(frame_index, index, speed=0.31, amount=0.14)
+            height = 5 + int(
+                max_height
+                * (
+                    (0.06 * gaussian)
+                    + (level * (0.14 + (0.82 * gaussian)) * bounce)
+                )
+            )
             height = max(5, min(height, max_height))
-            x = int(round(index * (bar_width + gap)))
+            x = self._centered_spectrum_bar_x(
+                index,
+                bar_count,
+                bar_width,
+                group_width_ratio=0.78,
+            )
             y = bottom - height
             color = self._mix_rgb(primary, accent, ratio)
-            glow_alpha = int(30 + (level * 44) + (gaussian * 24))
-            fill_alpha = int(112 + (level * 74) + (gaussian * 34))
+            glow_alpha = int((10 + (level * 36) + (gaussian * 32)) * gaussian)
+            fill_alpha = int((62 + (level * 78) + (gaussian * 72)) * (0.40 + (0.60 * gaussian)))
             draw.rounded_rectangle(
                 [x - 3, y - 3, x + bar_width + 3, bottom + 3],
                 radius=6,
-                fill=(*color, min(glow_alpha, 105)),
+                fill=(*color, min(glow_alpha, 82)),
             )
             draw.rounded_rectangle(
                 [x, y, x + bar_width, bottom],
                 radius=4,
-                fill=(*color, min(fill_alpha, 220)),
+                fill=(*color, min(fill_alpha, 198)),
             )
         return image
 
@@ -1422,30 +1459,42 @@ class FFMpegPlaylistBuilder:
         image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image, "RGBA")
         center_y = SPECTRUM_OVERLAY_HEIGHT // 2
-        max_height = (SPECTRUM_OVERLAY_HEIGHT // 2) - 10
+        max_height = (SPECTRUM_OVERLAY_HEIGHT // 2) - 12
         bar_width = 8
-        total_gap = SPECTRUM_OVERLAY_WIDTH - (SPECTRUM_OVERLAY_BARS * bar_width)
-        gap = total_gap / max(SPECTRUM_OVERLAY_BARS - 1, 1)
-        center = 0.52 + (math.sin(frame_index * 0.075) * 0.10)
+        bar_count = SPECTRUM_OVERLAY_BARS
+        center = 0.50
 
-        for index in range(SPECTRUM_OVERLAY_BARS):
-            ratio = index / max(SPECTRUM_OVERLAY_BARS - 1, 1)
-            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.24**2))
-            ripple = 0.70 + (0.30 * math.sin((frame_index * 0.36) + (index * 1.6)))
-            half_height = 4 + int(max_height * (0.08 + (level * (0.30 + (0.95 * gaussian)) * ripple)))
+        for index in range(bar_count):
+            ratio = index / max(bar_count - 1, 1)
+            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.20**2))
+            if gaussian < 0.075:
+                continue
+            bounce = self._eq_bar_bounce(frame_index, index, speed=0.34, amount=0.16)
+            half_height = 3 + int(
+                max_height
+                * (
+                    (0.05 * gaussian)
+                    + (level * (0.18 + (0.86 * gaussian)) * bounce)
+                )
+            )
             half_height = max(3, min(half_height, max_height))
-            x = int(round(index * (bar_width + gap)))
+            x = self._centered_spectrum_bar_x(
+                index,
+                bar_count,
+                bar_width,
+                group_width_ratio=0.78,
+            )
             color = self._mix_rgb(primary, accent, ratio)
-            alpha = int(120 + (level * 82) + (gaussian * 32))
+            alpha = int((70 + (level * 84) + (gaussian * 70)) * (0.42 + (0.58 * gaussian)))
             draw.rounded_rectangle(
                 [x - 2, center_y - half_height - 2, x + bar_width + 2, center_y + half_height + 2],
                 radius=5,
-                fill=(*color, min(alpha // 2, 100)),
+                fill=(*color, min(alpha // 2, 74)),
             )
             draw.rounded_rectangle(
                 [x, center_y - half_height, x + bar_width, center_y + half_height],
                 radius=4,
-                fill=(*color, min(alpha, 225)),
+                fill=(*color, min(alpha, 196)),
             )
         return image
 
@@ -1460,33 +1509,45 @@ class FFMpegPlaylistBuilder:
         image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image, "RGBA")
         bottom = SPECTRUM_OVERLAY_HEIGHT - 14
-        max_height = int((SPECTRUM_OVERLAY_HEIGHT - 36) * 0.58)
-        bar_width = 7
-        total_gap = SPECTRUM_OVERLAY_WIDTH - (SPECTRUM_OVERLAY_BARS * bar_width)
-        gap = total_gap / max(SPECTRUM_OVERLAY_BARS - 1, 1)
-        center = 0.52 + (math.sin(frame_index * 0.018) * 0.035)
-        calm_level = min(level * 0.45, 0.38)
+        max_height = int((SPECTRUM_OVERLAY_HEIGHT - 38) * 0.54)
+        bar_width = 8
+        bar_count = CALM_SPECTRUM_OVERLAY_BARS
+        center = 0.50
+        calm_level = min(level * 0.34, 0.30)
 
-        for index in range(SPECTRUM_OVERLAY_BARS):
-            ratio = index / max(SPECTRUM_OVERLAY_BARS - 1, 1)
-            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.28**2))
-            ripple = 0.92 + (0.08 * math.sin((frame_index * 0.075) + (index * 0.82)))
-            height = 6 + int(max_height * (0.10 + (calm_level * (0.22 + (0.55 * gaussian)) * ripple)))
+        for index in range(bar_count):
+            ratio = index / max(bar_count - 1, 1)
+            gaussian = math.exp(-((ratio - center) ** 2) / (2 * 0.22**2))
+            if gaussian < 0.12:
+                continue
+            bounce = self._eq_bar_bounce(frame_index, index, speed=0.18, amount=0.06)
+            height = 4 + int(
+                max_height
+                * (
+                    (0.05 * gaussian)
+                    + (calm_level * (0.12 + (0.52 * gaussian)) * bounce)
+                )
+            )
             height = max(4, min(height, max_height))
-            x = int(round(index * (bar_width + gap)))
+            x = self._centered_spectrum_bar_x(
+                index,
+                bar_count,
+                bar_width,
+                group_width_ratio=0.64,
+            )
             y = bottom - height
             color = self._mix_rgb(primary, accent, ratio)
-            glow_alpha = int(14 + (calm_level * 22) + (gaussian * 10))
-            fill_alpha = int(58 + (calm_level * 42) + (gaussian * 18))
+            glow_alpha = int((8 + (calm_level * 16) + (gaussian * 14)) * gaussian)
+            fill_alpha = int((36 + (calm_level * 34) + (gaussian * 30)) * (0.42 + (0.58 * gaussian)))
             draw.rounded_rectangle(
                 [x - 2, y - 2, x + bar_width + 2, bottom + 2],
                 radius=5,
-                fill=(*color, min(glow_alpha, 58)),
+                fill=(*color, min(glow_alpha, 38)),
             )
             draw.rounded_rectangle(
                 [x, y, x + bar_width, bottom],
                 radius=4,
-                fill=(*color, min(fill_alpha, 128)),
+                fill=(*color, min(fill_alpha, 92)),
             )
         return image
 
@@ -1819,11 +1880,19 @@ class FFMpegPlaylistBuilder:
         )
         return max(configured_duration, 1.0)
 
-    def _resolve_loop_transition_seconds(self, source_seconds: float) -> float:
-        configured_transition = float(
-            getattr(self.settings, "crossfade_seconds", DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS)
-            or DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS
-        )
+    def _resolve_loop_transition_seconds(
+        self,
+        source_seconds: float,
+        *,
+        configured_transition: float | None = None,
+    ) -> float:
+        if configured_transition is None:
+            configured_transition = float(
+                getattr(self.settings, "crossfade_seconds", DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS)
+                or DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS
+            )
+        else:
+            configured_transition = float(configured_transition or DEFAULT_LOOP_VIDEO_TRANSITION_SECONDS)
         transition_seconds = max(configured_transition, 0.1)
         return min(transition_seconds, max(source_seconds / 3, 0.1))
 

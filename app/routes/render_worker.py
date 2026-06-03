@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 import secrets
@@ -12,6 +13,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select, update
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
@@ -20,6 +22,7 @@ from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
 from app.services.registry import ServiceRegistry
 from app.utils.local_video_cleanup import cleanup_public_uploaded_local_videos
+from app.utils.loop_video import loop_video_crossfade_seconds_from_meta
 from app.utils.lyric_subtitles import build_line_lyric_cues
 from app.utils.ops_notifications import (
     notify_render_worker_claimed,
@@ -222,6 +225,30 @@ def _load_render_job(db: Session, job_id: str) -> tuple[Job, Playlist]:
         .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
         .where(Playlist.id == job.playlist_id)
     ).first()
+    if not playlist:
+        raise HTTPException(status_code=404, detail="Release not found for render job.")
+    return job, playlist
+
+
+def _is_database_locked(exc: OperationalError) -> bool:
+    return "database is locked" in str(exc).lower()
+
+
+def _database_locked_claim_response(recovered: int = 0) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "job": None,
+        "recovered_stale_jobs": recovered,
+        "claim_paused": True,
+        "reason": "database_locked",
+    }
+
+
+def _load_render_progress_job(db: Session, job_id: str) -> tuple[Job, Playlist]:
+    job = db.get(Job, job_id)
+    if not job or job.type != JobType.build_video:
+        raise HTTPException(status_code=404, detail="Render job not found.")
+    playlist = db.get(Playlist, job.playlist_id)
     if not playlist:
         raise HTTPException(status_code=404, detail="Release not found for render job.")
     return job, playlist
@@ -571,7 +598,6 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
     notifications: list[dict[str, Any]] = []
     jobs = db.scalars(
         select(Job)
-        .options(selectinload(Job.playlist))
         .where(Job.type == JobType.build_video, Job.status == JobStatus.running)
     ).all()
     for job in jobs:
@@ -599,8 +625,9 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
         job.finished_at = None
         job.error_text = None
         job.result_json = result
-        if job.playlist:
-            meta = dict(job.playlist.metadata_json or {})
+        playlist = db.get(Playlist, job.playlist_id)
+        if playlist:
+            meta = dict(playlist.metadata_json or {})
             meta["workflow_state"] = "video_queued"
             meta["note"] = "External video render worker timed out; render job was requeued."
             meta["video_render_progress"] = {
@@ -610,12 +637,12 @@ def _recover_stale_external_render_jobs(db: Session, services: ServiceRegistry) 
                 "message": meta["note"],
                 "updated_at": now.isoformat(),
             }
-            job.playlist.status = PlaylistStatus.building
-            job.playlist.metadata_json = meta
-            db.add(job.playlist)
+            playlist.status = PlaylistStatus.building
+            playlist.metadata_json = meta
+            db.add(playlist)
             notifications.append(
                 {
-                    "playlist_title": job.playlist.title,
+                    "playlist_title": playlist.title,
                     "job_id": job.id,
                     "worker": dict(worker),
                     "timeout_seconds": timeout_seconds,
@@ -730,6 +757,7 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         "render": {
             "mode": render_mode,
             "smooth_loop": bool(meta.get("loop_video_smooth", True)),
+            "loop_video_crossfade_seconds": loop_video_crossfade_seconds_from_meta(meta),
             "allow_still_image_fallback": allow_still_image_fallback,
             "video_spectrum_overlay_style": style,
             "video_render_resolution": render_resolution,
@@ -803,7 +831,13 @@ def _update_video_progress(
         playlist.metadata_json = meta
         db.add(playlist)
     db.add(job)
-    db.commit()
+    try:
+        db.commit()
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return False
+        raise
     return True
 
 
@@ -834,7 +868,13 @@ def claim_render_job(
 ) -> dict:
     _require_render_worker_token(services, token)
     _require_external_mode(services)
-    recovered = _recover_stale_external_render_jobs(db, services)
+    try:
+        recovered = _recover_stale_external_render_jobs(db, services)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return _database_locked_claim_response()
+        raise
     now = _utcnow()
     registry_worker = record_render_worker_seen(
         services.settings.storage_root,
@@ -852,19 +892,37 @@ def claim_render_job(
         else profile == "oracle"
     )
 
-    existing = db.scalars(
-        select(Job)
-        .where(Job.type == JobType.build_video, Job.status == JobStatus.running)
-        .order_by(Job.started_at.asc())
-    ).all()
+    try:
+        existing = db.scalars(
+            select(Job)
+            .where(Job.type == JobType.build_video, Job.status == JobStatus.running)
+            .order_by(Job.started_at.asc())
+        ).all()
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return _database_locked_claim_response(recovered)
+        raise
     for job in existing:
         result = dict(job.result_json or {})
         worker = result.get("external_render_worker")
         if isinstance(worker, dict) and worker.get("worker_id") == payload.worker_id:
-            job, playlist = _load_render_job(db, job.id)
+            try:
+                job, playlist = _load_render_job(db, job.id)
+            except OperationalError as exc:
+                db.rollback()
+                if _is_database_locked(exc):
+                    return _database_locked_claim_response(recovered)
+                raise
             if not _rendered_audio_asset_exists(playlist):
                 _repair_video_job_missing_audio(db, job, playlist, now=now)
-                db.commit()
+                try:
+                    db.commit()
+                except OperationalError as exc:
+                    db.rollback()
+                    if _is_database_locked(exc):
+                        return _database_locked_claim_response(recovered)
+                    raise
                 continue
             worker = dict(worker)
             worker["hostname"] = payload.hostname or worker.get("hostname") or ""
@@ -884,7 +942,13 @@ def claim_render_job(
             playlist.metadata_json = meta
             db.add(playlist)
             db.add(job)
-            db.commit()
+            try:
+                db.commit()
+            except OperationalError as exc:
+                db.rollback()
+                if _is_database_locked(exc):
+                    return _database_locked_claim_response(recovered)
+                raise
             _update_video_progress(
                 db,
                 job,
@@ -898,7 +962,13 @@ def claim_render_job(
             )
             return {"ok": True, "job": _render_job_payload(job, playlist, services), "recovered_stale_jobs": recovered}
 
-    _run_public_video_cleanup(db, services)
+    try:
+        _run_public_video_cleanup(db, services)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return _database_locked_claim_response(recovered)
+        raise
     disk_guard = _render_claim_disk_guard(services)
     if disk_guard.get("blocked"):
         return {
@@ -910,20 +980,32 @@ def claim_render_job(
             **disk_guard,
         }
 
-    candidate_jobs = db.scalars(
-        select(Job)
-        .options(selectinload(Job.playlist).selectinload(Playlist.items).selectinload(PlaylistItem.track))
-        .where(Job.type == JobType.build_video, Job.status == JobStatus.queued)
-        .order_by(Job.created_at.asc())
-        .limit(50)
-    ).all()
+    try:
+        candidate_jobs = db.scalars(
+            select(Job)
+            .options(selectinload(Job.playlist).selectinload(Playlist.items).selectinload(PlaylistItem.track))
+            .where(Job.type == JobType.build_video, Job.status == JobStatus.queued)
+            .order_by(Job.created_at.asc())
+            .limit(50)
+        ).all()
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return _database_locked_claim_response(recovered)
+        raise
     claimable_jobs = []
     for job in candidate_jobs:
         if job.playlist is None:
             continue
         if not _rendered_audio_asset_exists(job.playlist):
             _repair_video_job_missing_audio(db, job, job.playlist, now=now)
-            db.commit()
+            try:
+                db.commit()
+            except OperationalError as exc:
+                db.rollback()
+                if _is_database_locked(exc):
+                    return _database_locked_claim_response(recovered)
+                raise
             continue
         if _job_will_render_still_image(job, job.playlist) and not _worker_supports_smooth_still_image_render(
             payload.capabilities or {}
@@ -943,12 +1025,18 @@ def claim_render_job(
     )
     claimed_id = None
     for candidate in candidate_jobs:
-        update_result = db.execute(
-            update(Job)
-            .where(Job.id == candidate.id, Job.status == JobStatus.queued)
-            .values(status=JobStatus.running, started_at=now)
-        )
-        db.commit()
+        try:
+            update_result = db.execute(
+                update(Job)
+                .where(Job.id == candidate.id, Job.status == JobStatus.queued)
+                .values(status=JobStatus.running, started_at=now)
+            )
+            db.commit()
+        except OperationalError as exc:
+            db.rollback()
+            if _is_database_locked(exc):
+                return _database_locked_claim_response(recovered)
+            raise
         if update_result.rowcount == 1:
             claimed_id = candidate.id
             break
@@ -956,7 +1044,13 @@ def claim_render_job(
     if not claimed_id:
         return {"ok": True, "job": None, "recovered_stale_jobs": recovered}
 
-    job, playlist = _load_render_job(db, claimed_id)
+    try:
+        job, playlist = _load_render_job(db, claimed_id)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return _database_locked_claim_response(recovered)
+        raise
     _clear_render_upload(services, claimed_id)
     track_ids = _playlist_track_ids(playlist)
     meta = dict(playlist.metadata_json or {})
@@ -1010,7 +1104,13 @@ def claim_render_job(
     playlist.metadata_json = meta
     db.add(job)
     db.add(playlist)
-    db.commit()
+    try:
+        db.commit()
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return _database_locked_claim_response(recovered)
+        raise
     notify_render_worker_claimed(db, services, playlist=playlist, job=job, worker=worker_meta, now=now)
 
     services.worker._request_openclaw_for_video_event(
@@ -1047,14 +1147,20 @@ def update_render_progress(
     db: Session = Depends(get_db),
 ) -> dict:
     _require_render_worker_token(services, token)
-    job, playlist = _load_render_job(db, job_id)
+    try:
+        job, playlist = _load_render_progress_job(db, job_id)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            return {"ok": True, "progress_recorded": False, "reason": "database_locked"}
+        raise
     if job.status != JobStatus.running:
         raise HTTPException(status_code=409, detail="Render job is not running.")
     progress = dict(payload.progress or {})
     if payload.message:
         progress["message"] = payload.message
-    _update_video_progress(db, job, playlist, progress)
-    return {"ok": True}
+    recorded = _update_video_progress(db, job, playlist, progress)
+    return {"ok": True, "progress_recorded": recorded}
 
 
 @router.get("/jobs/{job_id}/upload-status")
@@ -1065,10 +1171,23 @@ def render_upload_status(
     db: Session = Depends(get_db),
 ) -> dict:
     _require_render_worker_token(services, token)
-    job, _playlist = _load_render_job(db, job_id)
+    part_path, _meta_path = _upload_paths(services, job_id)
+    try:
+        job, _playlist = _load_render_progress_job(db, job_id)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            received = part_path.stat().st_size if part_path.exists() else 0
+            return {
+                "ok": True,
+                "job_id": job_id,
+                "received_bytes": received,
+                "progress": {},
+                "database_locked": True,
+            }
+        raise
     if job.status not in {JobStatus.running, JobStatus.succeeded}:
         raise HTTPException(status_code=409, detail="Render job is not running.")
-    part_path, _meta_path = _upload_paths(services, job_id)
     received = part_path.stat().st_size if part_path.exists() else 0
     progress = dict((job.result_json or {}).get("progress") or {})
     return {
@@ -1090,7 +1209,13 @@ async def upload_render_chunk(
     db: Session = Depends(get_db),
 ) -> dict:
     _require_render_worker_token(services, token)
-    job, playlist = _load_render_job(db, job_id)
+    try:
+        job, playlist = _load_render_progress_job(db, job_id)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            raise HTTPException(status_code=503, detail="Database is busy; retry upload chunk.") from exc
+        raise
     if job.status != JobStatus.running:
         raise HTTPException(status_code=409, detail="Render job is not running.")
     if not content_range:
@@ -1121,7 +1246,7 @@ async def upload_render_chunk(
         async for chunk in request.stream():
             if not chunk:
                 continue
-            handle.write(chunk)
+            await asyncio.to_thread(handle.write, chunk)
             bytes_written += len(chunk)
 
     expected = end - start + 1
@@ -1148,7 +1273,12 @@ async def upload_render_chunk(
         progress["upload_complete"] = True
         progress["message"] = "External render worker upload complete; awaiting finalize."
     _update_video_progress(db, job, playlist, progress)
-    _run_public_video_cleanup(db, services)
+    try:
+        _run_public_video_cleanup(db, services)
+    except OperationalError as exc:
+        db.rollback()
+        if not _is_database_locked(exc):
+            raise
     return {"ok": True, "received_bytes": received, "complete": bool(total and received >= total)}
 
 
@@ -1252,6 +1382,7 @@ def complete_render_job(
         "loop_video_path",
         "loop_video_render_mode",
         "loop_video_smooth",
+        "loop_video_crossfade_seconds",
         "loop_video_source",
         "video_spectrum_overlay_style",
         "video_render_resolution",

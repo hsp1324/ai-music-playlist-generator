@@ -11,17 +11,20 @@ The channel profile docs in `docs/openclaw-channel-profiles/` control visual ide
 3. Filter recent releases by the selected `youtube_channel_title`.
 4. Inspect at least the latest 5 releases on the selected channel when available, plus the latest 15-20 releases globally for cross-channel repetition.
 5. Extract recent setting, use case, subgenre, lyric premise, thumbnail phrase, visual scene, and title pattern.
-6. Read exactly one channel concept planner from this directory.
-7. Choose one fresh concept that fits that channel and does not repeat recent releases.
-8. Then read the matching channel profile and continue with `docs/openclaw-skills.md` Skill 3.
+6. Read [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-taxonomy.md) and pick one underused broad YouTube playlist bucket plus one detailed video style lane.
+7. Read exactly one channel concept planner from this directory.
+8. Choose one fresh concept that fits that channel, stays inside the selected detailed style lane, and does not repeat recent releases.
+9. Then read the matching channel profile and continue with `docs/openclaw-skills.md` Skill 3.
 
 If the app catalog looks incomplete or the human says there are YouTube videos outside this app, report that limitation before claiming a concept is non-duplicated.
 
 ## Global Planning Rules
 
 - Every channel title should be broad, searchable, and useful to normal viewers. A specific cover/video scene can guide atmosphere, but the release title should usually lead with genre identity plus a listening reason or emotion.
+- Each release should be one coherent style lane, not a mixed sampler. The rendered video can use a detailed style such as trap, boom bap, bachata pop, lofi study, or tech house, while YouTube playlist assignment uses the broader bucket from the taxonomy.
 - For vocal channels, the YouTube title/use case is packaging only. Lyrics should be written as strong standalone songs first; they do not need to mention or explain the title, visual scene, thumbnail text, or playlist use case.
 - Do not sacrifice lyric quality to force SEO terms into the song. The melody, beat, vocal delivery, hook, and emotional arc are the source of truth for lyrics.
+- `thumbnail_text` is only the short phrase to place on the image. It must never imply a black box, dark panel, sticker, badge, pill, capsule, or any filled background behind the letters; final rendering rules in the channel profile require transparent-background text directly on the artwork.
 
 ## Output Contract
 

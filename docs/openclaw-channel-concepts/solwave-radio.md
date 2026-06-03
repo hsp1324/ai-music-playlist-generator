@@ -28,6 +28,8 @@ If the latest Solwave releases all lean beach/sunset, choose a city, rain, dance
 
 Use a vivid Latin scene plus one explicit Latin/Spanish genre lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
 
+Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-taxonomy.md). Make each video specific, such as reggaeton suave, bachata pop, salsa pop, cumbia pop, Latin R&B, or pop-rock latino, while the app assigns it to the broader YouTube playlist bucket such as `Reggaeton & Urbano`, `Bachata Pop`, `Salsa & Cumbia Pop`, `Latin R&B & Soul`, or `Latin Pop-Rock`.
+
 - Pop Latino: warm vocal pop, beach, road trip, buenas vibras.
 - Reggaeton pop / reggaeton suave: bright rhythm, workout, morning energy, night drive.
 - Urbano latino: city night, rooftop fiesta, confidence, dance-pop edge.
@@ -48,7 +50,7 @@ Use a vivid Latin scene plus one explicit Latin/Spanish genre lane. Keep the who
 - Write each song like a real standalone Spanish/Latin pop track: natural Spanish phrasing, catchy chorus, believable romance, desire, confidence, freedom, night-out, heartbreak, summer, or dance-floor emotion. Avoid over-literal lyrics that repeat the YouTube title/use case.
 - Match lyrics to the melody, rhythm, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/fiesta/workout playlist because of its groove and energy while the lyrics tell an independent Latin pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete Latin/Spanish pop song of at least 2 minutes with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
+- Do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete Latin/Spanish pop song with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.
 
 ## Visual Direction

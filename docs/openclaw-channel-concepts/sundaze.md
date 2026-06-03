@@ -1,6 +1,6 @@
 # OpenClaw Channel Concept Planner: sundaze
 
-Use this after the selected channel is `sundaze`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/sundaze.md` afterward for cover, thumbnail, and short loop-video production rules.
+Use this after the selected channel is `sundaze`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/sundaze.md` afterward for cover, thumbnail, and still-image render rules.
 
 ## Channel Promise
 
@@ -28,6 +28,8 @@ If the latest sundaze title could be summarized by the same two nouns as the new
 
 Use a vivid situation or emotion plus one explicit English/American pop playlist lane. Keep the whole release in that lane so the YouTube title, Suno prompts, style/settings, cover, thumbnail, and metadata all agree.
 
+Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-taxonomy.md). Make the rendered video concept specific, such as trap-pop confidence, rainy acoustic pop, country-pop road trip, or Afropop summer nights, while the app assigns the video to the broader YouTube playlist bucket such as `Pop Hip-Hop`, `Acoustic & Ballad Pop`, `Country Pop`, or `Afropop & Amapiano`.
+
 - Pop R&B / R&B pop: smooth vocals, late-night emotion, groove, romance, heartbreak.
 - Pop hip-hop / rap-pop: confident hooks, 808s, city/night drive, workout or getting ready.
 - Dance-pop: party warmup, rooftop, running, workout, bright hook energy.
@@ -48,20 +50,23 @@ Use a vivid situation or emotion plus one explicit English/American pop playlist
 - Original English lyrics by default.
 - One release must stay in one clear genre lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, singer-songwriter pop, folk-pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop. Do not make one playlist a generic mixed English-pop sampler unless the human explicitly asks.
 - Put the selected genre lane in the YouTube title and metadata in natural English and localized equivalents. The title should make both the genre and the listening reason obvious.
+- Before metadata approval, audit the final tracklist including reused tracks. If the title says `pop hip-hop` or `rap-pop`, most tracks must actually be hip-hop/rap-pop/sung-rap/trap-pop/808-driven pop. If not, retitle the release as feel-good pop, sunny pop, indie-pop, pop-rock, road-trip pop, or another true majority lane.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for driving, getting ready, running, workout, night walk, work, or a party warmup, the beat, tempo, energy, and vocal attitude should fit that context, but the lyrics do not need to literally mention those activities.
 - Write each song like a real standalone English pop track: natural phrasing, strong hook, believable emotion, relationship tension, confidence, moving on, night-out, summer, heartbreak, or self-discovery. Avoid over-literal lyrics that repeat the YouTube title/use case.
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete English pop song of at least 2 minutes with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
+- Do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete English pop song with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Do not make lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly requests it.
 
 ## Visual Direction
 
-- No fixed recurring visual signature yet.
-- Cover, thumbnail, and loop video should follow the specific playlist concept.
-- Keep visuals modern, bright, pop-friendly, stylized, and readable at thumbnail size.
+- sundaze must use photorealistic English/American lifestyle still-image visual packaging by default, like HaruHaru and Solwave Radio. This is the normal automation path, not a fallback.
+- Cover and thumbnail should follow the specific playlist concept and feel like casual friend-taken smartphone/Instagram snapshots rather than studio shoots or glossy campaigns.
+- Reject or regenerate covers that look anime, illustrated, stylized, abstract, generic graphic, or detached from the playlist's English/American pop lane.
+- Use clearly adult road-trip, rooftop, beach boardwalk, cafe terrace, country road, Americana diner, indie room, festival lawn, neon night drive, or downtown walk scenes when they fit the playlist lane.
+- Normal sundaze releases do not need provider loop videos. Render from the still cover image with app-managed lower-left lyric subtitles and lower-right `bars` spectrum.
 - Thumbnail text should match the mood and lane, such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `POP R&B`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
 
 ## Good Fresh Concept Shapes

@@ -15,6 +15,7 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 - Create the thumbnail from the final cover as an image reference/edit derivative.
 - Preserve the same subject, scene, camera angle, palette, and main composition so the thumbnail and rendered video feel connected.
 - Add one large click-friendly phrase that fits the selected channel and release concept.
+- Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add the selected channel name or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
@@ -24,7 +25,7 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 - Generate a short loop video. Use Gemini first as-is; for Dreamina/Seedance set `16:9`, `720p`, and exactly `7 seconds` unless the human explicitly requests another setup.
 - Animate only visual elements that already fit the first frame and playlist concept.
 - If the first frame has a short style/theme phrase, keep it stable and readable. Do not invent a channel name.
-- The final frame should return close to the opening composition so the app's 1.5 second crossfade loop feels natural.
+- The final frame should return close to the opening composition so the app's loop crossfade feels natural. The app uses 2.0 seconds for Gemini-tagged loop videos and 1.5 seconds for the default provider path.
 - Do not add subtitles, lyrics, title text, duration text, logos, UI, or unrelated words.
 
 ## Metadata

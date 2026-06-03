@@ -36,6 +36,8 @@ from app.utils.openclaw_slack_loop import (
 )
 from app.utils.youtube_localizations import SUPPORTED_YOUTUBE_LANGUAGES
 from app.workflows.playlist_automation import (
+    _track_forbidden_for_reuse_target_channel,
+    approve_playlist_metadata,
     create_playlist_workspace,
     next_youtube_scheduled_publish_at,
     queue_workspace_video_render,
@@ -43,6 +45,7 @@ from app.workflows.playlist_automation import (
     scripture_youtube_playlist_titles,
     youtube_schedule_options_for_playlist,
 )
+from app.utils.genre_tokens import GENRE_TOKEN_VERSION
 from app.workflows.openclaw_runtime import (
     build_openclaw_backlog_summary,
     evaluate_openclaw_backlog_scheduler,
@@ -801,6 +804,120 @@ def test_openclaw_backlog_summary_counts_future_scheduled_public_youtube_uploads
         clear_isolated_client_env()
 
 
+def test_openclaw_backlog_summary_ignores_empty_duplicate_uploaded_shell(tmp_path) -> None:
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_CLUB", "title": "Club Bloom"}],
+        }
+        duplicate_title = "[playlist] Tech House Workout Mix | Running Beats and Club Bass"
+        with SessionLocal() as db:
+            uploaded = Playlist(
+                title=duplicate_title,
+                status=PlaylistStatus.uploaded,
+                actual_duration_seconds=2400,
+                output_audio_path="storage/releases/rendered.mp3",
+                output_video_path="storage/releases/rendered.mp4",
+                youtube_video_id="DOLimlW3Vz8",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_channel_title": "Club Bloom",
+                },
+            )
+            shell = Playlist(
+                title=duplicate_title,
+                status=PlaylistStatus.draft,
+                actual_duration_seconds=0,
+                metadata_json={
+                    "workflow_state": "collecting",
+                    "target_youtube_channel_title": "Club Bloom",
+                },
+            )
+            db.add_all([uploaded, shell])
+            db.commit()
+            shell_id = shell.id
+
+            summary = build_openclaw_backlog_summary(db, services)
+            archived_shell = db.get(Playlist, shell_id)
+
+        assert summary["channels"]["Club Bloom"]["youtube_uploaded_count"] == 1
+        assert summary["channels"]["Club Bloom"]["count"] == 0
+        assert summary["channels"]["Club Bloom"]["releases"] == []
+        assert summary["auto_archived_duplicate_shells"][0]["id"] == shell_id
+        assert summary["auto_archived_duplicate_shells"][0]["duplicate_release_id"] == uploaded.id
+        assert archived_shell is not None
+        assert archived_shell.metadata_json["hidden"] is True
+        assert archived_shell.metadata_json["workflow_state"] == "archived"
+        assert archived_shell.metadata_json["empty_duplicate_shell_auto_archived"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_openclaw_backlog_scheduler_ignores_blocker_for_archived_release(tmp_path) -> None:
+    os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
+    os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
+    os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "1800"
+    os.environ["AIMP_OPENCLAW_SLACK_CHANNEL_ID"] = "C0AVBUYP150"
+    client = create_isolated_client(tmp_path)
+    try:
+        services = client.app.state.services
+        services.youtube.get_status = lambda: {
+            "configured": True,
+            "authenticated": True,
+            "ready": True,
+            "channels": [{"id": "UC_CLUB", "title": "Club Bloom"}],
+        }
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="Empty Duplicate Shell",
+                status=PlaylistStatus.draft,
+                metadata_json={
+                    "workflow_state": "collecting",
+                    "target_youtube_channel_title": "Club Bloom",
+                },
+            )
+            db.add(playlist)
+            db.commit()
+            release_id = playlist.id
+
+        client.post(
+            "/api/openclaw/lock/start",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-archive-required",
+                "operation": "backlog-resume-check",
+                "release_id": release_id,
+                "channel_title": "Club Bloom",
+            },
+        )
+        client.post(
+            "/api/openclaw/lock/finish",
+            json={
+                "owner": "openclaw",
+                "run_id": "run-archive-required",
+                "status": "blocked",
+                "message": "archive required before creating a duplicate",
+            },
+        )
+        client.post(
+            f"/api/playlists/{release_id}/archive",
+            json={"actor": "codex", "archived": True},
+        )
+
+        with SessionLocal() as db:
+            evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+
+        assert evaluation["should_request"] is True
+        assert evaluation["reason"] == "zero_scheduled_public_backlog"
+        assert "manual_blocker" not in evaluation["summary"]
+    finally:
+        clear_isolated_client_env()
+
+
 def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
     os.environ["AIMP_OPENCLAW_SHARED_TOKEN"] = "test-token"
     client = create_isolated_client(tmp_path)
@@ -808,7 +925,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
     try:
         with SessionLocal() as db:
             playlist = Playlist(
-                title="[playlist] Matthew 1:18-25 Emmanuel Worship",
+                title="[playlist] Matthew 1:18-25 Emmanuel K-Pop R&B",
                 status=PlaylistStatus.draft,
                 metadata_json={"workflow_state": "collecting"},
             )
@@ -822,7 +939,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
             json={
                 "channel_title": "New Testament",
                 "release_id": release_id,
-                "title": "[playlist] Matthew 1:1-17 Gospel Worship",
+                "title": "[playlist] Matthew 1:1-17 New Testament R&B",
             },
         )
         assert reserve_response.status_code == 200
@@ -837,7 +954,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
             json={
                 "channel_title": "New Testament",
                 "release_id": release_id,
-                "title": "[playlist] Matthew 1:1-17 Gospel Worship",
+                "title": "[playlist] Matthew 1:1-17 New Testament R&B",
             },
         )
         assert retry_response.status_code == 200
@@ -858,7 +975,7 @@ def test_openclaw_scripture_sequence_is_reserved_by_webapp(tmp_path) -> None:
                 "passage_range": "Matthew 1:1-17",
                 "release_id": release_id,
                 "youtube_video_id": "yt-new-1",
-                "title": "[playlist] Matthew 1:1-17 Gospel Worship",
+                "title": "[playlist] Matthew 1:1-17 New Testament R&B",
                 "status": "scheduled",
             },
         )
@@ -1955,6 +2072,7 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
                     "cover_image_path": str(cover_path),
                     "cover_approved": True,
                     "loop_video_path": str(loop_path),
+                    "loop_video_provider": "gemini",
                     "loop_video_smooth": True,
                     "video_spectrum_overlay_style": "bars",
                 },
@@ -1985,6 +2103,7 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
         claim_payload = claim.json()
         assert claim_payload["job"]["id"] == job_id
         assert claim_payload["job"]["render"]["mode"] == "loop_video"
+        assert claim_payload["job"]["render"]["loop_video_crossfade_seconds"] == 2.0
         assert "Render worker claimed" in ops_calls[-1]["text"]
         assert "제목: External Worker Release" in ops_calls[-1]["text"]
         assert "Long Render Subtitle" not in ops_calls[-1]["text"]
@@ -2544,7 +2663,7 @@ def test_render_worker_claim_forces_no_spectrum_for_religious_channel(tmp_path) 
                 status=TrackStatus.approved,
                 duration_seconds=60,
                 audio_path=str(track_path),
-                metadata_json={"style": "scripture jazz"},
+                metadata_json={"style": "scripture hip-hop"},
             )
             playlist = Playlist(
                 title="[playlist] Genesis Creation Light",
@@ -3545,6 +3664,144 @@ def prepare_release_for_final_publish(client: TestClient, workspace_id: str, *, 
     return approved
 
 
+def test_sundaze_pop_hiphop_metadata_approval_requires_matching_tracks(tmp_path) -> None:
+    try:
+        create_isolated_client(tmp_path)
+        video_path = tmp_path / "rendered.mp4"
+        video_path.write_bytes(b"fake-video")
+
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="[playlist] Pop Hip-Hop Confidence Mix",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=600,
+                actual_duration_seconds=600,
+                output_video_path=str(video_path),
+                metadata_json={
+                    "youtube_channel_id": "UCQh5O10XfZLLNZqdGuQR7Jw",
+                    "youtube_channel_title": "sundaze",
+                    "workflow_state": "metadata_review",
+                },
+            )
+            tracks = [
+                Track(
+                    title="Park Window",
+                    prompt="feel-good English pop for a park walk",
+                    duration_seconds=120,
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "sunny English pop, clean guitars, relaxed drums"},
+                ),
+                Track(
+                    title="Green Corner",
+                    prompt="indie-pop walking song",
+                    duration_seconds=120,
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "jangly indie-pop, soft synth pads"},
+                ),
+                Track(
+                    title="Highway Smile",
+                    prompt="road-trip pop",
+                    duration_seconds=120,
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "nostalgic American pop, clean guitar, warm bass"},
+                ),
+                Track(
+                    title="Picnic Light",
+                    prompt="pop-rock weekend song",
+                    duration_seconds=120,
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "upbeat American pop-rock, crisp drums"},
+                ),
+                Track(
+                    title="Fresh Fit Step",
+                    prompt="rap-pop confidence song",
+                    duration_seconds=120,
+                    status=TrackStatus.approved,
+                    metadata_json={"style": "English vocal rap-pop, clean 808 drums, sung-rap verses"},
+                ),
+            ]
+            db.add_all([playlist, *tracks])
+            db.flush()
+            for index, track in enumerate(tracks):
+                db.add(
+                    PlaylistItem(
+                        playlist_id=playlist.id,
+                        track_id=track.id,
+                        order_index=index,
+                        included_duration_seconds=120,
+                    )
+                )
+            db.commit()
+            playlist_id = playlist.id
+
+        description = (
+            "A pop hip-hop confidence mix.\n\n"
+            "00:00:00 Park Window\n"
+            "00:02:00 Green Corner\n"
+            "00:04:00 Highway Smile\n"
+            "00:06:00 Picnic Light\n"
+            "00:08:00 Fresh Fit Step\n\n"
+            "#PopHipHop #EnglishPop #Playlist"
+        )
+        try:
+            with SessionLocal() as db:
+                approve_playlist_metadata(
+                    db,
+                    playlist_id=playlist_id,
+                    actor="test-suite",
+                    title="[playlist] Pop Hip-Hop Confidence Mix | Fresh Fits & Weekend Walks",
+                    description=description,
+                    tags=["pop hip hop", "rap pop", "English pop"],
+                    default_language="en",
+                    localizations={
+                        "en": {
+                            "title": "[playlist] Pop Hip-Hop Confidence Mix | Fresh Fits & Weekend Walks",
+                            "description": description,
+                        }
+                    },
+                )
+        except ValueError as exc:
+            assert "only 1/5 tracks have hip-hop/rap-pop style metadata" in str(exc)
+        else:
+            raise AssertionError("Sundaze pop hip-hop metadata should require matching track styles")
+    finally:
+        clear_isolated_client_env()
+
+
+def test_haruharu_citypop_reuse_policy_matches_target_lane() -> None:
+    citypop_track = Track(
+        title="Neon Turn",
+        prompt="Korean city-pop night drive",
+        metadata_json={"style": "Korean city-pop groove, retro synth bass"},
+    )
+    hiphop_track = Track(
+        title="Street Signal",
+        prompt="K-pop hip-hop night walk",
+        metadata_json={"style": "K-pop hip-hop and rap-pop, 808 drums"},
+    )
+
+    assert _track_forbidden_for_reuse_target_channel(
+        "HaruHaru",
+        target_has_citypop_intent=False,
+        track=citypop_track,
+    )
+    assert not _track_forbidden_for_reuse_target_channel(
+        "HaruHaru",
+        target_has_citypop_intent=False,
+        track=hiphop_track,
+    )
+    assert not _track_forbidden_for_reuse_target_channel(
+        "HaruHaru",
+        target_has_citypop_intent=True,
+        track=citypop_track,
+    )
+    assert _track_forbidden_for_reuse_target_channel(
+        "HaruHaru",
+        target_has_citypop_intent=True,
+        track=hiphop_track,
+    )
+
+
 def render_workspace_audio(client: TestClient, workspace_id: str) -> dict:
     render_response = client.post(
         f"/api/playlists/{workspace_id}/render-audio",
@@ -3850,11 +4107,11 @@ def test_religious_channel_video_render_forces_no_spectrum(tmp_path) -> None:
         with SessionLocal() as db:
             track = Track(
                 title="Genesis Track",
-                prompt="scripture worship",
+                prompt="scripture hip-hop",
                 status=TrackStatus.approved,
                 duration_seconds=60,
                 audio_path=str(track_path),
-                metadata_json={"style": "scripture jazz"},
+                metadata_json={"style": "scripture hip-hop"},
             )
             playlist = Playlist(
                 title="[playlist] Genesis Creation Light",
@@ -4404,6 +4661,9 @@ def test_manual_upload_creates_track_and_stores_file(tmp_path) -> None:
         assert track["metadata_json"]["lyrics"] == "달빛 아래 조용한 후렴"
         assert track["metadata_json"]["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
         assert track["metadata_json"]["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
+        assert set(track["metadata_json"]["genre_tokens"]) >= {"ballad", "kpop", "pop"}
+        assert track["metadata_json"]["genre_token_version"] == GENRE_TOKEN_VERSION
+        assert track["metadata_json"]["genre_token_source_hash"]
         assert track["lyrics"] == "달빛 아래 조용한 후렴"
         assert track["style"] == "bright Korean pop ballad, clean vocal, 92 BPM"
         assert track["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
@@ -4462,6 +4722,46 @@ def test_track_rating_updates_metadata_and_can_be_filtered(tmp_path) -> None:
         assert cleared.status_code == 200
         assert cleared.json()["user_rating"] == ""
         assert "user_rating" not in cleared.json()["metadata_json"]
+    finally:
+        clear_isolated_client_env()
+
+
+def test_track_library_search_suggests_existing_tracks_by_partial_text(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+
+        target_response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "비 오는 시부야 밤",
+                "prompt": "rainy neon J-pop commute",
+                "style": "city pop synthwave",
+                "tags": "jpop, shibuya, rain",
+            },
+            files={"audio_file": ("shibuya.mp3", b"fake-audio-data", "audio/mpeg")},
+        )
+        assert target_response.status_code == 201
+        target_id = target_response.json()["id"]
+
+        other_response = client.post(
+            "/api/tracks/manual-upload",
+            data={
+                "title": "Quiet Different Song",
+                "prompt": "other track",
+                "style": "soft piano",
+            },
+            files={"audio_file": ("other.mp3", b"fake-audio-data", "audio/mpeg")},
+        )
+        assert other_response.status_code == 201
+
+        title_suggestions = client.get("/api/tracks/suggest", params={"q": "시부", "limit": 5})
+        assert title_suggestions.status_code == 200
+        assert title_suggestions.json()[0]["id"] == target_id
+        assert title_suggestions.json()[0]["match_type"] == "title"
+
+        style_search = client.get("/api/tracks", params={"q": "synth", "limit": 10})
+        assert style_search.status_code == 200
+        assert [track["id"] for track in style_search.json()] == [target_id]
     finally:
         clear_isolated_client_env()
 
@@ -5323,6 +5623,7 @@ def test_workspace_audio_render_reuses_similar_youtube_back_half_tracks(tmp_path
                     )
                 )
             db.commit()
+            source_track_ids = [track.id for track in source_tracks]
 
         workspace_response = client.post(
             "/api/playlists/workspaces",
@@ -5373,6 +5674,11 @@ def test_workspace_audio_render_reuses_similar_youtube_back_half_tracks(tmp_path
             "Source Tech House 4",
         ]
         assert "Added 2 reused back-half track(s)" in queued["note"]
+        with SessionLocal() as db:
+            cached_source = db.get(Track, source_track_ids[2])
+            assert cached_source is not None
+            assert set((cached_source.metadata_json or {}).get("genre_tokens") or []) >= {"tech-house", "house"}
+            assert (cached_source.metadata_json or {}).get("genre_token_version") == GENRE_TOKEN_VERSION
     finally:
         clear_isolated_client_env()
 
@@ -5724,6 +6030,239 @@ def test_workspace_audio_render_skips_reuse_when_genre_does_not_match(tmp_path) 
         clear_isolated_client_env()
 
 
+def test_soft_hour_audio_render_keeps_new_solo_piano_before_reused_back_half_when_randomized(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_specs = [
+                ("Source Earlier Piano 1", "solo piano, calm cafe BGM"),
+                ("Source Earlier Piano 2", "solo piano, warm reading BGM"),
+                ("Source Earlier Piano 3", "solo piano, quiet study BGM"),
+                ("Source Back Half Piano 1", "solo piano, felt piano, no vocals, no drums"),
+                ("Source Back Half Guitar", "soft acoustic guitar, reading BGM"),
+                ("Source Back Half Piano 2", "solo piano, calm piano, no vocals, no drums"),
+            ]
+            source_tracks = []
+            for index, (title, style) in enumerate(source_specs):
+                audio_path = tmp_path / f"source-soft-hour-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=title,
+                    prompt=style,
+                    duration_seconds=300,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": style, "tags": style},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="Quiet Piano for Reading",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=1800,
+                actual_duration_seconds=1800,
+                youtube_video_id="yt-soft-hour-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "Soft Hour Radio",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 300,
+                            "duration_seconds": 300,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=300,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Quiet Piano for Work and Reading",
+                "target_duration_seconds": 900,
+                "description": "Soft Hour solo piano for work, reading, and quiet focus.",
+                "target_youtube_channel_title": "Soft Hour Radio",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        new_track_ids = []
+        for index in range(2):
+            new_audio_path = tmp_path / f"new-soft-hour-piano-{index}.mp3"
+            new_audio_path.write_bytes(b"fake-audio")
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"New Solo Piano Lead {index + 1}",
+                    "prompt": "solo piano, felt piano, calm study BGM, no vocals, no drums",
+                    "duration_seconds": 450,
+                    "audio_path": str(new_audio_path),
+                    "metadata": {
+                        "style": "solo piano, felt piano, calm study BGM, no vocals, no drums",
+                        "tags": "solo piano, study piano",
+                    },
+                },
+            )
+            assert track_response.status_code == 201
+            track_id = track_response.json()["id"]
+            new_track_ids.append(track_id)
+            approve_response = client.post(
+                f"/api/tracks/{track_id}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite", "random": True},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        queued_track_ids = [track["id"] for track in queued["tracks"]]
+        queued_titles = [track["title"] for track in queued["tracks"]]
+
+        assert set(queued_track_ids[:2]) == set(new_track_ids)
+        assert queued_track_ids[:2] != new_track_ids
+        assert "Source Back Half Piano 1" in queued_titles[2:]
+        assert "Source Back Half Piano 2" in queued_titles[2:]
+        assert "Source Back Half Guitar" in queued_titles[2:]
+        piano_reuse_indexes = [
+            queued_titles.index("Source Back Half Piano 1"),
+            queued_titles.index("Source Back Half Piano 2"),
+        ]
+        assert min(piano_reuse_indexes) >= 2
+        assert max(piano_reuse_indexes) < queued_titles.index("Source Back Half Guitar")
+        assert "reused back-half tracks kept after the fresh lead block" in queued["note"]
+        with SessionLocal() as db:
+            workspace = db.get(Playlist, workspace_id)
+            assert workspace is not None
+            assert (workspace.metadata_json or {})["last_render_preserved_reused_back_half"] is True
+    finally:
+        clear_isolated_client_env()
+
+
+def test_soft_hour_audio_render_allows_transitional_non_piano_tracks(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Greenhouse Writing BGM",
+                "target_duration_seconds": 300,
+                "target_youtube_channel_title": "Soft Hour Radio",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        audio_path = tmp_path / "soft-marimba.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "Soft Marimba and Warm Light",
+                "prompt": "soft marimba, warm pads, calm focus BGM",
+                "duration_seconds": 300,
+                "audio_path": str(audio_path),
+                "metadata": {"style": "soft marimba, warm pads, calm focus BGM"},
+            },
+        )
+        assert track_response.status_code == 201
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        assert render_response.json()["tracks"][0]["title"] == "Soft Marimba and Warm Light"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_soft_hour_metadata_approval_allows_transitional_non_piano_release(tmp_path) -> None:
+    try:
+        create_isolated_client(tmp_path)
+        video_path = tmp_path / "legacy-soft-hour.mp4"
+        video_path.write_bytes(b"fake-video")
+        with SessionLocal() as db:
+            playlist = Playlist(
+                title="[playlist] Greenhouse Writing BGM | Soft Marimba and Warm Light",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=300,
+                actual_duration_seconds=300,
+                output_video_path=str(video_path),
+                metadata_json={
+                    "workspace_mode": "single_track_video",
+                    "target_youtube_channel_title": "Soft Hour Radio",
+                    "workflow_state": "metadata_review",
+                },
+            )
+            track = Track(
+                title="Soft Marimba and Warm Light",
+                prompt="soft marimba, warm pads, calm focus BGM",
+                duration_seconds=300,
+                status=TrackStatus.approved,
+                metadata_json={"style": "soft marimba, warm pads, calm focus BGM"},
+            )
+            db.add_all([playlist, track])
+            db.flush()
+            db.add(
+                PlaylistItem(
+                    playlist_id=playlist.id,
+                    track_id=track.id,
+                    order_index=1,
+                    included_duration_seconds=300,
+                )
+            )
+            db.commit()
+            playlist_id = playlist.id
+
+        with SessionLocal() as db:
+            approved = approve_playlist_metadata(
+                db,
+                playlist_id=playlist_id,
+                actor="test-suite",
+                title="[playlist] Greenhouse Writing BGM | Soft Marimba and Warm Light",
+                description="Soft Hour transitional BGM release.\n\n#BGM #Playlist",
+                tags=["bgm", "focus"],
+                default_language="ko",
+            )
+            assert (approved.metadata_json or {})["metadata_approved"] is True
+    finally:
+        clear_isolated_client_env()
+
+
 def test_workspace_audio_render_skips_reuse_for_ambiguous_legacy_new_verse_channel(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
@@ -5734,11 +6273,11 @@ def test_workspace_audio_render_skips_reuse_for_ambiguous_legacy_new_verse_chann
                 audio_path.write_bytes(b"fake-audio")
                 track = Track(
                     title=title,
-                    prompt="English scripture r&b worship ballad",
+                    prompt="English scripture alt-R&B song",
                     duration_seconds=600,
                     audio_path=str(audio_path),
                     status=TrackStatus.approved,
-                    metadata_json={"style": "r&b scripture worship", "tags": "scripture,rnb"},
+                    metadata_json={"style": "alt-R&B scripture", "tags": "scripture,rnb"},
                 )
                 db.add(track)
                 source_tracks.append(track)
@@ -6634,11 +7173,20 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
             output_path.write_bytes(b"fake-mp3")
             return output_path
 
-        def fake_build_looped_video(clip_path, audio_path, output_path, *, smooth_loop=True, **_kwargs):
+        def fake_build_looped_video(
+            clip_path,
+            audio_path,
+            output_path,
+            *,
+            smooth_loop=True,
+            loop_crossfade_seconds=None,
+            **_kwargs,
+        ):
             assert clip_path.exists()
             assert clip_path.name.endswith(".mp4")
             assert audio_path.exists()
             assert smooth_loop is True
+            assert loop_crossfade_seconds == 2.0
             output_path.write_bytes(b"fake-looped-mp4")
             return output_path
 
@@ -6695,6 +7243,7 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
         assert loop_payload["loop_video_source"] == "manual-upload"
         assert loop_payload["loop_video_provider"] == "gemini"
         assert loop_payload["loop_video_smooth"] is True
+        assert loop_payload["loop_video_crossfade_seconds"] == 2.0
 
         approve_cover_response = client.post(
             f"/api/playlists/{workspace_id}/cover/approve",
@@ -6714,6 +7263,47 @@ def test_uploaded_loop_video_is_used_for_video_render(tmp_path) -> None:
         assert workspace["output_video_path"].endswith(".mp4")
         assert workspace["loop_video_path"].endswith(".mp4")
         assert workspace["loop_video_provider"] == "gemini"
+        assert workspace["loop_video_crossfade_seconds"] == 2.0
+    finally:
+        clear_isolated_client_env()
+
+
+def test_uploaded_loop_video_rejects_duplicate_file_from_other_release(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        first = client.post(
+            "/api/playlists/workspaces",
+            json={"title": "First Loop Release", "target_duration_seconds": 60},
+        )
+        second = client.post(
+            "/api/playlists/workspaces",
+            json={"title": "Second Loop Release", "target_duration_seconds": 60},
+        )
+        assert first.status_code == 201
+        assert second.status_code == 201
+
+        first_loop = upload_test_loop_video(client, first.json()["id"], provider="dreamina")
+        first_path = Path(first_loop["loop_video_path"])
+        assert first_path.exists()
+
+        original_validator = playlist_routes._validate_loop_video_file
+        playlist_routes._validate_loop_video_file = lambda *_args, **_kwargs: None
+        try:
+            duplicate = client.post(
+                f"/api/playlists/{second.json()['id']}/loop-video/upload",
+                data={"actor": "test-suite", "smooth_loop": "true", "loop_video_provider": "dreamina"},
+                files={"loop_video_file": ("duplicate-loop.mp4", first_path.read_bytes(), "video/mp4")},
+            )
+        finally:
+            playlist_routes._validate_loop_video_file = original_validator
+
+        assert duplicate.status_code == 400
+        assert "Loop video already belongs to another release" in duplicate.json()["detail"]
+
+        with SessionLocal() as db:
+            second_playlist = db.get(Playlist, second.json()["id"])
+            assert "loop_video_path" not in second_playlist.metadata_json
+            assert "loop_video_sha256" not in second_playlist.metadata_json
     finally:
         clear_isolated_client_env()
 
@@ -6800,6 +7390,7 @@ def test_uploaded_loop_video_can_be_deleted_and_requires_replacement(tmp_path) -
         deleted = delete_response.json()
         assert deleted["loop_video_path"] is None
         assert deleted["loop_video_source"] is None
+        assert deleted["loop_video_crossfade_seconds"] == 1.5
         assert deleted["output_video_path"] is None
         assert deleted["youtube_video_id"] is None
         assert deleted["workflow_state"] == "video_required"
@@ -6810,6 +7401,7 @@ def test_uploaded_loop_video_can_be_deleted_and_requires_replacement(tmp_path) -
             playlist = db.get(Playlist, workspace_id)
             clear_history = playlist.metadata_json["loop_video_clear_history"]
             assert clear_history[-1]["loop_video_path"] == loop_video_path
+            assert clear_history[-1]["crossfade_seconds"] == 1.5
             assert clear_history[-1]["deleted_local_file"] is True
 
         rerender_response = client.post(
@@ -8246,21 +8838,21 @@ def test_next_youtube_scheduled_publish_at_allows_distinct_daily_slots(tmp_path)
 
 def test_scripture_schedule_options_and_playlist_titles() -> None:
     old_playlist = Playlist(
-        title="[playlist] Genesis Scripture Jazz",
+        title="[playlist] Genesis Scripture Hip-Hop",
         metadata_json={
             "target_youtube_channel_title": "The Old Verse",
             "scripture_channel_title": "The Old Verse",
             "scripture_passage_range": "Genesis 1:1-5",
-            "scripture_music_lane": "scripture jazz",
+            "scripture_music_lane": "scripture hip-hop",
         },
     )
     new_playlist = Playlist(
-        title="[playlist] Matthew Gospel Soul Songs",
+        title="[playlist] Matthew New Testament R&B Songs",
         metadata_json={
             "target_youtube_channel_title": "The Old Verse",
             "scripture_channel_title": "New Testament",
             "scripture_passage_range": "Matthew 1:18-25",
-            "scripture_music_lane": "gospel R&B soul",
+            "scripture_music_lane": "Bible R&B alt-R&B soul",
         },
     )
     buddhist_playlist = Playlist(
@@ -8289,7 +8881,7 @@ def test_scripture_schedule_options_and_playlist_titles() -> None:
     }
     assert scripture_youtube_playlist_titles(old_playlist.metadata_json, title=old_playlist.title) == [
         "Old Testament Songs",
-        "Scripture Jazz Songs",
+        "Scripture Hip-Hop Songs",
     ]
     assert scripture_youtube_playlist_titles(new_playlist.metadata_json, title=new_playlist.title) == [
         "New Testament Songs",

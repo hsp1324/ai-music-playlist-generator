@@ -28,6 +28,7 @@ import httpx
 
 from app.config import Settings
 from app.services.playlist_builder import FFMpegPlaylistBuilder
+from app.utils.loop_video import coerce_loop_video_crossfade_seconds
 from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_line_lyric_cues
 
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
@@ -720,6 +721,10 @@ def render_job(
             audio_path,
             output_path,
             smooth_loop=bool(render.get("smooth_loop", True)),
+            loop_crossfade_seconds=coerce_loop_video_crossfade_seconds(
+                render.get("loop_video_crossfade_seconds"),
+                provider=None,
+            ),
             render_resolution=render_resolution,
             spectrum_overlay_style=spectrum_style,
             lyric_cues=lyric_cues,

@@ -14,9 +14,12 @@ const state = {
   channelSummaries: [],
   trackReuseSummaries: [],
   trackLibraryTracks: [],
+  trackLibrarySuggestions: [],
   trackLibraryQuery: "",
   trackLibraryLikedOnly: false,
   trackLibraryLoading: false,
+  trackLibrarySuggestLoading: false,
+  trackLibrarySuggestOpen: false,
   workspacesLoading: false,
   editingMetadataReleaseId: "",
   metadataExpandedByRelease: {},
@@ -48,6 +51,7 @@ const trackLibrarySection = document.querySelector("#track-library-section");
 const trackLibrarySummary = document.querySelector("#track-library-summary");
 const trackLibraryList = document.querySelector("#track-library-list");
 const trackLibrarySearchInput = document.querySelector("#track-library-search");
+const trackLibrarySuggestionBox = document.querySelector("#track-library-suggestions");
 const trackLibraryLikedOnlyCheckbox = document.querySelector("#track-library-liked-only");
 const trackLibraryRefreshButton = document.querySelector("#track-library-refresh-button");
 const workspaceGrid = document.querySelector("#workspace-grid");
@@ -125,6 +129,8 @@ const RELEASE_SORT_OPTIONS = [
   { key: "created", label: "Created" },
 ];
 let trackLibrarySearchTimer = 0;
+let trackLibrarySuggestTimer = 0;
+let trackLibrarySuggestRequestId = 0;
 const LEGACY_YOUTUBE_CHANNEL_TITLES = {
   "ai썰전": "Club Bloom",
   "ai sseoljeon": "Club Bloom",
@@ -1146,9 +1152,9 @@ function localActionButton(label, className, handler) {
 
 function chooseVisualizerStyle(workspace) {
   const styles = {
-    bars: "20-bar spectrum, current default",
-    "mirror-bars": "center mirrored bars",
-    "calm-bars": "low-motion subtle bars",
+    bars: "center-weighted EQ bars",
+    "mirror-bars": "centered mirrored EQ bars",
+    "calm-bars": "very low-motion centered EQ bars",
     none: "fast render, no spectrum overlay",
   };
   const current = workspace.video_spectrum_overlay_style || "bars";
@@ -2047,11 +2053,21 @@ async function fetchTrackReuseSummaries() {
 async function fetchTrackLibraryTracks() {
   const params = new URLSearchParams({
     limit: "120",
+    compact: "true",
   });
   const query = state.trackLibraryQuery.trim();
   if (query) params.set("q", query);
   if (state.trackLibraryLikedOnly) params.set("user_rating", "like");
   return api(`/api/tracks?${params.toString()}`);
+}
+
+async function fetchTrackLibrarySuggestions(query) {
+  const params = new URLSearchParams({
+    q: query,
+    limit: "8",
+  });
+  if (state.trackLibraryLikedOnly) params.set("user_rating", "like");
+  return api(`/api/tracks/suggest?${params.toString()}`);
 }
 
 async function ensureWorkspaceDetailLoaded(workspaceId) {
@@ -2517,8 +2533,93 @@ function renderTrackLibraryControls() {
   }
 }
 
+function renderTrackLibrarySuggestions() {
+  if (!trackLibrarySuggestionBox) return;
+  const query = state.trackLibraryQuery.trim();
+  trackLibrarySuggestionBox.innerHTML = "";
+  if (!state.trackLibrarySuggestOpen || !query) {
+    trackLibrarySuggestionBox.classList.remove("open");
+    return;
+  }
+  trackLibrarySuggestionBox.classList.add("open");
+
+  if (state.trackLibrarySuggestLoading) {
+    const loading = document.createElement("div");
+    loading.className = "track-library-suggestion-empty";
+    loading.textContent = "검색 중입니다.";
+    trackLibrarySuggestionBox.appendChild(loading);
+    return;
+  }
+
+  const suggestions = state.trackLibrarySuggestions || [];
+  if (!suggestions.length) {
+    const empty = document.createElement("div");
+    empty.className = "track-library-suggestion-empty";
+    empty.textContent = "현재 DB에서 바로 찾은 곡이 없습니다.";
+    trackLibrarySuggestionBox.appendChild(empty);
+    return;
+  }
+
+  suggestions.forEach((track) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "track-library-suggestion";
+    button.setAttribute("role", "option");
+
+    const title = document.createElement("span");
+    title.className = "track-library-suggestion-title";
+    title.textContent = displayTitle(track.title, "Untitled Track");
+
+    const meta = document.createElement("span");
+    meta.className = "track-library-suggestion-meta";
+    const matchText = shortText(track.matched_text || track.style || track.tags || "", 72);
+    meta.textContent = [
+      statusLabel(track.status),
+      formatDuration(track.duration_seconds),
+      matchText ? `${track.match_type}: ${matchText}` : "",
+    ].filter(Boolean).join(" · ");
+
+    button.append(title, meta);
+    button.addEventListener("click", () => {
+      state.trackLibraryQuery = track.title || "";
+      state.trackLibrarySuggestOpen = false;
+      state.trackLibrarySuggestions = [];
+      renderTrackLibraryControls();
+      renderTrackLibrarySuggestions();
+      refreshTrackLibraryList().catch((error) => alert(error.message));
+    });
+    trackLibrarySuggestionBox.appendChild(button);
+  });
+}
+
+async function refreshTrackLibrarySuggestions() {
+  const query = state.trackLibraryQuery.trim();
+  const requestId = ++trackLibrarySuggestRequestId;
+  if (!query) {
+    state.trackLibrarySuggestions = [];
+    state.trackLibrarySuggestLoading = false;
+    state.trackLibrarySuggestOpen = false;
+    renderTrackLibrarySuggestions();
+    return;
+  }
+  state.trackLibrarySuggestLoading = true;
+  state.trackLibrarySuggestOpen = true;
+  renderTrackLibrarySuggestions();
+  try {
+    const suggestions = await fetchTrackLibrarySuggestions(query);
+    if (requestId !== trackLibrarySuggestRequestId) return;
+    state.trackLibrarySuggestions = suggestions;
+  } finally {
+    if (requestId === trackLibrarySuggestRequestId) {
+      state.trackLibrarySuggestLoading = false;
+      renderTrackLibrarySuggestions();
+    }
+  }
+}
+
 function renderTrackLibraryList() {
   renderTrackLibraryControls();
+  renderTrackLibrarySuggestions();
   if (!trackLibraryList) return;
   const tracks = (state.trackLibraryTracks || []).filter((track) => (
     !state.trackLibraryLikedOnly || trackUserRating(track) === "like"
@@ -2562,7 +2663,7 @@ function renderTrackLibraryList() {
       statusLabel(track.status),
       formatDuration(track.duration_seconds),
       track.style || track.metadata_json?.style ? "style saved" : "",
-      track.lyrics || track.metadata_json?.lyrics ? "lyrics saved" : "",
+      track.lyrics || track.metadata_json?.lyrics || track.metadata_json?.lyrics_present ? "lyrics saved" : "",
     ].filter(Boolean).join(" · ");
 
     main.append(title, meta);
@@ -4152,13 +4253,33 @@ trackReuseRefreshButton?.addEventListener("click", () => {
 });
 trackLibrarySearchInput?.addEventListener("input", () => {
   state.trackLibraryQuery = trackLibrarySearchInput.value || "";
+  state.trackLibrarySuggestOpen = Boolean(state.trackLibraryQuery.trim());
   window.clearTimeout(trackLibrarySearchTimer);
+  window.clearTimeout(trackLibrarySuggestTimer);
+  trackLibrarySuggestTimer = window.setTimeout(() => {
+    refreshTrackLibrarySuggestions().catch((error) => {
+      state.trackLibrarySuggestLoading = false;
+      renderTrackLibrarySuggestions();
+      console.error(error);
+    });
+  }, 120);
   trackLibrarySearchTimer = window.setTimeout(() => {
     refreshTrackLibraryList().catch((error) => alert(error.message));
   }, 250);
 });
+trackLibrarySearchInput?.addEventListener("focus", () => {
+  if (!state.trackLibraryQuery.trim()) return;
+  state.trackLibrarySuggestOpen = true;
+  refreshTrackLibrarySuggestions().catch((error) => console.error(error));
+});
+trackLibrarySearchInput?.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  state.trackLibrarySuggestOpen = false;
+  renderTrackLibrarySuggestions();
+});
 trackLibraryLikedOnlyCheckbox?.addEventListener("change", () => {
   state.trackLibraryLikedOnly = trackLibraryLikedOnlyCheckbox.checked;
+  refreshTrackLibrarySuggestions().catch((error) => console.error(error));
   refreshTrackLibraryList().catch((error) => alert(error.message));
 });
 trackLibraryRefreshButton?.addEventListener("click", () => {
@@ -4321,6 +4442,10 @@ document.addEventListener("play", (event) => {
 document.addEventListener("click", (event) => {
   if (state.toolsMenuOpen && !event.target?.closest?.(".tools-menu")) {
     setToolsMenuOpen(false);
+  }
+  if (state.trackLibrarySuggestOpen && !event.target?.closest?.(".track-library-search-wrap")) {
+    state.trackLibrarySuggestOpen = false;
+    renderTrackLibrarySuggestions();
   }
   document.querySelectorAll(".channel-avatar-select.open").forEach((picker) => {
     if (picker.contains(event.target)) return;

@@ -9,6 +9,9 @@ from app.models.track import Track
 from app.schemas.suno import SunoGenerationCreateRequest, SunoWebhookRequest
 from app.services.registry import ServiceRegistry
 from app.services.suno_service import SunoGenerationRequest
+from app.utils.genre_tokens import update_track_genre_token_metadata
+from app.utils.short_track_observations import annotate_short_track_metadata
+from app.utils.track_search import sync_track_search_document
 from app.workflows.review_dispatch import dispatch_track_review
 
 router = APIRouter(prefix="/suno", tags=["suno"])
@@ -237,9 +240,28 @@ async def suno_webhook(
             metadata["style"] = source_style
         if source_exclude_style and not metadata.get("exclude_style"):
             metadata["exclude_style"] = source_exclude_style
+        metadata = annotate_short_track_metadata(
+            metadata,
+            duration_seconds=item.duration_seconds,
+            title=item.title,
+            track_id=track.id if track.id else None,
+            prompt=item.prompt,
+            style=metadata.get("style"),
+            exclude_style=metadata.get("exclude_style"),
+            tags=metadata.get("tags"),
+            lyrics=metadata.get("lyrics"),
+            source=metadata.get("source") or "suno-webhook",
+            context="suno_webhook",
+            extra={
+                "provider_job_id": normalized.provider_job_id,
+                "source_track_id": item.source_track_id,
+            },
+        )
+        metadata = update_track_genre_token_metadata(metadata, title=item.title, prompt=item.prompt)
         track.metadata_json = metadata
         db.add(track)
         db.flush()
+        sync_track_search_document(db, track)
         tracks.append(track)
 
     if job and tracks:

@@ -366,6 +366,7 @@ def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
     builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
     frame = Image.new("RGB", (1280, 720), "#111111")
     draw = ImageDraw.Draw(frame)
+    assert SPECTRUM_OVERLAY_WIDTH == 280
     expected = (1280 - SPECTRUM_OVERLAY_WIDTH - 55, 720 - SPECTRUM_OVERLAY_HEIGHT - 45)
     draw.rectangle(
         [
@@ -378,6 +379,52 @@ def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
     )
 
     assert builder._choose_spectrum_overlay_position(frame, (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT)) == expected
+
+
+def test_bar_spectrum_is_center_weighted_and_balanced(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+
+    image = builder._draw_bar_spectrum_frame(
+        0,
+        0.72,
+        primary=(220, 230, 255),
+        accent=(255, 180, 210),
+    )
+    alpha = image.getchannel("A")
+
+    def region_alpha(left: int, right: int) -> int:
+        return sum(alpha.crop((left, 0, right, SPECTRUM_OVERLAY_HEIGHT)).getdata())
+
+    left_edge = region_alpha(0, 64)
+    center = region_alpha(108, 172)
+    right_edge = region_alpha(SPECTRUM_OVERLAY_WIDTH - 64, SPECTRUM_OVERLAY_WIDTH)
+
+    assert center > left_edge * 2
+    assert center > right_edge * 2
+    assert abs(left_edge - right_edge) < max(left_edge, right_edge) * 0.35
+
+
+def test_bar_spectrum_bounces_without_horizontal_drift(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+
+    def alpha_centroid_x(frame_index: int) -> float:
+        image = builder._draw_bar_spectrum_frame(
+            frame_index,
+            0.72,
+            primary=(220, 230, 255),
+            accent=(255, 180, 210),
+        )
+        alpha = image.getchannel("A")
+        total = 0
+        weighted = 0
+        for y in range(SPECTRUM_OVERLAY_HEIGHT):
+            for x in range(SPECTRUM_OVERLAY_WIDTH):
+                value = alpha.getpixel((x, y))
+                total += value
+                weighted += x * value
+        return weighted / total
+
+    assert abs(alpha_centroid_x(0) - alpha_centroid_x(24)) < 2.5
 
 
 def test_build_audio_reports_ffmpeg_progress(tmp_path, monkeypatch) -> None:
@@ -494,3 +541,15 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
     assert concat_lines[0].endswith("-loop-intro.mp4'")
     assert all(line.endswith("-loop-unit.mp4'") for line in concat_lines[1:])
     assert output_path.read_bytes() == b"fake-video"
+
+
+def test_looped_video_uses_requested_crossfade_seconds(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(
+        Settings(
+            storage_root=tmp_path / "storage",
+            video_spectrum_overlay_enabled=False,
+        )
+    )
+
+    assert builder._resolve_loop_transition_seconds(10.0, configured_transition=2.0) == 2.0
+    assert builder._resolve_loop_transition_seconds(3.0, configured_transition=2.0) == 1.0

@@ -1,6 +1,6 @@
 # Suno V5.5 Instrumental Format
 
-Use this whenever OpenClaw creates Soft Hour Radio, BGM, cafe, study, sleep, lofi, ambient, or any other instrumental/no-vocal Suno track.
+Use this whenever OpenClaw creates Soft Hour Radio solo-piano tracks, BGM, cafe, study, sleep, lofi, ambient, or any other instrumental/no-vocal Suno track. New Soft Hour Radio audio should be solo piano/felt piano/quiet piano; existing similar Soft Hour tracks may temporarily fill the back half when there are not enough piano tracks to approach one hour.
 
 ## Why This Exists
 
@@ -48,7 +48,7 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno prompts, style strings, lyrics, or bracketed metatags unless the human explicitly asks for that cap. Those caps can cause Suno to end too early. Prompt for a full-length complete instrumental cue instead: at least 2 minutes, natural intro, developed middle, variation/breakdown where useful, and a resolved ending. Suno has no guaranteed minimum-duration field, so verify the downloaded duration. The helper rejects playlist tracks shorter than 2:00 by default and has no default maximum duration. Complete 5+ minute cues are acceptable.
+Do not put duration caps or two-minute lower-bound wording into Suno prompts, style strings, lyrics, or bracketed metatags unless the human explicitly asks for that exact wording. Suno can misread those phrases and end too early. Prompt for an around 4 minute full-length complete instrumental cue instead: natural intro, developed middle, variation/breakdown where useful, and a resolved ending. Verify the downloaded duration. The helper rejects playlist tracks shorter than 1:00 by default, records playlist tracks under 2:00 for later analysis, and has no default maximum duration. Complete 5+ minute cues are acceptable.
 - If Suno repeatedly returns tracks over the allowed helper max for a non-exempt channel, stop and report the issue instead of adding duration caps to every prompt.
 - Do not use short-loop, jingle, intro, bumper, sting, teaser, or snippet wording for full playlist tracks.
 

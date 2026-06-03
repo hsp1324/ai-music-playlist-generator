@@ -29,10 +29,10 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 
 - Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
 - If text is useful, use a short natural style, genre, use-case, or passage phrase instead. Examples: `J-POP`, `LOFI`, `TECH HOUSE`, `CINEMATIC ORCHESTRA`, `GAME OST`, `Genesis 1:1-5`, `Matthew 1:18-25`, `팔정도 명상팝`, `자비 트립합`.
-- Text must be integrated into the artwork with safe margins. Do not use hard black boxes, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks.
+- Text must be integrated into the artwork with safe margins and a transparent background. Letters should sit directly on the image; use only typography choices such as font weight, color, subtle shadow, thin outline, or local contrast for readability. Do not use hard black boxes, semi-transparent black panels, white or colored rectangles, gradient scrims, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks behind text. Reject/regenerate thumbnails when the text is placed inside any filled background shape.
 - The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
 - The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
-- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default moving-video clips are `7 seconds`; `불송` clips are `6 seconds`. HaruHaru does not use provider clips by default; render it from the still cover image. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set the required duration before Generate.
+- For Dreamina/Seedance, set duration in the provider UI, not in the prompt. Default moving-video clips are `7 seconds`; `불송` clips are `6 seconds`. HaruHaru, sundaze, and Solwave Radio do not use provider clips by default; render them from the still cover image. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set the required duration before Generate.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
 - Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
@@ -44,9 +44,10 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 
 ### Soft Hour Radio
 
-- Calm illustrated/stylized BGM visuals for study, work, sleep, reading, cafe, lofi, or quiet focus.
-- Use locked camera and calm environmental motion. Prefer `none` or very restrained spectrum for very quiet releases.
-- If text is useful, use use-case/style phrases such as `LOFI`, `CAFE PIANO`, `FOCUS MUSIC`, `STUDY BGM`, `DEEP SLEEP`, or `RAINY NIGHT`.
+- Calm high-resolution photorealistic solo-piano BGM visuals for study, work, sleep, reading, cafe, or quiet focus.
+- Preserve the established quiet background feeling, but make it feel like a real premium cafe, study desk, rain window, greenhouse, reading room, cottage, workshop, or sleep room.
+- Use a locked-off tripod/static camera with no camera movement at all. Add only subtle environmental motion such as rain on glass, mug steam, lamp/candle flicker, curtain edges, dust, smoke, reflections, firelight, or leaves. Prefer `none` or very restrained spectrum for very quiet releases.
+- If text is useful, use piano/use-case phrases such as `SOLO PIANO`, `CAFE PIANO`, `FOCUS PIANO`, `STUDY PIANO`, `SLEEP PIANO`, or `RAINY PIANO`.
 
 ### Tokyo Daydream Radio
 
@@ -59,8 +60,10 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 
 - English/American pop playlist counterpart to Tokyo Daydream Radio.
 - Covers mainstream English pop plus pop-adjacent playlist lanes such as Pop R&B, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie/bedroom/alt-pop, singer-songwriter/folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, and Amapiano-pop.
-- Let the concept decide the scene; do not force a recurring visual.
-- If text is useful, name the pop lane or use case: `POP R&B`, `DANCE POP`, `SYNTH POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
+- Default visual package is photorealistic English/American lifestyle still images, not provider loop video.
+- Prefer casual friend-taken smartphone/Instagram snapshots: clearly adult road-trip, rooftop, beach boardwalk, cafe terrace, country road, Americana diner, indie room, festival lawn, neon night drive, or downtown walk moments with natural side/three-quarter angles, medium or farther framing, slight phone-photo imperfection, and enough environment to feel real.
+- If text is useful, use one natural integrated English-pop lane phrase, preferably upper-left: `POP R&B`, `DANCE POP`, `SYNTH POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
+- Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
 
 ### Solwave Radio
 
@@ -74,6 +77,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### HaruHaru
 
 - Korean K-pop/Korean pop vocal channel.
+- Korean/default titles should be click-led: `[playlist] 짧은 감정/상황 훅 | 상황에 듣기 좋은 장르 노래모음`, such as `나랑 데이트 할래? | 데이트하기 전 기분 좋아지는 K-POP 힙합 노래모음`. The hook must be tasteful, truthful, and matched by the thumbnail mood.
 - Default visual package is now photorealistic Korean lifestyle still images, not animated/anime rotation and not provider loop video.
 - Use attractive clearly adult women, handsome stylish adult men, or tasteful adult couple/friend scenes in natural Instagram-style daily-life settings such as Hongdae, Itaewon, Seoul cafe streets, seaside roads, beaches, coastal overlooks, flower gardens, Han River sunset, rooftops, boutiques, or rainy city streets.
 - Prefer friend-taken adult day-trip/cafe/seaside snapshots over studio or fashion-campaign portraits. Faces may be visible, but avoid tight straight-on AI-beauty close-ups. Prefer side profile, three-quarter view, candid looking-away, laughing/smiling travel moments, or medium/farther framing where the place and mood also matter.
@@ -97,21 +101,22 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### Club Bloom
 
 - No-vocal EDM, house, techno, trance, club, festival, workout, night-drive, or party-energy releases.
-- Prefer active DJ/performance visuals in desirable dance locations: beach-club deck, rooftop skyline DJ set, nightclub booth, concert/festival stage, warehouse rave, pool party, yacht/harbor party, neon city terrace, or cyber club.
+- Prefer beautiful adult female DJ/BJ performance visuals in desirable dance locations: beach-club deck, rooftop skyline DJ set, nightclub booth, concert/festival stage, warehouse rave, pool party, yacht/harbor party, neon city terrace, or cyber club. Bold revealing club fashion is preferred, but keep it YouTube-safe with no nudity, sexual acts, minors, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
 - If text is useful, name the club lane near the front: `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
 
 ### BibliaCanto
 
 - Combined Bible music channel for Old Testament and New Testament releases.
 - Do not put `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, or the channel name on visuals.
-- If text is useful, use the exact passage range and/or music lane: `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Jazz`, `Gospel R&B`, or `Scripture Worship`.
+- If text is useful, use the exact passage range and/or modern music lane: `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Hip-Hop`, `New Testament R&B`, `Bible K-Pop`, or `Scripture Rap`.
 - Queue final render with `--video-spectrum-overlay-style none`.
 
 ### 불송
 
 - Buddhist scripture-inspired vocal music.
-- Cover, thumbnail, first-frame, and loop-video first frame should be one clean visual package with a short upper-left Korean passage/theme + style phrase when useful, such as `팔정도 명상팝`, `자비 트립합`, or `무상 불교 재즈`. Never use `불송` as visual text.
-- Use photorealistic/premium Buddhist visuals by default. Cute/gentle animation is allowed occasionally when the music lane fits.
+- Cover, thumbnail, first-frame, and loop-video first frame should be one clean photorealistic visual package: a serene Buddha / Buddha-inspired figure with a warm gentle expression, listening to music while reading or holding an open Buddhist sutra in a quiet temple or meditation room.
+- New 불송 releases are hip-hop-first by default. A short upper-left Korean passage/theme + hip-hop style phrase may be used when useful, such as `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩`. Never use `불송` as visual text, and avoid obscure coined genre labels.
+- Keep the music cue subtle and respectful, such as a small speaker or understated headphones nearby. Avoid singing/dancing Buddha, idol/model posing, comedic gadget focus, fantasy deity effects, or cheap statue-only wallpaper.
 - Use Seedance/Dreamina `2.0 Fast`, first-frame only, `16:9`, `720p`, exactly `6 seconds`.
 - Queue final render with `--video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
 - Video prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene and motion.

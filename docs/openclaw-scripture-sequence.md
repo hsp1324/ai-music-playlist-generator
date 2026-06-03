@@ -94,8 +94,8 @@ The app owns the configured passage blocks. If the app says the next block is mi
 - The app creates/uses English YouTube playlists on `BibliaCanto`:
   - `Old Testament Songs`
   - `New Testament Songs`
-- After upload, each scripture video is also added to one style playlist when the release lane is clear, for example `Scripture Jazz Songs`, `Scripture R&B Songs`, `Gospel Worship Songs`, `Acoustic Scripture Songs`, `Piano Worship Songs`, `Cinematic Worship Songs`, or `Modern Worship Pop Songs`.
-- `Gospel Worship Songs` means the music lane is gospel or choir-based. It is not a replacement for `New Testament Songs`; New Testament uploads must also be in `New Testament Songs`, and Old Testament uploads must also be in `Old Testament Songs`.
+- After upload, each scripture video is also added to one style playlist when the release lane is clear, for example `Scripture Hip-Hop Songs`, `Scripture R&B Songs`, `Bible K-Pop Songs`, `Scripture Trap Songs`, `Bible Neo-Soul Songs`, `Bible Afropop Songs`, or `Scripture Synth-Pop Songs`.
+- Do not use gospel/worship/church style playlists for new BibliaCanto releases. New Testament uploads must also be in `New Testament Songs`, and Old Testament uploads must also be in `Old Testament Songs`.
 - A video can belong to two playlists: one testament playlist plus one style playlist.
 - Scheduled public upload times in `AIMP_YOUTUBE_SCHEDULE_TIMEZONE`:
   - Old Testament branch: 07:00
@@ -115,14 +115,14 @@ The main title and every localized title must include the passage range that the
 
 Good title shapes:
 
-- `[playlist] Genesis 1:6-13 Creation Songs | Old Testament Music for Worship`
-- `[playlist] Matthew 1:18-25 Emmanuel Worship | New Testament Music for Prayer`
+- `[playlist] Genesis 1:6-13 Creation Hip-Hop | Old Testament Rap & R&B Songs`
+- `[playlist] Matthew 1:18-25 Emmanuel K-Pop R&B | New Testament Scripture Songs`
 
 The description must also include:
 
 - `Passage: Genesis 1:6-13` or `Passage: Matthew 1:18-25`.
 - A short original explanation of the passage mood and message.
-- A natural style sentence, such as `This release is arranged as modern worship pop with warm piano, acoustic guitar, and congregational choruses.`
+- A natural style sentence, such as `This release turns Matthew 1:18-25 into modern scripture R&B with sung hooks, tight drums, and K-pop-inspired pop energy.`
 - No long copied Bible text from modern copyrighted translations.
 
 ## Planning Output

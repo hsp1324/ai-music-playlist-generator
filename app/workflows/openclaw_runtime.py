@@ -16,6 +16,7 @@ from app.models.playlist import Playlist
 
 OPENCLAW_RUNTIME_STATE_FILE = "openclaw-runtime-state.json"
 OPENCLAW_AUTO_LOOP_STATE_FILE = "openclaw-auto-loop-state.json"
+EMPTY_DUPLICATE_SHELL_ARCHIVE_RETENTION_DAYS = 7
 
 MANUAL_ONLY_CHANNEL_TITLES = {"MusicSun"}
 RETIRED_CHANNEL_TITLES = {"Signal Room Radio", "Signal Desk Radio", "Midnight Cue Radio", "AI썰전", "AnimeMix"}
@@ -238,6 +239,23 @@ def _channels_have_backlog_state_changed_since_last_request(
         last_summary,
         channel_titles,
     )
+
+
+def _summary_contains_release_id(summary: dict[str, Any], release_id: str) -> bool:
+    normalized_release_id = str(release_id or "").strip()
+    if not normalized_release_id:
+        return False
+    channels = summary.get("channels") if isinstance(summary.get("channels"), dict) else {}
+    for payload in channels.values():
+        if not isinstance(payload, dict):
+            continue
+        for release in payload.get("releases") or []:
+            if str((release or {}).get("id") or "").strip() == normalized_release_id:
+                return True
+    for release in summary.get("unknown_channel_releases") or []:
+        if str((release or {}).get("id") or "").strip() == normalized_release_id:
+            return True
+    return False
 
 
 def _openclaw_lock_started_after_request(state: dict[str, Any], last_request_at: datetime | None) -> bool:
@@ -478,8 +496,94 @@ def _canonical_youtube_channel_title(title: Any) -> str:
     return YOUTUBE_CHANNEL_TITLE_ALIASES.get(clean.lower(), clean)
 
 
+def _normalized_lookup_text(value: Any) -> str:
+    return " ".join(str(value or "").casefold().split())
+
+
 def _playlist_is_archived(meta: dict[str, Any]) -> bool:
     return bool(meta.get("archived_at") or meta.get("hidden"))
+
+
+def _playlist_has_pre_render_assets(playlist: Playlist, meta: dict[str, Any]) -> bool:
+    return bool(
+        playlist.items
+        or playlist.actual_duration_seconds
+        or playlist.output_audio_path
+        or playlist.output_video_path
+        or playlist.youtube_video_id
+        or meta.get("cover_image_path")
+        or meta.get("youtube_thumbnail_path")
+        or meta.get("loop_video_path")
+        or meta.get("pending_cover_upload_path")
+        or meta.get("pending_youtube_thumbnail_path")
+        or meta.get("pending_loop_video_path")
+    )
+
+
+def _empty_duplicate_shell_match(
+    playlist: Playlist,
+    meta: dict[str, Any],
+    *,
+    uploaded_by_key: dict[tuple[str, str], dict[str, Any]],
+    uploaded_by_title: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    workflow_state = str(meta.get("workflow_state") or "collecting").strip() or "collecting"
+    if workflow_state != "collecting" or _playlist_has_pre_render_assets(playlist, meta):
+        return None
+    title_key = _normalized_lookup_text(playlist.title)
+    if not title_key:
+        return None
+    channel_key = _normalized_lookup_text(_playlist_channel_title(playlist))
+    if channel_key:
+        return uploaded_by_key.get((channel_key, title_key))
+    return uploaded_by_title.get(title_key)
+
+
+def _auto_archive_empty_duplicate_shell(
+    db: Session,
+    playlist: Playlist,
+    meta: dict[str, Any],
+    duplicate: dict[str, Any],
+) -> dict[str, Any]:
+    now = _utcnow()
+    archive_history = list(meta.get("archive_history") or [])
+    archive_history.append(
+        {
+            "actor": "system:openclaw-backlog-cleanup",
+            "archived": True,
+            "decided_at": now.isoformat(),
+            "reason": "empty_duplicate_uploaded_shell",
+            "duplicate_release_id": duplicate.get("id"),
+            "duplicate_youtube_video_id": duplicate.get("youtube_video_id"),
+        }
+    )
+    previous_workflow_state = meta.get("workflow_state")
+    if previous_workflow_state != "archived":
+        meta["pre_archive_workflow_state"] = previous_workflow_state
+        meta["pre_archive_status"] = playlist.status.value
+        meta["pre_archive_note"] = meta.get("note")
+    meta["archive_history"] = archive_history
+    meta["hidden"] = True
+    meta["archived_at"] = now.isoformat()
+    meta["purge_after"] = (now + timedelta(days=EMPTY_DUPLICATE_SHELL_ARCHIVE_RETENTION_DAYS)).isoformat()
+    meta["archived_by"] = "system:openclaw-backlog-cleanup"
+    meta["archive_retention_days"] = EMPTY_DUPLICATE_SHELL_ARCHIVE_RETENTION_DAYS
+    meta["workflow_state"] = "archived"
+    meta["empty_duplicate_shell_auto_archived"] = True
+    meta["empty_duplicate_shell_duplicate_release_id"] = duplicate.get("id")
+    meta["empty_duplicate_shell_duplicate_youtube_video_id"] = duplicate.get("youtube_video_id")
+    meta["note"] = (
+        "Empty duplicate workspace auto-archived because the same title/channel already has an "
+        "uploaded or scheduled release."
+    )
+    playlist.metadata_json = meta
+    db.add(playlist)
+    return {
+        "id": playlist.id,
+        "title": playlist.title,
+        "duplicate_release_id": duplicate.get("id"),
+        "duplicate_youtube_video_id": duplicate.get("youtube_video_id"),
+    }
 
 
 def _playlist_scheduled_public_at(playlist: Playlist, *, now: datetime) -> datetime | None:
@@ -660,6 +764,48 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
     now = _utcnow()
     schedule_tz = _youtube_schedule_timezone(services)
     scheduled_local_dates: dict[str, set[str]] = {title: set() for title in channel_titles}
+    uploaded_by_key: dict[tuple[str, str], dict[str, Any]] = {}
+    uploaded_by_title: dict[str, dict[str, Any]] = {}
+    for playlist in playlists:
+        meta = dict(playlist.metadata_json or {})
+        if _playlist_is_archived(meta):
+            continue
+        workflow_state = str(meta.get("workflow_state") or "").strip()
+        if playlist.status != PlaylistStatus.uploaded and not playlist.youtube_video_id and workflow_state != "uploaded":
+            continue
+        title_key = _normalized_lookup_text(playlist.title)
+        if not title_key:
+            continue
+        channel_key = _normalized_lookup_text(_playlist_uploaded_channel_title(playlist) or _playlist_channel_title(playlist))
+        duplicate_payload = {
+            "id": playlist.id,
+            "title": playlist.title,
+            "youtube_video_id": playlist.youtube_video_id,
+            "channel_title": _playlist_uploaded_channel_title(playlist) or _playlist_channel_title(playlist),
+        }
+        uploaded_by_title.setdefault(title_key, duplicate_payload)
+        if channel_key:
+            uploaded_by_key.setdefault((channel_key, title_key), duplicate_payload)
+
+    auto_archived_duplicate_shells: list[dict[str, Any]] = []
+    for playlist in playlists:
+        meta = dict(playlist.metadata_json or {})
+        if not _playlist_counts_as_backlog(playlist):
+            continue
+        duplicate = _empty_duplicate_shell_match(
+            playlist,
+            meta,
+            uploaded_by_key=uploaded_by_key,
+            uploaded_by_title=uploaded_by_title,
+        )
+        if not duplicate:
+            continue
+        auto_archived_duplicate_shells.append(
+            _auto_archive_empty_duplicate_shell(db, playlist, meta, duplicate)
+        )
+    if auto_archived_duplicate_shells:
+        db.commit()
+
     for playlist in playlists:
         uploaded_channel_title = _playlist_uploaded_channel_title(playlist)
         if uploaded_channel_title in channels and playlist.youtube_video_id and not _playlist_is_archived(
@@ -731,6 +877,7 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
     return {
         "channels": channels,
         "unknown_channel_releases": unknown_channel_releases,
+        "auto_archived_duplicate_shells": auto_archived_duplicate_shells,
         "active_channel_titles": channel_titles,
         "target_per_channel": target,
         "max_per_channel": maximum,
@@ -859,6 +1006,12 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         now=now,
         backoff_seconds=settings.openclaw_manual_blocker_backoff_seconds,
     )
+    if manual_blocker:
+        blocked_release_id = str(
+            (manual_blocker.get("last_finished_lock") or {}).get("release_id") or ""
+        ).strip()
+        if blocked_release_id and not _summary_contains_release_id(summary, blocked_release_id):
+            manual_blocker = None
     if manual_blocker:
         summary = {**summary, "manual_blocker": manual_blocker}
 

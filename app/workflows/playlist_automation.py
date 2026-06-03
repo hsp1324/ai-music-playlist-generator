@@ -14,6 +14,23 @@ from app.models.track import Track
 from app.models.track_reuse import TrackReuseEvent
 from app.schemas.playlist import PlaylistJobRead, PlaylistTrackRead, PlaylistWorkspaceRead
 from app.services.registry import ServiceRegistry
+from app.utils.channel_genre_playlists import (
+    apply_channel_genre_classification,
+    infer_channel_genre_classification,
+)
+from app.utils.genre_tokens import cached_track_genre_tokens, extract_genre_tokens_from_values
+from app.utils.loop_video import (
+    loop_video_file_sha256,
+    loop_video_crossfade_seconds_for_provider,
+    loop_video_crossfade_seconds_from_meta,
+    loop_video_provider_from_meta,
+    normalize_loop_video_provider,
+)
+from app.utils.short_track_observations import (
+    annotate_short_track_metadata,
+    record_playlist_short_track_observation,
+)
+from app.utils.track_search import sync_track_search_document
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
     ensure_playlist_localization_title_prefix,
@@ -49,6 +66,8 @@ FAILED_WORKFLOW_STATES = {
 FALLBACK_DESCRIPTION_HASHTAGS = ["Playlist", "BackgroundMusic", "Music", "Visualizer"]
 SUNDAZE_CHANNEL_ID = "UCQh5O10XfZLLNZqdGuQR7Jw"
 SUNDAZE_CHANNEL_TITLE = "sundaze"
+HARUHARU_CHANNEL_TITLE = "haruharu"
+SOFT_HOUR_CHANNEL_TITLE = "Soft Hour Radio"
 SCRIPTURE_UPLOAD_CHANNEL_TITLE = "BibliaCanto"
 SCRIPTURE_OLD_BRANCH_TITLE = "The Old Verse"
 SCRIPTURE_NEW_BRANCH_TITLE = "New Testament"
@@ -142,13 +161,26 @@ LEGACY_YOUTUBE_CHANNEL_TITLES = {
     "bulsong": NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
 SCRIPTURE_GENRE_PLAYLIST_RULES = (
-    ("Scripture Jazz Songs", ("jazz",)),
-    ("Scripture R&B Songs", ("r&b", "rnb", "neo soul", "neo-soul", "soul")),
-    ("Gospel Worship Songs", ("gospel", "choir")),
-    ("Acoustic Scripture Songs", ("acoustic", "folk")),
-    ("Piano Worship Songs", ("piano", "ballad")),
-    ("Cinematic Worship Songs", ("cinematic", "orchestral", "film score")),
-    ("Modern Worship Pop Songs", ("modern worship", "worship pop", "pop worship")),
+    (
+        "Scripture Hip-Hop Songs",
+        (
+            "hip-hop",
+            "hip hop",
+            "rap",
+            "boom bap",
+            "boombap",
+            "rap-pop",
+            "rap pop",
+            "street-pop",
+            "street pop",
+        ),
+    ),
+    ("Scripture Trap Songs", ("trap", "trap-soul", "trap soul", "808", "drill", "drill-lite")),
+    ("Bible Neo-Soul Songs", ("neo soul", "neo-soul")),
+    ("Scripture R&B Songs", ("r&b", "rnb", "alt-r&b", "alt r&b", "soul")),
+    ("Bible K-Pop Songs", ("k-pop", "kpop", "korean pop", "k-pop-inspired", "kpop-inspired")),
+    ("Bible Afropop Songs", ("afropop", "afro pop", "afrobeats", "amapiano")),
+    ("Scripture Synth-Pop Songs", ("synth-pop", "synth pop", "dark pop", "dark street-pop")),
 )
 REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "ko",
@@ -170,25 +202,6 @@ REQUIRED_YOUTUBE_LOCALIZATION_LANGUAGES = (
     "zh-TW",
 )
 TIMELINE_ROW_PATTERN = re.compile(r"^\s*\d{1,2}:\d{2}(?::\d{2})?\s+\S+", re.MULTILINE)
-LOOP_VIDEO_PROVIDER_ALIASES = {
-    "gemini": "gemini",
-    "google-gemini": "gemini",
-    "google gemini": "gemini",
-    "veo": "gemini",
-    "gemini-veo": "gemini",
-    "gemini veo": "gemini",
-    "dreamina": "dreamina",
-    "capcut-dreamina": "dreamina",
-    "capcut dreamina": "dreamina",
-    "seedance": "seedance",
-    "sea-dance": "seedance",
-    "sea dance": "seedance",
-    "dreamina-seedance": "seedance",
-    "dreamina/seedance": "seedance",
-    "manual": "manual",
-    "human": "manual",
-    "unknown": "unknown",
-}
 VIDEO_RENDER_RESOLUTION_ALIASES = {
     "720": "720p",
     "720p": "720p",
@@ -233,48 +246,6 @@ REUSE_EXCLUDED_CHANNEL_TITLES = {
     "불송",
     "bulsong",
 }
-REUSE_GENRE_PATTERNS = {
-    "afro-house": ("afro house", "afro-house"),
-    "anime": ("anime", "anime-pop", "anime pop"),
-    "bachata": ("bachata",),
-    "ballad": ("ballad",),
-    "bass-house": ("bass house", "bass-house"),
-    "bgm": ("bgm", "background music", "no-vocal", "no vocal", "instrumental"),
-    "cinematic": ("cinematic", "film score", "movie ost", "trailer", "epic", "heroic"),
-    "club": ("club", "party", "festival", "rave"),
-    "cumbia": ("cumbia",),
-    "dance-pop": ("dance pop", "dance-pop", "idol pop", "idol-pop"),
-    "deep-house": ("deep house", "deep-house"),
-    "dnb": ("dnb", "drum and bass", "drum & bass", "liquid dnb"),
-    "edm": ("edm", "electronic dance"),
-    "folk": ("folk", "acoustic"),
-    "game": ("game bgm", "game music", "arcade", "rpg", "gaming"),
-    "gospel": ("gospel",),
-    "hip-hop": ("hip hop", "hip-hop", "trap", "rap"),
-    "house": ("house",),
-    "jazz": ("jazz",),
-    "jpop": ("j-pop", "jpop", "japanese pop", "city pop"),
-    "kpop": ("k-pop", "kpop", "korean pop"),
-    "latin-pop": ("latin pop", "pop latino", "spanish pop"),
-    "lofi": ("lofi", "lo-fi"),
-    "melodic-techno": ("melodic techno", "melodic-techno"),
-    "orchestral": ("orchestra", "orchestral", "symphonic"),
-    "piano": ("piano", "keys"),
-    "pop": ("pop",),
-    "pop-rock": ("pop rock", "pop-rock"),
-    "reggaeton": ("reggaeton", "urbano"),
-    "rnb": ("r&b", "rnb", "neo soul", "neo-soul", "soul"),
-    "salsa": ("salsa",),
-    "scripture": ("scripture", "worship", "prayer", "bible"),
-    "synth-pop": ("synth pop", "synth-pop"),
-    "tech-house": ("tech house", "tech-house"),
-    "techno": ("techno",),
-    "trance": ("trance",),
-    "tropical-house": ("tropical house", "tropical-house"),
-    "uk-garage": ("uk garage", "uk-garage", "garage"),
-}
-
-
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -327,7 +298,7 @@ def scripture_branch_from_metadata(meta: dict, *, title: str = "") -> str | None
     ).lower()
     if "old testament" in haystack or "genesis" in haystack:
         return "old_testament"
-    if "new testament" in haystack or "gospel" in haystack or "matthew" in haystack:
+    if "new testament" in haystack or "matthew" in haystack:
         return "new_testament"
     return None
 
@@ -458,6 +429,168 @@ def _enforce_sundaze_english_localized_titles(meta: dict, *, is_playlist: bool) 
         meta["youtube_title"] = english_title
         meta["youtube_description"] = localizations["en"].get("description") or meta.get("youtube_description")
     meta["youtube_localizations"] = localizations
+
+
+SUNDAZE_HIP_HOP_TITLE_KEYWORDS = ("hip-hop", "hip hop", "rap-pop", "rap pop")
+SUNDAZE_HIP_HOP_TRACK_KEYWORDS = (
+    "hip-hop",
+    "hip hop",
+    "rap-pop",
+    "rap pop",
+    "sung-rap",
+    "sung rap",
+    "trap-pop",
+    "trap pop",
+    "808",
+)
+SUNDAZE_MIN_CLAIMED_GENRE_TRACK_RATIO = 0.6
+HARUHARU_CITYPOP_KEYWORDS = ("city-pop", "city pop", "citypop", "시티팝")
+SOFT_HOUR_SOLO_PIANO_POSITIVE_KEYWORDS = (
+    "solo piano",
+    "piano solo",
+    "felt piano",
+    "soft piano",
+    "calm piano",
+    "quiet piano",
+    "warm piano",
+    "cafe piano",
+    "study piano",
+    "sleep piano",
+    "reading piano",
+    "피아노 솔로",
+    "솔로 피아노",
+)
+SOFT_HOUR_PIANO_KEYWORDS = ("piano", "피아노")
+SOFT_HOUR_SOLO_PIANO_BLOCKERS = (
+    "vocal",
+    "vocals",
+    "voice",
+    "voices",
+    "singing",
+    "singer",
+    "lyrics",
+    "choir",
+    "choral",
+    "humming",
+    "spoken word",
+    "narration",
+    "rap",
+    "guitar",
+    "ukulele",
+    "harp",
+    "kalimba",
+    "strings",
+    "string section",
+    "violin",
+    "viola",
+    "cello",
+    "orchestra",
+    "orchestral",
+    "synth",
+    "pad",
+    "ambient pad",
+    "rhodes",
+    "electric piano",
+    "wurlitzer",
+    "organ",
+    "bass",
+    "upright bass",
+    "drum",
+    "drums",
+    "beat",
+    "beats",
+    "percussion",
+    "lofi",
+    "lo-fi",
+    "chillhop",
+    "jazz trio",
+    "trio",
+    "bossa",
+    "sax",
+    "saxophone",
+    "flute",
+)
+
+
+def _track_genre_haystack(track: Track) -> str:
+    meta = track.metadata_json or {}
+    values = [
+        track.title,
+        track.prompt,
+        meta.get("style"),
+        meta.get("genre"),
+        meta.get("suno_style"),
+        meta.get("music_style"),
+        meta.get("tags"),
+    ]
+    return " ".join(str(value or "") for value in values).lower()
+
+
+def _is_haruharu_channel_title(channel_title: str | None) -> bool:
+    return _normalize_reuse_channel_title(channel_title) == HARUHARU_CHANNEL_TITLE
+
+
+def _is_soft_hour_channel_title(channel_title: str | None) -> bool:
+    return _normalize_reuse_channel_title(channel_title) == _normalize_reuse_channel_title(SOFT_HOUR_CHANNEL_TITLE)
+
+
+def _without_negated_phrases(text: str, phrases: tuple[str, ...]) -> str:
+    cleaned = f" {text} "
+    for phrase in phrases:
+        pattern = re.escape(phrase)
+        cleaned = re.sub(
+            rf"\b(?:no|not|without|avoid|exclude|excluding|remove|minus)\s+{pattern}\b",
+            " ",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+    return cleaned
+
+
+def _track_is_soft_hour_solo_piano(track: Track) -> bool:
+    haystack = _track_genre_haystack(track)
+    has_piano = any(keyword in haystack for keyword in SOFT_HOUR_PIANO_KEYWORDS)
+    if not has_piano:
+        return False
+    blocker_haystack = _without_negated_phrases(haystack, SOFT_HOUR_SOLO_PIANO_BLOCKERS)
+    if any(blocker in blocker_haystack for blocker in SOFT_HOUR_SOLO_PIANO_BLOCKERS):
+        return False
+    return True
+
+
+def _values_have_haruharu_citypop(values: list[str]) -> bool:
+    haystack = " ".join(str(value or "").lower() for value in values)
+    return any(keyword in haystack for keyword in HARUHARU_CITYPOP_KEYWORDS)
+
+
+def _track_has_haruharu_citypop(track: Track) -> bool:
+    return "city-pop" in cached_track_genre_tokens(track)
+
+
+def _validate_sundaze_metadata_track_genre_consistency(playlist: Playlist, meta: dict) -> None:
+    if not _is_sundaze_release(meta):
+        return
+    title = str(meta.get("youtube_title") or playlist.title or "").lower()
+    if not any(keyword in title for keyword in SUNDAZE_HIP_HOP_TITLE_KEYWORDS):
+        return
+
+    tracks = _playlist_tracks(playlist)
+    if not tracks:
+        return
+    matching_tracks = [
+        track
+        for track in tracks
+        if any(keyword in _track_genre_haystack(track) for keyword in SUNDAZE_HIP_HOP_TRACK_KEYWORDS)
+    ]
+    minimum_matching = max(1, int(len(tracks) * SUNDAZE_MIN_CLAIMED_GENRE_TRACK_RATIO + 0.999))
+    if len(matching_tracks) >= minimum_matching:
+        return
+
+    raise ValueError(
+        "Sundaze metadata claims pop hip-hop/rap-pop, but only "
+        f"{len(matching_tracks)}/{len(tracks)} tracks have hip-hop/rap-pop style metadata. "
+        "Retitle this release as broader English pop or replace reused tracks with matching pop hip-hop material."
+    )
 
 
 def _parse_metadata_datetime(value: str | datetime | None) -> datetime | None:
@@ -937,25 +1070,29 @@ def _loop_video_source(meta: dict) -> str | None:
     return None
 
 
-def normalize_loop_video_provider(value: str | None) -> str | None:
-    normalized = re.sub(r"\s+", " ", str(value or "").strip().lower().replace("_", "-"))
-    if not normalized:
-        return None
-    return LOOP_VIDEO_PROVIDER_ALIASES.get(normalized, "other")
-
-
 def _loop_video_provider(meta: dict) -> str | None:
-    loop_video_path = meta.get("loop_video_path")
-    if not loop_video_path:
-        return None
-    provider = normalize_loop_video_provider(meta.get("loop_video_provider"))
-    if provider:
-        return provider
-    for entry in reversed(list(meta.get("loop_video_history") or [])):
-        if entry.get("loop_video_path") == loop_video_path:
-            provider = normalize_loop_video_provider(entry.get("provider"))
-            if provider:
-                return provider
+    return loop_video_provider_from_meta(meta)
+
+
+def _find_duplicate_loop_video_release(
+    db: Session,
+    *,
+    playlist_id: str,
+    loop_video_sha256: str,
+) -> Playlist | None:
+    for candidate in db.scalars(select(Playlist).where(Playlist.id != playlist_id)).all():
+        meta = _playlist_meta(candidate)
+        candidate_path = str(meta.get("loop_video_path") or "").strip()
+        if not candidate_path:
+            continue
+        candidate_sha256 = str(meta.get("loop_video_sha256") or "").strip()
+        if not candidate_sha256 and Path(candidate_path).is_file():
+            try:
+                candidate_sha256 = loop_video_file_sha256(candidate_path)
+            except OSError:
+                candidate_sha256 = ""
+        if candidate_sha256 and candidate_sha256 == loop_video_sha256:
+            return candidate
     return None
 
 
@@ -1128,6 +1265,7 @@ def serialize_playlist_workspace(
         loop_video_source=_loop_video_source(meta),
         loop_video_provider=_loop_video_provider(meta),
         loop_video_smooth=bool(meta.get("loop_video_smooth", True)),
+        loop_video_crossfade_seconds=loop_video_crossfade_seconds_from_meta(meta),
         video_spectrum_overlay_style=apply_video_spectrum_channel_policy(
             str(meta.get("video_spectrum_overlay_style") or "bars"),
             meta,
@@ -1676,33 +1814,21 @@ def _reuse_channel_identity_matches(target_playlist: Playlist, source_playlist: 
     return bool(target_channel_title and source_channel_title and target_channel_title == source_channel_title)
 
 
-def _reuse_text_values_for_playlist(playlist: Playlist) -> list[str]:
+def _reuse_genre_tokens_for_playlist(playlist: Playlist) -> set[str]:
     meta = _playlist_meta(playlist)
-    values = [
-        playlist.title,
-        str(meta.get("description") or ""),
-        str(meta.get("youtube_title") or ""),
-    ]
-    for track in _playlist_tracks(playlist):
-        track_meta = track.metadata_json or {}
-        values.extend(
+    tokens = set(
+        extract_genre_tokens_from_values(
             [
-                track.title,
-                track.prompt,
-                str(track_meta.get("tags") or ""),
-                str(track_meta.get("style") or ""),
-                str(track_meta.get("lyrics") or ""),
+                playlist.title,
+                str(meta.get("description") or ""),
+                str(meta.get("youtube_title") or ""),
+                str(meta.get("channel_style_lane") or ""),
+                str(meta.get("channel_broad_genre") or ""),
             ]
         )
-    return values
-
-
-def _reuse_genre_tokens_from_values(values: list[str]) -> set[str]:
-    text = " " + re.sub(r"[^a-z0-9&+-]+", " ", " ".join(str(value or "").lower() for value in values)) + " "
-    tokens: set[str] = set()
-    for token, needles in REUSE_GENRE_PATTERNS.items():
-        if any(f" {needle.strip()} " in text for needle in needles):
-            tokens.add(token)
+    )
+    for track in _playlist_tracks(playlist):
+        tokens.update(cached_track_genre_tokens(track))
     return tokens
 
 
@@ -1713,6 +1839,31 @@ def _track_has_local_audio(track: Track | None) -> bool:
         and not track.audio_path.startswith(("http://", "https://"))
         and Path(track.audio_path).exists()
     )
+
+
+def _track_reuse_blocked(track: Track | None) -> bool:
+    if track is None:
+        return True
+    meta = track.metadata_json or {}
+    return bool(
+        meta.get("reuse_disabled")
+        or meta.get("copyright_blocked")
+        or meta.get("blocked_from_reuse")
+    )
+
+
+def _track_forbidden_for_reuse_target_channel(
+    target_channel_title: str,
+    *,
+    target_has_citypop_intent: bool,
+    track: Track,
+) -> bool:
+    if not _is_haruharu_channel_title(target_channel_title):
+        return False
+    track_has_citypop = _track_has_haruharu_citypop(track)
+    if target_has_citypop_intent:
+        return not track_has_citypop
+    return track_has_citypop
 
 
 def _playlist_reuse_source_sort_key(playlist: Playlist) -> datetime:
@@ -1788,18 +1939,17 @@ def _reuse_candidate_is_similar(
         return False
 
     source_meta = source_playlist.metadata_json or {}
-    track_meta = track.metadata_json or {}
-    source_tokens = _reuse_genre_tokens_from_values(
-        [
-            source_playlist.title,
-            str(source_meta.get("description") or ""),
-            str(source_meta.get("youtube_title") or ""),
-            track.title,
-            track.prompt,
-            str(track_meta.get("tags") or ""),
-            str(track_meta.get("style") or ""),
-            str(track_meta.get("lyrics") or ""),
-        ]
+    source_tokens = set(cached_track_genre_tokens(track))
+    source_tokens.update(
+        extract_genre_tokens_from_values(
+            [
+                source_playlist.title,
+                str(source_meta.get("description") or ""),
+                str(source_meta.get("youtube_title") or ""),
+                str(source_meta.get("channel_style_lane") or ""),
+                str(source_meta.get("channel_broad_genre") or ""),
+            ]
+        )
     )
     if target_genre_tokens and source_tokens:
         return bool(target_genre_tokens & source_tokens)
@@ -1959,6 +2109,8 @@ def _record_track_reuse_event(
     meta["playlist_reuse_history"] = reuse_history[-50:]
     track.metadata_json = meta
     db.add(track)
+    db.flush()
+    sync_track_search_document(db, track)
 
 
 def _maybe_add_reused_back_half_tracks(
@@ -1996,7 +2148,16 @@ def _maybe_add_reused_back_half_tracks(
     if _playlist_reuse_excluded_for_scripture_channel(playlist):
         return {"added_seconds": 0, "added_track_ids": [], "reason": "scripture_or_buddhist_channel"}
 
-    target_genre_tokens = _reuse_genre_tokens_from_values(_reuse_text_values_for_playlist(playlist))
+    target_genre_tokens = _reuse_genre_tokens_for_playlist(playlist)
+    target_has_citypop_intent = _values_have_haruharu_citypop(
+        [
+            playlist.title,
+            str(meta.get("description") or ""),
+            str(meta.get("youtube_title") or ""),
+            str(meta.get("channel_style_lane") or ""),
+            str(meta.get("channel_broad_genre") or ""),
+        ]
+    )
     existing_track_ids = set(_playlist_track_ids(playlist))
     added_track_ids: list[str] = []
     added_titles: list[str] = []
@@ -2026,7 +2187,17 @@ def _maybe_add_reused_back_half_tracks(
         for row in _playlist_back_half_reuse_rows(source_playlist):
             track = row["track"]
             track_id = row["track_id"]
-            if not track_id or track_id in existing_track_ids or not _track_has_local_audio(track):
+            if (
+                not track_id
+                or track_id in existing_track_ids
+                or _track_reuse_blocked(track)
+                or _track_forbidden_for_reuse_target_channel(
+                    target_channel_title,
+                    target_has_citypop_intent=target_has_citypop_intent,
+                    track=track,
+                )
+                or not _track_has_local_audio(track)
+            ):
                 continue
             if not _reuse_candidate_is_similar(
                 target_playlist=playlist,
@@ -2055,11 +2226,20 @@ def _maybe_add_reused_back_half_tracks(
                     "reuse_count_before": reuse_stats["count"],
                     "reused_seconds_before": reuse_stats["seconds"],
                     "source_start_seconds": _coerce_nonnegative_int(row.get("start_seconds")),
+                    "soft_hour_piano_priority": (
+                        0
+                        if (
+                            _is_soft_hour_channel_title(target_channel_title)
+                            and _track_is_soft_hour_solo_piano(track)
+                        )
+                        else 1 if _is_soft_hour_channel_title(target_channel_title) else 0
+                    ),
                 }
             )
 
     candidates.sort(
         key=lambda candidate: (
+            candidate["soft_hour_piano_priority"],
             candidate["reuse_count_before"],
             candidate["reused_seconds_before"],
             -candidate["source_sort_key"].timestamp(),
@@ -2115,6 +2295,10 @@ def _maybe_add_reused_back_half_tracks(
                 "source_start_seconds": candidate["source_start_seconds"],
                 "reuse_count_before": reuse_count_before,
                 "reused_seconds_before": reused_seconds_before,
+                "soft_hour_solo_piano": bool(
+                    _is_soft_hour_channel_title(target_channel_title)
+                    and candidate["soft_hour_piano_priority"] == 0
+                ),
             }
         )
         added_seconds += duration_seconds
@@ -2126,7 +2310,11 @@ def _maybe_add_reused_back_half_tracks(
         "actor": actor,
         "attempted_at": attempted_at,
         "source": "youtube_back_half",
-        "selection_policy": "least_reused_then_recent_back_half",
+        "selection_policy": (
+            "soft_hour_piano_first_then_similar_back_half"
+            if _is_soft_hour_channel_title(target_channel_title)
+            else "least_reused_then_recent_back_half"
+        ),
         "target_channel_title": target_channel_title,
         "target_genre_tokens": sorted(target_genre_tokens),
         "playlist_target_duration_seconds": playlist_target_duration_seconds,
@@ -2428,6 +2616,8 @@ def _create_split_single_release_for_track(
     track_meta["split_from_release_id"] = source_playlist.id
     track.metadata_json = track_meta
     db.add(track)
+    db.flush()
+    sync_track_search_document(db, track)
     db.add(playlist)
     db.flush()
     return playlist
@@ -2629,26 +2819,44 @@ def attach_uploaded_loop_video(
         raise ValueError("Uploaded loop video is missing on disk.")
 
     meta = _playlist_meta(playlist)
+    loop_video_sha256 = loop_video_file_sha256(loop_video_path)
+    duplicate_playlist = _find_duplicate_loop_video_release(
+        db,
+        playlist_id=playlist.id,
+        loop_video_sha256=loop_video_sha256,
+    )
+    if duplicate_playlist:
+        raise ValueError(
+            "Loop video already belongs to another release: "
+            f"{duplicate_playlist.title} ({duplicate_playlist.id}). "
+            "Upload or generate a distinct loop video for this release."
+        )
+
     normalized_provider = normalize_loop_video_provider(provider)
+    crossfade_seconds = loop_video_crossfade_seconds_for_provider(normalized_provider)
     history = list(meta.get("loop_video_history") or [])
     history_entry = {
         "actor": actor,
         "loop_video_path": loop_video_path,
+        "sha256": loop_video_sha256,
         "uploaded_at": _utcnow().isoformat(),
         "source": "manual-upload",
         "smooth_loop": smooth_loop,
+        "crossfade_seconds": crossfade_seconds,
     }
     if normalized_provider:
         history_entry["provider"] = normalized_provider
     history.append(history_entry)
     meta["loop_video_history"] = history
     meta["loop_video_path"] = loop_video_path
+    meta["loop_video_sha256"] = loop_video_sha256
     meta["loop_video_source"] = "manual-upload"
     if normalized_provider:
         meta["loop_video_provider"] = normalized_provider
     else:
         meta.pop("loop_video_provider", None)
     meta["loop_video_smooth"] = smooth_loop
+    meta["loop_video_crossfade_seconds"] = crossfade_seconds
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
     if playlist.output_video_path:
@@ -2693,15 +2901,19 @@ def clear_uploaded_loop_video(
             "cleared_at": _utcnow().isoformat(),
             "source": meta.get("loop_video_source"),
             "provider": meta.get("loop_video_provider"),
+            "sha256": meta.get("loop_video_sha256"),
             "smooth_loop": bool(meta.get("loop_video_smooth", True)),
+            "crossfade_seconds": loop_video_crossfade_seconds_from_meta(meta),
             "deleted_local_file": deleted,
         }
     )
     meta["loop_video_clear_history"] = history
     meta.pop("loop_video_path", None)
+    meta.pop("loop_video_sha256", None)
     meta.pop("loop_video_source", None)
     meta.pop("loop_video_provider", None)
     meta.pop("loop_video_smooth", None)
+    meta.pop("loop_video_crossfade_seconds", None)
     meta.pop("loop_video_render_mode", None)
     meta["metadata_approved"] = False
     meta["publish_approved"] = False
@@ -3013,6 +3225,10 @@ def generate_playlist_metadata(
             meta["youtube_tags"],
         )
     _enforce_sundaze_english_localized_titles(meta, is_playlist=is_playlist_release)
+    apply_channel_genre_classification(
+        meta,
+        infer_channel_genre_classification(meta, title=playlist.title, tracks=tracks),
+    )
     meta["metadata_provider"] = youtube_metadata.provider
     if youtube_metadata.error:
         meta["metadata_generation_error"] = youtube_metadata.error
@@ -3111,6 +3327,11 @@ def approve_playlist_metadata(
             meta["youtube_title"] = default_copy["title"]
             meta["youtube_description"] = default_copy["description"]
     _enforce_sundaze_english_localized_titles(meta, is_playlist=is_playlist_release)
+    apply_channel_genre_classification(
+        meta,
+        infer_channel_genre_classification(meta, title=playlist.title, tracks=_playlist_tracks(playlist)),
+    )
+    _validate_sundaze_metadata_track_genre_consistency(playlist, meta)
     if is_playlist_release:
         _validate_playlist_metadata_ready(meta)
 
@@ -3389,6 +3610,30 @@ async def assign_track_to_playlist(
         }
     )
     meta["assignment_history"] = history
+    track_meta = dict(track.metadata_json or {})
+    track_meta = annotate_short_track_metadata(
+        track_meta,
+        duration_seconds=track.duration_seconds,
+        title=track.title,
+        track_id=track.id,
+        prompt=track.prompt,
+        style=track_meta.get("style"),
+        exclude_style=track_meta.get("exclude_style"),
+        tags=track_meta.get("tags"),
+        lyrics=track_meta.get("lyrics"),
+        source=track_meta.get("source") or "playlist-assignment",
+        context="playlist_assignment",
+        extra={
+            "playlist_id": playlist.id,
+            "playlist_title": playlist.title,
+            "channel_title": _playlist_reuse_channel_title(playlist),
+        },
+    )
+    observation = (track_meta.get("short_track_observation") or {}) if track_meta else {}
+    track.metadata_json = track_meta
+    db.add(track)
+    db.flush()
+    sync_track_search_document(db, track)
     if _workspace_mode(playlist) == "single_track_video":
         _sync_single_release_audio_state(
             playlist,
@@ -3401,6 +3646,15 @@ async def assign_track_to_playlist(
         _invalidate_playlist_render_after_content_change(playlist)
         meta = _playlist_meta(playlist)
         meta["assignment_history"] = history
+    if observation:
+        meta = record_playlist_short_track_observation(
+            meta,
+            observation,
+            playlist_id=playlist.id,
+            playlist_title=playlist.title,
+            channel_title=_playlist_reuse_channel_title(playlist),
+            actor=actor,
+        )
     playlist.metadata_json = meta
     db.add(playlist)
     db.commit()
@@ -3511,15 +3765,66 @@ def reorder_workspace_tracks(
     return _load_playlist_with_tracks(db, playlist.id)
 
 
-def _randomized_playlist_track_ids(playlist: Playlist) -> list[str]:
-    track_ids = _playlist_track_ids(playlist)
+def _shuffle_track_ids(track_ids: list[str]) -> list[str]:
     if len(track_ids) <= 1:
-        return track_ids
+        return list(track_ids)
     randomized = list(track_ids)
     random.SystemRandom().shuffle(randomized)
     if randomized == track_ids:
         randomized = randomized[1:] + randomized[:1]
     return randomized
+
+
+def _manual_reused_track_ids_from_assignment_history(meta: dict) -> set[str]:
+    reused_track_ids: set[str] = set()
+    for entry in meta.get("assignment_history") or []:
+        if not isinstance(entry, dict):
+            continue
+        actor = str(entry.get("actor") or "").strip().lower()
+        track_id = str(entry.get("track_id") or "").strip()
+        if track_id and "reuse" in actor:
+            reused_track_ids.add(track_id)
+    return reused_track_ids
+
+
+def _reused_back_half_track_ids_for_randomization(playlist: Playlist) -> set[str]:
+    meta = _playlist_meta(playlist)
+    reused_track_ids = {str(track_id) for track_id in meta.get("auto_reused_track_ids") or [] if str(track_id)}
+    reused_track_ids.update(_manual_reused_track_ids_from_assignment_history(meta))
+    return reused_track_ids
+
+
+def _should_preserve_reused_back_half_on_randomize(playlist: Playlist) -> bool:
+    return _is_soft_hour_channel_title(_playlist_reuse_channel_title(playlist))
+
+
+def _randomized_playlist_track_ids(playlist: Playlist) -> list[str]:
+    track_ids = _playlist_track_ids(playlist)
+    if len(track_ids) <= 1:
+        return track_ids
+    if _should_preserve_reused_back_half_on_randomize(playlist):
+        reused_track_ids = _reused_back_half_track_ids_for_randomization(playlist)
+        lead_track_ids = [track_id for track_id in track_ids if track_id not in reused_track_ids]
+        back_half_track_ids = [track_id for track_id in track_ids if track_id in reused_track_ids]
+        if lead_track_ids and back_half_track_ids:
+            track_by_id = {track.id: track for track in _playlist_tracks(playlist)}
+            piano_back_half_track_ids = [
+                track_id
+                for track_id in back_half_track_ids
+                if track_by_id.get(track_id) is not None
+                and _track_is_soft_hour_solo_piano(track_by_id[track_id])
+            ]
+            fallback_back_half_track_ids = [
+                track_id
+                for track_id in back_half_track_ids
+                if track_id not in set(piano_back_half_track_ids)
+            ]
+            return [
+                *_shuffle_track_ids(lead_track_ids),
+                *_shuffle_track_ids(piano_back_half_track_ids),
+                *_shuffle_track_ids(fallback_back_half_track_ids),
+            ]
+    return _shuffle_track_ids(track_ids)
 
 
 def queue_workspace_audio_render(
@@ -3575,7 +3880,12 @@ def queue_workspace_audio_render(
         _refresh_playlist_duration(playlist)
 
     should_randomize = bool(randomize_order and _workspace_mode(playlist) != "single_track_video")
+    preserved_reused_back_half = False
     if should_randomize:
+        preserved_reused_back_half = bool(
+            _should_preserve_reused_back_half_on_randomize(playlist)
+            and _reused_back_half_track_ids_for_randomization(playlist)
+        )
         track_ids = _randomized_playlist_track_ids(playlist)
         item_by_track_id = {item.track_id: item for item in playlist.items}
         for index, track_id in enumerate(track_ids, start=1):
@@ -3594,15 +3904,21 @@ def queue_workspace_audio_render(
         meta["reorder_history"] = history
         meta["last_render_randomized_order"] = True
         meta["last_render_randomized_track_ids"] = track_ids
+        meta["last_render_preserved_reused_back_half"] = preserved_reused_back_half
         db.flush()
     else:
         meta["last_render_randomized_order"] = False
+        meta["last_render_preserved_reused_back_half"] = False
 
     meta["render_ready"] = False
     meta["publish_approved"] = False
     meta["workflow_state"] = "render_queued"
     meta["note"] = (
-        "Playlist audio render queued with randomized track order."
+        (
+            "Playlist audio render queued with randomized track order; reused back-half tracks kept after the fresh lead block."
+            if preserved_reused_back_half
+            else "Playlist audio render queued with randomized track order."
+        )
         if should_randomize
         else "Playlist audio render queued from the web dashboard."
     )
@@ -3676,6 +3992,8 @@ async def return_track_to_workspace_queue(
     track_meta["pending_workspace_title"] = playlist.title
     track.metadata_json = track_meta
     db.add(track)
+    db.flush()
+    sync_track_search_document(db, track)
 
     meta = _playlist_meta(playlist)
     history = list(meta.get("return_to_review_history") or [])
@@ -3736,6 +4054,7 @@ def list_available_approved_tracks(
         )
         .order_by(Track.created_at.asc())
     ).all()
+    tracks = [track for track in tracks if not _track_reuse_blocked(track)]
     if renderable_only:
         return [track for track in tracks if _has_local_audio(track)]
     return tracks

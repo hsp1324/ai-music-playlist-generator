@@ -260,13 +260,18 @@
                 <p id="track-library-summary" class="detail-copy">제목, 스타일, 가사로 곡을 찾아 좋아요를 저장합니다.</p>
               </div>
               <div class="track-library-controls" role="search">
-                <input
-                  id="track-library-search"
-                  class="track-library-search"
-                  type="search"
-                  placeholder="Search track title"
-                  autocomplete="off"
-                />
+                <div class="track-library-search-wrap">
+                  <input
+                    id="track-library-search"
+                    class="track-library-search"
+                    type="search"
+                    placeholder="Search track title, style, lyrics"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="track-library-suggestions"
+                  />
+                  <div id="track-library-suggestions" class="track-library-suggestions" role="listbox"></div>
+                </div>
                 <label class="track-reuse-toggle">
                   <input id="track-library-liked-only" type="checkbox" />
                   <span>Liked only</span>

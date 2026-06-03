@@ -41,11 +41,15 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 ## Music Direction
 
 - Instrumental/no-vocal by default.
-- Follow `../suno-v55-instrumental-format.md`.
-- Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
-- Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
+- Storylight OST playlist production is reuse-only by default. Do not open Suno or start new Suno generation for this channel unless the human explicitly overrides the reuse-only rule. If OpenClaw already generated/downloaded Storylight audio before seeing this rule, upload and use it instead of wasting the spent credit.
+- Create or select the Playlist Release first, then search existing app tracks with `scripts/openclaw-release search-tracks --q "storylight arcade game bgm"` or lane-specific keywords such as `cute fantasy RPG`, `anime game BGM`, `item shop`, `mini game`, `magical menu`, or `playful OST`.
+- Attach existing approved tracks with `scripts/openclaw-release reuse-track --release-id RELEASE_ID --track-id TRACK_ID`. Keep all selected tracks in one coherent lane; do not mix arcade, fantasy town, puzzle room, and dramatic OST cues just to reach a duration target.
+- Existing approved Storylight-compatible tracks can be reused even when they are short, because the Suno credit has already been spent. Prefer stronger/full-length tracks when choosing between otherwise similar candidates, but do not block render or publish only because an already-made cue is under 1:00.
+- If there are not enough matching tracks for the first concept, choose another fresh Storylight lane that has enough existing material. If there still is not enough Storylight-compatible material, report the blocker instead of spending Suno credits.
+- Cover, thumbnail, and provider loop-video assets can still be newly generated for the selected recombination concept.
+- Only when the human explicitly asks for new Storylight OST music, or when documenting/uploading audio that was already generated before the reuse-only rule was noticed, follow `../suno-v55-instrumental-format.md`, use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field, and fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
 - Do not reference protected studios, franchises, characters, composers, songs, or specific artists in Suno or Dreamina prompts. Use safe generic wording such as `playful Japanese arcade-game OST`, `cute fantasy RPG BGM`, `anime side-story instrumental`, `kawaii game menu music`, or `lighthearted game background music`.
-- Do not put duration caps such as `less than 4 minutes` or `under 4 minutes` into Suno fields unless the human explicitly asks for that cap. Prompt for a full-length complete cue of at least 2 minutes with a natural intro, developed loopable middle, and resolved ending; regenerate or explicitly report tracks shorter than 2:00. Complete 5+ minute tracks are allowed.
+- If the human explicitly overrides reuse-only and asks for new Storylight music, do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete cue with a natural intro, developed loopable middle, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Music should be melodic, catchy, scene-rich, and loop-friendly without sounding like generic sleep music or mainstream vocal J-pop.
 
 ## Visual Direction
