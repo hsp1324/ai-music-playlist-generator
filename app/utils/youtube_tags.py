@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -27,7 +26,11 @@ DISALLOWED_YOUTUBE_TAG_KEYS = {
 
 
 def youtube_tag_key(value: Any) -> str:
-    return re.sub(r"[^0-9a-z]+", "", str(value or "").strip().lstrip("#").lower())
+    return "".join(
+        character.casefold()
+        for character in str(value or "").strip().lstrip("#")
+        if character.isalnum()
+    )
 
 
 def is_disallowed_youtube_tag(value: Any) -> bool:

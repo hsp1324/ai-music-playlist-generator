@@ -55,6 +55,14 @@ def test_metadata_approval_accepts_comma_separated_tags_and_filters_ai_tags() ->
     ]
 
 
+def test_metadata_approval_preserves_multilingual_tags() -> None:
+    assert _normalize_youtube_tags("불교 힙합, #불교힙합, Jポップ, 케이팝, 케이 팝") == [
+        "불교 힙합",
+        "Jポップ",
+        "케이팝",
+    ]
+
+
 def test_playlist_metadata_ready_requires_all_languages_and_timeline() -> None:
     localizations = {
         language: {
