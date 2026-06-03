@@ -5823,6 +5823,132 @@ def test_workspace_audio_render_prefers_least_reused_back_half_track(tmp_path) -
         clear_isolated_client_env()
 
 
+def test_workspace_audio_render_prefers_liked_back_half_tracks_and_skips_disliked(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_tracks = []
+            for index in range(4):
+                audio_path = tmp_path / f"source-liked-tech-house-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                metadata = {"style": "tech house, club instrumental", "tags": "tech house"}
+                if index == 2:
+                    metadata.update(
+                        {
+                            "user_rating": "like",
+                            "playlist_reuse_count": 5,
+                            "playlist_reused_seconds": 3000,
+                        }
+                    )
+                if index == 3:
+                    metadata["user_rating"] = "dislike"
+                track = Track(
+                    title=f"Source Liked Tech House {index + 1}",
+                    prompt="tech house instrumental groove",
+                    duration_seconds=600,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json=metadata,
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="Liked Tech House Source",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=2400,
+                actual_duration_seconds=2400,
+                youtube_video_id="yt-liked-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "Club Bloom",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 600,
+                            "duration_seconds": 600,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=600,
+                    )
+                )
+            db.commit()
+            liked_track_id = source_tracks[2].id
+            disliked_track_id = source_tracks[3].id
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Liked Tech House Workout Mix",
+                "target_duration_seconds": 2400,
+                "description": "Tech house workout and running energy.",
+                "target_youtube_channel_title": "Club Bloom",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        new_audio_path = tmp_path / "new-liked-tech-house.mp3"
+        new_audio_path.write_bytes(b"fake-audio")
+        track_response = client.post(
+            "/api/tracks",
+            json={
+                "title": "New Liked Tech House Lead",
+                "prompt": "tech house workout groove",
+                "duration_seconds": 1800,
+                "audio_path": str(new_audio_path),
+                "metadata": {"style": "tech house", "tags": "tech house"},
+            },
+        )
+        assert track_response.status_code == 201
+        approve_response = client.post(
+            f"/api/tracks/{track_response.json()['id']}/decisions",
+            json={
+                "decision": "approve",
+                "source": "human",
+                "actor": "test-suite",
+                "playlist_id": workspace_id,
+            },
+        )
+        assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite"},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        assert [track["title"] for track in queued["tracks"]] == [
+            "New Liked Tech House Lead",
+            "Source Liked Tech House 3",
+        ]
+
+        with SessionLocal() as db:
+            liked_track = db.get(Track, liked_track_id)
+            disliked_track = db.get(Track, disliked_track_id)
+            assert (liked_track.metadata_json or {})["playlist_reuse_count"] == 6
+            assert (disliked_track.metadata_json or {}).get("playlist_reuse_count") is None
+
+            event = db.scalar(select(TrackReuseEvent).where(TrackReuseEvent.track_id == liked_track_id))
+            assert event is not None
+            assert event.target_playlist_id == workspace_id
+            assert event.reuse_count_before == 5
+    finally:
+        clear_isolated_client_env()
+
+
 def test_workspace_audio_render_extends_fifteen_minute_release_to_sixty_minute_block_with_reuse(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

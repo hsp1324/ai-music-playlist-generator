@@ -1849,7 +1849,15 @@ def _track_reuse_blocked(track: Track | None) -> bool:
         meta.get("reuse_disabled")
         or meta.get("copyright_blocked")
         or meta.get("blocked_from_reuse")
+        or str(meta.get("user_rating") or "").strip().lower() == "dislike"
     )
+
+
+def _track_liked_reuse_priority(track: Track | None) -> int:
+    if track is None:
+        return 1
+    meta = track.metadata_json or {}
+    return 0 if str(meta.get("user_rating") or "").strip().lower() == "like" else 1
 
 
 def _track_forbidden_for_reuse_target_channel(
@@ -2226,6 +2234,7 @@ def _maybe_add_reused_back_half_tracks(
                     "reuse_count_before": reuse_stats["count"],
                     "reused_seconds_before": reuse_stats["seconds"],
                     "source_start_seconds": _coerce_nonnegative_int(row.get("start_seconds")),
+                    "liked_priority": _track_liked_reuse_priority(track),
                     "soft_hour_piano_priority": (
                         0
                         if (
@@ -2240,6 +2249,7 @@ def _maybe_add_reused_back_half_tracks(
     candidates.sort(
         key=lambda candidate: (
             candidate["soft_hour_piano_priority"],
+            candidate["liked_priority"],
             candidate["reuse_count_before"],
             candidate["reused_seconds_before"],
             -candidate["source_sort_key"].timestamp(),
@@ -2299,6 +2309,7 @@ def _maybe_add_reused_back_half_tracks(
                     _is_soft_hour_channel_title(target_channel_title)
                     and candidate["soft_hour_piano_priority"] == 0
                 ),
+                "liked": candidate["liked_priority"] == 0,
             }
         )
         added_seconds += duration_seconds
@@ -2311,9 +2322,9 @@ def _maybe_add_reused_back_half_tracks(
         "attempted_at": attempted_at,
         "source": "youtube_back_half",
         "selection_policy": (
-            "soft_hour_piano_first_then_similar_back_half"
+            "soft_hour_piano_first_liked_then_similar_back_half"
             if _is_soft_hour_channel_title(target_channel_title)
-            else "least_reused_then_recent_back_half"
+            else "liked_then_least_reused_similar_back_half"
         ),
         "target_channel_title": target_channel_title,
         "target_genre_tokens": sorted(target_genre_tokens),
