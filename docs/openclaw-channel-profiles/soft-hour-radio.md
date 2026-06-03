@@ -41,6 +41,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - For Dreamina/Seedance, use `2.0 Fast`, first-frame only, no Omni Reference, no last-frame reference, `16:9`, `720p`, exactly `7 seconds`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
 - Do not put `7 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
 - The loop video should preserve the same photorealistic high-quality background feeling as the cover. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
+- If the first-frame cover contains short piano/use-case text, the provider video must keep that text as plain letters directly on the scene with a transparent background. Do not add, preserve, or animate in any black box, semi-transparent dark panel, rectangle, gradient scrim, sticker, badge, pill, capsule, or filled label shape behind the text. Reject/regenerate if the moving clip wraps clean first-frame text in a new box.
 - The camera must be completely static: locked-off tripod, fixed frame, no pan, tilt, zoom, push-in, pull-back, dolly, handheld shake, camera breathing, camera drift, camera follow, parallax camera move, or any other camera movement.
 - Use only subtle environmental motion already present or naturally implied by the first frame, such as rain on glass, steam from a mug, candle or lamp flicker, curtain edge movement, drifting dust motes, smoke, firelight, soft reflections, or gentle leaf movement. Do not move the camera to create motion.
 - Write prompts with positive motion language: `calm but clearly visible natural motion across several environmental layers`.
@@ -55,9 +56,10 @@ Use the uploaded first-frame image as the exact starting frame.
 Create one uninterrupted calm environmental take for a background-music release from a locked-off tripod camera.
 Preserve the opening composition, lighting, palette, and high-resolution photorealistic visual language.
 If the first frame already contains a short use-case/style phrase, keep it stable and readable. Do not invent a channel name.
+Keep that phrase as transparent-background typography directly on the scene; do not create or preserve any black box, translucent dark panel, gradient scrim, sticker, badge, pill, capsule, or filled label shape behind the letters.
 Animate only calm natural motion already present or naturally implied by the first frame and release mood: rain on glass, steam from a cup, candle or lamp flicker, curtain edge movement, drifting dust, smoke, firelight, soft reflections, or gentle leaf movement when appropriate.
 Keep the same crop, framing, camera distance, lighting, palette, and subject placement from first frame to final frame.
-No camera movement, no pan, no tilt, no zoom, no dolly, no handheld shake, no parallax camera move, no new text, subtitles, logos, UI, anime, illustration, or cartoon styling.
+No camera movement, no pan, no tilt, no zoom, no dolly, no handheld shake, no parallax camera move, no new text, no text background boxes or panels, subtitles, logos, UI, anime, illustration, or cartoon styling.
 ```
 
 ## Metadata
