@@ -26,7 +26,15 @@ def _ensure_engine() -> tuple[Engine, sessionmaker]:
         connect_args["check_same_thread"] = False
         connect_args["timeout"] = 2
 
-    _engine = create_engine(settings.database_url, connect_args=connect_args)
+    engine_kwargs = {"connect_args": connect_args}
+    if settings.database_url.startswith("sqlite"):
+        # Render-worker progress and chunk-upload requests can briefly arrive in
+        # bursts. Keep enough pooled handles for concurrent reads, but fail fast
+        # instead of letting browser requests wait behind the default 30s pool
+        # timeout when a worker storm exhausts the pool.
+        engine_kwargs.update(pool_size=20, max_overflow=20, pool_timeout=2)
+
+    _engine = create_engine(settings.database_url, **engine_kwargs)
     if settings.database_url.startswith("sqlite"):
         @event.listens_for(_engine, "connect")
         def _set_sqlite_busy_timeout(dbapi_connection, _connection_record):  # type: ignore[no-untyped-def]
