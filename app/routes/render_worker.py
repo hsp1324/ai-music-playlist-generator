@@ -74,6 +74,7 @@ PROGRESS_DB_LOAD_IMPORTANT_STAGES = {
     "uploading",
 }
 _PROGRESS_DB_LOAD_LAST_ACCEPTED: dict[str, dict[str, Any]] = {}
+_PROGRESS_DB_LOAD_REJECTED_UNTIL: dict[str, datetime] = {}
 
 
 class RenderWorkerClaimRequest(BaseModel):
@@ -157,13 +158,25 @@ def _progress_needs_db_load(progress: dict[str, Any]) -> bool:
 
 
 def _prune_progress_db_load_throttle(now: datetime) -> None:
-    if len(_PROGRESS_DB_LOAD_LAST_ACCEPTED) <= 1024:
-        return
-    cutoff = now - timedelta(hours=2)
-    for job_id, previous in list(_PROGRESS_DB_LOAD_LAST_ACCEPTED.items()):
-        accepted_at = _parse_progress_timestamp(previous.get("_accepted_at"))
-        if accepted_at is None or accepted_at < cutoff:
-            _PROGRESS_DB_LOAD_LAST_ACCEPTED.pop(job_id, None)
+    if len(_PROGRESS_DB_LOAD_LAST_ACCEPTED) > 1024:
+        cutoff = now - timedelta(hours=2)
+        for job_id, previous in list(_PROGRESS_DB_LOAD_LAST_ACCEPTED.items()):
+            accepted_at = _parse_progress_timestamp(previous.get("_accepted_at"))
+            if accepted_at is None or accepted_at < cutoff:
+                _PROGRESS_DB_LOAD_LAST_ACCEPTED.pop(job_id, None)
+    for job_id, rejected_until in list(_PROGRESS_DB_LOAD_REJECTED_UNTIL.items()):
+        if rejected_until < now:
+            _PROGRESS_DB_LOAD_REJECTED_UNTIL.pop(job_id, None)
+
+
+def _progress_db_load_rejected(job_id: str, now: datetime) -> bool:
+    rejected_until = _PROGRESS_DB_LOAD_REJECTED_UNTIL.get(job_id)
+    if rejected_until is None:
+        return False
+    if rejected_until < now:
+        _PROGRESS_DB_LOAD_REJECTED_UNTIL.pop(job_id, None)
+        return False
+    return True
 
 
 def _should_skip_progress_db_load(job_id: str, progress: dict[str, Any], now: datetime) -> bool:
@@ -1225,6 +1238,7 @@ def _record_render_progress(job_id: str, progress: dict[str, Any]) -> dict:
                 return {"ok": True, "progress_recorded": False, "reason": "database_locked"}
             raise
         if job.status != JobStatus.running:
+            _PROGRESS_DB_LOAD_REJECTED_UNTIL[job_id] = _utcnow() + timedelta(minutes=10)
             raise HTTPException(status_code=409, detail="Render job is not running.")
         recorded = _update_video_progress(db, job, playlist, progress)
         return {"ok": True, "progress_recorded": recorded}
@@ -1241,7 +1255,10 @@ async def update_render_progress(
     progress = dict(payload.progress or {})
     if payload.message:
         progress["message"] = payload.message
-    if _should_skip_progress_db_load(job_id, progress, _utcnow()):
+    now = _utcnow()
+    if _progress_db_load_rejected(job_id, now):
+        raise HTTPException(status_code=409, detail="Render job is not running.")
+    if _should_skip_progress_db_load(job_id, progress, now):
         return {"ok": True, "progress_recorded": False, "reason": "progress_throttled_before_db"}
     return await asyncio.to_thread(_record_render_progress, job_id, progress)
 
