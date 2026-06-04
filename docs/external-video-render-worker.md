@@ -68,6 +68,7 @@ Set the API URL and token:
 ```bash
 export AIMP_RENDER_WORKER_API_BASE="https://ai-music.168.107.34.175.sslip.io/api"
 export AIMP_RENDER_WORKER_SHARED_TOKEN="PASTE_THE_MAIN_VM_TOKEN_HERE"
+export AIMP_RENDER_WORKER_PROGRESS_INTERVAL_SECONDS=30
 export AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS=10
 export AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS=300
 export AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE=auto
@@ -107,7 +108,7 @@ Keep `--worker-id` stable. If the worker disconnects during upload, restarting w
 
 After the final MP4 is successfully uploaded back to the web app, the worker writes a completion marker in that job cache directory. When disk usage for the worker cache filesystem rises above `AIMP_RENDER_WORKER_CACHE_CLEANUP_DISK_THRESHOLD_PERCENT` (default `50`), the worker deletes completed job cache directories oldest first. It also deletes unmarked stale job cache directories older than `AIMP_RENDER_WORKER_CACHE_CLEANUP_ORPHAN_AGE_HOURS` (default `24`) because older workers may have left successful renders without markers. The active job writes `.render-worker-active.json`; fresh in-progress job directories are not deleted by cache cleanup.
 
-Progress updates are best effort. `AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS` (default `10`) prevents a wedged web server connection from blocking ffmpeg progress output long enough to stall the render.
+Progress updates are best effort and should be sparse enough to avoid loading the main web app. `AIMP_RENDER_WORKER_PROGRESS_INTERVAL_SECONDS` (default `30`) controls the minimum interval between render progress POSTs; final, failed, and 100% updates are still sent immediately. `AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS` (default `10`) prevents a wedged web server connection from blocking ffmpeg progress output long enough to stall the render.
 Other worker API calls use `AIMP_RENDER_WORKER_API_TIMEOUT_SECONDS` (default `300`) so claim, asset download, chunk upload, upload-status, and complete calls can retry instead of hanging forever when the web server accepts a connection but stops responding.
 Lyric timing uses `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE` (default `auto`). In auto mode, low-memory `oracle` workers use approximate timeline cues so lyrics still burn into the video without loading faster-whisper; desktop/GPU workers use faster-whisper alignment unless the server already supplied timeline cues. Set `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODE=whisper` and `AIMP_RENDER_WORKER_LYRICS_ALIGNMENT_MODEL=tiny` when this worker must always use faster-whisper timing. Current workers advertise `video_lyrics_cjk_font` / `cjk_font` only when `fc-match` finds a CJK-capable font; the main app will not assign CJK lyric overlay jobs to workers that do not advertise that font support.
 

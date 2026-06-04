@@ -587,6 +587,27 @@ def post_progress(
         print(f"progress update failed: {exc}", file=sys.stderr, flush=True)
 
 
+def progress_float(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def progress_should_send_immediately(progress: dict[str, Any]) -> bool:
+    if progress.get("upload_complete"):
+        return True
+    status = str(progress.get("status") or "").strip().lower()
+    if status in {"complete", "completed", "done", "end", "ended", "error", "failed", "failure", "succeeded"}:
+        return True
+    for key in ("percent", "upload_percent"):
+        value = progress_float(progress.get(key))
+        if value is not None and value >= 100:
+            return True
+    ratio = progress_float(progress.get("progress_ratio"))
+    return bool(ratio is not None and ratio >= 1)
+
+
 def render_job(
     client: httpx.Client,
     *,
@@ -596,6 +617,7 @@ def render_job(
     cache_dir: Path,
     ffmpeg_binary: str,
     progress_timeout_seconds: float,
+    progress_interval_seconds: float,
     worker_profile: str,
     lyrics_alignment_mode_override: str,
     lyrics_alignment_model_override: str,
@@ -702,15 +724,28 @@ def render_job(
             )
             print(f"Built {len(lyric_cues)} timeline lyric cues.", flush=True)
 
+    last_progress_posted_at = 0.0
+    progress_interval = max(float(progress_interval_seconds), 0.0)
+
     def callback(progress: dict[str, Any]) -> None:
-        post_progress(
-            client,
-            token=token,
-            job_id=job_id,
-            worker_id=worker_id,
-            progress=progress,
-            timeout_seconds=progress_timeout_seconds,
+        nonlocal last_progress_posted_at
+        now = time.monotonic()
+        should_post = (
+            last_progress_posted_at <= 0
+            or progress_interval <= 0
+            or (now - last_progress_posted_at) >= progress_interval
+            or progress_should_send_immediately(progress)
         )
+        if should_post:
+            post_progress(
+                client,
+                token=token,
+                job_id=job_id,
+                worker_id=worker_id,
+                progress=progress,
+                timeout_seconds=progress_timeout_seconds,
+            )
+            last_progress_posted_at = now
         print_progress_line(progress)
 
     if render["mode"] == "loop_video":
@@ -850,6 +885,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
             "capabilities": {
                 "ffmpeg": args.ffmpeg,
                 "chunk_size_bytes": args.chunk_size_bytes,
+                "progress_interval_seconds": args.progress_interval_seconds,
                 "worker_profile": worker_profile,
                 "max_render_height": max_render_height,
                 "prefer_no_lyrics": prefer_no_lyrics,
@@ -892,6 +928,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         cache_dir=args.cache_dir,
         ffmpeg_binary=args.ffmpeg,
         progress_timeout_seconds=args.progress_timeout_seconds,
+        progress_interval_seconds=args.progress_interval_seconds,
         worker_profile=worker_profile,
         lyrics_alignment_mode_override=args.lyrics_alignment_mode,
         lyrics_alignment_model_override=args.lyrics_alignment_model,
@@ -939,6 +976,12 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=float(os.environ.get("AIMP_RENDER_WORKER_PROGRESS_TIMEOUT_SECONDS", 10)),
         help="Maximum seconds to wait for best-effort progress updates before continuing the render.",
+    )
+    parser.add_argument(
+        "--progress-interval-seconds",
+        type=float,
+        default=float(os.environ.get("AIMP_RENDER_WORKER_PROGRESS_INTERVAL_SECONDS", 30)),
+        help="Minimum seconds between render progress POSTs. Final/failed/100%% updates are sent immediately.",
     )
     parser.add_argument(
         "--api-timeout-seconds",
