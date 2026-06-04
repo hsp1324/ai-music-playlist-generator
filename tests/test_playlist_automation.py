@@ -2636,6 +2636,93 @@ def test_render_worker_claim_pauses_when_disk_nears_cleanup_threshold(tmp_path, 
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_skips_cleanup_when_disk_guard_is_clear(tmp_path, monkeypatch) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        services.settings.local_video_cleanup_disk_threshold_percent = 80
+        services.settings.render_worker_claim_disk_safety_margin_percent = 0
+
+        storage = tmp_path / "storage"
+        playlist_dir = storage / "playlists"
+        track_dir = storage / "tracks"
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "disk-clear-audio.mp3"
+        cover_path = playlist_dir / "disk-clear-cover.png"
+        loop_path = playlist_dir / "disk-clear-loop.mp4"
+        track_path = track_dir / "disk-clear-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Disk Clear Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "[Instrumental]\nno vocals"},
+            )
+            playlist = Playlist(
+                title="Disk Clear Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        monkeypatch.setattr(
+            render_worker_routes.shutil,
+            "disk_usage",
+            lambda _path: SimpleNamespace(total=100, used=50, free=50),
+        )
+
+        def fail_cleanup(*_args, **_kwargs):
+            raise AssertionError("render worker claim should not run cleanup when disk guard is clear")
+
+        monkeypatch.setattr(render_worker_routes, "_run_public_video_cleanup", fail_cleanup)
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={"worker_id": "desktop-render", "hostname": "desktop"},
+        )
+
+        assert claim.status_code == 200
+        payload = claim.json()
+        assert payload["job"]["id"] == job_id
+
+        with SessionLocal() as db:
+            assert db.get(Job, job_id).status == JobStatus.running
+    finally:
+        clear_isolated_client_env()
+
+
 def test_render_worker_claim_forces_no_spectrum_for_religious_channel(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"

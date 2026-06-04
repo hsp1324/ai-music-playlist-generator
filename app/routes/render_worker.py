@@ -962,14 +962,16 @@ def claim_render_job(
             )
             return {"ok": True, "job": _render_job_payload(job, playlist, services), "recovered_stale_jobs": recovered}
 
-    try:
-        _run_public_video_cleanup(db, services)
-    except OperationalError as exc:
-        db.rollback()
-        if _is_database_locked(exc):
-            return _database_locked_claim_response(recovered)
-        raise
     disk_guard = _render_claim_disk_guard(services)
+    if disk_guard.get("blocked"):
+        try:
+            _run_public_video_cleanup(db, services)
+        except OperationalError as exc:
+            db.rollback()
+            if _is_database_locked(exc):
+                return _database_locked_claim_response(recovered)
+            raise
+        disk_guard = _render_claim_disk_guard(services)
     if disk_guard.get("blocked"):
         return {
             "ok": True,
