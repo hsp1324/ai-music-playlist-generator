@@ -2,6 +2,7 @@ import random
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import func, select
@@ -1407,8 +1408,42 @@ def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[st
     }
 
 
+def _compact_playlist_records(db: Session) -> list[Playlist]:
+    rows = db.execute(
+        select(
+            Playlist.id,
+            Playlist.title,
+            Playlist.status,
+            Playlist.target_duration_seconds,
+            Playlist.actual_duration_seconds,
+            Playlist.output_audio_path,
+            Playlist.output_video_path,
+            Playlist.youtube_video_id,
+            Playlist.metadata_json,
+            Playlist.created_at,
+            Playlist.updated_at,
+        )
+    ).all()
+    return [
+        SimpleNamespace(
+            id=row.id,
+            title=row.title,
+            status=row.status,
+            target_duration_seconds=row.target_duration_seconds,
+            actual_duration_seconds=row.actual_duration_seconds,
+            output_audio_path=row.output_audio_path,
+            output_video_path=row.output_video_path,
+            youtube_video_id=row.youtube_video_id,
+            metadata_json=row.metadata_json or {},
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+        for row in rows
+    ]
+
+
 def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]:
-    playlists = db.scalars(select(Playlist)).all()
+    playlists = _compact_playlist_records(db)
     playlist_ids = [playlist.id for playlist in playlists]
     item_counts = _playlist_item_counts(db, playlist_ids)
     render_jobs = _compact_render_jobs(db, playlist_ids)
