@@ -16,7 +16,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, selectinload
 
-from app.db import get_db
+from app.db import SessionLocal, get_db
 from app.models.enums import JobStatus, JobType, PlaylistStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
@@ -242,7 +242,7 @@ def _render_claim_disk_guard(services: ServiceRegistry) -> dict[str, Any]:
     }
 
 
-def _request_token(
+async def _request_token(
     authorization: str | None = Header(default=None),
     x_render_worker_token: str | None = Header(default=None),
 ) -> str:
@@ -1216,13 +1216,27 @@ def download_render_asset(
     return FileResponse(path, filename=path.name)
 
 
+def _record_render_progress(job_id: str, progress: dict[str, Any]) -> dict:
+    with SessionLocal() as db:
+        try:
+            job, playlist = _load_render_progress_job(db, job_id)
+        except OperationalError as exc:
+            db.rollback()
+            if _is_database_locked(exc):
+                return {"ok": True, "progress_recorded": False, "reason": "database_locked"}
+            raise
+        if job.status != JobStatus.running:
+            raise HTTPException(status_code=409, detail="Render job is not running.")
+        recorded = _update_video_progress(db, job, playlist, progress)
+        return {"ok": True, "progress_recorded": recorded}
+
+
 @router.post("/jobs/{job_id}/progress")
-def update_render_progress(
+async def update_render_progress(
     job_id: str,
     payload: RenderWorkerProgressRequest,
     services: ServiceRegistry = Depends(get_services),
     token: str = Depends(_request_token),
-    db: Session = Depends(get_db),
 ) -> dict:
     _require_render_worker_token(services, token)
     progress = dict(payload.progress or {})
@@ -1230,17 +1244,7 @@ def update_render_progress(
         progress["message"] = payload.message
     if _should_skip_progress_db_load(job_id, progress, _utcnow()):
         return {"ok": True, "progress_recorded": False, "reason": "progress_throttled_before_db"}
-    try:
-        job, playlist = _load_render_progress_job(db, job_id)
-    except OperationalError as exc:
-        db.rollback()
-        if _is_database_locked(exc):
-            return {"ok": True, "progress_recorded": False, "reason": "database_locked"}
-        raise
-    if job.status != JobStatus.running:
-        raise HTTPException(status_code=409, detail="Render job is not running.")
-    recorded = _update_video_progress(db, job, playlist, progress)
-    return {"ok": True, "progress_recorded": recorded}
+    return await asyncio.to_thread(_record_render_progress, job_id, progress)
 
 
 @router.get("/jobs/{job_id}/upload-status")
