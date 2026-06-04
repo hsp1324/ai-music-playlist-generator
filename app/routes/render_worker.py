@@ -1289,15 +1289,6 @@ async def upload_render_chunk(
     db: Session = Depends(get_db),
 ) -> dict:
     _require_render_worker_token(services, token)
-    try:
-        job, playlist = _load_render_progress_job(db, job_id)
-    except OperationalError as exc:
-        db.rollback()
-        if _is_database_locked(exc):
-            raise HTTPException(status_code=503, detail="Database is busy; retry upload chunk.") from exc
-        raise
-    if job.status != JobStatus.running:
-        raise HTTPException(status_code=409, detail="Render job is not running.")
     if not content_range:
         raise HTTPException(status_code=411, detail="Content-Range header is required for resumable upload.")
     match = CONTENT_RANGE_RE.match(content_range.strip())
@@ -1308,6 +1299,17 @@ async def upload_render_chunk(
     total = None if match.group(3) == "*" else int(match.group(3))
     if end < start:
         raise HTTPException(status_code=400, detail="Invalid upload byte range.")
+
+    try:
+        job, _playlist = _load_render_progress_job(db, job_id)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            raise HTTPException(status_code=503, detail="Database is busy; retry upload chunk.") from exc
+        raise
+    if job.status != JobStatus.running:
+        raise HTTPException(status_code=409, detail="Render job is not running.")
+    db.close()
 
     part_path, _meta_path = _upload_paths(services, job_id)
     current_size = part_path.stat().st_size if part_path.exists() else 0
@@ -1336,6 +1338,15 @@ async def upload_render_chunk(
             detail=f"Uploaded chunk size mismatch: got {bytes_written}, expected {expected}.",
         )
 
+    try:
+        job, playlist = _load_render_progress_job(db, job_id)
+    except OperationalError as exc:
+        db.rollback()
+        if _is_database_locked(exc):
+            raise HTTPException(status_code=503, detail="Database is busy; retry upload chunk progress.") from exc
+        raise
+    if job.status != JobStatus.running:
+        raise HTTPException(status_code=409, detail="Render job is not running.")
     received = part_path.stat().st_size
     progress = dict((job.result_json or {}).get("progress") or {})
     upload_ratio = (received / total) if total and total > 0 else None
