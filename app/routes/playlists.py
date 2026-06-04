@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
@@ -211,9 +212,11 @@ def list_playlists(db: Session = Depends(get_db)) -> list[PlaylistRead]:
 def list_workspace_playlists(
     compact: bool = Query(default=False),
     db: Session = Depends(get_db),
-) -> list[PlaylistWorkspaceRead]:
+) -> list[PlaylistWorkspaceRead] | JSONResponse:
     if compact:
-        return list_compact_playlist_workspaces(db)
+        return JSONResponse(
+            content=[workspace.model_dump(mode="json") for workspace in list_compact_playlist_workspaces(db)]
+        )
     return [
         serialize_playlist_workspace(playlist, compact=compact)
         for playlist in list_playlist_workspaces(db, compact=compact)
