@@ -52,6 +52,28 @@ CJK_TEXT_RE = re.compile(r"[\u1100-\u11ff\u3130-\u318f\u3040-\u30ff\u3400-\u9fff
 PROGRESS_UPDATE_MIN_INTERVAL_SECONDS = 30
 PROGRESS_UPDATE_MIN_RATIO_DELTA = 0.01
 PROGRESS_UPDATE_MIN_PERCENT_DELTA = 1.0
+PROGRESS_DB_LOAD_MIN_INTERVAL_SECONDS = 10
+PROGRESS_DB_LOAD_TERMINAL_STATUSES = {
+    "complete",
+    "completed",
+    "done",
+    "end",
+    "ended",
+    "error",
+    "failed",
+    "failure",
+    "success",
+    "succeeded",
+}
+PROGRESS_DB_LOAD_IMPORTANT_STAGES = {
+    "complete",
+    "completed",
+    "finalize",
+    "finalizing",
+    "upload",
+    "uploading",
+}
+_PROGRESS_DB_LOAD_LAST_ACCEPTED: dict[str, dict[str, Any]] = {}
 
 
 class RenderWorkerClaimRequest(BaseModel):
@@ -108,6 +130,60 @@ def _progress_delta_reached(previous: dict[str, Any], current: dict[str, Any]) -
             continue
         if abs(after - before) >= threshold:
             return True
+    return False
+
+
+def _progress_text(value: Any) -> str:
+    return str(value or "").strip().lower()
+
+
+def _progress_needs_db_load(progress: dict[str, Any]) -> bool:
+    if progress.get("upload_complete"):
+        return True
+    status_text = _progress_text(progress.get("status"))
+    if status_text in PROGRESS_DB_LOAD_TERMINAL_STATUSES:
+        return True
+    stage_text = _progress_text(progress.get("stage"))
+    if stage_text in PROGRESS_DB_LOAD_IMPORTANT_STAGES:
+        return True
+    percent = _progress_float(progress.get("percent"))
+    if percent is not None and percent >= 100:
+        return True
+    upload_percent = _progress_float(progress.get("upload_percent"))
+    if upload_percent is not None and upload_percent >= 100:
+        return True
+    progress_ratio = _progress_float(progress.get("progress_ratio"))
+    return bool(progress_ratio is not None and progress_ratio >= 1)
+
+
+def _prune_progress_db_load_throttle(now: datetime) -> None:
+    if len(_PROGRESS_DB_LOAD_LAST_ACCEPTED) <= 1024:
+        return
+    cutoff = now - timedelta(hours=2)
+    for job_id, previous in list(_PROGRESS_DB_LOAD_LAST_ACCEPTED.items()):
+        accepted_at = _parse_progress_timestamp(previous.get("_accepted_at"))
+        if accepted_at is None or accepted_at < cutoff:
+            _PROGRESS_DB_LOAD_LAST_ACCEPTED.pop(job_id, None)
+
+
+def _should_skip_progress_db_load(job_id: str, progress: dict[str, Any], now: datetime) -> bool:
+    if _progress_needs_db_load(progress):
+        _PROGRESS_DB_LOAD_LAST_ACCEPTED[job_id] = {**progress, "_accepted_at": now.isoformat()}
+        _prune_progress_db_load_throttle(now)
+        return False
+    previous = _PROGRESS_DB_LOAD_LAST_ACCEPTED.get(job_id)
+    if previous:
+        accepted_at = _parse_progress_timestamp(previous.get("_accepted_at"))
+        if (
+            accepted_at is not None
+            and (now - accepted_at).total_seconds() < PROGRESS_DB_LOAD_MIN_INTERVAL_SECONDS
+            and progress.get("stage") == previous.get("stage")
+            and progress.get("status") == previous.get("status")
+            and not _progress_delta_reached(previous, progress)
+        ):
+            return True
+    _PROGRESS_DB_LOAD_LAST_ACCEPTED[job_id] = {**progress, "_accepted_at": now.isoformat()}
+    _prune_progress_db_load_throttle(now)
     return False
 
 
@@ -1149,6 +1225,11 @@ def update_render_progress(
     db: Session = Depends(get_db),
 ) -> dict:
     _require_render_worker_token(services, token)
+    progress = dict(payload.progress or {})
+    if payload.message:
+        progress["message"] = payload.message
+    if _should_skip_progress_db_load(job_id, progress, _utcnow()):
+        return {"ok": True, "progress_recorded": False, "reason": "progress_throttled_before_db"}
     try:
         job, playlist = _load_render_progress_job(db, job_id)
     except OperationalError as exc:
@@ -1158,9 +1239,6 @@ def update_render_progress(
         raise
     if job.status != JobStatus.running:
         raise HTTPException(status_code=409, detail="Render job is not running.")
-    progress = dict(payload.progress or {})
-    if payload.message:
-        progress["message"] = payload.message
     recorded = _update_video_progress(db, job, playlist, progress)
     return {"ok": True, "progress_recorded": recorded}
 

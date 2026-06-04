@@ -2026,7 +2026,7 @@ def upload_test_loop_video(client: TestClient, workspace_id: str, *, provider: s
     return payload
 
 
-def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
+def test_external_render_worker_claim_upload_and_complete(tmp_path, monkeypatch) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
         os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
@@ -2132,6 +2132,12 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             },
         )
         assert progress.status_code == 200
+        original_load_progress_job = render_worker_routes._load_render_progress_job
+
+        def fail_load_progress_job(*_args, **_kwargs):
+            raise AssertionError("short interval progress update should skip the DB load")
+
+        monkeypatch.setattr(render_worker_routes, "_load_render_progress_job", fail_load_progress_job)
         throttled_progress = client.post(
             f"/api/render-worker/jobs/{job_id}/progress",
             headers=headers,
@@ -2141,6 +2147,8 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path) -> None:
             },
         )
         assert throttled_progress.status_code == 200
+        assert throttled_progress.json()["reason"] == "progress_throttled_before_db"
+        monkeypatch.setattr(render_worker_routes, "_load_render_progress_job", original_load_progress_job)
         with SessionLocal() as db:
             job = db.get(Job, job_id)
             assert job.result_json["progress"]["percent"] == 10.0
