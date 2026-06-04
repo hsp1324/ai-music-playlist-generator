@@ -863,7 +863,8 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
     worker_profile = args.worker_profile or infer_worker_profile(args.worker_id, hostname)
     max_render_height = max_render_height_for_profile(worker_profile)
     prefer_no_lyrics = bool(worker_profile == "oracle" if args.prefer_no_lyrics is None else args.prefer_no_lyrics)
-    has_faster_whisper = faster_whisper_available()
+    only_no_lyrics = bool(args.only_no_lyrics)
+    has_faster_whisper = faster_whisper_available() and not only_no_lyrics
     effective_default_alignment_mode = resolve_worker_lyrics_alignment_mode(
         worker_profile=worker_profile,
         server_mode="whisper",
@@ -873,7 +874,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
     lyrics_alignment_modes = ["timeline"]
     if supports_whisper_alignment:
         lyrics_alignment_modes.append("whisper")
-    cjk_font = detect_cjk_lyric_font()
+    cjk_font = "" if only_no_lyrics else detect_cjk_lyric_font()
     claim = request_json(
         client,
         "POST",
@@ -889,6 +890,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "worker_profile": worker_profile,
                 "max_render_height": max_render_height,
                 "prefer_no_lyrics": prefer_no_lyrics,
+                "only_no_lyrics": only_no_lyrics,
                 "still_image_video_fps": 30,
                 "faster_whisper": supports_whisper_alignment,
                 "video_lyrics_alignment_mode": "whisper" if supports_whisper_alignment else "timeline",
@@ -904,6 +906,15 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
         print_json({"ok": True, "worked": False, "message": "No queued video render jobs."})
         return False
 
+    render = job.get("render") or {}
+    if only_no_lyrics and (
+        render.get("release_has_singable_lyrics") or render.get("video_lyrics_overlay_enabled")
+    ):
+        raise RuntimeError(
+            "claimed lyric/caption render while --only-no-lyrics is enabled; "
+            f"job_id={job.get('id')}"
+        )
+
     print_json(
         {
             "ok": True,
@@ -917,6 +928,7 @@ def run_once(client: httpx.Client, args: argparse.Namespace) -> bool:
                 "render_resolution": job["render"].get("video_render_resolution"),
                 "worker_profile": worker_profile,
                 "prefer_no_lyrics": prefer_no_lyrics,
+                "only_no_lyrics": only_no_lyrics,
             },
         }
     )
@@ -1005,6 +1017,12 @@ def parse_args() -> argparse.Namespace:
         action=argparse.BooleanOptionalAction,
         default=parse_optional_bool_env(os.environ.get("AIMP_RENDER_WORKER_PREFER_NO_LYRICS")),
         help="Prefer queued render jobs whose tracks do not contain singable lyrics. Defaults on for oracle workers.",
+    )
+    parser.add_argument(
+        "--only-no-lyrics",
+        action=argparse.BooleanOptionalAction,
+        default=bool(parse_optional_bool_env(os.environ.get("AIMP_RENDER_WORKER_ONLY_NO_LYRICS"))),
+        help="Only claim releases without singable lyrics. Also hides Whisper/CJK lyric capabilities from the server.",
     )
     parser.add_argument(
         "--cache-cleanup-threshold-percent",

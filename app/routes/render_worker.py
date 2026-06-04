@@ -979,6 +979,7 @@ def claim_render_job(
         if "prefer_no_lyrics" in capabilities
         else profile == "oracle"
     )
+    only_no_lyrics = _capability_bool(capabilities, "only_no_lyrics")
 
     try:
         existing = db.scalars(
@@ -1086,6 +1087,8 @@ def claim_render_job(
     claimable_jobs = []
     for job in candidate_jobs:
         if job.playlist is None:
+            continue
+        if only_no_lyrics and _job_release_has_singable_lyrics(job, job.playlist):
             continue
         if not _rendered_audio_asset_exists(job.playlist):
             _repair_video_job_missing_audio(db, job, job.playlist, now=now)
