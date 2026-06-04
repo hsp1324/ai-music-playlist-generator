@@ -52,7 +52,7 @@ CJK_TEXT_RE = re.compile(r"[\u1100-\u11ff\u3130-\u318f\u3040-\u30ff\u3400-\u9fff
 PROGRESS_UPDATE_MIN_INTERVAL_SECONDS = 30
 PROGRESS_UPDATE_MIN_RATIO_DELTA = 0.01
 PROGRESS_UPDATE_MIN_PERCENT_DELTA = 1.0
-PROGRESS_DB_LOAD_MIN_INTERVAL_SECONDS = 10
+PROGRESS_DB_LOAD_MIN_INTERVAL_SECONDS = 30
 PROGRESS_DB_LOAD_TERMINAL_STATUSES = {
     "complete",
     "completed",
@@ -179,7 +179,6 @@ def _should_skip_progress_db_load(job_id: str, progress: dict[str, Any], now: da
             and (now - accepted_at).total_seconds() < PROGRESS_DB_LOAD_MIN_INTERVAL_SECONDS
             and progress.get("stage") == previous.get("stage")
             and progress.get("status") == previous.get("status")
-            and not _progress_delta_reached(previous, progress)
         ):
             return True
     _PROGRESS_DB_LOAD_LAST_ACCEPTED[job_id] = {**progress, "_accepted_at": now.isoformat()}

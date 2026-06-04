@@ -2152,6 +2152,9 @@ def test_external_render_worker_claim_upload_and_complete(tmp_path, monkeypatch)
         with SessionLocal() as db:
             job = db.get(Job, job_id)
             assert job.result_json["progress"]["percent"] == 10.0
+        render_worker_routes._PROGRESS_DB_LOAD_LAST_ACCEPTED[job_id]["_accepted_at"] = (
+            datetime.now(timezone.utc) - timedelta(seconds=31)
+        ).isoformat()
         committed_progress = client.post(
             f"/api/render-worker/jobs/{job_id}/progress",
             headers=headers,
