@@ -1168,7 +1168,6 @@ def claim_render_job(
                 .where(Job.id == candidate.id, Job.status == JobStatus.queued)
                 .values(status=JobStatus.running, started_at=now)
             )
-            db.commit()
         except OperationalError as exc:
             db.rollback()
             if _is_database_locked(exc):
@@ -1179,6 +1178,7 @@ def claim_render_job(
             break
 
     if not claimed_id:
+        db.rollback()
         return {"ok": True, "job": None, "recovered_stale_jobs": recovered}
 
     try:
