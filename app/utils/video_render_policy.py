@@ -25,6 +25,12 @@ LYRIC_EDITORIAL_CHANNEL_TITLES = {
     "sundaze",
     "solwave radio",
 }
+STILL_IMAGE_RENDER_DEFAULT_CHANNEL_TITLES = {
+    "haruharu",
+    "sundaze",
+    "solwave radio",
+    "club bloom",
+}
 LYRIC_SOFT_CHANNEL_TITLES = {
     "soft hour radio",
     "storylight ost",
@@ -290,6 +296,10 @@ def is_cinematic_pulse_release(meta: dict[str, Any]) -> bool:
 
 def is_storylight_ost_release(meta: dict[str, Any]) -> bool:
     return STORYLIGHT_OST_CHANNEL_TITLE in _release_channel_titles(meta)
+
+
+def is_still_image_render_default_release(meta: dict[str, Any]) -> bool:
+    return bool(_release_channel_titles(meta) & STILL_IMAGE_RENDER_DEFAULT_CHANNEL_TITLES)
 
 
 def is_bulsong_release(meta: dict[str, Any]) -> bool:

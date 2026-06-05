@@ -6,6 +6,7 @@ import pytest
 
 import scripts.openclaw_release as openclaw_release
 from scripts.openclaw_release import (
+    CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE,
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
@@ -35,6 +36,7 @@ from scripts.openclaw_release import (
     resolve_style_items,
     search_tracks,
     should_enable_lyrics_overlay_for_release,
+    should_use_still_image_render,
     slack_notify_command,
     upload_audio,
     upload_audio_file_to_release,
@@ -120,6 +122,27 @@ def test_still_image_pop_channels_enable_lyrics_overlay_by_default() -> None:
     assert not should_enable_lyrics_overlay_for_release(
         args,
         release={"youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE},
+    )
+    assert not should_enable_lyrics_overlay_for_release(
+        args,
+        release={"youtube_channel_title": CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE},
+    )
+
+
+def test_club_bloom_uses_still_image_render_by_default_without_lyrics() -> None:
+    args = SimpleNamespace(
+        allow_still_image_video=False,
+        video_render_source_mode="auto",
+        lyrics_overlay=False,
+    )
+
+    assert should_use_still_image_render(
+        args,
+        release={"youtube_channel_title": CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE},
+    )
+    assert not should_enable_lyrics_overlay_for_release(
+        args,
+        release={"youtube_channel_title": CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE},
     )
 
 
@@ -921,7 +944,7 @@ def test_create_release_uses_channel_aware_playlist_target_defaults() -> None:
         ),
     )
 
-    assert captured_payloads[0]["target_duration_seconds"] == 900
+    assert captured_payloads[0]["target_duration_seconds"] == 600
     assert captured_payloads[1]["target_duration_seconds"] == 2400
 
 

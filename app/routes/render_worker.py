@@ -35,6 +35,7 @@ from app.utils.video_render_policy import (
     final_video_duration_seconds,
     is_cinematic_pulse_release,
     is_religious_no_spectrum_release,
+    is_still_image_render_default_release,
     is_storylight_ost_release,
     release_has_singable_lyrics,
     release_vocal_metadata,
@@ -519,6 +520,8 @@ def _job_will_render_still_image(job: Job, playlist: Playlist) -> bool:
     )
     if source_mode == "still_image":
         return True
+    if source_mode == "auto" and is_still_image_render_default_release(meta):
+        return True
     loop_video_path = Path(str(meta.get("loop_video_path") or "")) if meta.get("loop_video_path") else None
     has_loop_video = bool(loop_video_path and loop_video_path.exists())
     return bool(source_mode == "auto" and not has_loop_video and payload.get("allow_still_image_fallback"))
@@ -774,6 +777,9 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
     )
     if is_storylight_ost_release(meta) and source_mode == "still_image":
         raise HTTPException(status_code=409, detail="Storylight OST requires an uploaded loop video.")
+    if source_mode == "auto" and is_still_image_render_default_release(meta):
+        source_mode = "still_image"
+        allow_still_image_fallback = True
     if source_mode == "still_image":
         allow_still_image_fallback = True
         has_loop_video = False

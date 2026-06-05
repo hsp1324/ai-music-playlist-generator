@@ -1668,6 +1668,7 @@ def test_openclaw_backlog_scheduler_continues_after_youtube_quota_blocker(tmp_pa
 
 
 def test_openclaw_backlog_scheduler_resumes_blocked_release_after_backoff(tmp_path) -> None:
+    os.environ.pop("AIMP_OPENCLAW_SHARED_TOKEN", None)
     os.environ["AIMP_OPENCLAW_BACKLOG_SCHEDULER_ENABLED"] = "true"
     os.environ["AIMP_OPENCLAW_BACKLOG_REQUEST_COOLDOWN_SECONDS"] = "0"
     os.environ["AIMP_OPENCLAW_MANUAL_BLOCKER_BACKOFF_SECONDS"] = "0"
@@ -4215,6 +4216,71 @@ def test_cinematic_pulse_video_render_uses_loop_video_when_requested(tmp_path) -
             assert job.payload_json["video_spectrum_overlay_style"] == "bars"
             assert job.payload_json["video_render_source_mode"] == "loop_video"
             assert job.payload_json["video_render_resolution"] == "720p"
+    finally:
+        clear_isolated_client_env()
+
+
+def test_club_bloom_video_render_defaults_to_still_image_without_loop_video(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        playlist_dir = settings.playlists_dir
+        track_dir = settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "club-bloom-audio.mp3"
+        cover_path = playlist_dir / "club-bloom-cover.png"
+        track_path = track_dir / "club-bloom-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "purple").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Club Bloom Track",
+                prompt="tech house club mix",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "tech house club mix"},
+            )
+            playlist = Playlist(
+                title="Club Bloom Render",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "Club Bloom",
+                    "workflow_state": "audio_ready",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            db.commit()
+            playlist_id = playlist.id
+
+        response = client.post(
+            f"/api/playlists/{playlist_id}/video/render",
+            json={"actor": "test-suite"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["video_render_source_mode"] == "still_image"
+        assert response.json()["video_spectrum_overlay_style"] == "bars"
+        with SessionLocal() as db:
+            job = db.scalars(
+                select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_video)
+            ).one()
+            playlist = db.get(Playlist, playlist_id)
+            assert playlist.metadata_json["video_render_source_mode"] == "still_image"
+            assert playlist.metadata_json["video_spectrum_overlay_style"] == "bars"
+            assert job.payload_json["allow_still_image_fallback"] is True
+            assert job.payload_json["video_render_source_mode"] == "still_image"
     finally:
         clear_isolated_client_env()
 

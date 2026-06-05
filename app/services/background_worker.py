@@ -49,6 +49,7 @@ from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
     final_video_duration_seconds,
     is_cinematic_pulse_release,
+    is_still_image_render_default_release,
     resolve_final_video_repeat_count,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
@@ -475,6 +476,9 @@ class BackgroundJobWorker:
         elif source_mode not in {"auto", "loop_video", "still_image"}:
             source_mode = "auto"
         allow_still_image_fallback = bool(payload.get("allow_still_image_fallback"))
+        if source_mode == "auto" and is_still_image_render_default_release(meta):
+            source_mode = "still_image"
+            allow_still_image_fallback = True
         if source_mode == "still_image":
             allow_still_image_fallback = True
         return source_mode != "still_image" and not allow_still_image_fallback
@@ -1082,6 +1086,9 @@ class BackgroundJobWorker:
             video_render_source_mode = "loop_video"
         elif video_render_source_mode not in {"auto", "loop_video", "still_image"}:
             video_render_source_mode = "auto"
+        if video_render_source_mode == "auto" and is_still_image_render_default_release(meta):
+            video_render_source_mode = "still_image"
+            allow_still_image_fallback = True
         if video_render_source_mode == "still_image":
             allow_still_image_fallback = True
         video_spectrum_overlay_style = str(

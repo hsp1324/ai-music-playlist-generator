@@ -1011,7 +1011,9 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
             (manual_blocker.get("last_finished_lock") or {}).get("release_id") or ""
         ).strip()
         if blocked_release_id and not _summary_contains_release_id(summary, blocked_release_id):
-            manual_blocker = None
+            blocked_playlist = db.get(Playlist, blocked_release_id)
+            if blocked_playlist is not None:
+                manual_blocker = None
     if manual_blocker:
         summary = {**summary, "manual_blocker": manual_blocker}
 
