@@ -89,7 +89,7 @@ The stall guard is progress-based, not a hard wall-clock timeout. It only fails 
 
 Video render now adds an app-managed audio-reactive visualizer overlay:
 
-- the app fallback style is a compact transparent 28-bar spectrum near the lower-right of the video; the bar overlay is intentionally about half the older width so it does not dominate still-image renders
+- the app fallback style is a transparent 18-bar spectrum near the lower-right of the video; the bar overlay is 420px wide, 1.5x the earlier compact 280px width, so it reads more clearly on still-image lyric renders without taking over the frame
 - the final loop video is normalized to 30fps, and the audio-reactive visualizer overlay is generated at 30fps so spectrum motion matches the rendered video cadence
 - linear visualizer overlays fade out at both horizontal edges, so bars do not appear abruptly cut off
 - the app samples the cover/loop-video frame and chooses colors that fit the visual palette
