@@ -3550,6 +3550,100 @@ def test_render_worker_claim_requires_cjk_font_for_cjk_lyric_jobs(tmp_path) -> N
         clear_isolated_client_env()
 
 
+def test_only_no_lyrics_worker_requeues_existing_lyric_claim(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        services = client.app.state.services
+        playlist_dir = services.settings.playlists_dir
+        track_dir = services.settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "only-no-lyrics-resume-audio.mp3"
+        cover_path = playlist_dir / "only-no-lyrics-resume-cover.png"
+        track_path = track_dir / "only-no-lyrics-resume-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="Korean Lyric Track",
+                prompt="test prompt",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"lyrics": "답장 오기 전까지\n홍대 거리를 걸어"},
+            )
+            playlist = Playlist(
+                title="HaruHaru Lyric Render",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "workflow_state": "video_rendering",
+                    "target_youtube_channel_title": "HaruHaru",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "video_render_source_mode": "still_image",
+                    "video_lyrics_overlay_enabled": True,
+                    "release_vocal_mode": "vocal",
+                    "release_has_singable_lyrics": True,
+                    "release_vocal_mode_source": "channel",
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.running,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                started_at=datetime.now(timezone.utc),
+                payload_json={
+                    "video_render_source_mode": "still_image",
+                    "video_lyrics_overlay_enabled": True,
+                    "release_vocal_mode": "vocal",
+                    "release_has_singable_lyrics": True,
+                    "release_vocal_mode_source": "channel",
+                },
+                result_json={"external_render_worker": {"worker_id": "desktop-no-lyrics"}},
+            )
+            db.add(job)
+            db.commit()
+            job_id = job.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={
+                "worker_id": "desktop-no-lyrics",
+                "hostname": "desktop",
+                "capabilities": {
+                    "worker_profile": "desktop",
+                    "only_no_lyrics": True,
+                    "still_image_video_fps": 30,
+                },
+            },
+        )
+
+        assert claim.status_code == 200
+        assert claim.json()["job"] is None
+
+        with SessionLocal() as db:
+            requeued_job = db.get(Job, job_id)
+            assert requeued_job.status == JobStatus.queued
+            assert requeued_job.started_at is None
+            worker = requeued_job.result_json["external_render_worker"]
+            assert worker["requeue_reason"] == "Worker reports only_no_lyrics but the claimed render requires lyrics."
+    finally:
+        clear_isolated_client_env()
+
+
 def test_queue_workspace_video_render_stores_channel_vocal_mode(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

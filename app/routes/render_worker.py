@@ -609,6 +609,18 @@ def _job_uses_lyric_overlay(job: Job, playlist: Playlist, services: ServiceRegis
     return True
 
 
+def _job_incompatible_with_only_no_lyrics(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
+    meta = {**dict(playlist.metadata_json or {}), **dict(job.payload_json or {})}
+    release_mode = str(meta.get("release_vocal_mode") or "").strip().lower().replace("-", "_")
+    if release_mode in {"vocal", "vocals", "lyric", "lyrics", "singing", "sung"}:
+        return True
+    if _is_truthy(meta.get("release_has_singable_lyrics")):
+        return True
+    if _is_truthy(meta.get("video_lyrics_overlay_enabled")):
+        return True
+    return _job_release_has_singable_lyrics(job, playlist) or _job_uses_lyric_overlay(job, playlist, services)
+
+
 def _job_requires_whisper_lyric_alignment(job: Job, playlist: Playlist, services: ServiceRegistry) -> bool:
     if not _job_uses_lyric_overlay(job, playlist, services):
         return False
@@ -1013,6 +1025,38 @@ def claim_render_job(
                         return _database_locked_claim_response(recovered)
                     raise
                 continue
+            if only_no_lyrics and _job_incompatible_with_only_no_lyrics(job, playlist, services):
+                worker = dict(worker)
+                worker["requeued_at"] = now.isoformat()
+                worker["requeue_reason"] = "Worker reports only_no_lyrics but the claimed render requires lyrics."
+                result["external_render_worker"] = worker
+                job.status = JobStatus.queued
+                job.started_at = None
+                job.finished_at = None
+                job.error_text = None
+                job.result_json = result
+                meta = dict(playlist.metadata_json or {})
+                meta["workflow_state"] = "video_queued"
+                meta["note"] = "Render job was requeued because the claiming worker cannot render lyrics."
+                meta["video_render_progress"] = {
+                    **dict(meta.get("video_render_progress") or {}),
+                    "stage": "video_render",
+                    "status": "queued",
+                    "message": meta["note"],
+                    "updated_at": now.isoformat(),
+                }
+                playlist.status = PlaylistStatus.building
+                playlist.metadata_json = meta
+                db.add(playlist)
+                db.add(job)
+                try:
+                    db.commit()
+                except OperationalError as exc:
+                    db.rollback()
+                    if _is_database_locked(exc):
+                        return _database_locked_claim_response(recovered)
+                    raise
+                continue
             worker = dict(worker)
             worker["hostname"] = payload.hostname or worker.get("hostname") or ""
             worker["capabilities"] = payload.capabilities or worker.get("capabilities") or {}
@@ -1088,7 +1132,7 @@ def claim_render_job(
     for job in candidate_jobs:
         if job.playlist is None:
             continue
-        if only_no_lyrics and _job_release_has_singable_lyrics(job, job.playlist):
+        if only_no_lyrics and _job_incompatible_with_only_no_lyrics(job, job.playlist, services):
             continue
         if not _rendered_audio_asset_exists(job.playlist):
             _repair_video_job_missing_audio(db, job, job.playlist, now=now)
