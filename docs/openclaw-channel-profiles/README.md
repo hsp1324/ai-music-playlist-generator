@@ -87,9 +87,9 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 
 ### Storylight OST
 
-- Playful no-vocal Japanese game/anime OST and BGM.
-- Use game/anime environmental motion such as cabinet lights, magical glows, flags, lantern shimmer, toy-like particles, or water shimmer.
-- If text is useful, use broad clickable benefit/style phrases such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, or `COZY GAME MUSIC`.
+- Playful no-vocal Japanese game/anime OST, happy amusement park BGM, and feel-good background music.
+- Use game/anime/theme-park environmental motion such as cabinet lights, carousel bulbs, ferris-wheel glow, magical glows, flags, lantern shimmer, toy-like particles, confetti, or water shimmer.
+- If text is useful, use broad clickable benefit/style phrases such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, `COZY GAME MUSIC`, `THEME PARK BGM`, or `HAPPY PARK`.
 
 ### Cinematic Pulse
 

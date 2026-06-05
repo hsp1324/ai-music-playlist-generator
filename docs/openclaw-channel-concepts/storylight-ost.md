@@ -4,11 +4,11 @@ Use this after the selected channel is `Storylight OST`. This document decides t
 
 ## Channel Promise
 
-Storylight OST is a no-vocal Japanese-style game/anime OST and BGM channel.
+Storylight OST is a no-vocal Japanese-style game/anime OST, happy theme-park BGM, and playful background music channel.
 
-Soft Hour Radio is practical cafe/study/rest BGM. Storylight OST should feel more playful, bright, mischievous, and game-like: arcade games, fantasy games, cute RPG towns, anime side stories, mascot chases, item shops, magical menus, festival streets, school-game episodes, and light adventure scenes.
+Soft Hour Radio is practical cafe/study/rest BGM. Storylight OST should feel more playful, bright, mischievous, and game/anime-like: arcade games, fantasy games, cute RPG towns, anime side stories, mascot chases, item shops, magical menus, festival streets, happy amusement parks, theme-park parades, carousel plazas, school-game episodes, and light adventure scenes.
 
-The audience should immediately understand: fun Japanese game/anime-style instrumental OST that can be used for gaming, reading, light focus, or playful background listening.
+The audience should immediately understand: fun Japanese game/anime-style instrumental OST or feel-good amusement-park BGM that can be used for gaming, reading, light focus, mood boost, or playful background listening.
 
 Titles should be broad, clickable, and listener-benefit-first. Lead with why someone should click or keep it on: feel-good energy, mood boost, happy background music, work focus, reading, gaming, cozy focus, relaxing, or light concentration. Game/anime-BGM identity should be clear, but exact scene names are usually description/thumbnail/tracklist material.
 
@@ -22,6 +22,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `Storylight OST` r
 
 - The same fantasy location, such as forest village, castle road, magic train, lantern town, snowy inn, floating island, or moonlit ruins.
 - The same adventure mood, such as cozy town, quest start, secret library, night market, healing forest, or final farewell.
+- The same happy attraction setting, such as carousel plaza, parade street, ferris wheel, candy stand, or toy train.
 - The same instrument palette, such as music box, harp, celesta, strings, flute, soft choir pads, piano, or orchestral swells.
 - The same thumbnail phrase, such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, or `STORY BGM`.
 - The same visual scene if used recently.
@@ -37,28 +38,29 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Mascot chase or mini-game: fast staccato strings, xylophone, handclaps, cartoon percussion, silly sprint energy.
 - Festival street or game market: shamisen/koto touches, taiko-lite rhythm, bright synths, lanterns, food stalls, crowd sparkle.
 - Fantasy puzzle room: plucked harp, celesta, clockwork percussion, curious melody, keys, doors, tiny mechanisms.
+- Happy amusement park or theme-park parade: music-box/calliope accents, glockenspiel, toy brass, bouncy drums, handclaps, carousel lights, ferris wheel, parade flags, candy stalls, confetti, bright mood-boost energy.
 
 ## Music Direction
 
 - Instrumental/no-vocal by default.
 - Storylight OST playlist production is reuse-only by default. Do not open Suno or start new Suno generation for this channel unless the human explicitly overrides the reuse-only rule. If OpenClaw already generated/downloaded Storylight audio before seeing this rule, upload and use it instead of wasting the spent credit.
-- Create or select the Playlist Release first, then search existing app tracks with `scripts/openclaw-release search-tracks --q "storylight arcade game bgm"` or lane-specific keywords such as `cute fantasy RPG`, `anime game BGM`, `item shop`, `mini game`, `magical menu`, or `playful OST`.
+- Create or select the Playlist Release first, then search existing app tracks with `scripts/openclaw-release search-tracks --q "storylight arcade game bgm"` or lane-specific keywords such as `cute fantasy RPG`, `anime game BGM`, `item shop`, `mini game`, `magical menu`, `playful OST`, `happy amusement park`, `theme park BGM`, `carousel`, `parade`, or `carnival`.
 - Attach existing approved tracks with `scripts/openclaw-release reuse-track --release-id RELEASE_ID --track-id TRACK_ID`. Keep all selected tracks in one coherent lane; do not mix arcade, fantasy town, puzzle room, and dramatic OST cues just to reach a duration target.
 - Existing approved Storylight-compatible tracks can be reused even when they are short, because the Suno credit has already been spent. Prefer stronger/full-length tracks when choosing between otherwise similar candidates, but do not block render or publish only because an already-made cue is under 1:00.
 - If there are not enough matching tracks for the first concept, choose another fresh Storylight lane that has enough existing material. If there still is not enough Storylight-compatible material, report the blocker instead of spending Suno credits.
 - Cover, thumbnail, and provider loop-video assets can still be newly generated for the selected recombination concept.
 - Only when the human explicitly asks for new Storylight OST music, or when documenting/uploading audio that was already generated before the reuse-only rule was noticed, follow `../suno-v55-instrumental-format.md`, use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field, and fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
-- Do not reference protected studios, franchises, characters, composers, songs, or specific artists in Suno or Dreamina prompts. Use safe generic wording such as `playful Japanese arcade-game OST`, `cute fantasy RPG BGM`, `anime side-story instrumental`, `kawaii game menu music`, or `lighthearted game background music`.
+- Do not reference protected studios, franchises, characters, composers, songs, real theme parks, or specific artists in Suno or Dreamina prompts. Use safe generic wording such as `playful Japanese arcade-game OST`, `cute fantasy RPG BGM`, `anime side-story instrumental`, `kawaii game menu music`, `feel-good amusement park BGM`, `happy theme-park parade instrumental`, or `lighthearted game background music`.
 - If the human explicitly overrides reuse-only and asks for new Storylight music, do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete cue with a natural intro, developed loopable middle, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Music should be melodic, catchy, scene-rich, and loop-friendly without sounding like generic sleep music or mainstream vocal J-pop.
 
 ## Visual Direction
 
 - Illustrated, anime, game-background, pixel-art-inspired, cel-shaded, colorful poster-art, or stylized fantasy-game look.
-- Use strong scene identity: arcade cabinets, item shop, fantasy RPG plaza, magical menu, mini-game field, school-game hallway, festival street, puzzle room, toy-like dungeon, or bright quest map.
+- Use strong scene identity: arcade cabinets, item shop, fantasy RPG plaza, magical menu, mini-game field, school-game hallway, festival street, amusement park plaza, carousel, ferris wheel, parade street, candy stall, puzzle room, toy-like dungeon, or bright quest map.
 - Cover and loop video should feel like the first frame of a fun Japanese game/anime OST scene.
 - Human or mascot characters are optional. If used, they should feel like small story/game figures inside the environment, not idol/pop thumbnails.
-- Thumbnail text should be clear and genre-searchable: `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, or `FANTASY GAME`.
+- Thumbnail text should be clear and genre-searchable: `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, `FANTASY GAME`, `THEME PARK BGM`, or `HAPPY PARK`.
 
 ## Good Fresh Concept Shapes
 
@@ -66,6 +68,8 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - `[playlist] Cozy Fantasy Game BGM | Happy Music for Reading, Work and Gaming`
 - `[playlist] Cute Game BGM for Work | Cozy Happy Music for Focus and Relaxing`
 - `[playlist] Happy Anime Game BGM | Cheerful Music for Reading, Gaming and Work`
+- `[playlist] Happy Theme Park BGM | Feel-Good Music for Work, Reading and Mood Boost`
+- `[playlist] Carousel Parade BGM | Cute Happy Music for Gaming, Work and Good Mood`
 
 ## Bad Directions
 
@@ -73,6 +77,6 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Epic battle/trailer music that belongs on Cinematic Pulse.
 - Vocal pop, idol pop, J-pop songs with lyrics, K-pop, EDM, or Latin pop.
 - Popular-song remakes, anime opening covers, or recognizable franchise soundtrack imitation.
-- Protected IP, studio names, game titles, character names, or `in the style of` wording.
+- Protected IP, studio names, game titles, real theme-park names, character names, or `in the style of` wording.
 - Titles that depend on narrow internal scene labels as the main hook, such as `Bonus Stage Music`, `Item Shop BGM`, `Inventory Screen`, `Quest Board`, or `Potion Counter`, when a broader mood/use-case title would be more clickable.
 - Titles that sound like game-menu documentation instead of public-facing music discovery copy.
