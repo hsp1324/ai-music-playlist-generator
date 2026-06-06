@@ -36,6 +36,23 @@ def ensure_track_search_schema(engine: Engine) -> None:
             "ON tracks(json_extract(metadata_json, '$.user_rating'))"
         )
         connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_jobs_status_type_created_at "
+            "ON jobs(status, type, created_at)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_jobs_type_status_started_at "
+            "ON jobs(type, status, started_at)"
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_playlists_status_updated_at "
+            "ON playlists(status, updated_at)"
+        )
+        connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_playlists_created_at ON playlists(created_at)")
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_playlists_youtube_video_id "
+            "ON playlists(youtube_video_id)"
+        )
+        connection.exec_driver_sql(
             f"""
             CREATE VIRTUAL TABLE IF NOT EXISTS {TRACK_SEARCH_FTS_TABLE} USING fts5(
                 track_id UNINDEXED,
