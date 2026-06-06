@@ -83,6 +83,8 @@ No new text, subtitles, lyrics, UI, added logos, scene changes, singing, dancing
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language should be Korean unless the human asks otherwise.
 - Include the selected Buddhist source/theme and release-level music lane in the title and first description paragraph.
+- Public titles must include the exact verified Buddhist source/chapter/section when known, such as `법구경 쌍품`, `반야심경`, `금강경`, or `법화경`. If the release was built from a verified theme rather than an exact chapter, put that theme in the title instead, such as `팔정도 정어와 구업`, `자비`, `무상`, or `집착 내려놓기`. Do not use generic `불경` wording alone when a source/theme is available, and do not invent chapter/verse coverage.
+- Korean/default titles should not waste title space on redundant language labels such as `한국어 랩` or `한국어 힙합`. The 불송 channel is assumed to be Korean Buddhist vocal/rap unless the human says otherwise. Use source/theme plus the real lane instead, such as `반야심경 랩`, `금강경 힙합`, `법구경 힙합`, `정어와 구업 힙합`, `불교 힙합`, or `불경 힙합`.
 - If using a scripture source, name it carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired. Do not claim exact chapter/verse coverage unless verified.
 - The description must state that lyrics are original paraphrases inspired by Buddhist teaching, not direct scripture recitation.
 - Keep each release in one coherent style family and name it naturally. By default use hip-hop-first wording: `불교 힙합`, `불경 힙합`, `마음챙김 랩`, `Buddhist hip-hop`, or `Korean Buddhist rap`. Avoid obscure coined genre labels; avoid trot/ppongjjak wording and sound unless the human explicitly asks for it.
