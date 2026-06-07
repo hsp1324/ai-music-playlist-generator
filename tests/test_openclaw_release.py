@@ -146,6 +146,47 @@ def test_club_bloom_uses_still_image_render_by_default_without_lyrics() -> None:
     )
 
 
+def test_tokyo_hiphop_lane_uses_still_image_render_with_lyrics() -> None:
+    args = SimpleNamespace(
+        allow_still_image_video=False,
+        video_render_source_mode="auto",
+        lyrics_overlay=False,
+        release_title="Shibuya Japanese Hip-Hop R&B Night",
+        description="Photorealistic friend-taken Tokyo street snapshot for Japanese rap and R&B.",
+        prompt="Japanese hip-hop and R&B vocals",
+        style="Japanese rap, R&B, hip-hop soul",
+        tags="Japanese hip-hop, R&B, J-rap",
+        youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE,
+    )
+    release = {
+        "youtube_channel_title": JAPAN_YOUTUBE_CHANNEL_TITLE,
+        "title": "[playlist] Shibuya Japanese Hip-Hop R&B Night",
+    }
+
+    assert should_use_still_image_render(args, release=release)
+    assert should_enable_lyrics_overlay_for_release(args, release=release)
+
+
+def test_tokyo_anime_pop_lane_keeps_loop_video_default() -> None:
+    args = SimpleNamespace(
+        allow_still_image_video=False,
+        video_render_source_mode="auto",
+        lyrics_overlay=False,
+        release_title="Anime Arcade J-POP Night",
+        description="Animated anime-pop cover with a short provider loop video.",
+        prompt="Japanese anime-pop vocals",
+        style="J-pop, anime opening, synth-pop",
+        tags="J-pop, anime pop",
+        youtube_channel_title=JAPAN_YOUTUBE_CHANNEL_TITLE,
+    )
+    release = {
+        "youtube_channel_title": JAPAN_YOUTUBE_CHANNEL_TITLE,
+        "title": "[playlist] Anime Arcade J-POP Night",
+    }
+
+    assert not should_use_still_image_render(args, release=release)
+
+
 def test_request_json_rejects_oauth_html_response() -> None:
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -456,6 +497,13 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="도쿄 감성 시티팝",
+        )
+    ) == JAPAN_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
+            release_title="Shibuya Japanese Hip-Hop R&B Night",
+            description="Japanese rap and Tokyo R&B playlist",
         )
     ) == JAPAN_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(

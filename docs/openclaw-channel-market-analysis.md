@@ -52,18 +52,22 @@ Reference set:
 - Ayase / YOASOBI: modern Japanese pop, anime-pop crossover, high replay hooks.
 - Ado: Japanese vocal-pop intensity, dramatic hooks, strong identity.
 - Mrs. GREEN APPLE: mainstream Japanese band/pop hooks and youth energy.
+- Japanese hip-hop/R&B street playlists: younger Shibuya/Harajuku/club-side audience signal; click appeal comes from a credible street photo, the lane label, and a late-night listening use case rather than anime styling.
 
 What gets views:
 
 - The audience recognizes `J-POP`, artist/song identity, performance authenticity, and emotionally clear hooks.
 - Japanese pop titles often rely on artist/title fandom. Our generated playlists need `J-POP` plus public listening setting instead.
+- Japanese rap/hip-hop/R&B audiences recognize `J-RAP`, `J-HIP-HOP`, `TOKYO R&B`, streetwear/nightlife authenticity, and candid phone-photo energy.
 - `Tokyo` is valuable only when the concept is actually Tokyo-coded; overusing it weakens channel variety.
 
 Our direction:
 
 - Title shape: `[playlist] Bright J-POP Drive | Japanese Pop for Weekend Energy`.
-- Song direction: Japanese vocal pop with memorable chorus, natural Japanese phrasing, youth/confidence/first-love/new-start stories, 2.5-3.5 minute pop structures.
-- Thumbnail text: `J-POP` or a short scene/style phrase. Do not add `TOKYO DAYDREAM RADIO` or any channel-name brand label.
+- Alternate release visuals when practical: animated/anime moving-video for J-pop/city-pop/anime-pop lanes, then photorealistic friend-taken still-image for Japanese rap/hip-hop/R&B/neo-soul lanes.
+- Song direction: Japanese vocal pop with memorable chorus, natural Japanese phrasing, youth/confidence/first-love/new-start stories, or Japanese rap/R&B with credible groove, hooks, and street/night-out mood. Prompt around 4 minute complete songs; do not use minimum-duration wording.
+- Thumbnail text: `J-POP`, `J-RAP`, `J-HIP-HOP`, `TOKYO R&B`, or a short scene/style phrase. Do not add `TOKYO DAYDREAM RADIO` or any channel-name brand label.
+- Visual direction: animated lane uses anime/illustrated moving clips; Japanese rap/R&B lane uses photorealistic Japanese smartphone/Instagram stills, like a friend took the photo around Shibuya, Harajuku, Shimokitazawa, Koenji, record shops, small bars, club-side alleys, rooftops, or station exits.
 - Avoid: `Japanese vocal`, `일본어 보컬`, or every title containing `Tokyo`.
 
 ## HaruHaru

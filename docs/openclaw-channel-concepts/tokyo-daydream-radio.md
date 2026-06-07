@@ -1,10 +1,10 @@
 # OpenClaw Channel Concept Planner: Tokyo Daydream Radio
 
-Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and short loop-video production rules.
+Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and either short loop-video or still-image render production rules.
 
 ## Channel Promise
 
-Tokyo Daydream Radio is a mainstream J-pop/Japanese pop channel. It can include anime-pop, but it is not an anime OST-only channel. The channel name contains Tokyo, but release titles do not need to contain `Tokyo` unless the selected concept is actually Tokyo-specific.
+Tokyo Daydream Radio is a mainstream J-pop/Japanese pop channel. It can include anime-pop, Japanese rap, Japanese hip-hop, and Japanese R&B, but it is not an anime OST-only channel. The channel name contains Tokyo, but release titles do not need to contain `Tokyo` unless the selected concept is actually Tokyo-specific.
 
 The audience should immediately understand: hook-driven Japanese vocal pop for Japan lifestyle listening, with Tokyo as one possible setting rather than the default title word.
 
@@ -24,6 +24,13 @@ From `scripts/openclaw-release list-releases`, inspect recent `Tokyo Daydream Ra
 
 If a setting appeared in the latest 3 Tokyo releases, do not use it again unless the human explicitly asks.
 
+Also inspect recent Tokyo visual systems. Try to alternate roughly every other Tokyo upload:
+
+- `animated_moving_video`: anime/illustrated cover plus Gemini/Dreamina/Seedance loop video for mainstream J-pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, and arcade/game-center pop.
+- `photorealistic_still_image`: friend-taken Japanese street/lifestyle still image for Japanese rap, Japanese hip-hop, Japanese R&B, neo-soul, trap-soul, boom-bap, and hip Tokyo/Shibuya street-pop lanes.
+
+If the latest Tokyo upload was animated, prefer a photorealistic still-image hip-hop/R&B/rap lane next. If the latest Tokyo upload was photorealistic still-image, prefer an animated J-pop/anime/city-pop lane next. Do not force the alternation over a direct human request or an already-started workspace with prepared assets.
+
 ## Concept Lanes
 
 Use one lane, then vary substyle and lyric premise:
@@ -36,6 +43,7 @@ Use one lane, then vary substyle and lyric premise:
 - Arcade or game-center night, neon rhythm games, friends meeting up, karaoke, weekend night out.
 - School-after-hours youth pop, band-room guitar pop, graduation season.
 - Bright dance-pop, synth-pop, city-pop, pop-rock, emotional ballad, light band pop.
+- Shibuya Japanese hip-hop/R&B night, Shimokitazawa record-shop rap-pop, Koenji small live-bar R&B, Harajuku streetwear J-rap, Tokyo rooftop neo-soul, late-night convenience-store street R&B.
 
 ## Music Direction
 
@@ -47,17 +55,16 @@ Use one lane, then vary substyle and lyric premise:
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a walk/drive/night playlist because of its rhythm and atmosphere while the lyrics tell an independent pop story unrelated to the playlist title.
 - Do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Prompt for an around 4 minute full-length complete J-pop song with a natural intro, verse/pre-chorus/chorus flow, bridge or final chorus lift where useful, and resolved ending; regenerate or explicitly report tracks shorter than 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Do not make lyricless, BGM-only, hum-only, or instrumental tracks unless the human explicitly requested it.
+- Japanese rap, Japanese hip-hop, and Japanese R&B are allowed Tokyo Daydream lanes. Keep those releases in one coherent lane; do not mix city-pop or anime-pop backfill into a hip-hop/R&B release unless the track genuinely fits the same groove and vocal style.
 - Do not over-emphasize `Japanese language` in titles. Use `J-POP`, the actual Japan scene, mood, and listening use case instead.
 - Do not put `Tokyo` / `도쿄` in every title. Use it only when the chosen concept is specifically Tokyo, Shibuya, Shinjuku, Tokyo commute, Tokyo skyline, or a clearly Tokyo-coded scene. For generic J-pop, beach, forest, festival, school, karaoke, or Japan lifestyle concepts, omit Tokyo from the title.
 - Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade/game-center/friends/night-out concepts, use arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup instead.
 
 ## Visual Direction
 
-- Default visual signature is exactly three people walking toward the viewer in a front-view composition.
-- The setting should match the selected concept, not a generic Tokyo scene.
-- Keep the three people centered and visually important.
-- For moving clips, keep the camera moving backward at the same pace as the people so the subjects stay the same size; let the side/background motion carry the loop instead of zooming into the people.
-- Thumbnail text can use large `J-POP` or a short scene/style phrase, but never `TOKYO DAYDREAM RADIO` or any channel-name brand label.
+- Animated moving-video releases use the legacy Tokyo signature: exactly three people walking toward the viewer in a front-view composition. The setting should match the selected concept, not a generic Tokyo scene. For moving clips, keep the camera moving backward at the same pace as the people so the subjects stay the same size; let the side/background motion carry the loop instead of zooming into the people.
+- Photorealistic still-image releases should feel like a friend-taken Japanese Instagram/smartphone photo: stylish adult Japanese streetwear, Shibuya/Shimokitazawa/Koenji/Harajuku/Tokyo nightlife, record-shop, small bar, rooftop, club-side alley, station-exit, or late-night convenience-store street mood. Use still-image render only; no loop video.
+- Thumbnail text can use large `J-POP`, `CITY POP`, `ANIME POP`, `J-RAP`, `TOKYO R&B`, `J-HIP-HOP`, or a short scene/style phrase, but never `TOKYO DAYDREAM RADIO` or any channel-name brand label.
 
 ## Good Fresh Concept Shapes
 
@@ -68,6 +75,8 @@ Use one lane, then vary substyle and lyric premise:
 - `[playlist] Shibuya Rain Synth-Pop | Night Commute and Japanese Vocal Pop`
 - `[playlist] Kyoto Evening J-POP | Lantern Streets, New Love and Soft Pop`
 - `[playlist] Osaka Weekend J-POP | Neon Friends, Karaoke and Night Out`
+- `[playlist] Shibuya J-Rap Night | Japanese Hip-Hop and R&B for Late Walks`
+- `[playlist] Tokyo R&B Street Lights | Japanese Neo-Soul for Night Drives`
 
 ## Bad Directions
 
@@ -80,3 +89,5 @@ Use one lane, then vary substyle and lyric premise:
 - Adding `Tokyo` to titles when the concept is not Tokyo-specific.
 - Forcing `walk` / `산책` into indoor arcade, game-center, karaoke, party, or friend-hangout concepts.
 - Titles that translate into awkward keyword lists instead of natural J-pop discovery copy.
+- Using photorealistic still images for anime-pop/city-pop releases that should be animated.
+- Creating a provider loop video for the photorealistic Japanese hip-hop/R&B/rap still-image lane.

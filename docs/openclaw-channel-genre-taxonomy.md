@@ -79,6 +79,7 @@ Broad YouTube buckets and detailed video lanes:
 - `J-pop City & Synth-Pop`: city-pop, synth-pop, neon drive J-pop.
 - `J-pop Dance-Pop`: rooftop/night-out/idol dance-pop.
 - `J-pop Pop-Rock`: guitar pop, campus pop-rock, weekend band-pop.
+- `Japanese Hip-Hop & R&B`: Japanese rap, Japanese hip-hop, J-rap, boom-bap J-pop, Tokyo R&B, Japanese neo-soul, Japanese trap-soul, hip Shibuya street-pop with rap/R&B vocals. This bucket uses the photorealistic still-image visual lane by default.
 - `Anime & Arcade Pop`: anime-pop, arcade/game-center J-pop.
 - `J-pop Mixes`: broad mainstream J-pop only when no tighter lane is truthful.
 
