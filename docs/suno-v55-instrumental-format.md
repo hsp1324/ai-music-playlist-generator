@@ -48,7 +48,7 @@ vocal, vocals, voice, voices, singing, singer, lead vocal, backing vocals, choir
 
 ## Duration Rule
 
-Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno prompts, style strings, lyrics, or bracketed metatags unless the human explicitly asks for that wording. Those phrases can cause Suno to end too early or behave unpredictably. Prompt structurally instead: around 4 minute full-length complete instrumental cue, natural intro, developed middle, variation/breakdown where useful, and a resolved ending. Suno has no guaranteed minimum-duration field, so verify the downloaded duration. Playlist tracks from 1:00 to 1:59 should be uploaded/used when they fit the release; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute cues are acceptable.
+Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno prompts, style strings, lyrics, or bracketed metatags unless the human explicitly asks for that wording. Those phrases can cause Suno to end too early or behave unpredictably. Prompt structurally instead: a credit-efficient full instrumental cue that naturally lands around 4 minutes or longer, with natural intro, first main theme, second developed theme, variation/breakdown where useful, final theme lift, and a resolved outro. The bracket-only lyrics/custom-lyrics field should contain enough section flow to steer a full cue, not only a few short arrangement notes. Suno has no guaranteed minimum-duration field, so verify the downloaded duration. Tracks shorter than 4:00 are still valid uploads when they fit. Playlist tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute cues are acceptable.
 - If Suno repeatedly returns tracks over the allowed helper max for a non-exempt channel, stop and report the issue instead of adding duration caps to every prompt.
 - Do not use short-loop, jingle, intro, bumper, sting, teaser, or snippet wording for full playlist tracks.
 
@@ -58,11 +58,12 @@ Do not put duration caps or lower-bound duration phrases such as `less than 4 mi
 [Instrumental only: no sung words, no humming, no spoken words]
 [Intro: 8 bars, felt piano motif alone, wide room, soft rain ambience]
 [Main Theme: brushed drums enter, upright bass plays long roots, nylon guitar answers the piano]
-[Development: warm Rhodes pad opens, piano melody becomes slightly brighter, percussion stays soft]
+[Second Theme: piano melody opens into a longer answering phrase, bass movement becomes warmer, percussion stays soft]
+[Development: warm Rhodes pad opens, piano melody becomes slightly brighter, dynamics rise gently]
 [Instrumental Break: harp harmonics and soft cymbal swells, melody carried by piano and guitar]
 [Bridge: drums drop to rim clicks, bass holds long notes, strings widen gradually]
-[Final Theme: piano motif returns, guitar answers every 4 bars, gentle lift without a vocal hook]
-[Outro: piano motif returns with rain ambience]
+[Final Theme: piano motif returns with a slightly higher register, guitar answers every 4 bars, gentle lift without a vocal hook]
+[Resolved Outro: motif slows down, rain ambience remains, final chord rings naturally]
 [End]
 ```
 
