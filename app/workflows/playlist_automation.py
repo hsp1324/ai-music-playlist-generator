@@ -447,6 +447,31 @@ SUNDAZE_HIP_HOP_TRACK_KEYWORDS = (
 )
 SUNDAZE_MIN_CLAIMED_GENRE_TRACK_RATIO = 0.6
 HARUHARU_CITYPOP_KEYWORDS = ("city-pop", "city pop", "citypop", "시티팝")
+HARUHARU_STRICT_REUSE_LANE_PRIORITY = (
+    "city-pop",
+    "boom-bap",
+    "trap",
+    "rap-pop",
+    "neo-soul",
+    "rnb",
+    "street-pop",
+    "pop-rock",
+    "synth-pop",
+    "dance-pop",
+    "ballad",
+)
+HARUHARU_REUSE_LANE_GROUPS = {
+    "rnb": {"rnb", "neo-soul"},
+    "neo-soul": {"rnb", "neo-soul"},
+    "hip-hop": {"hip-hop", "rap-pop", "boom-bap", "trap", "street-pop"},
+}
+GENRE_LANE_ORDER_PRESERVE_CHANNEL_TITLES = {
+    HARUHARU_CHANNEL_TITLE,
+    "tokyo daydream radio",
+    SUNDAZE_CHANNEL_TITLE,
+    "solwave radio",
+    "club bloom",
+}
 SOFT_HOUR_SOLO_PIANO_POSITIVE_KEYWORDS = (
     "solo piano",
     "piano solo",
@@ -1910,6 +1935,44 @@ def _track_forbidden_for_reuse_target_channel(
     return track_has_citypop
 
 
+def _declared_reuse_genre_tokens_for_playlist(playlist: Playlist) -> set[str]:
+    meta = _playlist_meta(playlist)
+    return set(
+        extract_genre_tokens_from_values(
+            [
+                playlist.title,
+                str(meta.get("description") or ""),
+                str(meta.get("youtube_title") or ""),
+                str(meta.get("channel_style_lane") or ""),
+                str(meta.get("channel_broad_genre") or ""),
+            ]
+        )
+    )
+
+
+def _haruharu_reuse_lane_group(target_tokens: set[str]) -> set[str]:
+    for token in HARUHARU_STRICT_REUSE_LANE_PRIORITY:
+        if token in target_tokens:
+            return HARUHARU_REUSE_LANE_GROUPS.get(token, {token})
+    if "hip-hop" in target_tokens:
+        return HARUHARU_REUSE_LANE_GROUPS["hip-hop"]
+    return set()
+
+
+def _haruharu_reuse_candidate_matches_declared_lane(
+    *,
+    target_playlist: Playlist,
+    target_genre_tokens: set[str],
+    source_tokens: set[str],
+) -> bool:
+    declared_tokens = _declared_reuse_genre_tokens_for_playlist(target_playlist)
+    target_lane_tokens = declared_tokens or target_genre_tokens
+    required_source_tokens = _haruharu_reuse_lane_group(target_lane_tokens)
+    if not required_source_tokens:
+        return False
+    return bool(required_source_tokens & source_tokens)
+
+
 def _playlist_reuse_source_sort_key(playlist: Playlist) -> datetime:
     meta = _playlist_meta(playlist)
     for key in (
@@ -1983,7 +2046,8 @@ def _reuse_candidate_is_similar(
         return False
 
     source_meta = source_playlist.metadata_json or {}
-    source_tokens = set(cached_track_genre_tokens(track))
+    source_track_tokens = set(cached_track_genre_tokens(track))
+    source_tokens = set(source_track_tokens)
     source_tokens.update(
         extract_genre_tokens_from_values(
             [
@@ -1996,6 +2060,12 @@ def _reuse_candidate_is_similar(
         )
     )
     if target_genre_tokens and source_tokens:
+        if _is_haruharu_channel_title(target_channel_title):
+            return _haruharu_reuse_candidate_matches_declared_lane(
+                target_playlist=target_playlist,
+                target_genre_tokens=target_genre_tokens,
+                source_tokens=source_track_tokens,
+            )
         return bool(target_genre_tokens & source_tokens)
 
     return bool(
@@ -2360,10 +2430,13 @@ def _maybe_add_reused_back_half_tracks(
         "selection_policy": (
             "soft_hour_piano_first_liked_then_similar_back_half"
             if _is_soft_hour_channel_title(target_channel_title)
+            else "haruharu_strict_lane_liked_then_least_reused_back_half"
+            if _is_haruharu_channel_title(target_channel_title)
             else "liked_then_least_reused_similar_back_half"
         ),
         "target_channel_title": target_channel_title,
         "target_genre_tokens": sorted(target_genre_tokens),
+        "target_declared_genre_tokens": sorted(_declared_reuse_genre_tokens_for_playlist(playlist)),
         "playlist_target_duration_seconds": playlist_target_duration_seconds,
         "reuse_target_duration_seconds": reuse_target_duration_seconds,
         "starting_duration_seconds": starting_duration_seconds,
@@ -3847,7 +3920,8 @@ def _reused_back_half_track_ids_for_randomization(playlist: Playlist) -> set[str
 
 
 def _should_preserve_reused_back_half_on_randomize(playlist: Playlist) -> bool:
-    return _is_soft_hour_channel_title(_playlist_reuse_channel_title(playlist))
+    channel_title = _normalize_reuse_channel_title(_playlist_reuse_channel_title(playlist))
+    return channel_title in GENRE_LANE_ORDER_PRESERVE_CHANNEL_TITLES or _is_soft_hour_channel_title(channel_title)
 
 
 def _randomized_playlist_track_ids(playlist: Playlist) -> list[str]:

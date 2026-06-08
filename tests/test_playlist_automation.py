@@ -6414,6 +6414,129 @@ def test_workspace_audio_render_skips_reuse_when_genre_does_not_match(tmp_path) 
         clear_isolated_client_env()
 
 
+def test_haruharu_boom_bap_reuse_requires_specific_lane_and_preserves_reuse_tail_when_randomized(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_specs = [
+                ("Source Earlier Boom Bap 1", "K-pop boom bap rap-pop street drums"),
+                ("Source Earlier Boom Bap 2", "K-pop boom bap rap-pop street drums"),
+                ("Source Back Half Boom Bap", "K-pop boom bap rap-pop, dusty drums, Korean rap"),
+                ("Source Back Half Pop Rock", "Korean K-pop pop-rock, bright guitars, live drums"),
+            ]
+            source_tracks = []
+            for index, (title, style) in enumerate(source_specs):
+                audio_path = tmp_path / f"source-haruharu-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=title,
+                    prompt=style,
+                    duration_seconds=300,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": style, "tags": style},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title="[playlist] 홍대 밤 붐뱁 K-POP",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=1200,
+                actual_duration_seconds=1200,
+                youtube_video_id="yt-haruharu-boom-bap-source",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": "HaruHaru",
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 300,
+                            "duration_seconds": 300,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=300,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "[playlist] 오늘은 내가 주인공 | 홍대 나가기 전 듣는 붐뱁 K-POP 노래모음",
+                "target_duration_seconds": 600,
+                "description": "HaruHaru boom bap K-pop for Hongdae confidence.",
+                "target_youtube_channel_title": "HaruHaru",
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        lead_track_ids = []
+        for index in range(2):
+            audio_path = tmp_path / f"new-haruharu-boom-bap-{index}.mp3"
+            audio_path.write_bytes(b"fake-audio")
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"New Boom Bap Lead {index + 1}",
+                    "prompt": "K-pop boom bap rap-pop Korean rap confidence",
+                    "duration_seconds": 300,
+                    "audio_path": str(audio_path),
+                    "metadata": {"style": "K-pop boom bap rap-pop Korean rap", "tags": "boom bap,kpop"},
+                },
+            )
+            assert track_response.status_code == 201
+            track_id = track_response.json()["id"]
+            lead_track_ids.append(track_id)
+            approve_response = client.post(
+                f"/api/tracks/{track_id}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite", "random": True},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        queued_track_ids = [track["id"] for track in queued["tracks"]]
+        queued_titles = [track["title"] for track in queued["tracks"]]
+
+        assert set(queued_track_ids[:2]) == set(lead_track_ids)
+        assert queued_titles[-1] == "Source Back Half Boom Bap"
+        assert "Source Back Half Pop Rock" not in queued_titles
+        assert "reused back-half tracks kept after the fresh lead block" in queued["note"]
+        with SessionLocal() as db:
+            workspace = db.get(Playlist, workspace_id)
+            assert workspace is not None
+            meta = workspace.metadata_json or {}
+            assert meta["last_render_preserved_reused_back_half"] is True
+            assert meta["auto_reuse_last_attempt"]["selection_policy"] == (
+                "haruharu_strict_lane_liked_then_least_reused_back_half"
+            )
+    finally:
+        clear_isolated_client_env()
+
+
 def test_soft_hour_audio_render_keeps_new_solo_piano_before_reused_back_half_when_randomized(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)

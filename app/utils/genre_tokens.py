@@ -6,7 +6,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 
-GENRE_TOKEN_VERSION = 2
+GENRE_TOKEN_VERSION = 3
 GENRE_TOKEN_METADATA_KEY = "genre_tokens"
 GENRE_TOKEN_VERSION_METADATA_KEY = "genre_token_version"
 GENRE_TOKEN_HASH_METADATA_KEY = "genre_token_source_hash"
@@ -24,6 +24,7 @@ GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
     "ballad": ("ballad", "발라드"),
     "bass-house": ("bass house", "bass-house"),
     "bgm": ("bgm", "background music", "no-vocal", "no vocal", "instrumental", "무보컬", "연주곡"),
+    "boom-bap": ("boom bap", "boom-bap", "boombap", "붐뱁"),
     "cinematic": ("cinematic", "film score", "movie ost", "trailer", "epic", "heroic"),
     "city-pop": ("city pop", "city-pop", "citypop", "시티팝"),
     "club": ("club", "party", "festival", "rave"),
@@ -35,7 +36,23 @@ GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
     "folk": ("folk", "acoustic", "어쿠스틱"),
     "game": ("game bgm", "game music", "arcade", "rpg", "gaming"),
     "gospel": ("gospel",),
-    "hip-hop": ("hip hop", "hip-hop", "trap", "rap", "랩", "힙합", "트랩"),
+    "hip-hop": (
+        "hip hop",
+        "hip-hop",
+        "boom bap",
+        "boom-bap",
+        "boombap",
+        "rap-pop",
+        "rap pop",
+        "trap",
+        "trap-pop",
+        "trap pop",
+        "rap",
+        "랩",
+        "힙합",
+        "붐뱁",
+        "트랩",
+    ),
     "house": ("house",),
     "jazz": ("jazz", "재즈"),
     "jpop": ("j-pop", "jpop", "japanese pop", "제이팝"),
@@ -43,18 +60,22 @@ GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
     "latin-pop": ("latin pop", "pop latino", "spanish pop"),
     "lofi": ("lofi", "lo-fi", "로파이"),
     "melodic-techno": ("melodic techno", "melodic-techno"),
+    "neo-soul": ("neo soul", "neo-soul"),
     "orchestral": ("orchestra", "orchestral", "symphonic"),
     "piano": ("piano", "keys", "피아노"),
     "pop": ("pop",),
     "pop-rock": ("pop rock", "pop-rock", "팝록"),
+    "rap-pop": ("rap pop", "rap-pop", "sung rap", "sung-rap"),
     "reggaeton": ("reggaeton", "urbano"),
     "rnb": ("r&b", "rnb", "neo soul", "neo-soul", "soul", "알앤비", "소울"),
     "salsa": ("salsa",),
     "scripture": ("scripture", "worship", "prayer", "bible"),
     "solo-piano": ("solo piano", "piano solo", "felt piano", "피아노 솔로", "솔로 피아노"),
+    "street-pop": ("street pop", "street-pop", "dark street-pop", "dark street pop"),
     "synth-pop": ("synth pop", "synth-pop", "신스팝"),
     "tech-house": ("tech house", "tech-house"),
     "techno": ("techno",),
+    "trap": ("trap", "trap-pop", "trap pop", "trap-soul", "trap soul", "808", "트랩"),
     "trance": ("trance",),
     "tropical-house": ("tropical house", "tropical-house"),
     "uk-garage": ("uk garage", "uk-garage", "garage"),
@@ -148,12 +169,12 @@ def normalize_genre_token(value: Any) -> str:
         "city-pop-kpop": "city-pop",
         "k-pop": "kpop",
         "j-pop": "jpop",
+        "boombap": "boom-bap",
         "r-b": "rnb",
         "rnb": "rnb",
         "hiphop": "hip-hop",
-        "hip-hop-pop": "hip-hop",
-        "rap-pop": "hip-hop",
-        "trap-pop": "hip-hop",
+        "hip-hop-pop": "rap-pop",
+        "trap-pop": "trap",
     }
     return aliases.get(token, token)
 

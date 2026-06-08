@@ -35,6 +35,14 @@ def test_solo_piano_derives_piano_and_solo_piano_tokens() -> None:
     assert {"piano", "solo-piano", "bgm"} <= tokens
 
 
+def test_kpop_boom_bap_and_trap_keep_specific_lane_tokens() -> None:
+    boom_bap_tokens = set(extract_genre_tokens_from_values(["K-pop boom bap rap-pop street groove"]))
+    trap_tokens = set(extract_genre_tokens_from_values(["K-pop trap-pop with 808 drums"]))
+
+    assert {"kpop", "hip-hop", "boom-bap", "rap-pop"} <= boom_bap_tokens
+    assert {"kpop", "hip-hop", "trap"} <= trap_tokens
+
+
 def test_cached_track_genre_tokens_merges_current_ai_tokens() -> None:
     metadata = update_track_genre_token_metadata(
         {"style": "leftfield electronic"},
