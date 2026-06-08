@@ -9,6 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 from google.oauth2.credentials import Credentials
 from PIL import Image
@@ -6531,7 +6532,184 @@ def test_haruharu_boom_bap_reuse_requires_specific_lane_and_preserves_reuse_tail
             meta = workspace.metadata_json or {}
             assert meta["last_render_preserved_reused_back_half"] is True
             assert meta["auto_reuse_last_attempt"]["selection_policy"] == (
-                "haruharu_strict_lane_liked_then_least_reused_back_half"
+                "strict_genre_lane_liked_then_least_reused_back_half"
+            )
+    finally:
+        clear_isolated_client_env()
+
+
+@pytest.mark.parametrize(
+    (
+        "channel_title",
+        "release_title",
+        "description",
+        "new_style",
+        "matching_title",
+        "matching_style",
+        "mismatch_title",
+        "mismatch_style",
+    ),
+    [
+        (
+            "Tokyo Daydream Radio",
+            "[playlist] Tokyo R&B Night | Japanese R&B Songs for Shibuya After Dark",
+            "Japanese R&B and Tokyo neo-soul night vocals.",
+            "Japanese R&B Tokyo night vocal, smooth bass, neo-soul keys",
+            "Source Back Half Japanese R&B",
+            "Japanese R&B Tokyo neo-soul vocal, smooth bass",
+            "Source Back Half City Pop",
+            "Japanese city-pop synth-pop neon drive vocal",
+        ),
+        (
+            "sundaze",
+            "[playlist] Country Pop Road Trip | Highway Songs for Summer Nights",
+            "English country pop road trip songs.",
+            "English country pop road trip vocal, bright guitar hook",
+            "Source Back Half Country Pop",
+            "English country pop road trip, acoustic guitar, singable chorus",
+            "Source Back Half Dance Pop",
+            "English dance-pop rooftop party, synth bass, club drums",
+        ),
+        (
+            "Solwave Radio",
+            "[playlist] Reggaeton Suave de Noche | Latin Pop para Drive y Fiesta",
+            "Spanish reggaeton pop and urbano latino night drive.",
+            "Spanish reggaeton pop urbano latino, dembow groove, sung hook",
+            "Source Back Half Reggaeton",
+            "Spanish reggaeton pop urbano latino, dembow groove",
+            "Source Back Half Bachata",
+            "Spanish bachata pop romance, tropical guitar groove",
+        ),
+    ],
+)
+def test_explicit_pop_channel_reuse_requires_specific_lane_and_preserves_reuse_tail_when_randomized(
+    tmp_path,
+    channel_title: str,
+    release_title: str,
+    description: str,
+    new_style: str,
+    matching_title: str,
+    matching_style: str,
+    mismatch_title: str,
+    mismatch_style: str,
+) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        with SessionLocal() as db:
+            source_specs = [
+                ("Source Earlier Matching 1", matching_style),
+                ("Source Earlier Matching 2", matching_style),
+                (matching_title, matching_style),
+                (mismatch_title, mismatch_style),
+            ]
+            source_tracks = []
+            for index, (title, style) in enumerate(source_specs):
+                audio_path = tmp_path / f"source-strict-lane-{index}.mp3"
+                audio_path.write_bytes(b"fake-audio")
+                track = Track(
+                    title=title,
+                    prompt=style,
+                    duration_seconds=300,
+                    audio_path=str(audio_path),
+                    status=TrackStatus.approved,
+                    metadata_json={"style": style, "tags": style},
+                )
+                db.add(track)
+                source_tracks.append(track)
+            db.flush()
+            source_playlist = Playlist(
+                title=f"{channel_title} previous playlist",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=1200,
+                actual_duration_seconds=1200,
+                youtube_video_id=f"yt-strict-lane-{channel_title.lower().replace(' ', '-')}",
+                metadata_json={
+                    "workspace_mode": "playlist",
+                    "youtube_channel_title": channel_title,
+                    "rendered_timeline": [
+                        {
+                            "track_id": track.id,
+                            "title": track.title,
+                            "start_seconds": index * 300,
+                            "duration_seconds": 300,
+                        }
+                        for index, track in enumerate(source_tracks)
+                    ],
+                },
+            )
+            db.add(source_playlist)
+            db.flush()
+            for index, track in enumerate(source_tracks, start=1):
+                db.add(
+                    PlaylistItem(
+                        playlist=source_playlist,
+                        track=track,
+                        order_index=index,
+                        included_duration_seconds=300,
+                    )
+                )
+            db.commit()
+
+        workspace_response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": release_title,
+                "target_duration_seconds": 600,
+                "description": description,
+                "target_youtube_channel_title": channel_title,
+            },
+        )
+        assert workspace_response.status_code == 201
+        workspace_id = workspace_response.json()["id"]
+
+        lead_track_ids = []
+        for index in range(2):
+            audio_path = tmp_path / f"new-strict-lane-{index}.mp3"
+            audio_path.write_bytes(b"fake-audio")
+            track_response = client.post(
+                "/api/tracks",
+                json={
+                    "title": f"New Strict Lane Lead {index + 1}",
+                    "prompt": new_style,
+                    "duration_seconds": 300,
+                    "audio_path": str(audio_path),
+                    "metadata": {"style": new_style, "tags": new_style},
+                },
+            )
+            assert track_response.status_code == 201
+            track_id = track_response.json()["id"]
+            lead_track_ids.append(track_id)
+            approve_response = client.post(
+                f"/api/tracks/{track_id}/decisions",
+                json={
+                    "decision": "approve",
+                    "source": "human",
+                    "actor": "test-suite",
+                    "playlist_id": workspace_id,
+                },
+            )
+            assert approve_response.status_code == 200
+
+        render_response = client.post(
+            f"/api/playlists/{workspace_id}/render-audio",
+            json={"actor": "test-suite", "random": True},
+        )
+        assert render_response.status_code == 200
+        queued = render_response.json()
+        queued_track_ids = [track["id"] for track in queued["tracks"]]
+        queued_titles = [track["title"] for track in queued["tracks"]]
+
+        assert set(queued_track_ids[:2]) == set(lead_track_ids)
+        assert queued_titles[-1] == matching_title
+        assert mismatch_title not in queued_titles
+        assert "reused back-half tracks kept after the fresh lead block" in queued["note"]
+        with SessionLocal() as db:
+            workspace = db.get(Playlist, workspace_id)
+            assert workspace is not None
+            meta = workspace.metadata_json or {}
+            assert meta["last_render_preserved_reused_back_half"] is True
+            assert meta["auto_reuse_last_attempt"]["selection_policy"] == (
+                "strict_genre_lane_liked_then_least_reused_back_half"
             )
     finally:
         clear_isolated_client_env()

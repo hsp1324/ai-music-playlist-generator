@@ -447,23 +447,72 @@ SUNDAZE_HIP_HOP_TRACK_KEYWORDS = (
 )
 SUNDAZE_MIN_CLAIMED_GENRE_TRACK_RATIO = 0.6
 HARUHARU_CITYPOP_KEYWORDS = ("city-pop", "city pop", "citypop", "시티팝")
-HARUHARU_STRICT_REUSE_LANE_PRIORITY = (
+STRICT_GENRE_LANE_REUSE_CHANNEL_TITLES = {
+    HARUHARU_CHANNEL_TITLE,
+    "tokyo daydream radio",
+    SUNDAZE_CHANNEL_TITLE,
+    "solwave radio",
+}
+GENRE_LANE_STRICT_REUSE_PRIORITY = (
+    "afrobeats",
+    "afropop",
+    "alt-pop",
+    "amapiano",
+    "americana",
+    "anime",
+    "bachata",
+    "ballad",
+    "bedroom-pop",
     "city-pop",
+    "country-pop",
+    "cumbia",
+    "dance-pop",
+    "disco",
+    "folk",
+    "funk",
+    "indie-pop",
     "boom-bap",
     "trap",
     "rap-pop",
     "neo-soul",
     "rnb",
-    "street-pop",
+    "pop-punk",
     "pop-rock",
+    "reggaeton",
+    "salsa",
+    "singer-songwriter",
+    "soft-rock",
+    "street-pop",
     "synth-pop",
-    "dance-pop",
-    "ballad",
+    "urbano",
+    "y2k-pop",
 )
-HARUHARU_REUSE_LANE_GROUPS = {
+GENRE_LANE_REUSE_GROUPS = {
+    "afrobeats": {"afrobeats", "afropop", "amapiano"},
+    "afropop": {"afrobeats", "afropop", "amapiano"},
+    "alt-pop": {"alt-pop", "bedroom-pop", "indie-pop"},
+    "amapiano": {"afrobeats", "afropop", "amapiano"},
+    "americana": {"americana", "folk", "singer-songwriter"},
+    "bedroom-pop": {"alt-pop", "bedroom-pop", "indie-pop"},
+    "boom-bap": {"boom-bap", "rap-pop"},
+    "disco": {"disco", "funk", "y2k-pop"},
+    "folk": {"americana", "folk", "singer-songwriter"},
+    "funk": {"disco", "funk", "y2k-pop"},
+    "indie-pop": {"alt-pop", "bedroom-pop", "indie-pop"},
+    "pop-rock": {"pop-rock", "soft-rock"},
+    "rnb": {"rnb", "neo-soul"},
+    "neo-soul": {"rnb", "neo-soul"},
+    "singer-songwriter": {"americana", "folk", "singer-songwriter"},
+    "soft-rock": {"pop-rock", "soft-rock"},
+    "urbano": {"urbano", "reggaeton"},
+    "y2k-pop": {"disco", "funk", "y2k-pop"},
+}
+GENRE_LANE_FALLBACK_GROUPS = {
     "rnb": {"rnb", "neo-soul"},
     "neo-soul": {"rnb", "neo-soul"},
     "hip-hop": {"hip-hop", "rap-pop", "boom-bap", "trap", "street-pop"},
+    "jpop": {"jpop"},
+    "latin-pop": {"latin-pop"},
 }
 GENRE_LANE_ORDER_PRESERVE_CHANNEL_TITLES = {
     HARUHARU_CHANNEL_TITLE,
@@ -1950,16 +1999,24 @@ def _declared_reuse_genre_tokens_for_playlist(playlist: Playlist) -> set[str]:
     )
 
 
-def _haruharu_reuse_lane_group(target_tokens: set[str]) -> set[str]:
-    for token in HARUHARU_STRICT_REUSE_LANE_PRIORITY:
+def _strict_genre_lane_channel_title(channel_title: str | None) -> bool:
+    return _normalize_reuse_channel_title(channel_title) in STRICT_GENRE_LANE_REUSE_CHANNEL_TITLES
+
+
+def _strict_reuse_lane_group(target_tokens: set[str]) -> set[str]:
+    lane_group: set[str] = set()
+    for token in GENRE_LANE_STRICT_REUSE_PRIORITY:
         if token in target_tokens:
-            return HARUHARU_REUSE_LANE_GROUPS.get(token, {token})
-    if "hip-hop" in target_tokens:
-        return HARUHARU_REUSE_LANE_GROUPS["hip-hop"]
+            lane_group.update(GENRE_LANE_REUSE_GROUPS.get(token, {token}))
+    if lane_group:
+        return lane_group
+    for token, group in GENRE_LANE_FALLBACK_GROUPS.items():
+        if token in target_tokens:
+            return set(group)
     return set()
 
 
-def _haruharu_reuse_candidate_matches_declared_lane(
+def _strict_reuse_candidate_matches_declared_lane(
     *,
     target_playlist: Playlist,
     target_genre_tokens: set[str],
@@ -1967,7 +2024,7 @@ def _haruharu_reuse_candidate_matches_declared_lane(
 ) -> bool:
     declared_tokens = _declared_reuse_genre_tokens_for_playlist(target_playlist)
     target_lane_tokens = declared_tokens or target_genre_tokens
-    required_source_tokens = _haruharu_reuse_lane_group(target_lane_tokens)
+    required_source_tokens = _strict_reuse_lane_group(target_lane_tokens)
     if not required_source_tokens:
         return False
     return bool(required_source_tokens & source_tokens)
@@ -2060,8 +2117,8 @@ def _reuse_candidate_is_similar(
         )
     )
     if target_genre_tokens and source_tokens:
-        if _is_haruharu_channel_title(target_channel_title):
-            return _haruharu_reuse_candidate_matches_declared_lane(
+        if _strict_genre_lane_channel_title(target_channel_title):
+            return _strict_reuse_candidate_matches_declared_lane(
                 target_playlist=target_playlist,
                 target_genre_tokens=target_genre_tokens,
                 source_tokens=source_track_tokens,
@@ -2430,8 +2487,8 @@ def _maybe_add_reused_back_half_tracks(
         "selection_policy": (
             "soft_hour_piano_first_liked_then_similar_back_half"
             if _is_soft_hour_channel_title(target_channel_title)
-            else "haruharu_strict_lane_liked_then_least_reused_back_half"
-            if _is_haruharu_channel_title(target_channel_title)
+            else "strict_genre_lane_liked_then_least_reused_back_half"
+            if _strict_genre_lane_channel_title(target_channel_title)
             else "liked_then_least_reused_similar_back_half"
         ),
         "target_channel_title": target_channel_title,

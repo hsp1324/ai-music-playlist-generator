@@ -43,6 +43,16 @@ def test_kpop_boom_bap_and_trap_keep_specific_lane_tokens() -> None:
     assert {"kpop", "hip-hop", "trap"} <= trap_tokens
 
 
+def test_pop_channel_specific_lanes_keep_reuse_tokens() -> None:
+    sundaze_tokens = set(extract_genre_tokens_from_values(["English country pop road trip"]))
+    solwave_tokens = set(extract_genre_tokens_from_values(["Spanish reggaeton pop urbano latino"]))
+    tokyo_tokens = set(extract_genre_tokens_from_values(["Japanese R&B Tokyo night vocal"]))
+
+    assert {"country-pop", "pop"} <= sundaze_tokens
+    assert {"reggaeton", "urbano"} <= solwave_tokens
+    assert {"jpop", "rnb"} <= tokyo_tokens
+
+
 def test_cached_track_genre_tokens_merges_current_ai_tokens() -> None:
     metadata = update_track_genre_token_metadata(
         {"style": "leftfield electronic"},

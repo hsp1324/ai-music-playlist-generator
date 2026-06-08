@@ -6,7 +6,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any
 
 
-GENRE_TOKEN_VERSION = 3
+GENRE_TOKEN_VERSION = 4
 GENRE_TOKEN_METADATA_KEY = "genre_tokens"
 GENRE_TOKEN_VERSION_METADATA_KEY = "genre_token_version"
 GENRE_TOKEN_HASH_METADATA_KEY = "genre_token_source_hash"
@@ -19,21 +19,30 @@ AI_GENRE_CONFIDENCE_METADATA_KEY = "ai_genre_confidence"
 
 GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
     "afro-house": ("afro house", "afro-house"),
+    "afrobeats": ("afrobeats", "afrobeat"),
+    "afropop": ("afropop", "afro pop", "afro-pop"),
+    "alt-pop": ("alt pop", "alt-pop", "alternative pop"),
+    "amapiano": ("amapiano", "amapiano-pop", "amapiano pop"),
+    "americana": ("americana", "americana pop"),
     "anime": ("anime", "anime-pop", "anime pop"),
     "bachata": ("bachata",),
     "ballad": ("ballad", "발라드"),
     "bass-house": ("bass house", "bass-house"),
     "bgm": ("bgm", "background music", "no-vocal", "no vocal", "instrumental", "무보컬", "연주곡"),
+    "bedroom-pop": ("bedroom pop", "bedroom-pop"),
     "boom-bap": ("boom bap", "boom-bap", "boombap", "붐뱁"),
     "cinematic": ("cinematic", "film score", "movie ost", "trailer", "epic", "heroic"),
     "city-pop": ("city pop", "city-pop", "citypop", "시티팝"),
     "club": ("club", "party", "festival", "rave"),
+    "country-pop": ("country pop", "country-pop"),
     "cumbia": ("cumbia",),
     "dance-pop": ("dance pop", "dance-pop", "idol pop", "idol-pop", "댄스팝", "아이돌"),
     "deep-house": ("deep house", "deep-house"),
+    "disco": ("disco", "disco-pop", "disco pop"),
     "dnb": ("dnb", "drum and bass", "drum & bass", "liquid dnb"),
     "edm": ("edm", "electronic dance"),
-    "folk": ("folk", "acoustic", "어쿠스틱"),
+    "folk": ("folk", "folk-pop", "folk pop", "acoustic", "어쿠스틱"),
+    "funk": ("funk", "funk-pop", "funk pop"),
     "game": ("game bgm", "game music", "arcade", "rpg", "gaming"),
     "gospel": ("gospel",),
     "hip-hop": (
@@ -54,6 +63,7 @@ GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
         "트랩",
     ),
     "house": ("house",),
+    "indie-pop": ("indie pop", "indie-pop"),
     "jazz": ("jazz", "재즈"),
     "jpop": ("j-pop", "jpop", "japanese pop", "제이팝"),
     "kpop": ("k-pop", "kpop", "korean pop", "케이팝", "한국어 팝"),
@@ -64,13 +74,16 @@ GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
     "orchestral": ("orchestra", "orchestral", "symphonic"),
     "piano": ("piano", "keys", "피아노"),
     "pop": ("pop",),
+    "pop-punk": ("pop punk", "pop-punk"),
     "pop-rock": ("pop rock", "pop-rock", "팝록"),
     "rap-pop": ("rap pop", "rap-pop", "sung rap", "sung-rap"),
     "reggaeton": ("reggaeton", "urbano"),
     "rnb": ("r&b", "rnb", "neo soul", "neo-soul", "soul", "알앤비", "소울"),
     "salsa": ("salsa",),
     "scripture": ("scripture", "worship", "prayer", "bible"),
+    "singer-songwriter": ("singer songwriter", "singer-songwriter"),
     "solo-piano": ("solo piano", "piano solo", "felt piano", "피아노 솔로", "솔로 피아노"),
+    "soft-rock": ("soft rock", "soft-rock", "adult contemporary", "adult-contemporary"),
     "street-pop": ("street pop", "street-pop", "dark street-pop", "dark street pop"),
     "synth-pop": ("synth pop", "synth-pop", "신스팝"),
     "tech-house": ("tech house", "tech-house"),
@@ -79,6 +92,8 @@ GENRE_PATTERNS: dict[str, tuple[str, ...]] = {
     "trance": ("trance",),
     "tropical-house": ("tropical house", "tropical-house"),
     "uk-garage": ("uk garage", "uk-garage", "garage"),
+    "urbano": ("urbano", "urbano latino"),
+    "y2k-pop": ("y2k pop", "y2k-pop", "recession pop", "recession-pop"),
 }
 
 TRACK_GENRE_METADATA_FIELDS = (
@@ -134,7 +149,21 @@ def _apply_contextual_token_rules(tokens: set[str], *, raw_text: str, normalized
         raw_text=raw_text,
         normalized_text=normalized_text,
     )
-    if korean_context and tokens & {"city-pop", "synth-pop", "dance-pop", "hip-hop", "rnb", "pop", "pop-rock", "ballad"}:
+    if korean_context and tokens & {
+        "ballad",
+        "boom-bap",
+        "city-pop",
+        "dance-pop",
+        "hip-hop",
+        "neo-soul",
+        "pop",
+        "pop-rock",
+        "rap-pop",
+        "rnb",
+        "street-pop",
+        "synth-pop",
+        "trap",
+    }:
         tokens.add("kpop")
 
     japan_context = _has_any_phrase(
@@ -142,7 +171,21 @@ def _apply_contextual_token_rules(tokens: set[str], *, raw_text: str, normalized
         raw_text=raw_text,
         normalized_text=normalized_text,
     )
-    if japan_context and tokens & {"city-pop", "synth-pop", "dance-pop", "pop", "pop-rock", "anime"}:
+    if japan_context and tokens & {
+        "anime",
+        "boom-bap",
+        "city-pop",
+        "dance-pop",
+        "hip-hop",
+        "neo-soul",
+        "pop",
+        "pop-rock",
+        "rap-pop",
+        "rnb",
+        "street-pop",
+        "synth-pop",
+        "trap",
+    }:
         tokens.add("jpop")
 
 
@@ -169,7 +212,11 @@ def normalize_genre_token(value: Any) -> str:
         "city-pop-kpop": "city-pop",
         "k-pop": "kpop",
         "j-pop": "jpop",
+        "afro-pop": "afropop",
+        "amapiano-pop": "amapiano",
+        "americana-pop": "americana",
         "boombap": "boom-bap",
+        "country": "country-pop",
         "r-b": "rnb",
         "rnb": "rnb",
         "hiphop": "hip-hop",
