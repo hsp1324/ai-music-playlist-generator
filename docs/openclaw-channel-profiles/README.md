@@ -116,9 +116,9 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### 불송
 
 - Buddhist scripture-inspired vocal music.
-- Cover, thumbnail, first-frame, and loop-video first frame should be one clean photorealistic visual package: a serene Buddha / Buddha-inspired figure with a warm gentle expression, listening to music while reading or holding an open Buddhist sutra in a quiet temple or meditation room.
+- Cover, thumbnail, first-frame, and loop-video first frame should be one clean contemporary Buddhist music visual package, rotating fresh subjects such as adult temple-stay listeners, Hongdae/Seoul streetwear practitioners, Buddha/statue plus modern listener scenes, duet pairs, or animated/stylized hip monk concepts.
 - New 불송 releases are hip-hop-first by default. A short upper-left Korean passage/theme + hip-hop style phrase may be used when useful, such as `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩`. Never use `불송` as visual text, and avoid obscure coined genre labels.
-- Keep the music cue subtle and respectful, such as a small speaker or understated headphones nearby. Avoid singing/dancing Buddha, idol/model posing, comedic gadget focus, fantasy deity effects, or cheap statue-only wallpaper.
+- Keep the music cue subtle and respectful, such as headphones, earbuds, a small speaker, prayer beads, or a human-held microphone. Avoid stale Buddha-only wallpapers, generic old sutra-desk scenes, singing/dancing Buddha, glossy idol/model studio posing, comedic gadget focus, fantasy deity effects, or background-only temple/lotus/lantern images.
 - Use Seedance/Dreamina `1.0 Fast`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`.
 - Queue final render with `--video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
 - Video prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene and motion.

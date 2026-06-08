@@ -60,15 +60,15 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 
 ## Visual Direction
 
-- Calm modern Buddhist visual identity: a respectful photorealistic Buddha / Buddha-inspired figure with a warm gentle expression, listening to music while reading or holding an open Buddhist sutra in a quiet temple, meditation room, candlelit study, rain garden, or mountain retreat.
-- Photorealistic or premium cinematic-real Buddhist imagery is the default, and the cover/thumbnail/loop first frame must center the Buddha-reading-sutra scene rather than only symbolic background objects.
-- Background-only scenes are not acceptable for 불송 final assets. If the output is only a temple path, lotus pond, lanterns, mountains, incense, abstract Buddhist symbols, or a statue-like wallpaper without the open sutra and subtle music cue, regenerate before uploading.
-- Use supporting details such as lanterns, lotus, incense smoke, candlelight, prayer beads, warm window light, paper texture, wooden table, temple architecture, rain on stone, or quiet garden foliage. Keep the music cue subtle and respectful, such as a small speaker or understated headphones nearby.
-- Cute/gentle animation visuals are no longer the normal default. Use them only when the human explicitly asks or when the release concept very clearly needs a softer animated treatment.
-- Avoid parody, caricature, or exoticized religious imagery.
-- Do not depict the Buddha singing, dancing, performing, posing like an idol/model, surrounded by exaggerated fantasy effects, or reduced to a cheap statue wallpaper. A serene face is allowed, but keep the sutra, listening cue, and respectful environment visible.
-- Cover, YouTube thumbnail, first-frame, and loop video must all use the same Buddha-reading-sutra image package for 불송. It may contain one short Korean passage/theme + hip-hop style phrase, such as `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩`, but never the `불송` channel label or obscure coined genre wording.
-- Do not create a separate channel-branded thumbnail for 불송. Reuse the same cover/first-frame package as the YouTube thumbnail and pass `--allow-cover-as-thumbnail` when using the helper.
+- Calm modern Buddhist visual identity with a younger, more clickable Buddhist hip-hop feeling. Do not repeat one fixed old devotional scene across releases.
+- Rotate visual packages: natural photorealistic adult temple-stay women/men/couples with headphones or earbuds; Hongdae/Seoul streetwear listeners or rappers quietly inspired by Buddhism in a temple courtyard; a Buddha statue plus a contemporary practitioner in the same frame; duet pairs for duet songs; or a tasteful animated/stylized monk when a monk is useful.
+- Photorealistic or premium cinematic-real Buddhist imagery is normal for non-monastic people. If a monk appears, prefer animated, illustrated, or gentle anime/stylized treatment rather than photorealistic monk portraits.
+- Background-only scenes are not acceptable for 불송 final assets. If the output is only a temple path, lotus pond, lanterns, mountains, incense, abstract Buddhist symbols, empty shrine, or statue-only wallpaper without a modern human/music hook or fresh Buddhist subject, regenerate before uploading.
+- Use supporting details such as lanterns, lotus, incense smoke, candlelight, prayer beads, warm window light, paper texture, temple architecture, rain on stone, headphones, earbuds, small speakers, or a human-held microphone. Keep the music cue subtle and respectful.
+- Avoid parody, caricature, exoticized religious imagery, cheap mystic clipart, stale Buddha-only wallpapers, generic old sutra-desk scenes, and glossy idol/model studio portraits.
+- Do not depict the Buddha singing, dancing, performing, posing like an idol/model, or surrounded by exaggerated fantasy effects. A Buddha statue or serene Buddha face is allowed, but it should support a fresh Buddhist music scene rather than become the same old static devotional image.
+- Cover, YouTube thumbnail, first-frame, and loop video must feel like one image package for 불송. It may contain one short Korean passage/theme + hip-hop style phrase, such as `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩`, but never the `불송` channel label or obscure coined genre wording.
+- Do not create a separate channel-branded thumbnail for 불송. Reuse the same cover/first-frame package as the YouTube thumbnail or pass `--allow-cover-as-thumbnail` when using the helper.
 
 ## Good Fresh Concept Shapes
 
