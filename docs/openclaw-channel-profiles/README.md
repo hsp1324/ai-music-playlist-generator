@@ -32,7 +32,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Text must be integrated into the artwork with safe margins and a transparent background. Letters should sit directly on the image; use only typography choices such as font weight, color, subtle shadow, thin outline, or local contrast for readability. Do not use hard black boxes, semi-transparent black panels, white or colored rectangles, gradient scrims, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks behind text. Reject/regenerate thumbnails when the text is placed inside any filled background shape.
 - The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
 - The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
-- For Dreamina/Seedance, use `1.0 Fast`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, and exactly `10 seconds` in the provider UI, not in the prompt. The mode offers `5 seconds` or `10 seconds`; always choose `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `2.0 Fast`. HaruHaru, sundaze, Solwave Radio, and Club Bloom do not use provider clips by default; render them from the still cover image. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set `10 seconds` before Generate.
+- For Dreamina/Seedance, use `1.0 Fast`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, and exactly `10 seconds` in the provider UI, not in the prompt. The mode offers `5 seconds` or `10 seconds`; always choose `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `2.0 Fast`. HaruHaru, sundaze, Solwave Radio, and Club Bloom do not use provider clips by default; render them from the still cover image. 불송 is a standing still-image channel and should not use provider clips in normal automation. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set `10 seconds` before Generate.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
 - Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
@@ -101,9 +101,9 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### Club Bloom
 
 - No-vocal EDM, house, techno, trance, club, festival, workout, night-drive, or party-energy releases.
-- Default visual package is now photorealistic still images, not provider loop video.
-- Prefer attractive clearly adult women in revealing YouTube-safe club fashion at places where club music naturally plays: nightclub, premium bar, lounge, rooftop club, beach club, pool party, festival VIP area, DJ booth, dance floor, neon city terrace, or yacht/harbor party. Keep it YouTube-safe with no nudity, sexual acts, minors, teen-coded styling, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
-- If text is useful, name the club lane near the front: `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
+- Default visual package is now HaruHaru-style photorealistic friend-taken smartphone/Instagram still images, not provider loop video.
+- Prefer attractive clearly adult women in revealing YouTube-safe club fashion at places where club music naturally plays: nightclub, bar, lounge, rooftop club, beach club, pool party, festival VIP area, DJ booth, dance floor, neon city terrace, or yacht/harbor party. Use natural side or three-quarter phone-photo framing, medium or farther composition, slight motion/focus imperfection, and no glossy campaign or centered AI-model headshot. Keep it YouTube-safe with no nudity, sexual acts, minors, teen-coded styling, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
+- Keep thumbnails text-free by default. If text is useful, name the club lane with one short transparent-background phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
 - Queue final render as still image with app spectrum lower-right. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
 
 ### BibliaCanto
@@ -116,12 +116,12 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### 불송
 
 - Buddhist scripture-inspired vocal music.
-- Cover, thumbnail, first-frame, and loop-video first frame should be one clean contemporary Buddhist music visual package, rotating fresh subjects such as adult temple-stay listeners, Hongdae/Seoul streetwear practitioners, Buddha/statue plus modern listener scenes, duet pairs, or animated/stylized hip monk concepts.
+- Cover, thumbnail, and still-image render source should be one clean contemporary female-led Buddhist music visual package. Use clearly adult temple-stay women, Hongdae/Seoul streetwear women practitioners/listeners, Buddha/statue plus modern woman listener scenes, two adult women for duet songs, or female-coded animated/stylized Buddhist practitioner concepts. Do not use men, male monks, male rappers, male listeners, or male-only couple/duet imagery unless the human explicitly asks for a male subject in the current request.
 - New 불송 releases are hip-hop-first by default. A short upper-left Korean passage/theme + hip-hop style phrase may be used when useful, such as `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩`. Never use `불송` as visual text, and avoid obscure coined genre labels.
+- For vocal tracks, include a concrete Korean lead-vocal tone or delivery phrase in each Suno style string and vary it across tracks, such as `calm low-register Korean rap`, `warm soulful male vocal`, `airy female hook vocal`, `restrained boom-bap spoken rap`, or `warm male/female duet`.
 - Keep the music cue subtle and respectful, such as headphones, earbuds, a small speaker, prayer beads, or a human-held microphone. Avoid stale Buddha-only wallpapers, generic old sutra-desk scenes, singing/dancing Buddha, glossy idol/model studio posing, comedic gadget focus, fantasy deity effects, or background-only temple/lotus/lantern images.
-- Use Seedance/Dreamina `1.0 Fast`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`.
-- Queue final render with `--video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
-- Video prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene and motion.
+- Queue final render as still image with `--video-render-source-mode still_image --video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
+- 불송 is always an app-rendered still-image video channel in normal automation, not a moving-video channel and not a quota fallback. Do not create, upload, or wait for a Gemini/Dreamina/Seedance loop video unless the human explicitly changes this standing 불송 still-image rule in the current request. Image prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene.
 
 Profiles:
 
@@ -134,7 +134,7 @@ Profiles:
 - [Cinematic Pulse](cinematic-pulse.md)
 - [Club Bloom](club-bloom.md)
 - [BibliaCanto](the-old-verse.md)
-- [불송](the-new-verse.md)
+- [불송](bulsong.md)
 - [Custom Channel](custom-channel.md)
 
 The automation rotation can include newly connected YouTube channels before dedicated profile docs exist. In that case, `scripts/openclaw-release channel-profile` returns `custom-channel.md`; use it instead of copying another channel's visual signature.

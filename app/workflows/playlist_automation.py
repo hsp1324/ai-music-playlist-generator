@@ -1,11 +1,12 @@
 import random
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
@@ -50,7 +51,6 @@ from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
     is_cinematic_pulse_release,
     is_still_image_render_default_release,
-    is_storylight_ost_release,
     release_vocal_metadata,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
@@ -58,7 +58,7 @@ from app.utils.video_render_policy import (
 
 
 ARCHIVE_RETENTION_DAYS = 7
-DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS = 40 * 60
+DEFAULT_PLAYLIST_PUBLISH_MIN_SECONDS = 0
 FAILED_WORKFLOW_STATES = {
     "render_failed",
     "video_build_failed",
@@ -1001,6 +1001,8 @@ def _playlist_publish_target_seconds(
 ) -> int:
     target_seconds = max(int(playlist.target_duration_seconds or 0), 0)
     minimum_seconds = max(int(min_publish_seconds or 0), 0)
+    if minimum_seconds <= 0:
+        return 0
     if minimum_seconds and target_seconds > minimum_seconds:
         return minimum_seconds
     return target_seconds
@@ -1173,6 +1175,22 @@ def _find_duplicate_loop_video_release(
 
 
 _UNSET = object()
+_WORKSPACE_CACHE_TTL_SECONDS = 120.0
+_COMPACT_WORKSPACE_CACHE: dict[tuple[int | None, int, str], tuple[float, list[PlaylistWorkspaceRead]]] = {}
+_CHANNEL_SUMMARY_CACHE: tuple[tuple[int, str], float, list[dict]] | None = None
+
+
+def _workspace_collection_fingerprint(db: Session) -> tuple[int, str]:
+    count, updated_at = db.execute(select(func.count(Playlist.id), func.max(Playlist.updated_at))).one()
+    if isinstance(updated_at, datetime):
+        updated_key = updated_at.isoformat()
+    else:
+        updated_key = str(updated_at or "")
+    return int(count or 0), updated_key
+
+
+def _cache_is_fresh(stored_at: float) -> bool:
+    return time.monotonic() - stored_at < _WORKSPACE_CACHE_TTL_SECONDS
 
 
 def _youtube_published_at(
@@ -1483,8 +1501,8 @@ def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[st
     }
 
 
-def _compact_playlist_records(db: Session) -> list[Playlist]:
-    rows = db.execute(
+def _compact_playlist_records(db: Session, *, limit: int | None = None) -> list[Playlist]:
+    statement = (
         select(
             Playlist.id,
             Playlist.title,
@@ -1498,7 +1516,11 @@ def _compact_playlist_records(db: Session) -> list[Playlist]:
             Playlist.created_at,
             Playlist.updated_at,
         )
-    ).all()
+        .order_by(Playlist.updated_at.desc())
+    )
+    if limit:
+        statement = statement.limit(limit)
+    rows = db.execute(statement).all()
     return [
         SimpleNamespace(
             id=row.id,
@@ -1517,8 +1539,14 @@ def _compact_playlist_records(db: Session) -> list[Playlist]:
     ]
 
 
-def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]:
-    playlists = _compact_playlist_records(db)
+def list_compact_playlist_workspaces(db: Session, *, limit: int | None = None) -> list[PlaylistWorkspaceRead]:
+    fingerprint = _workspace_collection_fingerprint(db)
+    cache_key = (limit, *fingerprint)
+    cached = _COMPACT_WORKSPACE_CACHE.get(cache_key)
+    if cached and _cache_is_fresh(cached[0]):
+        return cached[1]
+
+    playlists = _compact_playlist_records(db, limit=limit)
     playlist_ids = [playlist.id for playlist in playlists]
     item_counts = _playlist_item_counts(db, playlist_ids)
     render_jobs = _compact_render_jobs(db, playlist_ids)
@@ -1528,7 +1556,7 @@ def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]
         youtube_published_at_overrides=upload_finished_at,
         use_job_fallback=False,
     )
-    return [
+    workspaces = [
         serialize_playlist_workspace(
             playlist,
             compact=True,
@@ -1538,9 +1566,172 @@ def list_compact_playlist_workspaces(db: Session) -> list[PlaylistWorkspaceRead]
         )
         for playlist in playlists
     ]
+    _COMPACT_WORKSPACE_CACHE.clear()
+    _COMPACT_WORKSPACE_CACHE[cache_key] = (time.monotonic(), workspaces)
+    return workspaces
+
+
+def _sqlite_truthy(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value != 0
+    return str(value or "").strip().lower() in {"1", "true", "yes"}
+
+
+def _sqlite_workspace_channel_summaries(db: Session) -> list[dict]:
+    now = _utcnow()
+    rows = db.execute(
+        text(
+            """
+            SELECT
+                id,
+                title,
+                actual_duration_seconds,
+                youtube_video_id,
+                created_at,
+                updated_at,
+                json_extract(metadata_json, '$.hidden') AS hidden,
+                json_extract(metadata_json, '$.youtube_channel_id') AS youtube_channel_id,
+                json_extract(metadata_json, '$.youtube_channel_title') AS youtube_channel_title,
+                json_extract(metadata_json, '$.target_youtube_channel_title') AS target_youtube_channel_title,
+                json_extract(metadata_json, '$.workflow_state') AS workflow_state,
+                json_extract(metadata_json, '$.workspace_mode') AS workspace_mode,
+                json_extract(metadata_json, '$.rendered_duration_seconds') AS rendered_duration_seconds,
+                json_extract(metadata_json, '$.youtube_title') AS youtube_title,
+                json_extract(metadata_json, '$.youtube_scheduled_publish_at') AS youtube_scheduled_publish_at,
+                json_extract(metadata_json, '$.youtube_publish_at') AS youtube_publish_at,
+                json_extract(metadata_json, '$.youtube_privacy_status') AS youtube_privacy_status,
+                json_extract(metadata_json, '$.privacy_status') AS privacy_status,
+                json_extract(metadata_json, '$.youtube_public_at') AS youtube_public_at,
+                json_extract(metadata_json, '$.youtube_published_at') AS youtube_published_at,
+                json_extract(metadata_json, '$.uploaded_at') AS uploaded_at,
+                json_extract(metadata_json, '$.youtube_response.status.privacyStatus') AS response_privacy_status,
+                json_extract(metadata_json, '$.youtube_response.status.publishAt') AS response_publish_at,
+                json_extract(metadata_json, '$.youtube_response.snippet.publishedAt') AS response_published_at
+            FROM playlists
+            ORDER BY updated_at DESC
+            """
+        )
+    ).mappings().all()
+
+    channel_ids_by_title: dict[str, str] = {}
+    for row in rows:
+        if _sqlite_truthy(row.get("hidden")):
+            continue
+        channel_id = str(row.get("youtube_channel_id") or "").strip()
+        channel_title = (
+            _canonical_youtube_channel_title(row.get("youtube_channel_title"))
+            or _canonical_youtube_channel_title(row.get("target_youtube_channel_title"))
+            or ""
+        )
+        if channel_id and channel_title:
+            channel_ids_by_title.setdefault(channel_title, channel_id)
+
+    channels: dict[str, dict] = {}
+    for row in rows:
+        if _sqlite_truthy(row.get("hidden")):
+            continue
+
+        channel_id = str(row.get("youtube_channel_id") or "").strip()
+        channel_title = (
+            _canonical_youtube_channel_title(row.get("youtube_channel_title"))
+            or _canonical_youtube_channel_title(row.get("target_youtube_channel_title"))
+            or ""
+        )
+        if not channel_id and channel_title:
+            channel_id = channel_ids_by_title.get(channel_title, "")
+        if channel_id:
+            key = f"id:{channel_id}"
+        elif channel_title:
+            key = f"title:{channel_title}"
+        else:
+            key = "title:YouTube"
+
+        summary = channels.setdefault(
+            key,
+            {
+                "key": key,
+                "label": channel_title or channel_id or "YouTube",
+                "count": 0,
+                "playlistCount": 0,
+                "singleCount": 0,
+                "totalDuration": 0,
+                "latestTitle": "",
+                "latestAt": "",
+                "_latestSort": 0.0,
+            },
+        )
+        summary["count"] += 1
+        if str(row.get("workspace_mode") or "playlist") == "single_track_video":
+            summary["singleCount"] += 1
+        else:
+            summary["playlistCount"] += 1
+        summary["totalDuration"] += int(row.get("rendered_duration_seconds") or row.get("actual_duration_seconds") or 0)
+
+        privacy_status = str(
+            row.get("response_privacy_status") or row.get("youtube_privacy_status") or row.get("privacy_status") or ""
+        ).strip().lower()
+        scheduled_values = [
+            parsed
+            for parsed in (
+                _parse_metadata_datetime(row.get("youtube_scheduled_publish_at")),
+                _parse_metadata_datetime(row.get("youtube_publish_at")),
+                _parse_metadata_datetime(row.get("response_publish_at")),
+            )
+            if parsed and parsed > now
+        ]
+        published_values = [
+            parsed
+            for parsed in (
+                _parse_metadata_datetime(row.get("youtube_public_at")),
+                _parse_metadata_datetime(row.get("youtube_published_at")),
+                _parse_metadata_datetime(row.get("response_published_at")),
+                _parse_metadata_datetime(row.get("uploaded_at")),
+            )
+            if parsed
+        ]
+        display_at = (
+            max(scheduled_values)
+            if privacy_status != "public" and scheduled_values
+            else next(iter(published_values), None)
+        )
+        display_at = (
+            display_at
+            or _parse_metadata_datetime(row.get("created_at"))
+            or _parse_metadata_datetime(row.get("updated_at"))
+            or now
+        )
+
+        latest_sort = _timestamp(display_at)
+        if latest_sort >= float(summary.get("_latestSort") or 0):
+            summary["_latestSort"] = latest_sort
+            summary["latestAt"] = display_at.isoformat()
+            summary["latestTitle"] = str(row.get("youtube_title") or row.get("title") or "")
+
+    result = []
+    for summary in channels.values():
+        summary.pop("_latestSort", None)
+        result.append(summary)
+    return sorted(result, key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
 
 
 def list_workspace_channel_summaries(db: Session) -> list[dict]:
+    global _CHANNEL_SUMMARY_CACHE
+
+    fingerprint = _workspace_collection_fingerprint(db)
+    if (
+        _CHANNEL_SUMMARY_CACHE is not None
+        and _CHANNEL_SUMMARY_CACHE[0] == fingerprint
+        and _cache_is_fresh(_CHANNEL_SUMMARY_CACHE[1])
+    ):
+        return [dict(item) for item in _CHANNEL_SUMMARY_CACHE[2]]
+
+    if db.bind is not None and db.bind.dialect.name == "sqlite":
+        summaries = _sqlite_workspace_channel_summaries(db)
+        _CHANNEL_SUMMARY_CACHE = (fingerprint, time.monotonic(), [dict(item) for item in summaries])
+        return summaries
+
     channels: dict[str, dict] = {}
     playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
     channel_ids_by_title: dict[str, str] = {}
@@ -1608,7 +1799,9 @@ def list_workspace_channel_summaries(db: Session) -> list[dict]:
     for summary in channels.values():
         summary.pop("_latestSort", None)
         result.append(summary)
-    return sorted(result, key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
+    summaries = sorted(result, key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
+    _CHANNEL_SUMMARY_CACHE = (fingerprint, time.monotonic(), [dict(item) for item in summaries])
+    return summaries
 
 
 def _metadata_path_values(value: object, *, key: str | None = None) -> list[str]:
@@ -3186,8 +3379,6 @@ def queue_workspace_video_render(
         raise ValueError("Cover image must be approved before rendering video.")
     source_mode = _normalize_video_render_source_mode(video_render_source_mode)
     render_resolution = _normalize_video_render_resolution(video_render_resolution)
-    if is_storylight_ost_release(meta) and source_mode == "still_image":
-        raise ValueError("Storylight OST requires an uploaded loop video; still-image video render is not allowed.")
     if source_mode == "auto" and is_still_image_render_default_release(meta):
         source_mode = "still_image"
         allow_still_image_fallback = True

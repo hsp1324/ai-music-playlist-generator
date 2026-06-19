@@ -33,7 +33,7 @@ MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 60
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 0
 DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 10 * 60
-DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 40 * 60
+DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 60 * 60
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
 LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
 OPENCLAW_PROVIDER_VIDEO_WAIT_SECONDS = 20 * 60
@@ -47,7 +47,7 @@ STORYLIGHT_YOUTUBE_CHANNEL_TITLE = "Storylight OST"
 CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
 CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE = "Club Bloom"
 OLD_VERSE_YOUTUBE_CHANNEL_TITLE = "BibliaCanto"
-NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "불송"
+NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "불송"  # Legacy constant name; actual channel title is 불송.
 SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE = "Signal Room Radio"
 SIGNAL_DESK_LEGACY_CHANNEL_TITLE = "Signal Desk Radio"
 MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE = "Midnight Cue Radio"
@@ -69,7 +69,7 @@ CHANNEL_PROFILE_DOCS = {
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/cinematic-pulse.md",
     CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/club-bloom.md",
     OLD_VERSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/the-old-verse.md",
-    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/the-new-verse.md",
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/bulsong.md",
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-profiles/storylight-ost.md",
@@ -84,7 +84,7 @@ CHANNEL_CONCEPT_DOCS = {
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/cinematic-pulse.md",
     CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/club-bloom.md",
     OLD_VERSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/the-old-verse.md",
-    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/the-new-verse.md",
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/bulsong.md",
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "docs/openclaw-channel-concepts/storylight-ost.md",
@@ -99,7 +99,7 @@ CHANNEL_PROFILE_NAMES = {
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE: "cinematic-pulse",
     CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE: "club-bloom",
     OLD_VERSE_YOUTUBE_CHANNEL_TITLE: "the-old-verse",
-    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: "the-new-verse",
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE: "bulsong",
     SIGNAL_ROOM_YOUTUBE_CHANNEL_TITLE: "storylight-ost",
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE: "storylight-ost",
     MIDNIGHT_CUE_LEGACY_CHANNEL_TITLE: "storylight-ost",
@@ -140,12 +140,14 @@ STILL_IMAGE_LYRICS_OVERLAY_CHANNEL_TITLES = {
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
     SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
 STILL_IMAGE_RENDER_DEFAULT_CHANNEL_TITLES = {
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
     SUNDAZE_YOUTUBE_CHANNEL_TITLE,
     SOLWAVE_YOUTUBE_CHANNEL_TITLE,
     CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE,
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
 TOKYO_PHOTO_STILL_IMAGE_LANE_HINTS = (
     "japanese hip-hop",
@@ -1900,13 +1902,9 @@ def require_video_render_source_allowed(
     channel_title: str,
     args: argparse.Namespace,
 ) -> None:
-    render_source_mode = normalize_render_source_mode_arg(args)
-    still_image_requested = bool(getattr(args, "allow_still_image_video", False) or render_source_mode == "still_image")
-    if still_image_requested and is_storylight_channel_title(release_youtube_channel_title(release, fallback=channel_title)):
-        raise RuntimeError(
-            "Storylight OST requires a provider-generated loop video. "
-            "Upload the loop video first and render with --video-render-source-mode loop_video or auto."
-        )
+    # Keep this hook for future hard channel gates. Provider-exhausted
+    # still-image fallback is now a standing human-approved path.
+    return None
 
 
 def should_enable_lyrics_overlay_for_release(
@@ -2622,7 +2620,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         raise RuntimeError(
             "auto-publish-playlist requires --loop-video when creating a new moving-video Playlist Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-playlist")
 
@@ -2660,7 +2658,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         raise RuntimeError(
             "auto-publish-playlist requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -2977,7 +2975,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires --loop-video when creating a new moving-video Single Release. "
             "Generate and download the short Gemini/Dreamina/Seedance MP4 first, then pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4. "
-            "For HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
+            "For HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders, pass --allow-still-image-video --video-render-source-mode still_image instead."
         )
     require_normal_loop_video_duration(loop_video_path, args, context="auto-publish-single")
 
@@ -3016,7 +3014,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         raise RuntimeError(
             "auto-publish-single requires an uploaded loop video before video render for moving-video releases. "
             "Pass --loop-video ABSOLUTE_LOOP_VIDEO_MP4, or upload a loop video to the release first. "
-            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders or when the human explicitly accepts a still-image fallback video."
+            "Pass --allow-still-image-video only for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or when the human explicitly accepts a still-image fallback video."
         )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
@@ -3790,7 +3788,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
     )
-    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 2400 seconds for BibliaCanto/불송. Ignored for single releases.")
+    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 3600 seconds for BibliaCanto/불송. Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
     create_parser.set_defaults(func=create_release)
@@ -3892,10 +3890,10 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_playlist_parser.add_argument("--cover", default="", help="Required final 16:9 playlist cover image unless an uploaded final cover already exists on the release.")
     auto_playlist_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable title/use-case text; HaruHaru should normally be text-free; Tokyo Daydream photorealistic hip-hop/R&B should use a friend-taken Japanese street/lifestyle look, text-free or with one integrated lane phrase when useful; sundaze/Solwave Radio should use a friend-taken phone-photo look with one integrated lane phrase when useful; Club Bloom should use premium nightlife still imagery with one integrated club lane phrase when useful; for 불송, use the same contemporary Buddhist first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.")
+    auto_playlist_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders.")
     auto_playlist_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_playlist_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders or a human-approved fallback.")
+    auto_playlist_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or a human-approved fallback.")
     auto_playlist_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_playlist_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_playlist_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same contemporary Buddhist first-frame image for both.")
@@ -3908,7 +3906,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 2400 seconds for BibliaCanto/불송.")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 3600 seconds for BibliaCanto/불송.")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 60 seconds.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 0, no maximum.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
@@ -3926,13 +3924,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders; use 720p for 불송 calm still-image renders unless the human asks otherwise.",
     )
     auto_playlist_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders.",
     )
     auto_playlist_parser.add_argument(
         "--lyrics-overlay",
@@ -3951,7 +3949,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="whisper",
         help="Line lyric timing source. whisper uses faster-whisper ASR word timestamps; timeline is only a rough fallback.",
     )
-    auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
+    auto_playlist_parser.add_argument("--force-under-target", action="store_true", help="Legacy compatibility flag; publish no longer blocks only because duration is under the preferred target.")
     auto_playlist_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when the human explicitly requests a duplicate/replacement upload.")
     auto_playlist_parser.add_argument("--actor", default="openclaw:auto-playlist", help="Actor name recorded in histories.")
     auto_playlist_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait per long stage. Default: 6 hours.")
@@ -3966,10 +3964,10 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--title", action="append", default=[], help="Optional track title. Repeat in the same order as --audio.")
     auto_single_parser.add_argument("--cover", default="", help="Required final 16:9 cover/first-frame image without channel names or logos unless an uploaded final cover already exists on the release.")
     auto_single_parser.add_argument("--thumbnail", default="", help="Required YouTube thumbnail image unless an uploaded thumbnail already exists on the release. Most channels need readable text; HaruHaru should normally be text-free; Tokyo Daydream photorealistic hip-hop/R&B should use a friend-taken Japanese street/lifestyle look, text-free or with one integrated lane phrase when useful; sundaze/Solwave Radio should use a friend-taken phone-photo look with one integrated lane phrase when useful; Club Bloom should use premium nightlife still imagery with one integrated club lane phrase when useful; for 불송, use the same contemporary Buddhist first-frame image or pass --allow-cover-as-thumbnail.")
-    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.")
+    auto_single_parser.add_argument("--loop-video", default="", help="Required short visual clip generated by Gemini/Dreamina/Seedance for moving-video renders unless an uploaded loop video already exists on the release. Omit for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders.")
     auto_single_parser.add_argument("--loop-video-provider", choices=LOOP_VIDEO_PROVIDERS, default="", help="Provider that created --loop-video. Use gemini, dreamina, or seedance for generated clips.")
     auto_single_parser.add_argument("--hard-loop-video", action="store_true", help="Use direct clip reuse instead of the default smoothed render.")
-    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders or a human-approved fallback.")
+    auto_single_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or a human-approved fallback.")
     auto_single_parser.add_argument("--allow-short-loop-video", action="store_true", help="Allow a loop video shorter than the normal loop-video target. Use only when the human explicitly accepts a non-standard clip.")
     auto_single_parser.add_argument("--allow-generated-draft-cover", action="store_true", help="Explicitly allow the app's placeholder draft cover. Do not use unless the human accepts it.")
     auto_single_parser.add_argument("--allow-cover-as-thumbnail", action="store_true", help="Reuse the video cover as the YouTube thumbnail. Do not use unless the human accepts one image for both roles; 불송 can use the same contemporary Buddhist first-frame image for both.")
@@ -3994,13 +3992,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders; use 720p for 불송 calm still-image renders unless the human asks otherwise.",
     )
     auto_single_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders.",
     )
     auto_single_parser.add_argument(
         "--lyrics-overlay",
@@ -4075,7 +4073,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser = subparsers.add_parser("render-video", help="Queue video render for an existing release.")
     render_video_parser.add_argument("--release-id", default="", help="Existing release id.")
     render_video_parser.add_argument("--release-title", default="", help="Existing release title.")
-    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders or a human-approved fallback.")
+    render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or a human-approved fallback.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
         choices=["bars", "mirror-bars", "calm-bars", "none"],
@@ -4086,13 +4084,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--video-render-resolution",
         choices=["720p", "1080p", "2k"],
         default="720p",
-        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.",
+        help="Final MP4 render resolution. Use 1080p for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders; use 720p for 불송 calm still-image renders unless the human asks otherwise.",
     )
     render_video_parser.add_argument(
         "--video-render-source-mode",
         choices=["auto", "loop_video", "still_image"],
         default="auto",
-        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom still-image renders.",
+        help="Final render visual source. Use still_image for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders.",
     )
     render_video_parser.add_argument(
         "--lyrics-overlay",
@@ -4200,7 +4198,7 @@ def build_parser() -> argparse.ArgumentParser:
     publish_parser.add_argument("--release-title", default="", help="Existing release title.")
     publish_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title.")
     publish_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id.")
-    publish_parser.add_argument("--force-under-target", action="store_true", help="Allow publish even if approved duration is under target.")
+    publish_parser.add_argument("--force-under-target", action="store_true", help="Legacy compatibility flag; publish no longer blocks only because duration is under the preferred target.")
     publish_parser.add_argument("--allow-reupload", action="store_true", help="Allow uploading an existing release that already has a YouTube video id. Use only when explicitly requested.")
     publish_parser.add_argument("--no-wait", action="store_true", help="Return immediately after queueing the YouTube upload.")
     publish_parser.add_argument("--wait-timeout-seconds", type=int, default=21600, help="Max wait for YouTube upload. Default: 6 hours.")

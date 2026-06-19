@@ -125,6 +125,16 @@ class LocalVideoCandidate:
     size_bytes: int
 
 
+@dataclass
+class EmergencyLocalVideoCandidate:
+    playlist: Playlist
+    path: Path
+    uploaded_at: datetime
+    eligible_after: datetime
+    source: str
+    size_bytes: int
+
+
 def _candidate_paths(playlist: Playlist, settings: Settings) -> list[tuple[Path, str]]:
     paths: list[tuple[Path, str]] = []
     output_video_path = str(playlist.output_video_path or "").strip()
@@ -182,6 +192,49 @@ def collect_public_uploaded_local_video_candidates(
     return sorted(candidates, key=lambda item: (item.public_at, item.playlist.updated_at or item.public_at))
 
 
+def collect_emergency_uploaded_local_video_candidates(
+    db: Session,
+    settings: Settings,
+    *,
+    now: datetime | None = None,
+) -> list[EmergencyLocalVideoCandidate]:
+    current = now or _utcnow()
+    min_age_hours = max(float(settings.local_video_cleanup_emergency_min_uploaded_age_hours or 0), 0.0)
+    min_age = timedelta(hours=min_age_hours)
+    candidates: list[EmergencyLocalVideoCandidate] = []
+    playlists = db.scalars(
+        select(Playlist).where(
+            Playlist.status == PlaylistStatus.uploaded,
+            Playlist.youtube_video_id.is_not(None),
+        )
+    ).all()
+    seen_paths: set[Path] = set()
+    for playlist in playlists:
+        uploaded_at = youtube_uploaded_at(playlist, now=current)
+        if uploaded_at > current - min_age:
+            continue
+        eligible_after = uploaded_at + min_age
+        for path, source in _candidate_paths(playlist, settings):
+            try:
+                resolved = path.resolve()
+            except OSError:
+                resolved = path
+            if resolved in seen_paths or not path.exists() or not path.is_file():
+                continue
+            seen_paths.add(resolved)
+            candidates.append(
+                EmergencyLocalVideoCandidate(
+                    playlist=playlist,
+                    path=path,
+                    uploaded_at=uploaded_at,
+                    eligible_after=eligible_after,
+                    source=source,
+                    size_bytes=path.stat().st_size,
+                )
+            )
+    return sorted(candidates, key=lambda item: (item.uploaded_at, item.playlist.updated_at or item.uploaded_at))
+
+
 def mark_local_video_retained_after_youtube_upload(
     playlist: Playlist,
     meta: dict[str, Any],
@@ -211,6 +264,86 @@ def mark_local_video_retained_after_youtube_upload(
     return meta
 
 
+def _delete_local_video_candidate(
+    db: Session,
+    candidate: LocalVideoCandidate | EmergencyLocalVideoCandidate,
+    result: dict[str, Any],
+    *,
+    current: datetime,
+    before_percent: float,
+    threshold: float,
+    reason: str,
+) -> bool:
+    path = candidate.path
+    try:
+        path.unlink()
+    except OSError as exc:
+        meta = dict(candidate.playlist.metadata_json or {})
+        meta["local_video_cleanup_error"] = str(exc)
+        meta["local_video_cleanup_error_at"] = current.isoformat()
+        candidate.playlist.metadata_json = meta
+        db.add(candidate.playlist)
+        result["errors"].append(
+            {
+                "playlist_id": candidate.playlist.id,
+                "path": str(path),
+                "error": str(exc),
+            }
+        )
+        return False
+
+    if candidate.playlist.output_video_path and Path(candidate.playlist.output_video_path) == path:
+        candidate.playlist.output_video_path = None
+
+    meta = dict(candidate.playlist.metadata_json or {})
+    history = list(meta.get("local_video_cleanup_history") or [])
+    entry = {
+        "path": str(path),
+        "deleted_at": current.isoformat(),
+        "reason": reason,
+        "source": candidate.source,
+        "size_bytes": candidate.size_bytes,
+        "youtube_video_id": candidate.playlist.youtube_video_id,
+        "disk_usage_before_percent": round(before_percent, 2),
+        "threshold_percent": threshold,
+    }
+    deleted_entry = {
+        "playlist_id": candidate.playlist.id,
+        "title": candidate.playlist.title,
+        "path": str(path),
+        "size_bytes": candidate.size_bytes,
+        "source": candidate.source,
+        "youtube_video_id": candidate.playlist.youtube_video_id,
+    }
+    if isinstance(candidate, LocalVideoCandidate):
+        entry["youtube_public_at"] = candidate.public_at.isoformat()
+        entry["local_video_cleanup_eligible_after"] = candidate.eligible_after.isoformat()
+        deleted_entry["youtube_public_at"] = candidate.public_at.isoformat()
+        deleted_entry["local_video_cleanup_eligible_after"] = candidate.eligible_after.isoformat()
+    else:
+        entry["youtube_uploaded_at"] = candidate.uploaded_at.isoformat()
+        entry["local_video_cleanup_eligible_after"] = candidate.eligible_after.isoformat()
+        deleted_entry["youtube_uploaded_at"] = candidate.uploaded_at.isoformat()
+        deleted_entry["local_video_cleanup_eligible_after"] = candidate.eligible_after.isoformat()
+
+    history.append(entry)
+    meta["local_video_cleanup_history"] = history
+    meta["local_video_deleted_after_youtube_upload"] = str(path)
+    meta["local_video_deleted_at"] = current.isoformat()
+    meta["local_video_cleanup_reason"] = entry["reason"]
+    meta["local_video_cleanup_source"] = candidate.source
+    meta["local_video_cleanup_threshold_percent"] = threshold
+    meta["local_video_cleanup_disk_usage_before_percent"] = round(before_percent, 2)
+    meta.pop("local_video_cleanup_error", None)
+    meta.pop("local_video_cleanup_error_at", None)
+    candidate.playlist.metadata_json = meta
+    db.add(candidate.playlist)
+    result["deleted_count"] += 1
+    result["deleted_bytes"] += candidate.size_bytes
+    result["deleted"].append(deleted_entry)
+    return True
+
+
 def cleanup_public_uploaded_local_videos(
     db: Session,
     settings: Settings,
@@ -227,6 +360,10 @@ def cleanup_public_uploaded_local_videos(
         "enabled": bool(settings.local_video_cleanup_enabled),
         "threshold_percent": threshold,
         "public_retention_days": max(int(settings.local_video_cleanup_public_retention_days or 0), 0),
+        "emergency_enabled": bool(settings.local_video_cleanup_emergency_enabled),
+        "emergency_min_uploaded_age_hours": max(
+            float(settings.local_video_cleanup_emergency_min_uploaded_age_hours or 0), 0.0
+        ),
         "disk_usage_before_percent": round(before_percent, 2),
         "disk_usage_after_percent": round(before_percent, 2),
         "deleted_count": 0,
@@ -244,79 +381,51 @@ def cleanup_public_uploaded_local_videos(
         result["skipped"] = True
         result["reason"] = "below_threshold_no_retention_expired_candidates"
         return result
-    if not candidates:
-        result["skipped"] = True
-        result["reason"] = "above_threshold_no_retention_expired_candidates"
-        return result
 
     for candidate in candidates:
         current_percent = _disk_usage_percent(settings.storage_root, usage_provider=usage_provider)
         if current_percent <= threshold and candidate.eligible_after > current:
             break
-        path = candidate.path
-        try:
-            path.unlink()
-        except OSError as exc:
-            meta = dict(candidate.playlist.metadata_json or {})
-            meta["local_video_cleanup_error"] = str(exc)
-            meta["local_video_cleanup_error_at"] = current.isoformat()
-            candidate.playlist.metadata_json = meta
-            db.add(candidate.playlist)
-            result["errors"].append(
-                {
-                    "playlist_id": candidate.playlist.id,
-                    "path": str(path),
-                    "error": str(exc),
-                }
-            )
-            continue
-
-        if candidate.playlist.output_video_path and Path(candidate.playlist.output_video_path) == path:
-            candidate.playlist.output_video_path = None
-
-        meta = dict(candidate.playlist.metadata_json or {})
-        history = list(meta.get("local_video_cleanup_history") or [])
-        entry = {
-            "path": str(path),
-            "deleted_at": current.isoformat(),
-            "reason": "public_retention_expired_uploaded_youtube_video",
-            "source": candidate.source,
-            "size_bytes": candidate.size_bytes,
-            "youtube_video_id": candidate.playlist.youtube_video_id,
-            "youtube_public_at": candidate.public_at.isoformat(),
-            "local_video_cleanup_eligible_after": candidate.eligible_after.isoformat(),
-            "disk_usage_before_percent": round(before_percent, 2),
-            "threshold_percent": threshold,
-        }
-        history.append(entry)
-        meta["local_video_cleanup_history"] = history
-        meta["local_video_deleted_after_youtube_upload"] = str(path)
-        meta["local_video_deleted_at"] = current.isoformat()
-        meta["local_video_cleanup_reason"] = entry["reason"]
-        meta["local_video_cleanup_source"] = candidate.source
-        meta["local_video_cleanup_threshold_percent"] = threshold
-        meta["local_video_cleanup_disk_usage_before_percent"] = round(before_percent, 2)
-        meta.pop("local_video_cleanup_error", None)
-        meta.pop("local_video_cleanup_error_at", None)
-        candidate.playlist.metadata_json = meta
-        db.add(candidate.playlist)
-        result["deleted_count"] += 1
-        result["deleted_bytes"] += candidate.size_bytes
-        result["deleted"].append(
-            {
-                "playlist_id": candidate.playlist.id,
-                "title": candidate.playlist.title,
-                "path": str(path),
-                "size_bytes": candidate.size_bytes,
-                "source": candidate.source,
-                "youtube_video_id": candidate.playlist.youtube_video_id,
-                "youtube_public_at": candidate.public_at.isoformat(),
-                "local_video_cleanup_eligible_after": candidate.eligible_after.isoformat(),
-            }
+        _delete_local_video_candidate(
+            db,
+            candidate,
+            result,
+            current=current,
+            before_percent=before_percent,
+            threshold=threshold,
+            reason="public_retention_expired_uploaded_youtube_video",
         )
 
     after_percent = _disk_usage_percent(settings.storage_root, usage_provider=usage_provider)
+    if after_percent > threshold and settings.local_video_cleanup_emergency_enabled:
+        emergency_candidates = collect_emergency_uploaded_local_video_candidates(db, settings, now=current)
+        result["emergency_candidate_count"] = len(emergency_candidates)
+        for candidate in emergency_candidates:
+            current_percent = _disk_usage_percent(settings.storage_root, usage_provider=usage_provider)
+            if current_percent <= threshold:
+                break
+            _delete_local_video_candidate(
+                db,
+                candidate,
+                result,
+                current=current,
+                before_percent=before_percent,
+                threshold=threshold,
+                reason="emergency_disk_pressure_uploaded_youtube_video",
+            )
+        after_percent = _disk_usage_percent(settings.storage_root, usage_provider=usage_provider)
+    elif after_percent > threshold:
+        result["emergency_candidate_count"] = 0
+
     result["disk_usage_after_percent"] = round(after_percent, 2)
+    if result["deleted_count"] == 0:
+        result["skipped"] = True
+        if candidates:
+            result["reason"] = "above_threshold_cleanup_candidates_failed"
+        elif settings.local_video_cleanup_emergency_enabled:
+            result["reason"] = "above_threshold_no_cleanup_candidates"
+        else:
+            result["reason"] = "above_threshold_no_retention_expired_candidates"
     for candidate in result["deleted"]:
         playlist = db.get(Playlist, candidate["playlist_id"])
         if playlist:

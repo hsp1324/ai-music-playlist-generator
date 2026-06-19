@@ -550,6 +550,8 @@ def test_backlog_request_message_uses_finishable_release_wording() -> None:
     assert "완료 가능한 release 처리해줘" in message
     assert "reason: finishable_releases" in message
     assert "metadata/publish/retry 가능한 release를 먼저 처리" in message
+    assert "길이가 1시간 미만이어도 blocked로 끝내지 말고" in message
+    assert "1시간 이상을 목표" in message
     assert "다음 playlist 제작해줘" not in message
     assert "Grand Journey Film Score" not in message
 
@@ -2818,6 +2820,92 @@ def test_render_worker_claim_forces_no_spectrum_for_religious_channel(tmp_path) 
         clear_isolated_client_env()
 
 
+def test_render_worker_claim_keeps_bulsong_low_motion_spectrum(tmp_path) -> None:
+    try:
+        os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
+        os.environ["AIMP_RENDER_WORKER_SHARED_TOKEN"] = "test-render-token"
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        playlist_dir = settings.playlists_dir
+        track_dir = settings.tracks_dir
+        playlist_dir.mkdir(parents=True, exist_ok=True)
+        track_dir.mkdir(parents=True, exist_ok=True)
+
+        audio_path = playlist_dir / "bulsong-audio.mp3"
+        cover_path = playlist_dir / "bulsong-cover.png"
+        loop_path = playlist_dir / "bulsong-loop.mp4"
+        track_path = track_dir / "bulsong-track.mp3"
+        audio_path.write_bytes(b"fake-audio")
+        loop_path.write_bytes(b"fake-loop")
+        track_path.write_bytes(b"fake-track")
+        Image.new("RGB", (1280, 720), "black").save(cover_path)
+
+        with SessionLocal() as db:
+            track = Track(
+                title="금강경 힙합",
+                prompt="불교 힙합",
+                status=TrackStatus.approved,
+                duration_seconds=60,
+                audio_path=str(track_path),
+                metadata_json={"style": "불교 힙합", "lyrics": "붙잡지 않는 마음\n흘러가는 숨"},
+            )
+            playlist = Playlist(
+                title="[playlist] 금강경 힙합 | 붙잡지 않는 마음을 위한 불교 힙합",
+                status=PlaylistStatus.building,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                output_audio_path=str(audio_path),
+                metadata_json={
+                    "youtube_channel_title": "불송",
+                    "workflow_state": "video_queued",
+                    "cover_image_path": str(cover_path),
+                    "cover_approved": True,
+                    "loop_video_path": str(loop_path),
+                    "youtube_description": "금강경에서 영감 받은 불교 힙합입니다.",
+                    "video_spectrum_overlay_style": "none",
+                    "video_lyrics_overlay_enabled": True,
+                    "video_lyrics_overlay_style": "center_breath_serif",
+                },
+            )
+            db.add_all([track, playlist])
+            db.flush()
+            db.add(PlaylistItem(playlist_id=playlist.id, track_id=track.id, order_index=1, included_duration_seconds=60))
+            job = Job(
+                type=JobType.build_video,
+                status=JobStatus.queued,
+                source="web:render-video",
+                playlist_id=playlist.id,
+                payload_json={"video_spectrum_overlay_style": "bars"},
+                result_json={},
+            )
+            db.add(job)
+            db.commit()
+            playlist_id = playlist.id
+
+        claim = client.post(
+            "/api/render-worker/jobs/claim",
+            headers={"X-Render-Worker-Token": "test-render-token"},
+            json={
+                "worker_id": "test-worker",
+                "hostname": "test-host",
+                "capabilities": {
+                    "faster_whisper": True,
+                    "lyrics_alignment_modes": ["whisper"],
+                    "cjk_fonts": True,
+                    "still_image_video_fps": 30,
+                },
+            },
+        )
+
+        assert claim.status_code == 200
+        assert claim.json()["job"]["render"]["video_spectrum_overlay_style"] == "calm-bars"
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, playlist_id)
+            assert playlist.metadata_json["video_spectrum_overlay_style"] == "calm-bars"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_render_worker_claim_prioritizes_resolution_by_worker_profile(tmp_path) -> None:
     try:
         os.environ["AIMP_VIDEO_RENDER_EXECUTION_MODE"] = "external"
@@ -3543,6 +3631,7 @@ def test_render_worker_claim_requires_cjk_font_for_cjk_lyric_jobs(tmp_path) -> N
                     "faster_whisper": True,
                     "lyrics_alignment_modes": ["timeline", "whisper"],
                     "video_lyrics_cjk_font": "Noto Sans CJK KR",
+                    "still_image_video_fps": 30,
                 },
             },
         )
@@ -4286,7 +4375,7 @@ def test_club_bloom_video_render_defaults_to_still_image_without_loop_video(tmp_
         clear_isolated_client_env()
 
 
-def test_storylight_video_render_rejects_still_image_source(tmp_path) -> None:
+def test_storylight_video_render_accepts_provider_exhausted_still_image_source(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         settings = client.app.state.settings
@@ -4339,8 +4428,16 @@ def test_storylight_video_render_rejects_still_image_source(tmp_path) -> None:
             },
         )
 
-        assert response.status_code == 400
-        assert "Storylight OST requires an uploaded loop video" in response.json()["detail"]
+        assert response.status_code == 200
+        assert response.json()["video_render_source_mode"] == "still_image"
+        with SessionLocal() as db:
+            job = db.scalars(
+                select(Job).where(Job.playlist_id == playlist_id, Job.type == JobType.build_video)
+            ).one()
+            playlist = db.get(Playlist, playlist_id)
+            assert playlist.metadata_json["video_render_source_mode"] == "still_image"
+            assert job.payload_json["allow_still_image_fallback"] is True
+            assert job.payload_json["video_render_source_mode"] == "still_image"
     finally:
         clear_isolated_client_env()
 
@@ -4422,6 +4519,7 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
         settings.local_video_cleanup_enabled = True
         settings.local_video_cleanup_disk_threshold_percent = 50
         settings.local_video_cleanup_public_retention_days = 7
+        settings.local_video_cleanup_emergency_enabled = False
         settings.playlists_dir.mkdir(parents=True, exist_ok=True)
         now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
 
@@ -4559,6 +4657,98 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
             assert future_updated.output_video_path == str(future_path)
             assert private_updated.output_video_path == str(private_path)
             assert not_uploaded_updated.output_video_path == str(not_uploaded_path)
+    finally:
+        clear_isolated_client_env()
+
+
+def test_local_video_cleanup_uses_emergency_uploaded_videos_when_retention_cannot_clear_disk(
+    tmp_path,
+) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        settings = client.app.state.settings
+        settings.local_video_cleanup_enabled = True
+        settings.local_video_cleanup_disk_threshold_percent = 80
+        settings.local_video_cleanup_public_retention_days = 7
+        settings.local_video_cleanup_emergency_enabled = True
+        settings.local_video_cleanup_emergency_min_uploaded_age_hours = 0
+        settings.playlists_dir.mkdir(parents=True, exist_ok=True)
+        now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
+
+        with SessionLocal() as db:
+            old_scheduled_playlist = Playlist(
+                title="Old Scheduled Uploaded Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-old-scheduled",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_uploaded_at": "2026-05-10T12:00:00+00:00",
+                    "youtube_scheduled_publish_at": "2026-05-20T12:00:00+00:00",
+                },
+            )
+            recent_private_playlist = Playlist(
+                title="Recent Private Uploaded Video",
+                status=PlaylistStatus.uploaded,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                youtube_video_id="yt-recent-private",
+                metadata_json={
+                    "workflow_state": "uploaded",
+                    "youtube_uploaded_at": "2026-05-14T12:00:00+00:00",
+                    "youtube_response": {"status": {"privacyStatus": "private"}},
+                },
+            )
+            not_uploaded_playlist = Playlist(
+                title="Not Uploaded Local Video",
+                status=PlaylistStatus.ready,
+                target_duration_seconds=60,
+                actual_duration_seconds=60,
+                metadata_json={"workflow_state": "metadata_review"},
+            )
+            db.add_all([old_scheduled_playlist, recent_private_playlist, not_uploaded_playlist])
+            db.flush()
+            old_path = settings.playlists_dir / f"{old_scheduled_playlist.id}.mp4"
+            recent_path = settings.playlists_dir / f"{recent_private_playlist.id}.mp4"
+            not_uploaded_path = settings.playlists_dir / f"{not_uploaded_playlist.id}.mp4"
+            for path in (old_path, recent_path, not_uploaded_path):
+                path.write_bytes(b"fake-video")
+            old_scheduled_playlist.output_video_path = str(old_path)
+            recent_private_playlist.output_video_path = str(recent_path)
+            not_uploaded_playlist.output_video_path = str(not_uploaded_path)
+            old_id = old_scheduled_playlist.id
+            recent_id = recent_private_playlist.id
+            not_uploaded_id = not_uploaded_playlist.id
+            db.commit()
+
+            result = cleanup_public_uploaded_local_videos(
+                db,
+                settings,
+                now=now,
+                usage_provider=lambda _path: SimpleNamespace(total=100, used=90, free=10),
+            )
+
+            assert result["skipped"] is False
+            assert result["emergency_candidate_count"] == 2
+            assert result["deleted_count"] == 2
+            assert [item["playlist_id"] for item in result["deleted"]] == [old_id, recent_id]
+            assert not old_path.exists()
+            assert not recent_path.exists()
+            assert not_uploaded_path.exists()
+            old_updated = db.get(Playlist, old_id)
+            recent_updated = db.get(Playlist, recent_id)
+            not_uploaded_updated = db.get(Playlist, not_uploaded_id)
+            assert old_updated.output_video_path is None
+            assert recent_updated.output_video_path is None
+            assert not_uploaded_updated.output_video_path == str(not_uploaded_path)
+            assert (
+                old_updated.metadata_json["local_video_cleanup_reason"]
+                == "emergency_disk_pressure_uploaded_youtube_video"
+            )
+            assert old_updated.metadata_json["local_video_cleanup_history"][-1]["youtube_uploaded_at"] == (
+                "2026-05-10T12:00:00+00:00"
+            )
     finally:
         clear_isolated_client_env()
 
@@ -5411,7 +5601,7 @@ def test_mark_playlist_uploaded_updates_playlist_and_tracks(tmp_path) -> None:
         assert uploaded["metadata_json"]["youtube_channel_id"] == "UC-soft-hour"
         assert uploaded["metadata_json"]["youtube_channel_title"] == "Soft Hour Radio"
         assert uploaded["metadata_json"]["local_video_retained_after_youtube_upload"] == str(local_video)
-        assert uploaded["metadata_json"]["local_video_retention_days"] == 7
+        assert uploaded["metadata_json"]["local_video_retention_days"] == 3
         assert local_video.exists()
 
         track_after = client.get(f"/api/tracks/{track_id}")
@@ -8555,7 +8745,7 @@ def test_failed_workspace_archive_is_purged_after_retention(tmp_path) -> None:
         clear_isolated_client_env()
 
 
-def test_publish_approval_can_force_under_target_playlist(tmp_path) -> None:
+def test_publish_approval_allows_under_target_playlist(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -8613,24 +8803,13 @@ def test_publish_approval_can_force_under_target_playlist(tmp_path) -> None:
 
         prepare_release_for_final_publish(client, workspace_id)
 
-        blocked_response = client.post(
+        publish_response = client.post(
             f"/api/playlists/{workspace_id}/approve-publish",
             json={"actor": "test-suite"},
         )
-        assert blocked_response.status_code == 400
-        assert blocked_response.json()["detail"] == "Playlist has not reached its target duration yet."
-
-        forced_response = client.post(
-            f"/api/playlists/{workspace_id}/approve-publish",
-            json={
-                "actor": "test-suite",
-                "note": "publish short playlist",
-                "force_under_target": True,
-            },
-        )
-        assert forced_response.status_code == 200
-        forced = forced_response.json()
-        assert forced["workflow_state"] == "publish_queued"
+        assert publish_response.status_code == 200
+        published = publish_response.json()
+        assert published["workflow_state"] == "publish_queued"
 
         assert drain_background_jobs(client) == 1
         workspaces_response = client.get("/api/playlists/workspaces")
@@ -8889,7 +9068,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             assert "youtube_upload_error" not in playlist.metadata_json
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
             assert playlist.metadata_json["local_video_retained_after_youtube_upload"] == first_video_path
-            assert playlist.metadata_json["local_video_retention_days"] == 7
+            assert playlist.metadata_json["local_video_retention_days"] == 3
             assert "local_video_deleted_after_youtube_upload" not in playlist.metadata_json
             assert playlist.metadata_json["relocation_original_youtube_deleted_at"]
             assert playlist.metadata_json["relocation_delete_original_after_new_upload"] is False

@@ -1,5 +1,6 @@
 from app.utils.video_render_policy import (
     infer_release_vocal_mode,
+    is_still_image_render_default_release,
     release_has_singable_lyrics,
     resolve_video_lyrics_overlay_style,
     should_auto_enable_video_lyrics_overlay,
@@ -12,6 +13,7 @@ def test_bulsong_uses_center_lyrics_even_when_explicit_style_is_different() -> N
     assert resolve_video_lyrics_overlay_style("auto", meta, title="자비 트립합") == "center_breath_serif"
     assert resolve_video_lyrics_overlay_style("1", meta, title="자비 트립합") == "center_breath_serif"
     assert resolve_video_lyrics_overlay_style("4", meta, title="자비 트립합") == "center_breath_serif"
+    assert is_still_image_render_default_release(meta)
 
 
 def test_pop_vocal_channels_choose_editorial_lower_left_for_auto_lyrics() -> None:

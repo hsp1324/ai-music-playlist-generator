@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     playlist_reuse_back_half_enabled: bool = True
     playlist_reuse_back_half_target_seconds: int = 60 * 60
     playlist_reuse_back_half_min_seconds: int = 25 * 60
-    playlist_publish_min_seconds: int = 40 * 60
+    playlist_publish_min_seconds: int = 0
     playlist_final_video_repeat_enabled: bool = False
     playlist_final_video_repeat_count: int = 3
     playlist_final_video_min_seconds: int = 2 * 60 * 60
@@ -148,7 +148,9 @@ class Settings(BaseSettings):
     local_video_cleanup_enabled: bool = True
     local_video_cleanup_disk_threshold_percent: float = 80.0
     local_video_cleanup_interval_seconds: int = 300
-    local_video_cleanup_public_retention_days: int = 7
+    local_video_cleanup_public_retention_days: int = 3
+    local_video_cleanup_emergency_enabled: bool = True
+    local_video_cleanup_emergency_min_uploaded_age_hours: float = 0.0
 
     dreamina_provider_mode: Literal["disabled", "useapi"] = "disabled"
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"

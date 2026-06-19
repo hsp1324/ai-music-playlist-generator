@@ -30,6 +30,9 @@ STILL_IMAGE_RENDER_DEFAULT_CHANNEL_TITLES = {
     "sundaze",
     "solwave radio",
     "club bloom",
+    "불송",
+    "the new verse",
+    "bulsong",
 }
 LYRIC_SOFT_CHANNEL_TITLES = {
     "soft hour radio",

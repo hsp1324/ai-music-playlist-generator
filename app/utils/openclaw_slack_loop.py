@@ -318,6 +318,8 @@ def build_backlog_queue_request_message(
             f"reason: {reason}",
             f"target/max: {target_per_channel}/{max_per_channel}",
             "앱 API로 backlog/status와 lock 상태를 확인하고 metadata/publish/retry 가능한 release를 먼저 처리해줘.",
+            "publish_ready/rendered release는 길이가 1시간 미만이어도 blocked로 끝내지 말고 publish-release --no-wait로 발행해줘.",
+            "새 playlist 제작 단계에서는 1시간 이상을 목표로 같은 장르/소스 트랙을 채우되, 이미 렌더/메타데이터가 끝난 release는 길이 부족만으로 막지 마.",
             "완료/중단 보고: release id, YouTube video id, blocker",
         ]
         return _with_trigger_prefix("\n".join(lines), trigger_prefix)

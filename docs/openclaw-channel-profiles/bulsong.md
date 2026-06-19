@@ -13,6 +13,8 @@ Use this profile only after channel selection returns `불송`, or when the huma
 
 - Choose one modern release-level lane before Suno generation and keep every track inside it.
 - 불송 is hip-hop-first. Preferred lanes are `불교 힙합`, `불경 힙합`, mindful hip-hop, Korean Buddhist rap, mellow boom bap, Buddhist hip-hop soul, or restrained Buddhist trap-soul.
+- The female-led visual rule does not restrict the music vocals. 불송 audio may use male lead vocals, male duet, male/female duet, female lead vocals, or mixed vocals when the song concept benefits from it.
+- For every 불송 vocal Suno style string, include a concrete Korean lead-vocal tone or delivery phrase, not just the genre. Rotate the voice concept per track so the songs do not all sound like the same Suno singer. Good examples include `calm low-register Korean rap`, `warm soulful male vocal`, `two warm male rappers trading reflective verses`, `airy female hook vocal`, `restrained boom-bap spoken rap`, `breathy meditative Korean rap`, `soft nasal indie-R&B vocal`, or `warm male/female duet`. Avoid repeating generic `Korean vocal` or `male rap` wording across the whole release.
 - Do not use obscure coined genre names in YouTube titles, thumbnail phrases, descriptions, or tags. Use plain audience-friendly wording such as `불교 힙합`, `불경 힙합`, `Buddhist hip-hop`, or `Korean Buddhist rap`.
 - Avoid trot, ppongjjak, and old Korean cabaret-pop completely unless the human explicitly asks for them. Do not use Korean trot rhythm, two-beat ppongjjak bounce, trot vocal ornaments, accordion/brass trot clichés, nightclub/cabaret trot arrangement, or old-TV trot mood.
 - In Suno Advanced Options / excluded styles, include blockers such as `trot, Korean trot, ppongjjak, 뽕짝, 트로트, trot vocal, cabaret trot, old Korean trot, two-beat trot bounce, accordion trot, brass trot`.
@@ -22,25 +24,25 @@ Use this profile only after channel selection returns `불송`, or when the huma
 
 - Mood: calm but fresh, modern, reflective, respectful, quietly cinematic, and clearly connected to contemporary Buddhist hip-hop/rap.
 - 불송 no longer has one fixed old devotional image signature. Rotate visual packages so releases do not all look like a static temple, sutra desk, Buddha-only wallpaper, or old monk devotional scene.
-- Default visual package: a respectful contemporary Buddhist music scene with at least one clear Buddhist cue and one subtle modern music cue. Strong options include a clearly adult temple-stay woman or man in natural streetwear with headphones/earbuds/prayer beads near a Buddha statue; a stylish adult Hongdae/Seoul-inspired listener or rapper quietly reflecting in a temple courtyard; a young adult couple or duet scene in a Buddhist setting for duet songs; a close Buddha statue plus a contemporary listener in the same frame; or a premium cinematic Buddhist street/temple hybrid scene.
+- Default visual package: a respectful contemporary Buddhist music scene with at least one clear Buddhist cue, one subtle modern music cue, and a clearly adult woman as the primary human subject. Strong options include a clearly adult temple-stay woman in natural streetwear with headphones/earbuds/prayer beads near a Buddha statue; a stylish adult Hongdae/Seoul-inspired woman listener or rapper quietly reflecting in a temple courtyard; two adult women or one adult woman plus a symbolic Buddha/statue composition for duet songs; a close Buddha statue plus a contemporary woman listener in the same frame; or a premium cinematic Buddhist street/temple hybrid scene anchored by an adult woman.
 - The human requested a younger, more clickable Buddhist hip-hop feeling. Prefer natural Instagram-like candid photorealism for non-monastic people: friend-taken side or three-quarter angle, visible adult face when useful, modern but respectful clothing, subtle phone-photo imperfection, and enough temple/Buddhist context to read immediately.
-- If a monk or monastic figure is used, make that visual intentionally animated, illustrated, gentle anime, or stylized rather than photorealistic. A monk can be drawn with a tasteful modern/hip interpretation, but never as parody, caricature, or a disrespectful performer.
-- If a photorealistic human appears, use a clearly adult non-monk practitioner or listener. Temple-stay women, men, couples, or friends are allowed. They must not wear monk robes, look shaved-head/monastic, or impersonate clergy unless the human explicitly asks.
+- Do not use men, male monks, male rappers, male listeners, or male-only visual pair/couple imagery for new 불송 visuals unless the human explicitly asks for a specific male visual subject in the current request. This visual rule does not ban male vocals or male duet audio. If a monk or monastic figure is used, make the figure female-coded or use a clearly female practitioner/nun interpretation, and make it intentionally animated, illustrated, gentle anime, or stylized rather than photorealistic. Never present a monastic figure as parody, caricature, or a disrespectful performer.
+- If a photorealistic human appears, use a clearly adult woman non-monk practitioner or listener. Temple-stay women, women friends, or two-woman duet imagery are allowed. They must not wear monk robes, look shaved-head/monastic, or impersonate clergy unless the human explicitly asks.
 - This is a required subject package, not optional atmosphere. Reject and regenerate cover/thumbnail/first-frame assets that only show a temple, lotus pond, mountain, lanterns, incense, abstract Buddhist symbols, empty shrine, or statue wallpaper without a modern human/music hook or a fresh cinematic Buddhist subject.
 - The scene should feel contemplative and musical, not theatrical: soft golden candle or lantern light, incense smoke, lotus, prayer beads, sutra pages, warm window light, temple architecture, garden rain, streetwear texture, headphones, a small speaker, or a microphone can support the subject.
 - Music-listening cues must stay subtle and respectful. Headphones, earbuds, a small speaker, a mic held by a human subject, or a music-player detail are allowed. Do not make the Buddha figure look like a commercial gadget mascot.
 - Sutra pages can appear as texture or a small prop, but they are no longer mandatory. Do not invent large readable scripture blocks. Use subtle calligraphy, softly blurred text, or page texture unless the exact short phrase was intentionally designed into the cover.
-- Photorealistic human scenes and premium cinematic-real Buddhist scenes are both normal. Animated/anime variants are allowed for monks, stylized scripture concepts, or when they feel more clickable for the song, but do not repeat one generic old sutra-desk image.
+- Photorealistic female-led human scenes and premium cinematic-real Buddhist scenes are both normal. Animated/anime variants are allowed for female-coded Buddhist practitioner/nun concepts, stylized scripture concepts, or when they feel more clickable for the song, but do not repeat one generic old sutra-desk image.
 - Avoid goofy parody, cheap mystic clipart, fantasy deity effects, golden statue-only wallpaper, idol/model studio portraits, exaggerated divine glow, singing/dancing Buddha depictions, and disrespectful religious imagery.
 - The Buddha or Buddha statue may appear, but it does not have to be the only main subject. When used, keep it respectful and visually connected to the human/music concept.
 
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual, YouTube thumbnail base, and first-frame reference for Gemini/Dreamina/Seedance.
+- The cover is the playback visual and YouTube thumbnail base. It is also the still image source for the final app render.
 - The cover should use one fresh contemporary Buddhist music subject from the visual identity above, not the same old devotional scene by default.
-- For Diamond Sutra / 금강경 hip-hop covers, choose either an animated/stylized monk visual or a photorealistic adult temple-stay practitioner/listener visual. Do not create a photorealistic monk cover unless the human explicitly asks for it. When choosing a human visual, make it feel like a natural friend-taken temple-stay or Hongdae-meets-temple photo of a respectful adult practitioner, not a model shoot and not a monastic portrait.
-- Do not accept scenery-only Buddhist backgrounds as final 불송 cover art. The image must have a fresh subject: a contemporary adult practitioner/listener, a stylized hip monk, a duet/couple for duet songs, or a respectful Buddha/statue plus modern music cue.
+- For Diamond Sutra / 금강경 hip-hop covers, choose either an animated/stylized female-coded Buddhist practitioner/nun visual or a photorealistic adult temple-stay woman practitioner/listener visual. Do not create a male monk cover unless the human explicitly asks for it. When choosing a human visual, make it feel like a natural friend-taken temple-stay or Hongdae-meets-temple photo of a respectful adult woman practitioner, not a model shoot and not a monastic portrait.
+- Do not accept scenery-only Buddhist backgrounds as final 불송 cover art. The image must have a fresh female-led subject: a contemporary adult woman practitioner/listener, a stylized female-coded Buddhist practitioner/nun when appropriate, two adult women for duet songs, or a respectful Buddha/statue plus modern music cue anchored by an adult woman.
 - Do not add the `불송` channel label, the channel name, a channel logo, title sentences, sutra paragraphs, lyrics, subtitles, UI, duration text, watermark-like marks, or unrelated words to the cover/first-frame.
 - The cover/first-frame may include one short Korean passage/theme + hip-hop music-style phrase that naturally fits the artwork, such as `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩`. Put this phrase in upper-left safe negative space when possible. Avoid obscure coined genre wording.
 - That phrase is the visual hook. Keep it short, readable, integrated into the image, and on a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use hard black rectangles, semi-transparent dark panels, white or colored rectangles, gradient scrims, detached labels, stickers, badges, pills, capsules, or UI-like tags.
@@ -53,33 +55,15 @@ Use this profile only after channel selection returns `불송`, or when the huma
 - The thumbnail should keep the same short Korean passage/theme + style phrase as the first-frame when present. It can be the exact same image as the cover.
 - When using `scripts/openclaw-release auto-publish-playlist` or `auto-publish-single`, pass the same image as both `--cover` and `--thumbnail`, or use `--allow-cover-as-thumbnail` when the same image is intended.
 
-## Loop Video
+## Still Image Render
 
-- Use Gemini, Dreamina, or Seedance only for the moving clip.
-- For Dreamina/Seedance, use `1.0 Fast`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `2.0 Fast`. If the duration control is hidden on entry, gently drag/scroll the settings/control row to the right until the duration option is visible before Generate. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
-- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Set those only through provider controls when available.
-- Animate calm environmental motion: lantern flicker, candle glow, incense smoke, dust in window light, rain ripple, garden leaves, page-edge movement, fabric settling, hair/clothing movement, street/temple reflections, or a gentle speaker/headphone light if it already exists in the first frame.
-- Keep the human subject, Buddha/statue if present, hands, face, listening cue, Buddhist setting, and camera distance stable. The Buddha figure should not sing, dance, perform, lip-sync, look at the viewer dramatically, or turn into a different person/statue mid-clip.
-- Preserve the opening composition and any short Korean passage/style phrase already present. Do not add, preserve, or invent any `불송` label or channel name in the loop video.
-- Queue final render with `--video-spectrum-overlay-style calm-bars`. The app enforces a very low-motion, low-opacity bar spectrum for 불송. Do not use radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or busy equalizer graphics.
-- The final moment should stay close to the opening composition so the app can repeat it smoothly with its provider-aware loop crossfade.
-- Do not add subtitles, large scripture text, title text, duration text, UI, logos, disrespectful religious imagery, exaggerated divine glow, idol/model posing, or comedic modern-gadget focus.
-- Inspect Gemini/Dreamina/Seedance clips for mid-clip scene changes. Reject/regenerate if the layout cuts to a different scene, resets the frame, changes the text, or behaves like a montage.
-- Do not use conceptual terms such as `playlist`, `music visual`, `visualizer shot`, `Four Noble Truths`, `사성제`, `Eightfold Path`, or `팔정도` in the video-generation prompt when a visual description is enough. Put the Buddhist source/theme in metadata, not the video prompt, unless it is visible text already designed into the first frame.
-- Prefer positive fixed-shot wording: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`. Keep negative lists short.
-
-Prompt shape:
-
-```text
-Use the uploaded first-frame image as the exact starting frame.
-It is a respectful contemporary Buddhist music artwork: a clearly adult modern practitioner/listener, stylized monk, duet pair, or Buddha/statue-plus-human scene with a subtle music cue in a temple, meditation room, temple courtyard, or Buddhist street/temple hybrid setting.
-Create one uninterrupted calm environmental take from a locked-off camera.
-Keep the same composition, crop, camera distance, lighting, palette, subject placement, and typography from first frame to final frame.
-Animate only gentle ambient details already present in the scene: lantern flicker, candle glow, incense smoke, dust in window light, garden rain, page-edge movement, hair or clothing movement, street/temple reflections, or slow shadows.
-Keep the adult human subject, Buddha/statue if present, serene faces, hands, Buddhist setting, and subtle music-listening cue stable and respectful.
-Keep the existing short Korean phrase stable and readable if present. Do not invent any channel name.
-No new text, subtitles, lyrics, UI, added logos, scene changes, Buddha singing/dancing, comedic gadget focus, exaggerated divine effects, disrespectful religious imagery, or protected characters.
-```
+- 불송 is always an app-rendered still-image video channel in normal automation. This is a hard channel rule, not a fallback for failed or quota-blocked video generation.
+- Do not create, upload, or wait for a Gemini, Dreamina, or Seedance loop video for 불송 unless the human explicitly changes this standing 불송 still-image rule in the current request.
+- Queue final renders with `--allow-still-image-video --video-render-source-mode still_image --video-render-resolution 720p --video-spectrum-overlay-style calm-bars --lyrics-overlay --lyrics-overlay-style center-breath-serif --lyrics-alignment-mode whisper`.
+- Use the same contemporary Buddhist cover/first-frame composition as the rendered visual source and YouTube thumbnail base. The thumbnail may crop slightly closer, but it should not become a different scene.
+- The app adds the low-motion `calm-bars` spectrum and centered `center-breath-serif` lyrics. Do not bake spectrum bars, waveform graphics, lyrics, subtitles, or karaoke text into the uploaded image.
+- Do not add title sentences, large scripture text, duration text, UI, logos, disrespectful religious imagery, exaggerated divine glow, idol/model posing, or comedic modern-gadget focus.
+- Do not use conceptual visual words such as `playlist`, `music visual`, `visualizer shot`, `Four Noble Truths`, `사성제`, `Eightfold Path`, or `팔정도` in image prompts when a visible Buddhist scene description is enough. Put the Buddhist source/theme in metadata, not as invented background text.
 
 ## Metadata
 

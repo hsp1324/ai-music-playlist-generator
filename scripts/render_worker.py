@@ -34,6 +34,7 @@ from app.utils.lyric_subtitles import build_line_lyric_cues, build_word_aligned_
 DEFAULT_API_BASE = "http://127.0.0.1:8000/api"
 COMPLETED_JOB_MARKER = ".render-worker-uploaded.json"
 ACTIVE_JOB_MARKER = ".render-worker-active.json"
+RENDERED_JOB_MARKER = ".render-worker-rendered.json"
 JAPANESE_TEXT_RE = re.compile(r"[\u3040-\u30ff]")
 HANGUL_TEXT_RE = re.compile(r"[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]")
 JAPANESE_FONT_CANDIDATES = (
@@ -412,6 +413,37 @@ def mark_job_uploaded(job: dict[str, Any], video_path: Path) -> None:
     clear_job_active(video_path.parent)
 
 
+def mark_job_rendered(job: dict[str, Any], video_path: Path) -> None:
+    marker_path = video_path.parent / RENDERED_JOB_MARKER
+    payload = {
+        "job_id": job.get("id"),
+        "playlist_id": job.get("playlist_id"),
+        "title": job.get("title"),
+        "video_path": str(video_path),
+        "size_bytes": video_path.stat().st_size if video_path.exists() else None,
+        "rendered_at": utcnow_iso(),
+    }
+    marker_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def cached_rendered_video(job: dict[str, Any], output_path: Path) -> Path | None:
+    marker_path = output_path.parent / RENDERED_JOB_MARKER
+    if not marker_path.exists() or not output_path.exists() or output_path.stat().st_size <= 0:
+        return None
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if marker.get("job_id") != job.get("id"):
+        return None
+    if Path(str(marker.get("video_path") or "")) != output_path:
+        return None
+    marker_size = marker.get("size_bytes")
+    if marker_size is not None and int(marker_size) != output_path.stat().st_size:
+        return None
+    return output_path
+
+
 def mark_job_active(job: dict[str, Any], job_dir: Path, worker_id: str) -> None:
     marker_path = job_dir / ACTIVE_JOB_MARKER
     payload = {
@@ -668,6 +700,10 @@ def render_job(
     settings.ensure_storage_dirs()
     builder = FFMpegPlaylistBuilder(settings)
     output_path = job_dir / render["output_filename"]
+    cached_output = cached_rendered_video(job, output_path)
+    if cached_output is not None:
+        print(f"Reusing previously rendered output for job {job_id}: {cached_output}", flush=True)
+        return cached_output
     total_duration_seconds = render.get("total_duration_seconds")
     final_repeat_count = int(render.get("video_final_repeat_count") or 1)
     spectrum_style = render.get("video_spectrum_overlay_style") or "bars"
@@ -781,6 +817,7 @@ def render_job(
             total_duration_seconds=total_duration_seconds,
             final_repeat_count=final_repeat_count,
         )
+    mark_job_rendered(job, output_path)
     return output_path
 
 
@@ -834,6 +871,7 @@ def upload_rendered_video(
         except RuntimeError as exc:
             print(f"chunk upload retrying after error: {exc}", file=sys.stderr, flush=True)
             time.sleep(3)
+            continue
         uploaded = end + 1
         print_progress_line(
             {

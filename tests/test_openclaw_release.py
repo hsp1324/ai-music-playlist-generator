@@ -109,6 +109,10 @@ def test_still_image_pop_channels_enable_lyrics_overlay_by_default() -> None:
 
     assert should_enable_lyrics_overlay_for_release(
         args,
+        release={"youtube_channel_title": NEW_VERSE_YOUTUBE_CHANNEL_TITLE},
+    )
+    assert should_enable_lyrics_overlay_for_release(
+        args,
         release={"youtube_channel_title": HARUHARU_YOUTUBE_CHANNEL_TITLE},
     )
     assert should_enable_lyrics_overlay_for_release(
@@ -144,6 +148,19 @@ def test_club_bloom_uses_still_image_render_by_default_without_lyrics() -> None:
         args,
         release={"youtube_channel_title": CLUB_BLOOM_YOUTUBE_CHANNEL_TITLE},
     )
+
+
+def test_bulsong_uses_still_image_render_by_default_with_lyrics() -> None:
+    args = SimpleNamespace(
+        allow_still_image_video=False,
+        video_render_source_mode="auto",
+        lyrics_overlay=False,
+    )
+
+    release = {"youtube_channel_title": NEW_VERSE_YOUTUBE_CHANNEL_TITLE}
+
+    assert should_use_still_image_render(args, release=release)
+    assert should_enable_lyrics_overlay_for_release(args, release=release)
 
 
 def test_tokyo_hiphop_lane_uses_still_image_render_with_lyrics() -> None:
@@ -993,7 +1010,7 @@ def test_create_release_uses_channel_aware_playlist_target_defaults() -> None:
     )
 
     assert captured_payloads[0]["target_duration_seconds"] == 600
-    assert captured_payloads[1]["target_duration_seconds"] == 2400
+    assert captured_payloads[1]["target_duration_seconds"] == 3600
 
 
 def test_upload_single_candidates_can_target_existing_precreated_release(tmp_path) -> None:
@@ -1394,7 +1411,7 @@ def test_auto_publish_playlist_requires_thumbnail_before_creating_new_release(tm
     assert requested_paths == []
 
 
-def test_auto_publish_playlist_allows_bulsong_cover_as_thumbnail_before_creating_new_release(tmp_path) -> None:
+def test_auto_publish_playlist_allows_bulsong_still_image_before_creating_new_release(tmp_path) -> None:
     audio_path = tmp_path / "track.mp3"
     audio_path.write_bytes(b"fake mp3")
     cover_path = tmp_path / "cover.png"
@@ -1407,7 +1424,7 @@ def test_auto_publish_playlist_allows_bulsong_cover_as_thumbnail_before_creating
 
     client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
 
-    with pytest.raises(RuntimeError, match="requires --loop-video"):
+    with pytest.raises(RuntimeError, match="unexpected request"):
         auto_publish_playlist(
             client,
             _auto_publish_args(
@@ -1419,7 +1436,7 @@ def test_auto_publish_playlist_allows_bulsong_cover_as_thumbnail_before_creating
             ),
         )
 
-    assert requested_paths == []
+    assert requested_paths == ["/api/playlists/workspaces"]
 
 
 def test_auto_publish_playlist_uploads_remaining_tracks_and_notifies_slack_on_failed_track(tmp_path, monkeypatch) -> None:
@@ -1643,7 +1660,7 @@ def test_auto_publish_single_requires_thumbnail_before_side_effects(tmp_path) ->
     assert requested_paths == []
 
 
-def test_auto_publish_single_allows_bulsong_cover_as_thumbnail_before_side_effects(tmp_path) -> None:
+def test_auto_publish_single_allows_bulsong_still_image_before_side_effects(tmp_path) -> None:
     audio_path = tmp_path / "track.mp3"
     audio_path.write_bytes(b"fake mp3")
     cover_path = tmp_path / "cover.png"
@@ -1656,7 +1673,7 @@ def test_auto_publish_single_allows_bulsong_cover_as_thumbnail_before_side_effec
 
     client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
 
-    with pytest.raises(RuntimeError, match="requires --loop-video"):
+    with pytest.raises(RuntimeError, match="unexpected request"):
         auto_publish_single(
             client,
             _auto_publish_args(
@@ -1669,7 +1686,7 @@ def test_auto_publish_single_allows_bulsong_cover_as_thumbnail_before_side_effec
             ),
         )
 
-    assert requested_paths == []
+    assert requested_paths == ["/api/playlists/workspaces"]
 
 
 def test_auto_publish_single_rejects_existing_youtube_video_without_allow_reupload(tmp_path) -> None:

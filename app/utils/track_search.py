@@ -47,6 +47,7 @@ def ensure_track_search_schema(engine: Engine) -> None:
             "CREATE INDEX IF NOT EXISTS idx_playlists_status_updated_at "
             "ON playlists(status, updated_at)"
         )
+        connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_playlists_updated_at ON playlists(updated_at)")
         connection.exec_driver_sql("CREATE INDEX IF NOT EXISTS idx_playlists_created_at ON playlists(created_at)")
         connection.exec_driver_sql(
             "CREATE INDEX IF NOT EXISTS idx_playlists_youtube_video_id "

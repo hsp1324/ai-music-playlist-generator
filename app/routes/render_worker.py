@@ -33,10 +33,7 @@ from app.utils.render_worker_registry import record_render_worker_seen, render_w
 from app.utils.video_render_policy import (
     apply_video_spectrum_channel_policy,
     final_video_duration_seconds,
-    is_cinematic_pulse_release,
-    is_religious_no_spectrum_release,
     is_still_image_render_default_release,
-    is_storylight_ost_release,
     release_has_singable_lyrics,
     release_vocal_metadata,
     resolve_final_video_repeat_count,
@@ -775,8 +772,6 @@ def _render_job_payload(job: Job, playlist: Playlist, services: ServiceRegistry)
         or meta.get("video_render_source_mode")
         or "auto"
     )
-    if is_storylight_ost_release(meta) and source_mode == "still_image":
-        raise HTTPException(status_code=409, detail="Storylight OST requires an uploaded loop video.")
     if source_mode == "auto" and is_still_image_render_default_release(meta):
         source_mode = "still_image"
         allow_still_image_fallback = True
@@ -924,6 +919,9 @@ def _update_video_progress(
         or bool(payload.get("upload_complete") and not previous_progress.get("upload_complete"))
         or payload.get("stage") != previous_progress.get("stage")
         or payload.get("status") != previous_progress.get("status")
+        or payload.get("percent") != previous_progress.get("percent")
+        or payload.get("upload_percent") != previous_progress.get("upload_percent")
+        or payload.get("upload_received_bytes") != previous_progress.get("upload_received_bytes")
     )
     worker = dict(result.get("external_render_worker") or {})
     worker["heartbeat_at"] = now
@@ -1074,10 +1072,15 @@ def claim_render_job(
             result["external_render_worker"] = worker
             job.result_json = result
             meta = dict(playlist.metadata_json or {})
-            if is_cinematic_pulse_release(meta):
-                meta["video_spectrum_overlay_style"] = "bars"
-            elif is_religious_no_spectrum_release(meta, title=playlist.title):
-                meta["video_spectrum_overlay_style"] = "none"
+            meta["video_spectrum_overlay_style"] = apply_video_spectrum_channel_policy(
+                str(
+                    (job.payload_json or {}).get("video_spectrum_overlay_style")
+                    or meta.get("video_spectrum_overlay_style")
+                    or "bars"
+                ),
+                meta,
+                title=playlist.title,
+            )
             playlist.metadata_json = meta
             db.add(playlist)
             db.add(job)
@@ -1221,10 +1224,15 @@ def claim_render_job(
         worker_meta["nickname"] = server_nickname
     result["external_render_worker"] = worker_meta
     job.result_json = result
-    if is_cinematic_pulse_release(meta):
-        meta["video_spectrum_overlay_style"] = "bars"
-    elif is_religious_no_spectrum_release(meta, title=playlist.title):
-        meta["video_spectrum_overlay_style"] = "none"
+    meta["video_spectrum_overlay_style"] = apply_video_spectrum_channel_policy(
+        str(
+            (job.payload_json or {}).get("video_spectrum_overlay_style")
+            or meta.get("video_spectrum_overlay_style")
+            or "bars"
+        ),
+        meta,
+        title=playlist.title,
+    )
     meta["video_base_duration_seconds"] = base_duration_seconds or 0
     meta["video_final_repeat_count"] = final_repeat_count
     meta["rendered_duration_seconds"] = final_duration_seconds or int(playlist.actual_duration_seconds or 0)

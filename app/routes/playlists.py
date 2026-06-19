@@ -203,19 +203,26 @@ def build_playlist(
 
 
 @router.get("", response_model=list[PlaylistRead])
-def list_playlists(db: Session = Depends(get_db)) -> list[PlaylistRead]:
-    playlists = db.scalars(select(Playlist).order_by(Playlist.created_at.desc())).all()
+def list_playlists(
+    limit: int = Query(default=120, ge=1, le=1000),
+    db: Session = Depends(get_db),
+) -> list[PlaylistRead]:
+    playlists = db.scalars(select(Playlist).order_by(Playlist.created_at.desc()).limit(limit)).all()
     return [PlaylistRead.model_validate(playlist) for playlist in playlists]
 
 
 @router.get("/workspaces", response_model=list[PlaylistWorkspaceRead])
 def list_workspace_playlists(
     compact: bool = Query(default=False),
+    limit: int = Query(default=180, ge=1, le=1000),
     db: Session = Depends(get_db),
 ) -> list[PlaylistWorkspaceRead] | JSONResponse:
     if compact:
         return JSONResponse(
-            content=[workspace.model_dump(mode="json") for workspace in list_compact_playlist_workspaces(db)]
+            content=[
+                workspace.model_dump(mode="json")
+                for workspace in list_compact_playlist_workspaces(db, limit=limit)
+            ]
         )
     return [
         serialize_playlist_workspace(playlist, compact=compact)
