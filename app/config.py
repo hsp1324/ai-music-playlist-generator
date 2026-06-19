@@ -156,8 +156,8 @@ class Settings(BaseSettings):
     dreamina_api_base_url: str = "https://api.useapi.net/v1/dreamina"
     dreamina_api_token: str = ""
     dreamina_account: str = ""
-    dreamina_video_model: str = "seedance-1.5-pro"
-    dreamina_video_duration_seconds: float = 7.0
+    dreamina_video_model: str = "seedance-2.0-mini"
+    dreamina_video_duration_seconds: float = 10.0
     dreamina_video_ratio: str = "16:9"
     dreamina_poll_interval_seconds: float = 10.0
     dreamina_timeout_seconds: float = 240.0

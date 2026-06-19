@@ -42,7 +42,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Create a very high quality 16:9 photorealistic cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080.
 - The uploaded first-frame image for the provider loop should be this cover image with the upper-left style phrase already integrated.
 - Create a subtle provider loop video from that first frame. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
-- Dreamina/Seedance clips should use `1.0 Fast`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `2.0 Fast`. Gemini clips are uploaded as generated after inspection.
+- Dreamina/Seedance clips should use `Seedance 2.0 Mini`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. Gemini clips are uploaded as generated after inspection.
 - Queue final render with:
 
 ```bash

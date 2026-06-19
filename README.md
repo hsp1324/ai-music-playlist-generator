@@ -367,8 +367,8 @@ Required setup:
 AIMP_DREAMINA_PROVIDER_MODE=useapi
 AIMP_DREAMINA_API_TOKEN=...
 AIMP_DREAMINA_ACCOUNT=US:your-dreamina-account@example.com
-AIMP_DREAMINA_VIDEO_MODEL=seedance-1.5-pro
-AIMP_DREAMINA_VIDEO_DURATION_SECONDS=8
+AIMP_DREAMINA_VIDEO_MODEL=seedance-2.0-mini
+AIMP_DREAMINA_VIDEO_DURATION_SECONDS=10
 ```
 
 When a `single_track_video` workspace is ready and auto-publish is enabled, the worker can:
@@ -381,7 +381,7 @@ When a `single_track_video` workspace is ready and auto-publish is enabled, the 
 
 OpenClaw should create static cover and thumbnail images with OpenAI GPT Image models, not Dreamina. Prefer `gpt-image-2` when available; otherwise use the currently available GPT Image model in the running tool/API environment. Do not assume OpenAI API usage is free; use the available image tool or configured API credentials. Create the final cover/first-frame first, then generate the YouTube thumbnail from that exact cover as a reference/edit derivative so characters, positions, outfit colors, lighting, palette, background, and composition remain consistent while click text is added. Do not add the channel name to either image. The default visual signature is three people walking toward the viewer for Tokyo Daydream Radio, but an explicit human request for a different scene, subject, action, or camera angle overrides that default and should be applied consistently to cover, thumbnail, and loop video or still-image render. Dreamina/Seedance/Gemini is only for animating the cover or first-frame image into a moving visual, and it should preserve the composition and any short style/passage phrase already present without inventing channel branding. HaruHaru does not use provider animation by default; it uses photorealistic still images with casual friend-taken Hongdae/Seoul street framing, hip adult streetwear, and Korean hip-hop/R&B mood, not studio headshots or idol-style portraits. Solwave Radio follows the same still-image flow with casual Latin/Spanish friend-taken phone snapshots, not professional photographer, studio, or fashion-campaign images.
 
-OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow for moving-video channels. Use `https://dreamina.capcut.com/ai-tool/home/`, select `2.0 Fast`, do not use Omni Reference, use first/last-frame mode with only the first frame provided, leave the last-frame input empty, start from the cover or a separate first-frame image that contains no channel name, set `16:9`, `720p`, and exactly `7 seconds` when selectable, download the MP4 locally, then upload it with the command below. Bulsong (`불송`) is the current short-calm exception: use Seedance/Dreamina `2.0 Fast`, `720p`, exactly `6 seconds`. HaruHaru and Solwave Radio skip this provider-video step in normal automation.
+OpenClaw browser automation can also create a Dreamina/Seedance clip outside the API flow for moving-video channels. Use `https://dreamina.capcut.com/ai-tool/home/`, select `Seedance 2.0 Mini`, do not use Omni Reference, use first-frame/start-frame mode only, leave any last-frame/end-frame input empty, start from the cover or a separate first-frame image that contains no channel name, set `16:9`, `720p`, and exactly `10 seconds` when selectable, download the MP4 locally, then upload it with the command below. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. HaruHaru, sundaze, Solwave Radio, Club Bloom, and 불송 skip this provider-video step in normal automation and render from still images instead.
 
 ```bash
 scripts/openclaw-release upload-loop-video --release-id RELEASE_ID --loop-video /absolute/path/to/clip.mp4
