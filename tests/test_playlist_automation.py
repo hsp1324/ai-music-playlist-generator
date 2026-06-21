@@ -6770,9 +6770,19 @@ def test_haruharu_boom_bap_reuse_requires_specific_lane_and_preserves_reuse_tail
             "Source Back Half Bachata",
             "Spanish bachata pop romance, tropical guitar groove",
         ),
+        (
+            "불송",
+            "[playlist] 법구경 힙합 | 분노와 집착을 비우는 불교 랩",
+            "Korean Buddhist hip-hop and mellow boom bap inspired by the Dhammapada.",
+            "Korean Buddhist hip-hop mellow boom bap, clear Korean rap, sung hook",
+            "Source Back Half Buddhist Hip-Hop",
+            "Korean Buddhist hip-hop mellow boom bap, clear Korean rap, sung hook",
+            "Source Back Half Buddhist Jazz",
+            "Korean Buddhist jazz meditation, brushed drums, piano trio",
+        ),
     ],
 )
-def test_explicit_pop_channel_reuse_requires_specific_lane_and_preserves_reuse_tail_when_randomized(
+def test_explicit_genre_lane_channel_reuse_requires_specific_lane_and_preserves_reuse_tail_when_randomized(
     tmp_path,
     channel_title: str,
     release_title: str,
@@ -7238,31 +7248,31 @@ def test_workspace_audio_render_skips_reuse_for_ambiguous_legacy_new_verse_chann
         clear_isolated_client_env()
 
 
-def test_workspace_audio_render_skips_reuse_for_current_scripture_channels(tmp_path) -> None:
+def test_workspace_audio_render_skips_reuse_for_bibliacanto_scripture_channel(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         with SessionLocal() as db:
-            source_track_path = tmp_path / "bulsong-source.mp3"
+            source_track_path = tmp_path / "bibliacanto-source.mp3"
             source_track_path.write_bytes(b"fake-audio")
             source_track = Track(
-                title="숨을 보는 마음",
-                prompt="Korean Buddhist jazz song",
+                title="Genesis Grace Verse",
+                prompt="Old Testament scripture hip-hop song",
                 duration_seconds=600,
                 audio_path=str(source_track_path),
                 status=TrackStatus.approved,
-                metadata_json={"style": "buddhist jazz", "tags": "buddhist,jazz"},
+                metadata_json={"style": "scripture hip-hop", "tags": "bible,hip-hop"},
             )
             db.add(source_track)
             db.flush()
             source_playlist = Playlist(
-                title="불교 재즈 명상",
+                title="Genesis Scripture Hip-Hop",
                 status=PlaylistStatus.uploaded,
                 target_duration_seconds=900,
                 actual_duration_seconds=600,
-                youtube_video_id="yt-bulsong-source",
+                youtube_video_id="yt-bibliacanto-source",
                 metadata_json={
                     "workspace_mode": "playlist",
-                    "youtube_channel_title": "불송",
+                    "youtube_channel_title": "BibliaCanto",
                     "rendered_timeline": [
                         {
                             "track_id": source_track.id,
@@ -7288,24 +7298,24 @@ def test_workspace_audio_render_skips_reuse_for_current_scripture_channels(tmp_p
         workspace_response = client.post(
             "/api/playlists/workspaces",
             json={
-                "title": "금강경 네오소울",
+                "title": "Genesis 1:1-5 Scripture Hip-Hop",
                 "target_duration_seconds": 900,
-                "description": "Korean Buddhist neo soul inspired by the Diamond Sutra.",
-                "target_youtube_channel_title": "불송",
+                "description": "Old Testament scripture hip-hop inspired by Genesis 1:1-5.",
+                "target_youtube_channel_title": "BibliaCanto",
             },
         )
         workspace_id = workspace_response.json()["id"]
 
-        new_audio_path = tmp_path / "diamond-sutra-neosoul.mp3"
+        new_audio_path = tmp_path / "genesis-scripture-hip-hop.mp3"
         new_audio_path.write_bytes(b"fake-audio")
         track_response = client.post(
             "/api/tracks",
             json={
-                "title": "붙잡지 않는 마음",
-                "prompt": "Korean Buddhist neo soul Diamond Sutra",
+                "title": "Let There Be Light",
+                "prompt": "Old Testament scripture hip-hop Genesis creation",
                 "duration_seconds": 900,
                 "audio_path": str(new_audio_path),
-                "metadata": {"style": "buddhist neo soul", "tags": "buddhist,neo soul"},
+                "metadata": {"style": "scripture hip-hop", "tags": "bible,hip-hop"},
             },
         )
         approve_response = client.post(
@@ -7326,7 +7336,7 @@ def test_workspace_audio_render_skips_reuse_for_current_scripture_channels(tmp_p
         assert render_response.status_code == 200
         queued = render_response.json()
         assert queued["actual_duration_seconds"] == 900
-        assert [track["title"] for track in queued["tracks"]] == ["붙잡지 않는 마음"]
+        assert [track["title"] for track in queued["tracks"]] == ["Let There Be Light"]
         assert "reused back-half" not in queued["note"]
     finally:
         clear_isolated_client_env()

@@ -106,3 +106,4 @@ BibliaCanto keeps the existing Old/New Testament passage playlist plus one moder
 
 - `Buddhist Hip-Hop`: 불교 힙합, 불경 힙합, mindful hip-hop, Korean Buddhist rap, mellow boom bap, Buddhist hip-hop soul, restrained Buddhist trap-soul.
 - Non-hip-hop 불송 buckets are allowed only when the human explicitly asks or when finishing an already-started release in that lane. Do not use obscure coined genre labels in public titles, thumbnail phrases, descriptions, or tags.
+- When filling 불송 playlists toward one hour, use only previous same-channel tracks that match the selected Buddhist hip-hop/rap lane; keep reused/fallback tracks after the fresh lead block and publish shorter rather than adding unrelated jazz, trot, acoustic, cinematic, or meditation tracks.

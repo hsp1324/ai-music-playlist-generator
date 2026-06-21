@@ -99,7 +99,7 @@ Good `Cinematic Pulse` style references, not fixed templates: `[playlist] Final 
 For `Cinematic Pulse`, rotate among broad cinematic orchestra and film-score lanes such as final battle, dark fantasy, heroic trailer, emotional score, sci-fi action, mystery tension, grand journey, orchestral battle, writing music, and movie OST focus. Do not repeatedly copy only the listed examples.
 Good `Club Bloom` examples: `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`; `[playlist] Bass House Workout Mix 2026 | Heavy EDM for Gaming & Night Drive`; `[playlist] Tech House Workout Mix | Running Beats and Club Bass`; `[playlist] Melodic Techno Night Drive | Dark Club Mix for Gaming`.
 Good `BibliaCanto` examples: `[playlist] Genesis 1:1-5 Creation Hip-Hop | Old Testament Rap & R&B Songs`; `[playlist] Matthew 1:18-25 Emmanuel K-Pop R&B | New Testament Scripture Songs`; `[playlist] Genesis 3:1-7 Eden Trap-Soul | Old Testament Story Rap`.
-Good `불송` examples: `[playlist] 마음을 다스리는 불경 힙합 | 법구경에서 영감을 받은 한국어 랩`; `[playlist] 반야심경 랩 | 집착을 내려놓는 불교 힙합`; `[playlist] 자비를 배우는 불교 힙합 | 마음이 흔들릴 때 듣는 한국어 랩`.
+Good `불송` examples: `[playlist] 마음을 다스리는 법구경 힙합 | 분노와 집착을 비우는 불교 랩`; `[playlist] 반야심경 랩 | 집착을 내려놓는 불교 힙합`; `[playlist] 금강경 힙합 | 붙잡지 않는 마음을 위한 불교 랩`.
 In Korean title/description/localizations, never write `인스트루멘털`, `인스투르멘털`, or `인스트루멘탈`. Say `BGM`, `가사 없는 BGM`, `보컬 없는 BGM`, or `연주곡` instead.
 For Playlist Releases, start the main title and every localized title exactly with `[playlist]`. Do not add `[playlist]` to Single Releases.
 After `[playlist]`, do not include duplicate words like `플레이리스트`, `Playlist`, `プレイリスト`, or `lista de reproducción`; write `음악`, `music`, `mix`, or a natural use-case phrase instead.

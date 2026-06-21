@@ -10,6 +10,14 @@ This is not a chanting archive, sermon channel, literal scripture-reading channe
 
 The audience should immediately understand: Buddhist wisdom and sutra-inspired teachings reworked as modern Korean hip-hop songs.
 
+## Analytics-Driven Packaging Rules
+
+- Treat 불송 as a modern Buddhist hip-hop/rap channel, not a generic meditation, worship, devotional, or temple BGM channel. Related-video discovery is currently important, so public wording must cluster around plain searchable labels such as `불교 힙합`, `불경 힙합`, `법구경 힙합`, `반야심경 랩`, `Buddhist hip-hop`, and `Korean Buddhist rap`.
+- Do not lead titles, thumbnail text, descriptions, or tags with obscure coined labels such as `다르마팝`, and do not overuse generic `meditation music`, `prayer`, `worship`, or devotional wording unless that is truthfully the finished asset's lane.
+- The first track and first 10-20 seconds matter. Put the strongest same-lane hook, rap entry, vocal tone, or most immediately clickable song first. Avoid long slow instrumental intros on playlist lead tracks.
+- Strong standout tracks should be considered for standalone singles and also reused as lead/funnel tracks in later same-lane playlists when appropriate.
+- For playlist releases, create roughly the first 10 minutes as new high-confidence Buddhist hip-hop/rap audio, then fill toward one hour only with existing approved 불송 tracks from the same detailed lane, liked tracks first. Keep reused/fallback tracks after the fresh lead block. If there are not enough matching tracks, publish shorter rather than mixing jazz, trot, acoustic, cinematic, or generic meditation tracks into a Buddhist hip-hop release.
+
 ## Overnight Privacy Rule
 
 Publish 불송 through the app normally. The app schedules 불송 uploads as public daily at 07:00 Asia/Seoul, unless the human explicitly pauses the channel.
@@ -62,7 +70,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 ## Visual Direction
 
 - Calm modern Buddhist visual identity with a younger, more clickable Buddhist hip-hop feeling. Do not repeat one fixed old devotional scene across releases.
-- Rotate visual packages: natural photorealistic adult temple-stay women/men/couples with headphones or earbuds; Hongdae/Seoul streetwear listeners or rappers quietly inspired by Buddhism in a temple courtyard; a Buddha statue plus a contemporary practitioner in the same frame; duet pairs for duet songs; or a tasteful animated/stylized monk when a monk is useful.
+- Rotate visual packages: natural photorealistic adult temple-stay women with headphones or earbuds; Hongdae/Seoul streetwear women listeners or rappers quietly inspired by Buddhism in a temple courtyard; a Buddha statue plus a contemporary woman practitioner in the same frame; two adult women for duet songs; or a tasteful animated/stylized female-coded Buddhist practitioner/nun when a monastic cue is useful.
 - Photorealistic or premium cinematic-real Buddhist imagery is normal for non-monastic people. If a monk appears, prefer animated, illustrated, or gentle anime/stylized treatment rather than photorealistic monk portraits.
 - Background-only scenes are not acceptable for 불송 final assets. If the output is only a temple path, lotus pond, lanterns, mountains, incense, abstract Buddhist symbols, empty shrine, or statue-only wallpaper without a modern human/music hook or fresh Buddhist subject, regenerate before uploading.
 - Use supporting details such as lanterns, lotus, incense smoke, candlelight, prayer beads, warm window light, paper texture, temple architecture, rain on stone, headphones, earbuds, small speakers, or a human-held microphone. Keep the music cue subtle and respectful.
@@ -73,10 +81,10 @@ From `scripts/openclaw-release list-releases`, inspect recent `불송` releases 
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] 마음을 다스리는 불경 힙합 | 법구경에서 영감을 받은 한국어 랩`
-- `[playlist] 연꽃처럼 버티는 불교 힙합 | 흔들릴 때 듣는 한국어 랩`
-- `[playlist] 내려놓는 마음의 불경 힙합 | 집착을 비우는 Korean Buddhist Rap`
-- `[playlist] 반야심경에서 영감 받은 힙합 | 두려움을 내려놓는 한국어 랩`
+- `[playlist] 마음을 다스리는 법구경 힙합 | 분노와 집착을 비우는 불교 랩`
+- `[playlist] 연꽃처럼 버티는 불교 힙합 | 흔들릴 때 듣는 마음챙김 랩`
+- `[playlist] 반야심경 랩 | 두려움을 내려놓는 불교 힙합`
+- `[playlist] 금강경 힙합 | 붙잡지 않는 마음을 위한 불교 랩`
 - `[playlist] 자비를 배우는 불교 힙합 | 조용한 밤 마음챙김 랩`
 
 ## Bad Directions

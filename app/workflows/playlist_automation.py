@@ -245,8 +245,6 @@ LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES = {
 REUSE_EXCLUDED_CHANNEL_TITLES = {
     "bibliacanto",
     "biblia canto",
-    "불송",
-    "bulsong",
 }
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -452,6 +450,7 @@ STRICT_GENRE_LANE_REUSE_CHANNEL_TITLES = {
     "tokyo daydream radio",
     SUNDAZE_CHANNEL_TITLE,
     "solwave radio",
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
 GENRE_LANE_STRICT_REUSE_PRIORITY = (
     "afrobeats",
@@ -520,6 +519,7 @@ GENRE_LANE_ORDER_PRESERVE_CHANNEL_TITLES = {
     SUNDAZE_CHANNEL_TITLE,
     "solwave radio",
     "club bloom",
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
 SOFT_HOUR_SOLO_PIANO_POSITIVE_KEYWORDS = (
     "solo piano",
@@ -2093,7 +2093,7 @@ def _playlist_has_ambiguous_legacy_reuse_channel(playlist: Playlist) -> bool:
     ) in LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES
 
 
-def _playlist_reuse_excluded_for_scripture_channel(playlist: Playlist) -> bool:
+def _playlist_reuse_excluded_for_channel(playlist: Playlist) -> bool:
     return _normalize_reuse_channel_title(_playlist_reuse_channel_title(playlist)) in REUSE_EXCLUDED_CHANNEL_TITLES
 
 
@@ -2102,9 +2102,9 @@ def _reuse_channel_identity_matches(target_playlist: Playlist, source_playlist: 
         return False
     if _playlist_has_ambiguous_legacy_reuse_channel(source_playlist):
         return False
-    if _playlist_reuse_excluded_for_scripture_channel(target_playlist):
+    if _playlist_reuse_excluded_for_channel(target_playlist):
         return False
-    if _playlist_reuse_excluded_for_scripture_channel(source_playlist):
+    if _playlist_reuse_excluded_for_channel(source_playlist):
         return False
 
     target_channel_id = _playlist_reuse_channel_id(target_playlist)
@@ -2509,8 +2509,8 @@ def _maybe_add_reused_back_half_tracks(
         return {"added_seconds": 0, "added_track_ids": [], "reason": "missing_channel"}
     if _playlist_has_ambiguous_legacy_reuse_channel(playlist):
         return {"added_seconds": 0, "added_track_ids": [], "reason": "ambiguous_legacy_channel"}
-    if _playlist_reuse_excluded_for_scripture_channel(playlist):
-        return {"added_seconds": 0, "added_track_ids": [], "reason": "scripture_or_buddhist_channel"}
+    if _playlist_reuse_excluded_for_channel(playlist):
+        return {"added_seconds": 0, "added_track_ids": [], "reason": "reuse_excluded_channel"}
 
     target_genre_tokens = _reuse_genre_tokens_for_playlist(playlist)
     target_has_citypop_intent = _values_have_haruharu_citypop(

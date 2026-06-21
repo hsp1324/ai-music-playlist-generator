@@ -20,6 +20,9 @@ Use this profile only after channel selection returns `불송`, or when the huma
 - Avoid trot, ppongjjak, and old Korean cabaret-pop completely unless the human explicitly asks for them. Do not use Korean trot rhythm, two-beat ppongjjak bounce, trot vocal ornaments, accordion/brass trot clichés, nightclub/cabaret trot arrangement, or old-TV trot mood.
 - In Suno Advanced Options / excluded styles, include blockers such as `trot, Korean trot, ppongjjak, 뽕짝, 트로트, trot vocal, cabaret trot, old Korean trot, two-beat trot bounce, accordion trot, brass trot`.
 - If a generated track comes out with strong trot/ppongjjak feel, reject it and regenerate in a clearer hip-hop/rap lane.
+- Build each playlist around a strong first block. Generate roughly 10 minutes of new high-confidence Buddhist hip-hop/rap first, with the best hook/rap/vocal entry as track 1 and no long slow intro before the music identity is clear.
+- To reach roughly one hour, use existing approved 불송 tracks only when they match the same detailed lane, such as boom-bap to boom-bap/rap-pop, trap-soul to trap/trap-soul, and Buddhist R&B/soul to R&B/neo-soul. Prefer liked tracks, exclude disliked/copyright-blocked/reuse-disabled tracks, and keep reused/fallback tracks after the fresh lead block. Do not add jazz, trot, acoustic, cinematic, or generic meditation tracks just to hit one hour. A shorter coherent release is better than a one-hour mismatched release.
+- When a single track has an unusually strong hook, replay signal, or human praise, make it a standalone single candidate and also consider using it as a future same-lane playlist lead track.
 
 ## Visual Identity
 
@@ -71,6 +74,7 @@ Use this profile only after channel selection returns `불송`, or when the huma
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Default metadata language should be Korean unless the human asks otherwise.
 - Include the selected Buddhist source/theme and release-level music lane in the title and first description paragraph.
+- Package new uploads for the Buddhist hip-hop niche first. Use direct searchable phrases such as `불교 힙합`, `불경 힙합`, `법구경 힙합`, `반야심경 랩`, `Buddhist hip-hop`, and `Korean Buddhist rap`. Avoid leading with generic meditation/worship/prayer wording because it pushes the channel toward unrelated religious traffic.
 - Public titles must include the exact verified Buddhist source/chapter/section when known, such as `법구경 쌍품`, `반야심경`, `금강경`, or `법화경`. If the release was built from a verified theme rather than an exact chapter, put that theme in the title instead, such as `팔정도 정어와 구업`, `자비`, `무상`, or `집착 내려놓기`. Do not use generic `불경` wording alone when a source/theme is available, and do not invent chapter/verse coverage.
 - Korean/default titles should not waste title space on redundant language labels such as `한국어 랩` or `한국어 힙합`. The 불송 channel is assumed to be Korean Buddhist vocal/rap unless the human says otherwise. Use source/theme plus the real lane instead, such as `반야심경 랩`, `금강경 힙합`, `법구경 힙합`, `정어와 구업 힙합`, `불교 힙합`, or `불경 힙합`.
 - If using a scripture source, name it carefully, such as Dhammapada-inspired, Heart Sutra-inspired, Diamond Sutra-inspired, Lotus Sutra-inspired, or Buddhist wisdom-inspired. Do not claim exact chapter/verse coverage unless verified.
