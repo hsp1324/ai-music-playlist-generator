@@ -570,20 +570,20 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
             release_title="Mystery Documentary BGM",
             description="dark ambient investigation music for story videos",
         )
-    ) == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+    ) == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="Signal Desk Documentary BGM",
         )
-    ) == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+    ) == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
             release_title="Cute Arcade Game OST",
             description="playful no-vocal anime game BGM for a fantasy game menu",
         )
-    ) == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+    ) == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
@@ -656,17 +656,17 @@ def test_channel_profile_returns_doc_for_inferred_and_explicit_channels() -> Non
     assert haruharu["profile_doc"] == "docs/openclaw-channel-profiles/haruharu.md"
     assert haruharu["concept_doc"] == "docs/openclaw-channel-concepts/haruharu.md"
 
-    storylight_from_signal = build_channel_profile(
+    storylight_style_on_cinematic = build_channel_profile(
         _auto_publish_args(
             "/tmp/audio.mp3",
-            release_title="AI Debate Prep BGM",
-            description="research story documentary music",
+            release_title="Cute Arcade Game OST",
+            description="playful no-vocal anime game BGM for a fantasy game menu",
         )
     )
-    assert storylight_from_signal["youtube_channel_title"] == STORYLIGHT_YOUTUBE_CHANNEL_TITLE
-    assert storylight_from_signal["profile"] == "storylight-ost"
-    assert storylight_from_signal["profile_doc"] == "docs/openclaw-channel-profiles/storylight-ost.md"
-    assert storylight_from_signal["concept_doc"] == "docs/openclaw-channel-concepts/storylight-ost.md"
+    assert storylight_style_on_cinematic["youtube_channel_title"] == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
+    assert storylight_style_on_cinematic["profile"] == "storylight-style-on-cinematic-pulse"
+    assert storylight_style_on_cinematic["profile_doc"] == "docs/openclaw-channel-profiles/storylight-ost.md"
+    assert storylight_style_on_cinematic["concept_doc"] == "docs/openclaw-channel-concepts/storylight-ost.md"
 
     custom = build_channel_profile(
         _auto_publish_args(

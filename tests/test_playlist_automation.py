@@ -8931,10 +8931,12 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         upload_video_ids = ["yt-auto-123"]
         upload_channel_ids = []
         upload_localizations = []
+        upload_scheduled_publish_at = []
         delete_calls = []
 
         def fake_upload_playlist_video(*args, **kwargs):
             upload_channel_ids.append(kwargs.get("youtube_channel_id"))
+            upload_scheduled_publish_at.append(kwargs.get("scheduled_publish_at"))
             upload_localizations.append(
                 {
                     "default_language": kwargs.get("default_language"),
@@ -9032,6 +9034,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             playlist = db.get(Playlist, workspace_id)
             meta = dict(playlist.metadata_json or {})
             meta["youtube_upload_error"] = "old thumbnail failure"
+            meta["youtube_scheduled_publish_at"] = "2099-05-12T03:00:00+00:00"
+            meta["youtube_schedule_hour"] = 12
+            meta["youtube_schedule_minute"] = 0
             meta["relocation_delete_original_after_new_upload"] = True
             meta["relocation_original_youtube_video_id"] = "yt-wrong-channel"
             meta["relocation_original_youtube_channel_id"] = "UCWRONG"
@@ -9068,6 +9073,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert any("YouTube publish completed" in call["text"] for call in ops_calls)
         assert any("https://youtu.be/yt-auto-123" in call["text"] for call in ops_calls)
         assert upload_channel_ids[-1] == "UC123"
+        assert upload_scheduled_publish_at[-1] == datetime(2099, 5, 12, 3, 0, tzinfo=timezone.utc)
         assert upload_localizations[-1]["default_language"] == "ko"
         assert upload_localizations[-1]["localizations"]["en"]["title"] == "[playlist] English Title"
         original_youtube_title = published["youtube_title"]
@@ -9077,6 +9083,9 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
+            assert playlist.metadata_json["youtube_scheduled_publish_at"] == "2099-05-12T03:00:00+00:00"
+            assert playlist.metadata_json["youtube_schedule_hour"] == 12
+            assert playlist.metadata_json["youtube_schedule_minute"] == 0
             assert playlist.metadata_json["local_video_retained_after_youtube_upload"] == first_video_path
             assert playlist.metadata_json["local_video_retention_days"] == 3
             assert "local_video_deleted_after_youtube_upload" not in playlist.metadata_json

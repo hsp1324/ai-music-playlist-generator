@@ -85,9 +85,9 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Do not add channel names, logos, style text, title text, badges, or stickers to the cover/thumbnail by default.
 - Queue final render as still image with app spectrum lower-right and app lyric overlay lower-left. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
 
-### Storylight OST
+### Storylight-Style Lane On Cinematic Pulse
 
-- Playful no-vocal Japanese game/anime OST, happy amusement park BGM, and feel-good background music.
+- `Storylight OST` is now manual-only. For automation, upload playful no-vocal Japanese game/anime OST, happy amusement park BGM, and feel-good background music to `Cinematic Pulse` as a former Storylight-style lane.
 - Use game/anime/theme-park environmental motion such as cabinet lights, carousel bulbs, ferris-wheel glow, magical glows, flags, lantern shimmer, toy-like particles, confetti, or water shimmer.
 - If text is useful, use broad clickable benefit/style phrases such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, `COZY GAME MUSIC`, `THEME PARK BGM`, or `HAPPY PARK`.
 
@@ -130,7 +130,7 @@ Profiles:
 - [sundaze](sundaze.md)
 - [Solwave Radio](solwave-radio.md)
 - [HaruHaru](haruharu.md)
-- [Storylight OST](storylight-ost.md)
+- [Storylight-style lane for Cinematic Pulse](storylight-ost.md)
 - [Cinematic Pulse](cinematic-pulse.md)
 - [Club Bloom](club-bloom.md)
 - [BibliaCanto](the-old-verse.md)

@@ -1,11 +1,12 @@
 # OpenClaw Channel Profile: Storylight OST
 
-Use this profile only after channel selection returns `Storylight OST`.
+Use this profile only when a former Storylight-style playful game/anime/theme-park BGM release is being uploaded to `Cinematic Pulse`, or when a human explicitly asks to inspect the legacy `Storylight OST` visual style. Do not publish new automation output to `Storylight OST`; the human manages that channel personally.
 
 ## Routing Contract
 
-- Explicit channel request wins.
-- Storylight OST is for no-vocal playful Japanese-style game/anime OST, happy theme-park BGM, and feel-good background music: arcade games, fantasy games, cute RPG towns, anime side stories, mascot chases, item shops, mini-games, amusement park plazas, carousel parades, and light adventure scenes.
+- Explicit channel request wins, except that `Storylight OST` itself is manual-only unless the human explicitly says to publish there in the current request.
+- Former Storylight-style automation is now a `Cinematic Pulse` upload lane for no-vocal playful Japanese-style game/anime OST, happy theme-park BGM, and feel-good background music: arcade games, fantasy games, cute RPG towns, anime side stories, mascot chases, item shops, mini-games, amusement park plazas, carousel parades, and light adventure scenes.
+- Set the release upload channel to `Cinematic Pulse`, not `Storylight OST`.
 - Do not use this profile for practical cafe/study BGM, epic trailer/battle music, EDM/house, vocal J-pop, or popular-song remakes/covers.
 
 ## Visual Identity

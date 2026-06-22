@@ -1705,13 +1705,13 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
     if any(keyword.lower() in haystack for keyword in CINEMATIC_PULSE_CHANNEL_KEYWORDS):
         return CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in STORYLIGHT_CHANNEL_KEYWORDS):
-        return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+        return CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in JAPAN_CHANNEL_KEYWORDS):
         return JAPAN_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in ENGLISH_POP_CHANNEL_KEYWORDS) and not has_instrumental_intent:
         return SUNDAZE_YOUTUBE_CHANNEL_TITLE
     if any(keyword.lower() in haystack for keyword in SIGNAL_ROOM_CHANNEL_KEYWORDS):
-        return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
+        return CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
     return DEFAULT_YOUTUBE_CHANNEL_TITLE
 
 
@@ -1926,9 +1926,25 @@ def build_channel_profile(args: argparse.Namespace) -> dict[str, Any]:
     title = infer_youtube_channel_title(args)
     profile_doc = CHANNEL_PROFILE_DOCS.get(title, "docs/openclaw-channel-profiles/custom-channel.md")
     concept_doc = CHANNEL_CONCEPT_DOCS.get(title, "docs/openclaw-channel-concepts/custom-channel.md")
+    profile_name = CHANNEL_PROFILE_NAMES.get(title, "custom-channel")
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            getattr(args, "release_title", ""),
+            getattr(args, "description", ""),
+            getattr(args, "prompt", ""),
+            getattr(args, "tags", ""),
+        )
+    ).lower()
+    if title == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE and any(
+        keyword.lower() in haystack for keyword in STORYLIGHT_CHANNEL_KEYWORDS
+    ):
+        profile_doc = CHANNEL_PROFILE_DOCS[STORYLIGHT_YOUTUBE_CHANNEL_TITLE]
+        concept_doc = CHANNEL_CONCEPT_DOCS[STORYLIGHT_YOUTUBE_CHANNEL_TITLE]
+        profile_name = "storylight-style-on-cinematic-pulse"
     return {
         "youtube_channel_title": title,
-        "profile": CHANNEL_PROFILE_NAMES.get(title, "custom-channel"),
+        "profile": profile_name,
         "profile_doc": profile_doc,
         "concept_doc": concept_doc,
         "explicit_channel_requested": bool(str(getattr(args, "youtube_channel_title", "") or "").strip()),
@@ -3912,7 +3928,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds when an explicit maximum is configured.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order. Soft Hour Radio keeps reused back-half tracks after the fresh solo-piano lead block.")
-    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
+    auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Cinematic Pulse as a former Storylight-style lane, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
@@ -3980,7 +3996,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Storylight OST, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
+    auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Cinematic Pulse as a former Storylight-style lane, large-scale cinematic orchestra/movie OST/film score uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Buddhist scripture music uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",

@@ -435,6 +435,14 @@ class BackgroundJobWorker:
             return parsed.replace(tzinfo=timezone.utc)
         return parsed.astimezone(timezone.utc)
 
+    @classmethod
+    def _metadata_scheduled_publish_at(cls, meta: dict) -> datetime | None:
+        for key in ("youtube_scheduled_publish_at", "youtube_publish_at"):
+            scheduled_at = cls._parse_iso_datetime(str(meta.get(key) or "").strip() or None)
+            if scheduled_at and scheduled_at > _utcnow():
+                return scheduled_at
+        return None
+
     @staticmethod
     def _playlist_has_interrupted_upload_retry(db: Session, playlist_id: str) -> bool:
         jobs = db.scalars(
@@ -1236,13 +1244,22 @@ class BackgroundJobWorker:
                 is_playlist=is_playlist_release,
             )
             meta["youtube_metadata_preserved_after_video_render"] = False
-        meta["metadata_approved"] = False
+        preserve_metadata_approval = bool(
+            meta.get("preserve_metadata_approval_after_video_render")
+            and meta.get("youtube_metadata_preserved_after_video_render")
+        )
+        meta["metadata_approved"] = preserve_metadata_approval
         meta["publish_approved"] = False
         meta["rendered_video_track_ids"] = video_track_ids
         meta["rendered_video_track_count"] = len(video_track_ids)
         meta.pop("stale_video_render", None)
-        meta["workflow_state"] = "metadata_review"
-        meta["note"] = "Video render completed. Review YouTube metadata next."
+        if preserve_metadata_approval:
+            meta["publish_ready"] = True
+            meta["workflow_state"] = "publish_ready"
+            meta["note"] = "Video render completed with preserved approved YouTube metadata."
+        else:
+            meta["workflow_state"] = "metadata_review"
+            meta["note"] = "Video render completed. Review YouTube metadata next."
         meta["video_render_progress"] = {
             **dict(meta.get("video_render_progress") or {}),
             "stage": "video_render",
@@ -1269,6 +1286,13 @@ class BackgroundJobWorker:
         }
         db.add(playlist)
         db.add(job)
+        auto_publish_job = self._queue_auto_publish_job(
+            db,
+            playlist,
+            note="Auto-publish queued after video render completed with preserved metadata.",
+        )
+        if auto_publish_job is not None:
+            db.add(auto_publish_job)
         db.commit()
         db.refresh(playlist)
         self._request_openclaw_for_video_event(
@@ -1599,10 +1623,12 @@ class BackgroundJobWorker:
 
                     thumbnail_path = str(meta.get("youtube_thumbnail_path") or "").strip() or cover_image_path
                     schedule_options = youtube_schedule_options_for_playlist(playlist)
+                    explicit_scheduled_publish_at = self._metadata_scheduled_publish_at(meta)
                     scheduled_publish_at = (
                         None
                         if schedule_options.get("schedule_disabled")
-                        else next_youtube_scheduled_publish_at(
+                        else explicit_scheduled_publish_at
+                        or next_youtube_scheduled_publish_at(
                             db,
                             self.services,
                             youtube_channel_id=youtube_channel_id,
@@ -1647,8 +1673,12 @@ class BackgroundJobWorker:
                         youtube_schedule_metadata(
                             self.services,
                             scheduled_publish_at,
-                            schedule_hour=schedule_options.get("schedule_hour"),
-                            schedule_minute=schedule_options.get("schedule_minute"),
+                            schedule_hour=schedule_options.get("schedule_hour")
+                            if explicit_scheduled_publish_at is None
+                            else meta.get("youtube_schedule_hour"),
+                            schedule_minute=schedule_options.get("schedule_minute")
+                            if explicit_scheduled_publish_at is None
+                            else meta.get("youtube_schedule_minute"),
                             schedule_interval_days=schedule_options.get("schedule_interval_days"),
                             schedule_label=schedule_options.get("schedule_label"),
                         )
