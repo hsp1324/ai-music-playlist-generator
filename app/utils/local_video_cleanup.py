@@ -147,6 +147,13 @@ def _candidate_paths(playlist: Playlist, settings: Settings) -> list[tuple[Path,
     return paths
 
 
+def _is_marked_deleted_video_path(meta: dict[str, Any], path: Path) -> bool:
+    deleted_path = str(meta.get("local_video_deleted_after_youtube_upload") or "").strip()
+    if not deleted_path:
+        return False
+    return str(path) == deleted_path
+
+
 def collect_public_uploaded_local_video_candidates(
     db: Session,
     settings: Settings,
@@ -165,6 +172,7 @@ def collect_public_uploaded_local_video_candidates(
     ).all()
     seen_paths: set[Path] = set()
     for playlist in playlists:
+        meta = dict(playlist.metadata_json or {})
         public_at = youtube_public_at(playlist, now=current)
         if public_at is None:
             continue
@@ -172,6 +180,8 @@ def collect_public_uploaded_local_video_candidates(
         if eligible_after > current:
             continue
         for path, source in _candidate_paths(playlist, settings):
+            if _is_marked_deleted_video_path(meta, path):
+                continue
             try:
                 resolved = path.resolve()
             except OSError:
@@ -210,11 +220,14 @@ def collect_emergency_uploaded_local_video_candidates(
     ).all()
     seen_paths: set[Path] = set()
     for playlist in playlists:
+        meta = dict(playlist.metadata_json or {})
         uploaded_at = youtube_uploaded_at(playlist, now=current)
         if uploaded_at > current - min_age:
             continue
         eligible_after = uploaded_at + min_age
         for path, source in _candidate_paths(playlist, settings):
+            if _is_marked_deleted_video_path(meta, path):
+                continue
             try:
                 resolved = path.resolve()
             except OSError:
