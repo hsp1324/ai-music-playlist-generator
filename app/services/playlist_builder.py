@@ -9,7 +9,7 @@ from math import ceil
 from mimetypes import guess_type
 from pathlib import Path
 from selectors import EVENT_READ, DefaultSelector
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryFile
 from typing import Any, Callable
 
 from PIL import Image, ImageChops, ImageDraw, ImageOps
@@ -92,19 +92,20 @@ class FFMpegPlaylistBuilder:
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         stage: str = "video_render",
     ) -> None:
+        stderr_log = TemporaryFile("w+", encoding="utf-8", errors="replace")
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=stderr_log,
             text=True,
             bufsize=1,
         )
-        if process.stdout is None or process.stderr is None:
-            raise RuntimeError("ffmpeg progress pipes could not be opened.")
+        if process.stdout is None:
+            stderr_log.close()
+            raise RuntimeError("ffmpeg progress pipe could not be opened.")
 
         selector = DefaultSelector()
         selector.register(process.stdout, EVENT_READ, "stdout")
-        selector.register(process.stderr, EVENT_READ, "stderr")
 
         started = time.monotonic()
         last_activity = started
@@ -204,11 +205,6 @@ class FFMpegPlaylistBuilder:
                     if not line:
                         continue
                     last_activity = time.monotonic()
-                    if key.data == "stderr":
-                        stderr_lines.append(line)
-                        stderr_lines = stderr_lines[-12:]
-                        continue
-
                     if "=" not in line:
                         continue
                     name, value = line.split("=", 1)
@@ -231,6 +227,12 @@ class FFMpegPlaylistBuilder:
             selector.close()
 
         return_code = process.wait()
+        try:
+            stderr_log.flush()
+            stderr_log.seek(0)
+            stderr_lines = [line.strip() for line in stderr_log.read().splitlines() if line.strip()][-12:]
+        finally:
+            stderr_log.close()
         if killed_for_stall:
             raise RuntimeError(
                 "ffmpeg stalled without progress or output file growth for "
