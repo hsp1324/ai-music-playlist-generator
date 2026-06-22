@@ -4612,6 +4612,10 @@ def test_local_video_cleanup_deletes_public_youtube_videos_above_threshold_oldes
             for path in (public_path, orphan_path, recent_public_path, future_path, private_path, not_uploaded_path):
                 path.write_bytes(b"fake-video")
             public_playlist.output_video_path = str(public_path)
+            orphan_playlist.metadata_json = {
+                **orphan_playlist.metadata_json,
+                "local_video_retained_after_youtube_upload": str(orphan_path),
+            }
             recent_public_playlist.output_video_path = str(recent_public_path)
             future_playlist.output_video_path = str(future_path)
             private_playlist.output_video_path = str(private_path)

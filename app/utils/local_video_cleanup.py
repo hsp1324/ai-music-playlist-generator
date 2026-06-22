@@ -135,14 +135,17 @@ class EmergencyLocalVideoCandidate:
     size_bytes: int
 
 
-def _candidate_paths(playlist: Playlist, settings: Settings) -> list[tuple[Path, str]]:
+def _candidate_paths(playlist: Playlist, settings: Settings, meta: dict[str, Any] | None = None) -> list[tuple[Path, str]]:
     paths: list[tuple[Path, str]] = []
+    meta = meta or {}
     output_video_path = str(playlist.output_video_path or "").strip()
     if output_video_path:
         paths.append((Path(output_video_path), "output_video_path"))
 
     canonical_path = settings.playlists_dir / f"{playlist.id}.mp4"
-    if not any(path == canonical_path for path, _source in paths):
+    retained_path = str(meta.get("local_video_retained_after_youtube_upload") or "").strip()
+    should_check_canonical = bool(output_video_path) or retained_path == str(canonical_path)
+    if should_check_canonical and not any(path == canonical_path for path, _source in paths):
         paths.append((canonical_path, "canonical_playlist_mp4"))
     return paths
 
@@ -179,7 +182,7 @@ def collect_public_uploaded_local_video_candidates(
         eligible_after = public_at + retention
         if eligible_after > current:
             continue
-        for path, source in _candidate_paths(playlist, settings):
+        for path, source in _candidate_paths(playlist, settings, meta):
             if _is_marked_deleted_video_path(meta, path):
                 continue
             try:
@@ -225,7 +228,7 @@ def collect_emergency_uploaded_local_video_candidates(
         if uploaded_at > current - min_age:
             continue
         eligible_after = uploaded_at + min_age
-        for path, source in _candidate_paths(playlist, settings):
+        for path, source in _candidate_paths(playlist, settings, meta):
             if _is_marked_deleted_video_path(meta, path):
                 continue
             try:
