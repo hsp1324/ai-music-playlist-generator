@@ -224,6 +224,7 @@ CHANNEL_GENRE_RULES: dict[str, tuple[ChannelGenreRule, ...]] = {
         ChannelGenreRule("sci-fi action score", "Sci-Fi Action Cinematic", ("Sci-Fi Action Cinematic",), ("sci-fi", "sci fi", "cyber", "combat")),
         ChannelGenreRule("emotional film score", "Emotional Film Score", ("Emotional Film Score",), ("emotional", "piano", "hopeful", "strings")),
         ChannelGenreRule("mystery tension score", "Mystery & Tension Score", ("Mystery & Tension Score",), ("mystery", "tension", "suspense")),
+        ChannelGenreRule("gentle game orchestra", "Game Orchestra", ("Game Orchestra",), ("game orchestra", "game score", "anime rpg", "action rpg", "fantasy game ost", "soft orchestra", "gentle orchestra", "sweet orchestra")),
         ChannelGenreRule("epic trailer orchestra", "Epic Trailer Music", ("Epic Trailer Music",), ("trailer", "epic", "battle", "orchestra", "cinematic")),
     ),
     "storylight ost": (

@@ -2368,14 +2368,17 @@ class BackgroundJobWorker:
             f"{text_policy_prompt}"
         )
         cinematic_pulse_prompt = (
-            "Cinematic music visual system: photorealistic cinematic film-still / premium movie-poster realism, "
-            "with realistic lighting, depth of field, cinematic lensing, atmospheric haze, believable materials, "
-            "bold contrast, and one strong focal scene. "
+            "Cinematic music visual system: use either photorealistic cinematic film-still / premium movie-poster realism "
+            "or premium sci-fi/fantasy action-RPG game-animation key art when the release fits game orchestra, anime action-RPG, "
+            "or graceful fantasy game-score music. Use realistic or high-end game-cinematic lighting, depth of field, "
+            "cinematic lensing, atmospheric haze, believable materials, bold contrast, and one strong focal scene. "
+            "For game-orchestra lanes, an original beautiful adult heroine is allowed if she matches the theme, but do not copy "
+            "any protected game character, costume, logo, UI, pose, or exact composition. "
             "Animate powerful but controlled cinematic motion already present or naturally implied by the first frame: "
             "storm clouds, sparks, embers, dust, banners, energy pulses, engine glow, portal light, rain, distant silhouettes, "
-            "or atmospheric light movement. "
+            "hair or cloth movement, soft moonlight, flower petals, water shimmer, or atmospheric light movement. "
             "Keep the final moment close to the opening composition, with stable framing and no repeated segment. "
-            "Do not turn the image into anime, cartoon, illustration, painterly fantasy art, or game UI art. "
+            "Do not turn the image into cheap cartoon, flat illustration, painterly fantasy art, or game UI art. "
             "No gore, real war footage, real political imagery, celebrity likenesses, protected characters, franchise references, subtitles, extra text, logos, or UI. "
             f"{text_policy_prompt}"
         )

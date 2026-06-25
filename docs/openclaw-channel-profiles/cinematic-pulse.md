@@ -5,14 +5,16 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 ## Routing Contract
 
 - Explicit channel request wins.
-- Cinematic Pulse is for no-vocal large-scale cinematic orchestra and film-score music: movie OST, trailer music, emotional film score, orchestral battle, dark fantasy confrontation, sci-fi journey, heroic, mystery tension, and orchestral scene music.
+- Cinematic Pulse is for no-vocal cinematic orchestra and game/film-score music: movie OST, trailer music, emotional film score, orchestral battle, dark fantasy confrontation, sci-fi journey, heroic, mystery tension, lyrical game orchestra, and orchestral scene music.
 - Do not use this profile for cozy fantasy, cafe/study BGM, EDM/house, or vocal pop.
 
 ## Visual Identity
 
-- Mood: cinematic, dramatic, large-scale, orchestral, emotional, tense, heroic, mysterious, or high-stakes.
-- Style should be photorealistic cinematic film-still / high-end movie-poster realism, not anime, cartoon, flat illustration, or game UI art.
-- The cover, thumbnail base, and loop video should feel like a dramatic movie frame or premium trailer shot with realistic lighting, depth of field, cinematic lensing, atmosphere, and believable materials.
+- Mood: cinematic, dramatic, orchestral, emotional, tense, heroic, mysterious, high-stakes, gentle, bittersweet, lyrical, or graceful depending on the release.
+- Cinematic Pulse has two approved visual lanes:
+  - **Film-real lane:** photorealistic cinematic film-still / high-end movie-poster realism.
+  - **Premium game-animation lane:** original high-end sci-fi/fantasy action-RPG key art with a beautiful adult heroine, elegant armor or futuristic fashion, dramatic game-cinematic lighting, and polished anime-real/game-animation rendering. This can evoke a modern console action RPG mood, but must not copy Stellar Blade, its characters, outfits, logos, UI, or exact composition.
+- The cover, thumbnail base, and loop video should feel like a dramatic movie frame, premium trailer shot, or high-end game key visual with cinematic lighting, depth of field, atmosphere, and believable materials.
 - Do not use documentary-looking real war footage, news footage, real political imagery, celebrity likenesses, protected film/game characters, or exact franchise references. Photorealistic means original cinematic realism, not copied real media.
 - Composition should read quickly on mobile: one strong focal scene, bold lighting, clear silhouettes, and high contrast.
 - Visuals can be intense, but avoid gore, real-world political symbols, real war footage, and protected IP.
@@ -26,20 +28,20 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Cinematic Pulse cover/first-frame art should usually include one short integrated cinematic style phrase in the upper-left area so the video does not feel empty and will not collide with lower-left lyric overlays on vocal channels. Use phrases such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
 - Keep that style phrase tasteful and movie-poster-like: integrated typography, subtle shadow, thin outline, or local contrast is fine, but the text background must be transparent. Do not use detached black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, badges, plaques, stickers, channel labels, or long title sentences.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
-- Match the scene to the playlist concept: movie-poster landscape, final battle, dark fantasy confrontation, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, or trailer-poster scene.
+- Match the scene to the playlist concept: movie-poster landscape, final battle, dark fantasy confrontation, sci-fi journey, heroic sunrise, dark castle, robot conflict, storm, mystery hallway, emotional farewell, vast ocean, mountain horizon, premium game heroine scene, gentle fantasy city, moonlit sci-fi garden, quiet post-battle memory, or trailer/key-art scene.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Use the same upper-left style phrase family as the cover/first-frame, with thumbnail readability adjustments only if needed. Examples: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, or `FILM SCORE`. Keep the text directly on the image with no filled background shape.
-- Avoid juvenile game-menu wording such as `BOSS BGM`, `FINAL BOSS`, `보스`, or `보스전` unless the human explicitly asks for game-combat packaging. Cinematic Pulse should read as grand film-score / cinematic orchestra first.
+- Avoid juvenile game-menu wording such as `BOSS BGM`, `FINAL BOSS`, `보스`, or `보스전` unless the human explicitly asks for game-combat packaging. Game-related Cinematic Pulse packaging should read as premium game orchestra / anime action-RPG OST / cinematic game score, not a menu label.
 - Do not add `CINEMATIC PULSE`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
 
 ## Render Visual
 
-- Create a very high quality 16:9 photorealistic cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080.
+- Create a very high quality 16:9 cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080. Use the film-real lane for movie/film-score concepts and the premium game-animation lane for game-orchestra, anime action-RPG, sci-fi heroine, or graceful fantasy game-score concepts.
 - The uploaded first-frame image for the provider loop should be this cover image with the upper-left style phrase already integrated.
 - Create a subtle provider loop video from that first frame. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
 - Dreamina/Seedance clips should use `Seedance Mini 2.0`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. Gemini clips are uploaded as generated after inspection.
@@ -59,11 +61,13 @@ scripts/openclaw-release render-video \
 First-frame prompt shape:
 
 ```text
-Create a 16:9 original photorealistic cinematic film-still / premium movie-poster image for a Cinematic Pulse instrumental film-score release.
-Use realistic lighting, cinematic lensing, depth of field, atmosphere, believable materials, strong silhouettes, and one clear focal scene.
+Create a 16:9 original high-end Cinematic Pulse cover/first-frame image for an instrumental cinematic orchestra / game-score release.
+Use either photorealistic cinematic movie-poster realism or premium sci-fi/fantasy action-RPG game-animation key art, whichever best matches the release concept.
+For game-orchestra lanes, an original beautiful adult heroine is allowed: elegant, confident, cinematic, YouTube-safe, not sexualized, not a protected character, and not copied from any existing game.
+Use cinematic lighting, lensing, depth of field, atmosphere, believable materials, strong silhouettes, and one clear focal scene.
 Make it high resolution, preferably 2560x1440 or at least 1920x1080.
 Do not add the channel name, channel logo, title sentence, subtitles, UI, or unrelated words. If visual text is useful, use only one short cinematic style phrase such as "FILM SCORE" or "CINEMATIC ORCHESTRA".
-No anime, no cartoon, no illustration, no game UI art, no gore, no real war footage, no protected characters, no franchise references, no celebrity likenesses.
+No cartoon parody, no flat illustration, no game UI art, no gore, no real war footage, no protected characters, no franchise references, no celebrity likenesses, no exact game costume or logo.
 ```
 
 ## Metadata
@@ -71,9 +75,9 @@ No anime, no cartoon, no illustration, no game UI art, no gore, no real war foot
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
 - Localized YouTube titles must be natural transcreations in each language. If a literal translation sounds childish, vague, or less cinematic, rewrite it while keeping the film-score/orchestra lane and real listening use case truthful.
 - Default metadata language can be English unless the human asks otherwise.
-- Titles should be bold, search-friendly, and immediately understandable to a broad YouTube audience. Include cinematic music, cinematic orchestra, movie OST, film score, trailer music, final battle scene, orchestral battle, emotional film score, mystery tension, fantasy writing, or epic scene use cases when accurate.
+- Titles should be bold, search-friendly, and immediately understandable to a broad YouTube audience. Include cinematic music, cinematic orchestra, movie OST, film score, trailer music, final battle scene, orchestral battle, emotional film score, mystery tension, fantasy writing, game orchestra, anime action RPG OST, or cinematic game score when accurate.
 - Make titles broad and public-facing first. Use exact visual scene details as atmosphere unless they are the strongest searchable hook.
 - Do not use `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM` in public YouTube titles. Avoid wording that sounds like a niche game menu rather than a cinematic music video.
-- Use varied cinematic title families across releases: final battle scene, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, epic writing music, and movie OST focus. These are direction families, not fixed templates to repeat mechanically.
+- Use varied cinematic title families across releases: final battle scene, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, epic writing music, gentle game orchestra, lyrical fantasy game OST, bittersweet anime action-RPG score, and movie OST focus. These are direction families, not fixed templates to repeat mechanically.
 - Reusing a strong channel-fit title shape is better than inventing a weak off-brand one, but do not lock the channel into only a few example titles.
 - Avoid naming existing films, games, franchises, composers, studios, or characters.

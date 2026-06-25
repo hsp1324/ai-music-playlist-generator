@@ -207,7 +207,7 @@ def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> N
     assert "exactly three people walking toward the viewer" not in prompt
 
 
-def test_dreamina_prompt_uses_cinematic_pulse_photorealistic_style() -> None:
+def test_dreamina_prompt_uses_cinematic_pulse_film_or_game_animation_style() -> None:
     playlist = Playlist(
         title="Cinematic Pulse Release",
         metadata_json={"youtube_channel_title": "Cinematic Pulse"},
@@ -225,9 +225,11 @@ def test_dreamina_prompt_uses_cinematic_pulse_photorealistic_style() -> None:
 
     assert "photorealistic cinematic film-still" in prompt
     assert "premium movie-poster realism" in prompt
+    assert "premium sci-fi/fantasy action-RPG game-animation key art" in prompt
+    assert "protected game character" in prompt
     assert "must not contain a channel name" in prompt
     assert 'channel brand label "Cinematic Pulse"' not in prompt
-    assert "Do not turn the image into anime" in prompt
+    assert "Do not turn the image into cheap cartoon" in prompt
     assert "Do not use photorealistic" not in prompt
     assert "exactly three people walking toward the viewer" not in prompt
     assert "Soft Hour Radio/background-music visual system" not in prompt
