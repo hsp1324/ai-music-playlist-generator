@@ -229,10 +229,12 @@ class BackgroundJobWorker:
         self._thread: threading.Thread | None = None
         self._upload_thread: threading.Thread | None = None
         self._slack_codex_thread: threading.Thread | None = None
+        self._scheduler_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._state = WorkerLoopState()
         self._upload_state = WorkerLoopState()
         self._slack_codex_state = WorkerLoopState()
+        self._scheduler_state = WorkerLoopState()
         self._last_openclaw_backlog_scheduler_check = 0.0
         self._last_local_video_cleanup_check = 0.0
 
@@ -245,6 +247,7 @@ class BackgroundJobWorker:
             or self._thread is not None
             or self._upload_thread is not None
             or self._slack_codex_thread is not None
+            or self._scheduler_thread is not None
         ):
             return
         if self.services is None:
@@ -260,7 +263,7 @@ class BackgroundJobWorker:
             kwargs={
                 "job_types": tuple(render_job_types),
                 "state": self._state,
-                "run_backlog_scheduler": True,
+                "run_backlog_scheduler": False,
             },
             name="aimp-background-worker",
             daemon=True,
@@ -285,9 +288,16 @@ class BackgroundJobWorker:
             name="aimp-slack-codex-worker",
             daemon=True,
         )
+        self._scheduler_thread = threading.Thread(
+            target=self._run_scheduler_loop,
+            kwargs={"state": self._scheduler_state},
+            name="aimp-openclaw-scheduler",
+            daemon=True,
+        )
         self._thread.start()
         self._upload_thread.start()
         self._slack_codex_thread.start()
+        self._scheduler_thread.start()
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -300,6 +310,9 @@ class BackgroundJobWorker:
         if self._slack_codex_thread is not None:
             self._slack_codex_thread.join(timeout=5)
             self._slack_codex_thread = None
+        if self._scheduler_thread is not None:
+            self._scheduler_thread.join(timeout=5)
+            self._scheduler_thread = None
 
     def process_pending_once(self, job_types: tuple[JobType, ...] | None = None) -> bool:
         job_id = self._claim_next_job_id(job_types)
@@ -686,6 +699,18 @@ class BackgroundJobWorker:
                 self._maybe_request_openclaw_backlog()
             if not processed:
                 self._stop_event.wait(self.settings.worker_poll_interval_seconds)
+        state.running = False
+
+    def _run_scheduler_loop(self, *, state: WorkerLoopState) -> None:
+        state.running = True
+        while not self._stop_event.is_set():
+            try:
+                self._maybe_cleanup_public_uploaded_local_videos()
+                self._maybe_request_openclaw_backlog()
+                state.last_error = None
+            except Exception as exc:  # noqa: BLE001
+                state.last_error = str(exc)
+            self._stop_event.wait(self.settings.worker_poll_interval_seconds)
         state.running = False
 
     def _maybe_cleanup_public_uploaded_local_videos(self) -> None:
