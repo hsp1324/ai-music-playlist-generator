@@ -43,3 +43,30 @@ def test_scripture_sequence_continues_after_current_ledger_edges(tmp_path) -> No
 
     assert old_reservation["entry"]["passage_range"] == "Genesis 3:1-7"
     assert new_reservation["entry"]["passage_range"] == "Matthew 5:1-12"
+
+
+def test_scripture_sequence_continues_after_biblia_current_edges(tmp_path) -> None:
+    old_complete = complete_scripture_passage(
+        tmp_path,
+        channel_title="The Old Verse",
+        passage_range="Genesis 11:10-32",
+        status="scheduled",
+        release_id="old-current-edge",
+    )
+    new_complete = complete_scripture_passage(
+        tmp_path,
+        channel_title="New Testament",
+        passage_range="Matthew 8:1-4",
+        status="scheduled",
+        release_id="new-current-edge",
+    )
+
+    assert old_complete["next_start"] == "Genesis 12:1"
+    assert new_complete["next_start"] == "Matthew 8:5"
+
+    status = scripture_sequence_status(tmp_path)
+
+    assert status["next_suggestions"]["the_old_verse"]["passage_range"] == "Genesis 12:1-9"
+    assert status["next_suggestions"]["the_old_verse"]["next_start_after_completion"] == "Genesis 12:10"
+    assert status["next_suggestions"]["the_new_verse"]["passage_range"] == "Matthew 8:5-13"
+    assert status["next_suggestions"]["the_new_verse"]["next_start_after_completion"] == "Matthew 8:14"
