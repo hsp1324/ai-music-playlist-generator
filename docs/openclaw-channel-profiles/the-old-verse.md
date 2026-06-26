@@ -15,6 +15,7 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 - Style must be illustrated, anime, painterly, storybook, illuminated-manuscript, or stylized biblical landscape. Avoid photorealistic/live-action looks.
 - Let the selected passage decide the scene and subject for both the cover image and YouTube thumbnail. Do not use a generic Bible poster background when a concrete passage scene or theme is available.
 - Prefer symbolic biblical imagery over direct depiction of God the Father.
+- Current local performance shows that generic scripture landscapes and passage-number-only packaging are too weak. Each BibliaCanto image package must communicate three things at thumbnail size: the exact passage range, one plain theme from that passage, and the modern music lane. The visual should look passage-specific, not like a reusable Bible background.
 
 ## Cover
 
@@ -30,6 +31,7 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative, so the thumbnail keeps the same passage-based scene instead of becoming a generic Bible poster.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Put the exact selected passage range from the public title on the thumbnail, such as `Genesis 1:1-5` or `Matthew 1:18-25`, unless the human explicitly asks for no passage text. Add short readable click text that connects to that passage, book, theme, and modern hip-hop/R&B/K-pop-style listening lane.
+- Make the passage/theme/style package readable on a phone. Examples of stronger combinations: `Genesis 13 Abram & Lot / Bible Rap`, `Matthew 8 Healing / Bible R&B`, `Narrow Gate / Scripture Rap`, or `Creation Hip-Hop`. Avoid leaving the thumbnail as only `OLD TESTAMENT`, `NEW TESTAMENT`, `BIBLE MUSIC`, or a vague landscape.
 - Do not use `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, `OLD VERSE`, or `NEW VERSE` anywhere on BibliaCanto visuals. Avoid making `OLD TESTAMENT` or `NEW TESTAMENT` the largest thumbnail headline when a specific passage range is available; the passage range should be the identifying text.
 - Generic text such as `OLD TESTAMENT HIP-HOP`, `NEW TESTAMENT R&B`, `BIBLE K-POP`, `SCRIPTURE RAP`, `PSALMS HIP-HOP`, or `EXODUS TRAP` may be used as secondary support, but do not leave the thumbnail as only a broad genre label when the release has a specific passage and theme.
 - Good thumbnail wording should feel like a natural YouTube Bible music thumbnail for modern listeners, not a raw genre tag or a church-service poster. Prefer a passage/book cue, a clear theme cue, or a modern style cue when it helps viewers understand what this release is about.
@@ -71,6 +73,7 @@ No photorealism, live action, direct depiction of God the Father, protected char
 - The first description paragraph must clearly say which passage inspired the music and what theme was adapted. Old Testament examples include creation, covenant, wilderness trust, lament, deliverance, wisdom, or prophetic hope. New Testament examples include grace, mercy, discipleship, healing, resurrection hope, or kingdom teaching.
 - Also include one natural music-style sentence in the description, such as `This release turns Genesis 1:1-5 into modern scripture hip-hop and R&B with sung hooks, 808 drums, and cinematic synths.` Do not hide the style, but keep it descriptive rather than technical.
 - Titles should include Old Testament or New Testament/Bible/scripture keywords plus a clear modern style and listening use case, such as hip-hop, R&B, K-pop-inspired pop, rap, night listening, reflection, study, hope, or focus.
+- Do not rely on a poetic internal label alone after the passage reference. Pair the passage with a public theme or event and the music lane so the viewer can understand why to click before opening the description.
 - Make titles broad and public-facing first. Use exact passage scene details as atmosphere unless they are the strongest searchable hook.
 - Keep each release in one coherent style family, with controlled variety across tracks. Do not make one playlist jump randomly between unrelated styles.
 - Rotate the release-level music lane across BibliaCanto uploads instead of defaulting to church music. Pick one lane for the whole release before generating tracks, then keep every track inside that family so the public title can truthfully name the genre.

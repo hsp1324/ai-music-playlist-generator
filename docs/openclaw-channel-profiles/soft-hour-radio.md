@@ -16,6 +16,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Human presence is optional and should serve the release concept rather than act as a channel signature.
 - Style must now be high-resolution photorealistic / premium real-world BGM imagery by default. Avoid anime, cartoon, illustrated, painterly, vector, or obviously stylized looks unless the human explicitly asks for them.
 - Preserve the established Soft Hour background feeling: quiet cafe, study, work, reading, sleep, rain-window, greenhouse, library, cottage, workshop, warm desk, or other calm long-listening spaces. Make the scene feel real and high quality, not stock-photo glossy or fashion-shoot staged.
+- Current local performance shows that interchangeable quiet-room piano thumbnails are not getting enough clicks. Every new Soft Hour visual package must make the piano/use-case promise readable in one glance: include at least one concrete piano or listening cue such as visible piano keys, sheet music, headphones, a piano bench, a laptop/desk, a book, a rainy window, a bedside sleep cue, or cafe table context. Vary the scene and crop across consecutive releases.
 
 ## Cover
 
@@ -31,6 +32,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same photorealistic scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Add short readable use-case/mood text that names piano, for example `CAFE PIANO`, `SOLO PIANO`, `PIANO BGM`, `STUDY PIANO`, `SLEEP PIANO`, `RAINY PIANO`, or `READING PIANO`.
+- Make the text large enough to read on a phone thumbnail and pair it with a visual cue that proves the promise. Do not let the thumbnail be only a beautiful room plus small decorative words.
 - Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `SOFT HOUR RADIO`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, or clocks unless the human explicitly asks.

@@ -18,6 +18,21 @@ This covers the active automatic-release channels. `MusicSun` is manual-only and
 - Lyrics do not need to repeat the playlist use case. For vocal channels, song quality, hook, melody fit, and believable emotion matter more than literal title words.
 - Avoid protected artists, real franchises, game names, brand names, celebrity likenesses, and `in the style of` wording.
 
+## Local Performance Feedback
+
+Last checked from the connected YouTube accounts through the app on 2026-06-26.
+
+Recent 14-day public-upload stats show that the strongest local packaging is not the most generic keyword title. `Solwave Radio` and `HaruHaru` are currently the healthiest channels because their best titles make a clear human situation or emotion visible immediately: party/patio/route/romance for Solwave, and confidence/crush/getting-ready hooks for HaruHaru. `불송` can work when the source/theme and practical emotional promise are clear, such as speech karma, letting go, anger, mindfulness, or attachment.
+
+The weakest current patterns are:
+
+- `Soft Hour Radio`: repeated calm piano BGM title shapes with similar quiet-room thumbnails are not earning clicks. Every Soft Hour release still needs piano/search clarity, but the thumbnail must make the piano promise obvious in one glance with visible piano keys, sheet music, headphones, desk/cafe context, rain/sleep/reading cue, and large text such as `SOLO PIANO`, `SLEEP PIANO`, `RAINY PIANO`, or `STUDY PIANO`. Do not let consecutive Soft Hour thumbnails look like interchangeable calm rooms.
+- `Storylight`-style / playful Cinematic Pulse lane: repeated `Happy Game BGM` or `Cute Game BGM` titles are too generic unless the image has a strong anime/game scene. Give every release a distinctive public hook such as cozy fantasy, theme-park parade, arcade mood boost, princess-maker-like anime room, carousel daydream, or cheerful RPG town, then keep the title broad enough for work/reading/gaming.
+- `BibliaCanto`: passage references are required, but a passage number plus internal phrase is not enough. Thumbnail and title must show the passage, branch, modern lane, and one plain theme promise in a few seconds. Prefer `Genesis 13 Abram & Lot Boom-Bap`, `Matthew 8 Healing R&B`, `Narrow Gate Bible Rap`, or similar public clarity over vague poetic labels alone. Avoid generic Bible landscapes that could belong to any passage.
+- `불송`: avoid statue-only, temple-only, lotus-only, or generic devotional images. The better channel direction is contemporary Buddhist hip-hop with a clear adult woman/practitioner/listener or fresh stylized female-led subject, a Buddhist cue, and a subtle music cue. The title should name the source/theme and a real emotional problem, not only a scripture word.
+
+When local stats are weak, OpenClaw should not respond by making more uploads in the same packaging shape. It should change the next release's title/thumbnail concept first: clearer one-glance genre, stronger human/emotional promise, and a visibly different thumbnail composition from recent releases. Keep the claim truthful to the music; do not use a click hook that the first few tracks cannot satisfy.
+
 ## Soft Hour Radio
 
 Reference set:

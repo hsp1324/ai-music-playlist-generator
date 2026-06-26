@@ -15,6 +15,7 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 - Style must be animated, anime, illustrated, game-background, pixel-art-inspired, cel-shaded, colorful poster-art, or stylized fantasy-game. Avoid photorealistic/live-action looks.
 - The specific release concept decides the setting. Do not force a fixed mascot, fixed character count, or repeated composition.
 - Visuals should make the listener feel they entered a fun Japanese game/anime scene or a bright fictional theme-park parade.
+- Current local performance shows that repeated generic `Happy Game BGM` packaging is weak unless the thumbnail has a distinct anime/game-world hook. For every former Storylight-style release, choose a clearly different visual premise before image generation: princess-maker-like anime room, cozy fantasy town, theme-park parade, carousel plaza, arcade night, cute RPG shop, magical school hallway, side-scrolling garden, or cheerful toy-world map. Avoid another generic cute background with no memorable subject.
 
 ## Cover
 
@@ -65,6 +66,7 @@ No protected characters, studio references, new text, subtitles, logos, UI, phot
 - Default metadata language can be English unless the human asks otherwise.
 - Titles should sell the listening benefit first: happy mood, mood boost, cute background music, work focus, reading, gaming, relaxing, light focus, cozy focus, or cheerful background listening.
 - Include broad game/anime/theme-park BGM keywords such as `Cute Game BGM`, `Happy Game Music`, `Cozy Fantasy Game BGM`, `Anime Game BGM`, `Feel-Good Arcade BGM`, `Theme Park BGM`, `Happy Amusement Park BGM`, or `Carousel Parade BGM`.
+- Do not repeat the same `Happy Game BGM for Work` shape on consecutive uploads. Pair the broad game/anime-BGM identity with a stronger public scene or emotion, such as `Cozy Fantasy Game BGM`, `Carousel Parade BGM`, `Princess Room Anime BGM`, `Theme Park BGM`, `Feel-Good Arcade BGM`, or `Cute RPG Town Music`, while still keeping work/reading/gaming use cases truthful.
 - Make titles broad and public-facing first. Use exact visual scene details as atmosphere in the description unless they are already a strong public search hook.
 - Do not lead titles with narrow in-game mechanic, prop, or location wording such as `Bonus Stage Music`, `Item Shop BGM`, `Quest Board`, `Inventory Screen`, `Potion Counter`, or `Save Point`. Those details can appear in the description or tracklist.
 - Strong title shapes: `[playlist] Feel-Good Arcade BGM | Happy Game Music for Gaming, Work and Mood Boost`; `[playlist] Happy Theme Park BGM | Feel-Good Music for Work, Reading and Mood Boost`; `[playlist] Carousel Parade BGM | Cute Happy Music for Gaming, Work and Good Mood`; `[playlist] Cozy Fantasy Game BGM | Happy Music for Reading, Work and Gaming`; `[playlist] Cute Game BGM for Work | Cozy Happy Music for Focus and Relaxing`.
