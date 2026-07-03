@@ -105,5 +105,8 @@ BibliaCanto keeps the existing Old/New Testament passage playlist plus one moder
 불송 buckets:
 
 - `Buddhist Hip-Hop`: 불교 힙합, 불경 힙합, mindful hip-hop, Korean Buddhist rap, mellow boom bap, Buddhist hip-hop soul, restrained Buddhist trap-soul.
-- Non-hip-hop 불송 buckets are allowed only when the human explicitly asks or when finishing an already-started release in that lane. Do not use obscure coined genre labels in public titles, thumbnail phrases, descriptions, or tags.
-- When filling 불송 playlists toward one hour, use only previous same-channel tracks that match the selected Buddhist hip-hop/rap lane; keep reused/fallback tracks after the fresh lead block and publish shorter rather than adding unrelated jazz, trot, acoustic, cinematic, or meditation tracks.
+- `Buddhist Experimental Rap`: drill/trap-soul, phonk, glitch-hop, trip-hop, drum and bass, UK garage, spoken-word rap, avant-jazz rap, cinematic trap, or other coherent experimental rap lanes with Buddhist lyrics.
+- `Buddhist R&B / Soul`: dark R&B, neo-soul, psychedelic soul, alternative R&B, soul-rap, or intimate duet lanes with Buddhist teaching lyrics.
+- `Buddhist Art Pop / Electronic`: hyperpop, new-age electronica, art-pop, dream-pop, ambient rap, psychedelic electronic, or cyber-Buddhist lanes when the song and visual package intentionally push the channel into a new style.
+- 불송 should rotate across these buckets instead of repeating one Buddhist hip-hop formula. Do not use obscure coined genre labels in public titles, descriptions, or tags; translate unusual lanes into plain labels such as `불교 트립합`, `불교 R&B`, `불교 아트팝`, `Buddhist trip-hop`, or `Buddhist R&B` when needed. Do not put source/genre labels on 불송 thumbnails/covers by default.
+- When filling 불송 playlists toward one hour, use only previous same-channel tracks that match the selected detailed lane; keep reused/fallback tracks after the fresh lead block and publish shorter rather than adding unrelated jazz, trot, acoustic, cinematic, or meditation tracks.
