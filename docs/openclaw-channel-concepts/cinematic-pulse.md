@@ -6,15 +6,22 @@ Use this after the selected channel is `Cinematic Pulse`. This document decides 
 
 Cinematic Pulse is a no-vocal cinematic orchestra, film-score, and premium game-score channel.
 
-Storylight OST was playful Japanese game/anime BGM. Cinematic Pulse should feel like music that belongs in a large-scale movie or premium console/anime action RPG: orchestra, strings, brass, percussion, choir-like pads without lyrics, cinematic piano, hybrid film-score textures, and lyrical game-orchestra writing.
+Cinematic Pulse has two separate public lanes:
 
-The audience should immediately understand: instrumental cinematic orchestra music for movie scenes, trailers, fantasy worlds, sci-fi journeys, emotional climaxes, heroic moments, tension, focus, gaming, and graceful game/anime story scenes.
+- **Cinematic / premium game-score lane:** music that belongs in a large-scale movie, trailer, film score, or premium console/anime action RPG: orchestra, strings, brass, percussion, choir-like pads without lyrics, cinematic piano, hybrid film-score textures, and lyrical game-orchestra writing.
+- **Former Storylight lane:** playful no-vocal Japanese-style game/anime OST, cute arcade/fantasy-game BGM, item-shop BGM, amusement/theme-park BGM, and other already-approved Storylight-style cues now upload to Cinematic Pulse because `Storylight OST` is manual-only.
+
+Keep these lanes truthful. A former Storylight cute/game/anime BGM release can live on Cinematic Pulse, but it must be titled, described, and visualized as cute game/anime/theme-park BGM. It must not be packaged as dark fantasy orchestra, epic battle, final battle, trailer music, or serious film-score content.
+
+The audience should immediately understand the actual lane: instrumental cinematic orchestra music for movie scenes, trailers, fantasy worlds, sci-fi journeys, emotional climaxes, heroic moments, tension, focus, gaming, and graceful game/anime story scenes; or a clearly cute/playful former-Storylight game/anime/theme-park BGM playlist when the track list is cute.
 
 Titles should be broad cinematic orchestra / film-score / premium game-score packaging first. The music can be epic, quiet, emotional, mysterious, dark, hopeful, heroic, tense, gentle, bittersweet, romantic, or graceful; it does not always need to be huge battle music.
 
 For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer broad titles a normal viewer would search or understand quickly, spanning varied title families such as final battle scene, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, epic writing music, and movie OST focus. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand. The examples below are style references, not fixed templates to repeat mechanically.
 
 Before finalizing metadata, check the main title and every localized title in its own language. If any title reads like a game-menu label, focus keyword pile, `최종 보스 집중 음악`, or a local equivalent that feels minor, childish, or unclear, rewrite toward movie OST, film score, trailer music, cinematic orchestra, emotional score, dark fantasy, sci-fi action, final battle scene, gentle game orchestra, anime action-RPG OST, or writing/focus only when it sounds natural in that language.
+
+Also check the title/thumbnail promise against the actual audio. If the track list contains playful terms such as `cute`, `playful`, `kawaii`, `anime side-story`, `arcade`, `item shop`, `fantasy town`, `cozy`, `theme park`, `amusement`, `toy`, `marimba`, `pizzicato`, or `celesta` as the main identity, do not use a dark fantasy / epic battle / trailer / cinematic orchestra title or visual. Either rebuild the release with matching cinematic tracks or repackage it as former Storylight-style game/anime BGM.
 
 ## Recent Release Check
 
@@ -42,6 +49,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Gentle game orchestra: soft strings, harp, celesta, piano, warm woodwinds, delicate mallets, lyrical theme, calm fantasy town, moonlit garden, quiet character memory.
 - Bittersweet anime action-RPG score: emotional strings, cinematic piano, light hybrid pads, graceful heroine theme, post-battle sunrise, city ruins, longing but hopeful mood.
 - Romantic/sweet fantasy game OST: flowing strings, flute/oboe, harp, soft percussion, warm melodic theme, castle balcony, flowered courtyard, elegant festival night.
+- Former Storylight game/anime BGM: playful Japanese-style game OST, cute fantasy RPG town, item shop, puzzle room, arcade stage, amusement park, theme-park parade, carousel, toy-town, cozy anime side-story, happy reading/work/gaming BGM. This lane is allowed on Cinematic Pulse, but the public title/thumbnail should say `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM`, never `DARK FANTASY`, `EPIC BATTLE`, or `CINEMATIC ORCHESTRA`.
 
 ## Music Direction
 
@@ -51,7 +59,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
 - Do not force Cinematic Pulse tracks under 4 minutes and do not use lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` in Suno fields unless the human explicitly asks for that wording. Build each cinematic prompt/metatag flow as a full cue meant to naturally land around 4 minutes or longer: cinematic intro, developed A/B sections, tension or emotional rise, breakdown or quiet middle, final theme lift, and resolved ending, then verify the downloaded duration. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Longer complete cues, including 5+ minute tracks, are allowed.
 - Make each track feel complete, not like a short unfinished cue. Avoid abrupt fade-outs if possible.
-- The playlist should feel like a coherent film/game-score album. It can move between huge, quiet, tense, emotional, gentle, sweet, and lyrical cues, but should keep a cinematic/game-orchestral identity and remain listenable across a 40-minute release.
+- The playlist should feel like a coherent album in one lane. It can move between huge, quiet, tense, emotional, gentle, sweet, and lyrical cues when those cues share a cinematic/game-orchestral identity. Do not mix cute former-Storylight BGM into the first/lead block of a dark fantasy or film-score release. If cute fallback tracks are the only available fillers, put them in a separately titled former-Storylight release instead of using them to fill a dark fantasy release.
 
 ## Visual Direction
 
@@ -62,6 +70,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Avoid gore, graphic violence, real war footage, real flags, political symbols, protected IP, and exact franchise references.
 - App-rendered visualizer should be `bars` for every Cinematic Pulse render. Keep the bar spectrum clean and restrained; do not use radial, multiwave, small dots/particles, or busy waveform presets.
 - Thumbnail text should be bold and clickable: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, `FILM SCORE`, `GAME ORCHESTRA`, or `ANIME RPG OST`. Use `FINAL BOSS` only if the human explicitly asks for game-combat packaging; do not use it as the default Cinematic Pulse hook.
+- For former Storylight-style cute/game/anime BGM, use matching thumbnail text such as `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM`. Never use dark fantasy or battle poster text on cute/playful audio.
 
 ## Good Fresh Concept Shapes
 
@@ -76,10 +85,14 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - `[playlist] Gentle Game Orchestra | Fantasy RPG Music for Reading and Focus`
 - `[playlist] Anime Action RPG OST | Emotional Orchestra for Story Scenes`
 - `[playlist] Sweet Fantasy Game Score | Soft Orchestra for Cozy Adventure`
+- `[playlist] Cute Game BGM for Work | Happy Anime OST for Reading and Gaming`
+- `[playlist] Theme Park Game BGM | Happy Arcade Music for Reading and Play`
 
 ## Bad Directions
 
-- Cozy village/fairy-tale BGM that belongs on Storylight OST.
+- Dark fantasy / epic battle / cinematic orchestra packaging on cute, playful, arcade, item-shop, or anime side-story BGM.
+- Treating former Storylight-style BGM as if it were a serious dark fantasy film-score release.
+- Cozy village/fairy-tale BGM packaged as dark fantasy instead of the former Storylight lane.
 - Cafe/study/sleep BGM that belongs on Soft Hour Radio.
 - EDM/club mixes that belong on Club Bloom.
 - Vocal pop or copyrighted soundtrack/remake concepts.
