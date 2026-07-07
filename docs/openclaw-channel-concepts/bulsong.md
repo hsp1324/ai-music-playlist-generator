@@ -1,22 +1,22 @@
 # OpenClaw Channel Concept Planner: 불송
 
-Use this after the selected channel is `불송`. `불송` is the Buddhist scripture music channel.
+Use this after the selected channel is `불송`. `불송` is a Korean vocal channel internally inspired by Buddhist sources/themes, but new releases should sound and read like accessible mainstream songs.
 
 ## Channel Promise
 
-불송 is for modern Buddhist scripture-inspired vocal music. It turns Buddhist teachings, sutra themes, Dhammapada-style wisdom, mindfulness, compassion, impermanence, non-attachment, suffering and release, and awakening imagery into original modern songs.
+불송 is for modern Korean vocal music that transforms Buddhist sources/themes into universal pop language. Keep the source/theme in planning and app metadata, but new lyrics and public metadata should avoid obvious Buddhist vocabulary unless the human explicitly requests a source-explicit release.
 
-This is not a chanting archive, sermon channel, literal scripture-reading channel, trot channel, or old Korean cabaret-pop channel. OpenClaw should create modern lyric songs that communicate the teaching in accessible language. The Buddhist source/theme is the fixed channel identity, but the music lane and artwork should vary widely. Hip-hop/rap remains a strong lane, but OpenClaw should also explore Buddhist R&B, trip-hop, glitch-hop, drum and bass, hyperpop, art-pop, psychedelic soul, avant-jazz rap, dark pop, new-age electronica, cinematic trap, spoken-word rap, or other coherent modern lanes when they make the release feel fresh.
+This is not a chanting archive, sermon channel, literal scripture-reading channel, trot channel, or old Korean cabaret-pop channel. OpenClaw should create modern lyric songs that communicate the emotional idea in accessible language. The internal source/theme is fixed, but the music lane and artwork should vary widely. Hip-hop/rap remains a strong lane, but OpenClaw should also explore R&B, trip-hop, glitch-hop, drum and bass, hyperpop, art-pop, psychedelic soul, avant-jazz rap, dark pop, new-age electronica, cinematic trap, spoken-word rap, or other coherent modern lanes when they make the release feel fresh.
 
-The audience should immediately understand: Buddhist wisdom and sutra-inspired teachings reworked as bold modern Korean songs, not old devotional music.
+The audience should immediately feel: bold modern Korean songs with emotional depth, not old devotional music and not lyrics full of religious terms.
 
 ## Analytics-Driven Packaging Rules
 
-- Treat 불송 as a modern Buddhist vocal channel, not a generic meditation, worship, devotional, or temple BGM channel. Related-video discovery is currently important, so public wording must stay plain and searchable. Use labels such as `불교 힙합`, `불경 힙합`, `법구경 힙합`, `반야심경 랩`, `Buddhist hip-hop`, and `Korean Buddhist rap` for hip-hop releases, or equally clear labels such as `불교 R&B`, `불교 트립합`, `불교 아트팝`, `Buddhist R&B`, or `Buddhist trip-hop` when the actual lane is different.
+- Treat 불송 as a modern Korean vocal channel with an internal Buddhist source/theme, not a generic meditation, worship, devotional, or temple BGM channel. Related-video discovery is currently important, so public wording must stay plain, searchable, and broad. For new mainstream releases, use labels such as `힙합`, `랩`, `R&B`, `트립합`, `아트팝`, or `밤에 듣는 노래`. Use source-heavy labels such as `불교 힙합`, `불경 힙합`, `법구경 힙합`, `반야심경 랩`, `Buddhist hip-hop`, or `Korean Buddhist rap` only when the human explicitly asks for legacy/source-explicit packaging.
 - Do not lead titles, thumbnail text, descriptions, or tags with obscure coined labels such as `다르마팝`, and do not overuse generic `meditation music`, `prayer`, `worship`, or devotional wording unless that is truthfully the finished asset's lane.
 - The first track and first 10-20 seconds matter. Put the strongest same-lane hook, rap entry, vocal tone, or most immediately clickable song first. Avoid long slow instrumental intros on playlist lead tracks.
 - Strong standout tracks should be considered for standalone singles and also reused as lead/funnel tracks in later same-lane playlists when appropriate.
-- For playlist releases, create roughly the first 10 minutes as new high-confidence Buddhist vocal audio in the selected lane, then fill toward one hour only with existing approved 불송 tracks from the same detailed lane, liked tracks first. Keep reused/fallback tracks after the fresh lead block. If there are not enough matching tracks, publish shorter rather than mixing unrelated jazz, trot, acoustic, cinematic, or generic meditation tracks into the release.
+- For playlist releases, create roughly the first 10 minutes as new high-confidence Korean vocal audio in the selected lane, then fill toward one hour only with existing approved 불송 tracks from the same detailed lane, liked tracks first. Keep reused/fallback tracks after the fresh lead block. If there are not enough matching tracks, publish shorter rather than mixing unrelated jazz, trot, acoustic, cinematic, or generic meditation tracks into the release.
 
 ## Overnight Privacy Rule
 
@@ -28,13 +28,13 @@ OpenClaw does not need to quote long scripture passages. Use short references, t
 
 Good starting source lanes:
 
-- Dhammapada / 법구경 style wisdom: mind, heedfulness, anger, self-mastery, compassion, peace.
-- Heart Sutra / 반야심경 themes: emptiness, form, perception, release from fear, wisdom beyond attachment.
-- Lotus Sutra / 묘법연화경 themes: compassion, skillful means, persistence, universal awakening.
-- Diamond Sutra / 금강경 themes: non-attachment, illusion of fixed self, generosity without clinging.
-- General Buddhist teaching themes: four noble truths, eightfold path, impermanence, karma, mindfulness, loving-kindness, letting go.
+- Dhammapada / 법구경 internal themes: restless mind, anger, self-control, gentle speech, peace.
+- Heart Sutra / 반야심경 internal themes: fear loosening, not clinging to labels, seeing a situation differently.
+- Lotus Sutra / 묘법연화경 internal themes: persistence, someone slowly opening up, a hard day becoming bearable.
+- Diamond Sutra / 금강경 internal themes: not holding too tightly, not building identity from praise/blame, giving without showing off.
+- General internal themes: letting go, calmer speech, lighter steps, fewer grudges, starting again, softening the ego. In the sung lyric, express these as ordinary life/emotion, not Buddhist terminology.
 
-If unsure where to start, use a Dhammapada-style sequence. Pick one compact theme section per 40-minute release, not a whole scripture. Do not pretend to quote exact chapters if you did not verify the structure; title it as `Dhammapada-Inspired`, `Heart Sutra-Inspired`, or `Buddhist Wisdom Songs` when appropriate.
+If unsure where to start, use a Dhammapada-style internal theme sequence. Pick one compact theme section per release, not a whole scripture. Do not pretend to quote exact chapters if you did not verify the structure. For new mainstream releases, keep source names out of the public title and lyrics; store them in the release plan/metadata instead.
 
 ## Recent Release Check
 
@@ -50,25 +50,26 @@ Every new plan must include a short `novelty_brief` that says why the music lane
 
 ## Concept Lanes
 
-- Buddhist boom bap / 불교 붐뱁: clear rhythm, Korean rap verses, sung hooks, warm bass, mellow drums, wisdom about the mind and choices.
-- Buddhist trap-soul / 불교 트랩소울: restrained 808s, modern rap cadence, spacious pads, meditative but still clearly hip-hop.
-- Dark Buddhist R&B / 불교 R&B: close vocal, low light, sparse drums, intimate hook, compassion and letting-go imagery.
-- Buddhist trip-hop / 불교 트립합: downtempo drums, smoky bass, abstract texture, reflective spoken rap or sung hook.
-- Buddhist glitch-hop / 불교 글리치힙합: chopped percussion, digital fragments, clear vocal center, impermanence/illusion imagery.
-- Buddhist drum and bass or UK garage: faster rhythmic energy, clean Korean vocal/rap, still reflective rather than rave-only.
-- Buddhist hyperpop/art-pop: bright synthetic hooks, fragmented self/emptiness themes, polished but not novelty comedy.
-- Psychedelic soul / new-age electronica: cosmic Buddhist imagery, warm soul vocal or spoken rap, modern electronic texture.
+- Boom bap: clear rhythm, Korean rap verses, sung hooks, warm bass, mellow drums, lyrics about the mind, choices, and easing anger in everyday language.
+- Trap-soul: restrained 808s, modern rap cadence, spacious pads, reflective but still clearly hip-hop.
+- Dark R&B: close vocal, low light, sparse drums, intimate hook, letting-go imagery without religious vocabulary.
+- Trip-hop: downtempo drums, smoky bass, abstract texture, reflective spoken rap or sung hook.
+- Glitch-hop: chopped percussion, digital fragments, clear vocal center, lyrics about change, illusion, or emotional release in ordinary language.
+- Drum and bass or UK garage: faster rhythmic energy, clean Korean vocal/rap, reflective rather than rave-only.
+- Hyperpop/art-pop: bright synthetic hooks, fragmented self-image themes, polished but not novelty comedy.
+- Psychedelic soul / new-age electronica: surreal inner-world imagery, warm soul vocal or spoken rap, modern electronic texture.
 - Avant-jazz rap: unusual chords, live-feeling drums, poetic Korean rap, but not old cabaret, trot, or lounge parody.
 
 ## Music Direction
 
 - Vocal songs with original lyrics are the default.
 - Korean lyrics are the default unless the human explicitly asks for another language.
-- Every track in one release must stay inside one coherent style family. If the title says Buddhist hip-hop, all tracks must be hip-hop/rap-based. If the title says Buddhist R&B, trip-hop, art-pop, or another lane, all tracks and reused backfill must truthfully fit that lane. Do not mix unrelated jazz, pop, R&B, acoustic, or cinematic tracks into a release just to fill time.
+- Every track in one release must stay inside one coherent style family. If the title says hip-hop, all tracks must be hip-hop/rap-based. If the title says R&B, trip-hop, art-pop, or another lane, all tracks and reused backfill must truthfully fit that lane. Do not mix unrelated jazz, pop, R&B, acoustic, or cinematic tracks into a release just to fill time.
 - Avoid trot, ppongjjak, and old Korean cabaret-pop completely unless the human explicitly asks for them. Do not use Korean trot rhythm, two-beat ppongjjak bounce, trot vocal ornaments, accordion/brass trot clichés, nightclub/cabaret trot arrangement, or old-TV trot mood.
 - In Suno Advanced Options / excluded styles for 불송, include blockers such as `trot, Korean trot, ppongjjak, 뽕짝, 트로트, trot vocal, cabaret trot, old Korean trot, two-beat trot bounce, accordion trot, brass trot`.
-- Use the vocabulary of the selected lane in Suno style prompts. For hip-hop: Korean Buddhist hip-hop, mindful hip-hop, mellow boom bap, Korean rap, spoken rap verses, sung hook. For R&B/trip-hop/electronic lanes: name the real lane, rhythm, instrument palette, and vocal texture clearly. Public titles, thumbnail phrases, descriptions, and tags must use plain audience-friendly wording, not obscure coined genre labels.
-- Lyrics should sound like real songs, not a lecture. Use images, hooks, and emotional arcs while keeping the teaching clear.
+- Use the vocabulary of the selected lane in Suno style prompts. For hip-hop: Korean hip-hop, mellow boom bap, Korean rap, spoken rap verses, sung hook. For R&B/trip-hop/electronic lanes: name the real lane, rhythm, instrument palette, and vocal texture clearly. Public titles, thumbnail phrases, descriptions, and tags must use plain audience-friendly wording, not obscure coined genre labels or source-explicit Buddhist labels.
+- Lyrics should sound like real songs, not a lecture. Use images, hooks, and emotional arcs while keeping the internal theme clear without naming Buddhist terms.
+- New default lyrics must avoid overt Buddhist vocabulary and scripture/source names. Do not put words such as `불교`, `불경`, `법구경`, `금강경`, `반야심경`, `법화경`, `경전`, `부처`, `부처님`, `보살`, `스님`, `법문`, `자비`, `가르침`, `업`, `업보`, `윤회`, `해탈`, `열반`, `사성제`, `팔정도`, `무상`, `무아`, `번뇌`, or `수행` in the sung Korean lyrics unless the human explicitly asks for them.
 - Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each 불송 prompt/lyrics file as a full song meant to naturally land around 4 minutes or longer: natural intro, developed first and second verse/section flow, hook or central motif returns, bridge/breakdown or final lift, and resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
 - Do not block 불송 production on listening through a full first verse or a fixed 60-90 second QC pass. Use lightweight vocal sanity checks instead: make the Suno setup clearly vocal/lyrics-based, avoid instrumental/no-vocal options, and reject/regenerate only when the preview, metadata, or a quick spot check makes it obvious that the result is not a usable vocal/rap track.
 - Do not copy long scripture text, modern translations, temple liturgy, or chants.
@@ -85,20 +86,18 @@ Every new plan must include a short `novelty_brief` that says why the music lane
 - Use supporting details such as lanterns, lotus, incense smoke, candlelight, prayer beads, warm window light, paper texture, temple architecture, rain on stone, headphones, earbuds, small speakers, or a human-held microphone. Keep the music cue subtle and respectful.
 - Avoid parody, caricature, exoticized religious imagery, cheap mystic clipart, stale Buddha-only wallpapers, generic old sutra-desk scenes, and glossy idol/model studio portraits.
 - Do not depict the Buddha singing, dancing, performing, posing like an idol/model, or surrounded by exaggerated fantasy effects. A Buddha statue or serene Buddha face is allowed, but it should support a fresh Buddhist music scene rather than become the same old static devotional image.
-- Cover, YouTube thumbnail, first-frame, and still-image render source must feel like one image package for 불송. Default to text-free, click-stopping contemporary Buddhist music imagery instead of writing source or genre labels on the artwork. Put phrases such as `삼도 힙합`, `법구경`, `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩` in YouTube metadata unless the human explicitly asks for image text in the current request.
+- Cover, YouTube thumbnail, first-frame, and still-image render source must feel like one image package for 불송. Default to text-free, click-stopping contemporary Buddhist-inspired music imagery instead of writing source or genre labels on the artwork. Keep phrases such as `삼도 힙합`, `법구경`, `법구경 힙합`, `불경 힙합`, `마음챙김 랩`, `자비 힙합`, or `반야심경 랩` out of new public metadata too unless the human explicitly asks for source-explicit wording in the current request.
 - Do not create a separate channel-branded thumbnail for 불송. Reuse the same cover/first-frame package as the YouTube thumbnail or pass `--allow-cover-as-thumbnail` when using the helper.
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] 마음을 다스리는 법구경 힙합 | 분노와 집착을 비우는 불교 랩`
-- `[playlist] 연꽃처럼 버티는 불교 힙합 | 흔들릴 때 듣는 마음챙김 랩`
-- `[playlist] 반야심경 랩 | 두려움을 내려놓는 불교 힙합`
-- `[playlist] 금강경 힙합 | 붙잡지 않는 마음을 위한 불교 랩`
-- `[playlist] 자비를 배우는 불교 힙합 | 조용한 밤 마음챙김 랩`
-- `[playlist] 무상을 깨닫는 불교 R&B | 새벽에 듣는 어두운 소울과 마음챙김`
-- `[playlist] 금강경 트립합 | 붙잡지 않는 마음을 위한 몽환적인 불교 노래`
-- `[playlist] 반야심경 아트팝 | 공과 색을 노래하는 초현실 불교 팝`
-- `[playlist] 법구경 글리치힙합 | 흔들리는 마음을 깨우는 실험적 불교 랩`
+- `[playlist] 오늘은 조금 가벼워져 | 흔들리는 밤에 듣는 힙합 노래`
+- `[playlist] 말이 날카로워질 때 | 마음을 식혀주는 R&B 노래`
+- `[playlist] 잡고 있던 걸 놓는 밤 | 혼자 걷기 좋은 트립합`
+- `[playlist] 화가 가라앉을 때까지 | 조용히 듣는 붐뱁 랩`
+- `[playlist] 괜찮아지는 연습 | 새벽에 듣는 어두운 소울`
+- `[playlist] 다시 웃을 수 있게 | 지친 하루 끝의 아트팝`
+- `[playlist] 내일은 덜 아프게 | 밤공기에 어울리는 랩과 R&B`
 
 ## Bad Directions
 
@@ -109,5 +108,5 @@ Every new plan must include a short `novelty_brief` that says why the music lane
 - Repeating the same Buddhist hip-hop beat, same visual subject, same face/pose, or same devotional statue/temple image because it is familiar.
 - Any trot, ppongjjak, cabaret trot, old-TV trot, or accordion/brass trot feel.
 - Copying long translated sutra passages.
-- Using Buddhist words as decoration while the lyrics say nothing about the teaching.
+- Using Buddhist words as decoration in public lyrics, titles, or tags. New default releases should carry the idea without saying the religious terms.
 - Forcing private visibility or bypassing the app's daily 07:00 Asia/Seoul schedule without an explicit human pause.

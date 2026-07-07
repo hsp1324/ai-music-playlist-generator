@@ -29,7 +29,7 @@ The weakest current patterns are:
 - `Soft Hour Radio`: repeated calm piano BGM title shapes with similar quiet-room thumbnails are not earning clicks. Every Soft Hour release still needs piano/search clarity, but the thumbnail must make the piano promise obvious in one glance with visible piano keys, sheet music, headphones, desk/cafe context, rain/sleep/reading cue, and large text such as `SOLO PIANO`, `SLEEP PIANO`, `RAINY PIANO`, or `STUDY PIANO`. Do not let consecutive Soft Hour thumbnails look like interchangeable calm rooms.
 - `Storylight`-style / playful Cinematic Pulse lane: repeated `Happy Game BGM` or `Cute Game BGM` titles are too generic unless the image has a strong anime/game scene. Give every release a distinctive public hook such as cozy fantasy, theme-park parade, arcade mood boost, princess-maker-like anime room, carousel daydream, or cheerful RPG town, then keep the title broad enough for work/reading/gaming.
 - `BibliaCanto`: passage references are required, but a passage number plus internal phrase is not enough. Thumbnail and title must show the passage, branch, modern lane, and one plain theme promise in a few seconds. Prefer `Genesis 13 Abram & Lot Boom-Bap`, `Matthew 8 Healing R&B`, `Narrow Gate Bible Rap`, or similar public clarity over vague poetic labels alone. Avoid generic Bible landscapes that could belong to any passage.
-- `불송`: avoid statue-only, temple-only, lotus-only, or generic devotional images. The better channel direction is contemporary Buddhist hip-hop with a clear adult woman/practitioner/listener or fresh stylized female-led subject, a Buddhist cue, and a subtle music cue. The title should name the source/theme and a real emotional problem, not only a scripture word.
+- `불송`: avoid statue-only, temple-only, lotus-only, or generic devotional images. The better channel direction is contemporary Korean hip-hop/R&B/pop with a clear adult woman/practitioner/listener or fresh stylized female-led subject, a subtle Buddhist cue, and a subtle music cue. The new default title should name a real emotional problem and the music lane in mainstream language, while the Buddhist source/theme stays internal unless the human asks for source-explicit packaging.
 
 When local stats are weak, OpenClaw should not respond by making more uploads in the same packaging shape. It should change the next release's title/thumbnail concept first: clearer one-glance genre, stronger human/emotional promise, and a visibly different thumbnail composition from recent releases. Keep the claim truthful to the music; do not use a click hook that the first few tracks cannot satisfy.
 
@@ -276,9 +276,9 @@ Our direction:
 
 Reference set:
 
-- Buddhist teaching channels: clear source/theme naming matters more than vague meditation wording.
+- Buddhist teaching channels: clear source/theme naming can help legacy/source-explicit uploads, but current 불송 direction should not rely on religious vocabulary for every public title.
 - Buddhist chant/meditation channels: viewers respond to calm, respectful visuals and practical promises such as peace, letting go, mindfulness, compassion, and release from anxiety.
-- Modern spiritual music channels: genre clarity helps discovery when the title names the lane. For 불송, default to hip-hop/rap wording first, such as `불교 힙합`, `불경 힙합`, `Buddhist hip-hop`, or `Korean Buddhist rap`; avoid obscure coined genre wording.
+- Modern spiritual music channels: genre clarity helps discovery when the title names the lane. For 불송, default to mainstream hip-hop/rap/R&B wording first, such as `힙합`, `랩`, `R&B`, `트립합`, or `아트팝`; avoid obscure coined genre wording and avoid Buddhist/source labels unless the human asks for a source-explicit release.
 
 What gets views:
 
@@ -288,9 +288,9 @@ What gets views:
 
 Our direction:
 
-- Title shape: Korean default title that combines source/theme plus a public hip-hop lane, for example `불경 힙합`, `불교 힙합`, `마음챙김 랩`, `Buddhist hip-hop`, or `Korean Buddhist rap`. Do not use obscure coined genre labels in public metadata.
-- Song direction: original Korean lyrics inspired by Buddhist teaching, not direct scripture recitation or chanting. Keep one lane per release and rotate lanes across uploads.
-- Description direction: first paragraph states the Buddhist source/theme; second paragraph names the music lane and notes that lyrics are original paraphrases inspired by Buddhist teaching.
+- Title shape: Korean default title that combines a mainstream emotional hook plus the actual lane, for example `오늘은 조금 가벼워져 | 흔들리는 밤에 듣는 힙합 노래`, `말이 날카로워질 때 | 마음을 식혀주는 R&B 노래`, or `잡고 있던 걸 놓는 밤 | 혼자 걷기 좋은 트립합`. Do not use obscure coined genre labels or source-heavy Buddhist wording in new default public metadata.
+- Song direction: original Korean lyrics inspired by the internal source/theme, not direct scripture recitation, chanting, or Buddhist vocabulary. Keep one lane per release and rotate lanes across uploads.
+- Description direction: first paragraph gives a broad emotional/listening promise; second paragraph names the music lane. Keep the Buddhist source/theme in planning/app metadata unless the human asks for source-explicit public copy.
 - Thumbnail direction: use the same calm photorealistic/premium cinematic-real Buddhist cover/first-frame package as the thumbnail. The primary visible human subject should be a clearly adult woman by default: temple-stay woman, Hongdae/Seoul streetwear woman practitioner/listener, Buddha/statue plus modern woman listener, two adult women for duet songs, or a female-coded stylized Buddhist practitioner. Do not use men, male monks, male rappers, male listeners, male/female visual couples, or male-only visual pairs unless the human explicitly asks for a male visual subject in the current request. This visual rule does not restrict male lead vocals or male duet audio. It may contain one short Korean passage/theme + hip-hop style phrase, but do not add the `불송` channel label, badges, hard text boxes, or separate channel branding.
 - Avoid: claiming exact chapter/verse coverage without verification, copying long sutra passages, sermon/chant format, disrespectful religious imagery, or public scheduling before human review.
 

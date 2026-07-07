@@ -47,3 +47,35 @@ def test_channel_specific_genre_playlist_classification() -> None:
     assert sundaze.playlist_titles == ("Country Pop",)
     assert solwave.playlist_titles == ("Bachata Pop",)
     assert club.playlist_titles == ("House Music",)
+
+
+def test_bulsong_source_explicit_titles_archive_to_bulsong_playlist() -> None:
+    classification = infer_channel_genre_classification(
+        {"youtube_channel_title": "불송", "youtube_title": "[playlist] 마음을 다스리는 법구경 힙합"},
+        tracks=[SimpleNamespace(title="밤의 숨", prompt="", metadata_json={"style": "Korean hip-hop"})],
+    )
+
+    assert classification.style_lane == "legacy source-explicit Bulsong"
+    assert classification.playlist_titles == ("불송",)
+
+
+def test_bulsong_mainstream_titles_default_to_song_playlist() -> None:
+    classification = infer_channel_genre_classification(
+        {"youtube_channel_title": "불송", "youtube_title": "[playlist] 오늘은 조금 가벼워져 | 밤에 듣는 힙합 노래"},
+        tracks=[SimpleNamespace(title="가벼워져", prompt="", metadata_json={"style": "Korean hip-hop"})],
+    )
+
+    assert classification.style_lane == "mainstream Korean hip-hop / rap-pop"
+    assert classification.playlist_titles == ("노래",)
+
+
+def test_bulsong_hidden_source_context_does_not_force_archive_playlist() -> None:
+    classification = infer_channel_genre_classification(
+        {
+            "youtube_channel_title": "불송",
+            "youtube_title": "[playlist] 다시 웃을 수 있게 | 지친 밤에 듣는 R&B 노래",
+            "description": "Internal note: inspired by the Dhammapada.",
+        },
+    )
+
+    assert classification.playlist_titles == ("노래",)

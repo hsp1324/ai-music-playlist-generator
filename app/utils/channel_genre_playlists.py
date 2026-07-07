@@ -11,6 +11,7 @@ class ChannelGenreRule:
     broad_genre: str
     playlist_titles: tuple[str, ...]
     keywords: tuple[str, ...]
+    title_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -235,9 +236,47 @@ CHANNEL_GENRE_RULES: dict[str, tuple[ChannelGenreRule, ...]] = {
     ),
     "불송": (
         ChannelGenreRule(
-            "Buddhist hip-hop",
-            "Buddhist Hip-Hop",
-            ("Buddhist Hip-Hop",),
+            "legacy source-explicit Bulsong",
+            "Bulsong Source-Evident Releases",
+            ("불송",),
+            (
+                "불교",
+                "불경",
+                "법구경",
+                "반야심경",
+                "금강경",
+                "묘법연화경",
+                "법화경",
+                "경전",
+                "부처",
+                "부처님",
+                "보살",
+                "스님",
+                "법문",
+                "자비",
+                "가르침",
+                "업보",
+                "윤회",
+                "해탈",
+                "열반",
+                "사성제",
+                "팔정도",
+                "삼도",
+                "무상",
+                "무아",
+                "buddhist",
+                "dharma",
+                "dhammapada",
+                "heart sutra",
+                "diamond sutra",
+                "lotus sutra",
+            ),
+            title_only=True,
+        ),
+        ChannelGenreRule(
+            "mainstream Korean hip-hop / rap-pop",
+            "Korean Hip-Hop",
+            ("노래",),
             (
                 "hip-hop",
                 "hip hop",
@@ -245,26 +284,46 @@ CHANNEL_GENRE_RULES: dict[str, tuple[ChannelGenreRule, ...]] = {
                 "boom bap",
                 "trap-soul",
                 "trap soul",
-                "mindful hip-hop",
-                "mindful hip hop",
-                "buddhist hip-hop",
-                "buddhist hip hop",
-                "korean buddhist rap",
+                "drill",
+                "phonk",
+                "rap-pop",
+                "rap pop",
                 "랩",
                 "힙합",
-                "불교 힙합",
-                "불경 힙합",
-                "불교",
-                "불경",
-                "buddhist",
-                "dharma",
-                "dhammapada",
-                "법구경",
-                "반야심경",
-                "금강경",
-                "묘법연화경",
-                "법화경",
-                "마음챙김",
+                "붐뱁",
+                "트랩",
+            ),
+        ),
+        ChannelGenreRule(
+            "mainstream Korean R&B / soul",
+            "Korean R&B",
+            ("노래",),
+            ("r&b", "rnb", "soul", "neo-soul", "neo soul", "알앤비", "소울"),
+        ),
+        ChannelGenreRule(
+            "mainstream Korean art pop / electronic",
+            "Korean Alternative Pop",
+            ("노래",),
+            (
+                "trip-hop",
+                "trip hop",
+                "glitch-hop",
+                "glitch hop",
+                "drum and bass",
+                "dnb",
+                "uk garage",
+                "hyperpop",
+                "art-pop",
+                "art pop",
+                "electronica",
+                "dark pop",
+                "pop",
+                "트립합",
+                "글리치",
+                "드럼앤베이스",
+                "하이퍼팝",
+                "아트팝",
+                "일렉트로닉",
             ),
         ),
     ),
@@ -395,6 +454,8 @@ def infer_channel_genre_classification(
 
     haystack = _classification_haystack(meta, title=title)
     for rule in specific_rules:
+        if rule.title_only:
+            continue
         matched = _match_rule(rule, haystack)
         if matched:
             return ChannelGenreClassification(
@@ -412,6 +473,8 @@ def infer_channel_genre_classification(
         best_matches: tuple[str, ...] = ()
         best_count = 0
         for rule in specific_rules:
+            if rule.title_only:
+                continue
             rule_matches: list[str] = []
             count = 0
             for track_text in track_texts:
@@ -442,6 +505,13 @@ def infer_channel_genre_classification(
                 playlist_titles=rule.playlist_titles,
                 matched_keywords=matched,
             )
+    if channel_title == "불송":
+        return ChannelGenreClassification(
+            channel_title=channel_title,
+            style_lane="mainstream Bulsong vocal songs",
+            broad_genre="Bulsong Songs",
+            playlist_titles=("노래",),
+        )
     return ChannelGenreClassification(channel_title=channel_title)
 
 
