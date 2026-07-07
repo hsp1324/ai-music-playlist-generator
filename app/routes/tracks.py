@@ -465,6 +465,8 @@ def list_tracks(
         statement = statement.order_by(Track.created_at.desc())
         if limit:
             statement = statement.limit(limit)
+        if not compact:
+            statement = statement.options(selectinload(Track.approvals))
         tracks = db.scalars(statement).all()
     return [_serialize_track_read(track, compact=compact) for track in tracks]
 
@@ -572,19 +574,50 @@ def _search_tracks(
 
 
 def _serialize_track_read(track: Track, *, compact: bool) -> TrackRead:
-    payload = TrackRead.model_validate(track)
     if not compact:
-        return payload
-    metadata = dict(payload.metadata_json or {})
-    if metadata.get("lyrics"):
+        return TrackRead.model_validate(track)
+    source_metadata = dict(track.metadata_json or {})
+    metadata = {
+        key: source_metadata.get(key)
+        for key in (
+            "image_url",
+            "source_audio_url",
+            "tags",
+            "pending_workspace_id",
+            "pending_workspace_title",
+            "user_rating",
+            "style",
+            "exclude_style",
+        )
+        if source_metadata.get(key) not in {None, ""}
+    }
+    if source_metadata.get("lyrics"):
         metadata["lyrics_present"] = True
-        metadata["lyrics"] = ""
-    if len(payload.prompt or "") > 500:
+    prompt = track.prompt or ""
+    if len(prompt) > 500:
         metadata["prompt_truncated"] = True
-        payload.prompt = f"{payload.prompt[:500]}..."
-    payload.lyrics = ""
-    payload.metadata_json = metadata
-    return payload
+        prompt = f"{prompt[:500]}..."
+    return TrackRead(
+        id=track.id,
+        source_track_id=track.source_track_id,
+        title=track.title,
+        prompt=prompt,
+        lyrics="",
+        style=str(source_metadata.get("style") or ""),
+        exclude_style=str(source_metadata.get("exclude_style") or ""),
+        duration_seconds=track.duration_seconds,
+        audio_path=track.audio_path,
+        preview_url=track.preview_url,
+        status=track.status,
+        metadata_json=metadata,
+        user_rating=str(source_metadata.get("user_rating") or ""),
+        slack_channel_id=track.slack_channel_id,
+        slack_message_ts=track.slack_message_ts,
+        created_at=track.created_at,
+        updated_at=track.updated_at,
+        reviewed_at=track.reviewed_at,
+        approvals=[],
+    )
 
 
 def _compact_text(value: object, max_length: int) -> str:

@@ -1,3 +1,5 @@
+import json
+import os
 import random
 import re
 import time
@@ -9,6 +11,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session, selectinload
 
+from app.config import get_settings
 from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
 from app.models.playlist import Playlist, PlaylistItem
@@ -1176,8 +1179,24 @@ def _find_duplicate_loop_video_release(
 
 _UNSET = object()
 _WORKSPACE_CACHE_TTL_SECONDS = 120.0
+_CHANNEL_SUMMARY_PERSISTED_STALE_SECONDS = 86400.0
+_CHANNEL_SUMMARY_CACHE_PATH = Path("storage/cache/workspace_channel_summaries.json")
+_COMPACT_WORKSPACE_PERSISTED_STALE_SECONDS = 1800.0
+_COMPACT_WORKSPACE_CACHE_PATH = Path("storage/cache/compact_playlist_workspaces.json")
 _COMPACT_WORKSPACE_CACHE: dict[tuple[int | None, int, str], tuple[float, list[PlaylistWorkspaceRead]]] = {}
 _CHANNEL_SUMMARY_CACHE: tuple[tuple[int, str], float, list[dict]] | None = None
+
+
+def _normalize_cache_database_url(database_url: str) -> str:
+    if database_url.startswith("sqlite:///") and not database_url.startswith("sqlite:////"):
+        path = database_url.removeprefix("sqlite:///")
+        if path and path != ":memory:":
+            return f"sqlite:///{Path(path).resolve()}"
+    return database_url
+
+
+def _cache_database_key() -> str:
+    return _normalize_cache_database_url(os.environ.get("AIMP_DATABASE_URL") or get_settings().database_url)
 
 
 def _workspace_collection_fingerprint(db: Session) -> tuple[int, str]:
@@ -1191,6 +1210,111 @@ def _workspace_collection_fingerprint(db: Session) -> tuple[int, str]:
 
 def _cache_is_fresh(stored_at: float) -> bool:
     return time.monotonic() - stored_at < _WORKSPACE_CACHE_TTL_SECONDS
+
+
+def _stored_channel_summary_fingerprint(value: object) -> tuple[int, str] | None:
+    if not isinstance(value, list | tuple) or len(value) != 2:
+        return None
+    try:
+        count = int(value[0])
+    except (TypeError, ValueError):
+        return None
+    return count, str(value[1] or "")
+
+
+def _load_channel_summary_cache(
+    fingerprint: tuple[int, str] | None = None,
+    *,
+    allow_stale: bool = False,
+) -> list[dict] | None:
+    try:
+        payload = json.loads(_CHANNEL_SUMMARY_CACHE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    if _normalize_cache_database_url(str(payload.get("database_url") or "")) != _cache_database_key():
+        return None
+
+    summaries = payload.get("summaries")
+    if not isinstance(summaries, list):
+        return None
+
+    stored_fingerprint = _stored_channel_summary_fingerprint(payload.get("fingerprint"))
+    stored_at = float(payload.get("stored_at") or 0.0)
+    age_seconds = time.time() - stored_at if stored_at else _CHANNEL_SUMMARY_PERSISTED_STALE_SECONDS + 1.0
+    if fingerprint is None:
+        if not allow_stale and age_seconds > _CHANNEL_SUMMARY_PERSISTED_STALE_SECONDS:
+            return None
+    elif not allow_stale and stored_fingerprint != fingerprint and age_seconds > _CHANNEL_SUMMARY_PERSISTED_STALE_SECONDS:
+        return None
+
+    return [dict(item) for item in summaries if isinstance(item, dict)]
+
+
+def load_cached_workspace_channel_summaries(*, allow_stale: bool = True) -> list[dict] | None:
+    return _load_channel_summary_cache(allow_stale=allow_stale)
+
+
+def _store_channel_summary_cache(fingerprint: tuple[int, str], summaries: list[dict]) -> None:
+    payload = {
+        "database_url": _cache_database_key(),
+        "fingerprint": [fingerprint[0], fingerprint[1]],
+        "stored_at": time.time(),
+        "summaries": summaries,
+    }
+    try:
+        _CHANNEL_SUMMARY_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = _CHANNEL_SUMMARY_CACHE_PATH.with_suffix(".json.tmp")
+        temporary_path.write_text(json.dumps(payload, ensure_ascii=True), encoding="utf-8")
+        temporary_path.replace(_CHANNEL_SUMMARY_CACHE_PATH)
+    except OSError:
+        return
+
+
+def load_cached_compact_playlist_workspaces(*, limit: int | None = None, allow_stale: bool = True) -> list[dict] | None:
+    try:
+        payload = json.loads(_COMPACT_WORKSPACE_CACHE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    if _normalize_cache_database_url(str(payload.get("database_url") or "")) != _cache_database_key():
+        return None
+    if payload.get("limit") != limit:
+        return None
+
+    workspaces = payload.get("workspaces")
+    if not isinstance(workspaces, list):
+        return None
+
+    stored_at = float(payload.get("stored_at") or 0.0)
+    age_seconds = time.time() - stored_at if stored_at else _COMPACT_WORKSPACE_PERSISTED_STALE_SECONDS + 1.0
+    if not allow_stale and age_seconds > _COMPACT_WORKSPACE_PERSISTED_STALE_SECONDS:
+        return None
+    return [dict(item) for item in workspaces if isinstance(item, dict)]
+
+
+def _store_compact_workspace_cache(
+    *,
+    limit: int | None,
+    fingerprint: tuple[int, str],
+    workspaces: list[PlaylistWorkspaceRead],
+) -> None:
+    payload = {
+        "database_url": _cache_database_key(),
+        "limit": limit,
+        "fingerprint": [fingerprint[0], fingerprint[1]],
+        "stored_at": time.time(),
+        "workspaces": [workspace.model_dump(mode="json") for workspace in workspaces],
+    }
+    try:
+        _COMPACT_WORKSPACE_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = _COMPACT_WORKSPACE_CACHE_PATH.with_suffix(".json.tmp")
+        temporary_path.write_text(json.dumps(payload, ensure_ascii=True), encoding="utf-8")
+        temporary_path.replace(_COMPACT_WORKSPACE_CACHE_PATH)
+    except OSError:
+        return
 
 
 def _youtube_published_at(
@@ -1568,6 +1692,7 @@ def list_compact_playlist_workspaces(db: Session, *, limit: int | None = None) -
     ]
     _COMPACT_WORKSPACE_CACHE.clear()
     _COMPACT_WORKSPACE_CACHE[cache_key] = (time.monotonic(), workspaces)
+    _store_compact_workspace_cache(limit=limit, fingerprint=fingerprint, workspaces=workspaces)
     return workspaces
 
 
@@ -1727,9 +1852,15 @@ def list_workspace_channel_summaries(db: Session) -> list[dict]:
     ):
         return [dict(item) for item in _CHANNEL_SUMMARY_CACHE[2]]
 
+    cached_summaries = _load_channel_summary_cache(fingerprint)
+    if cached_summaries is not None:
+        _CHANNEL_SUMMARY_CACHE = (fingerprint, time.monotonic(), [dict(item) for item in cached_summaries])
+        return cached_summaries
+
     if db.bind is not None and db.bind.dialect.name == "sqlite":
         summaries = _sqlite_workspace_channel_summaries(db)
         _CHANNEL_SUMMARY_CACHE = (fingerprint, time.monotonic(), [dict(item) for item in summaries])
+        _store_channel_summary_cache(fingerprint, [dict(item) for item in summaries])
         return summaries
 
     channels: dict[str, dict] = {}
@@ -1801,6 +1932,7 @@ def list_workspace_channel_summaries(db: Session) -> list[dict]:
         result.append(summary)
     summaries = sorted(result, key=lambda item: (-int(item["count"]), str(item["label"]).lower()))
     _CHANNEL_SUMMARY_CACHE = (fingerprint, time.monotonic(), [dict(item) for item in summaries])
+    _store_channel_summary_cache(fingerprint, [dict(item) for item in summaries])
     return summaries
 
 

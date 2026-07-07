@@ -49,7 +49,9 @@ from app.workflows.playlist_automation import (
     create_playlist_workspace,
     generate_playlist_cover,
     generate_playlist_metadata,
+    load_cached_workspace_channel_summaries,
     list_compact_playlist_workspaces,
+    load_cached_compact_playlist_workspaces,
     list_workspace_channel_summaries,
     list_available_approved_tracks,
     list_playlist_workspaces,
@@ -218,6 +220,9 @@ def list_workspace_playlists(
     db: Session = Depends(get_db),
 ) -> list[PlaylistWorkspaceRead] | JSONResponse:
     if compact:
+        cached_workspaces = load_cached_compact_playlist_workspaces(limit=limit)
+        if cached_workspaces is not None:
+            return JSONResponse(content=cached_workspaces)
         return JSONResponse(
             content=[
                 workspace.model_dump(mode="json")
@@ -232,6 +237,9 @@ def list_workspace_playlists(
 
 @router.get("/workspaces/summary")
 def list_workspace_summary(db: Session = Depends(get_db)) -> dict:
+    cached_summaries = load_cached_workspace_channel_summaries()
+    if cached_summaries is not None:
+        return {"channels": cached_summaries}
     return {"channels": list_workspace_channel_summaries(db)}
 
 

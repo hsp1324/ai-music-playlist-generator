@@ -2025,8 +2025,8 @@ function replaceWorkspace(workspace, { compact = false } = {}) {
 
 async function fetchReviewTracks() {
   const [pending, held] = await Promise.all([
-    api("/api/tracks?status_filter=pending_review"),
-    api("/api/tracks?status_filter=held"),
+    api("/api/tracks?status_filter=pending_review&compact=true&limit=500"),
+    api("/api/tracks?status_filter=held&compact=true&limit=500"),
   ]);
   return [...pending, ...held];
 }
@@ -2036,8 +2036,13 @@ async function fetchWorkspaceList() {
 }
 
 async function fetchWorkspaceSummary() {
-  const summary = await api("/api/playlists/workspaces/summary");
-  return summary?.channels || [];
+  try {
+    const summary = await api("/api/playlists/workspaces/summary");
+    return summary?.channels || [];
+  } catch (error) {
+    console.warn("Workspace summary refresh failed", error);
+    return state.channelSummaries || [];
+  }
 }
 
 async function fetchTrackReuseSummaries() {
@@ -4116,13 +4121,17 @@ function applyBoardData(tracks, workspaces) {
 }
 
 async function refreshBoard() {
-  const [tracks, workspaces, trackReuseSummaries] = await Promise.all([
+  const [tracks, workspaces] = await Promise.all([
     fetchReviewTracks(),
     fetchWorkspaceList(),
-    fetchTrackReuseSummaries().catch(() => state.trackReuseSummaries),
   ]);
-  state.trackReuseSummaries = trackReuseSummaries;
   applyBoardData(tracks, workspaces);
+  fetchTrackReuseSummaries()
+    .then((trackReuseSummaries) => {
+      state.trackReuseSummaries = trackReuseSummaries;
+      renderTrackReuseList();
+    })
+    .catch(() => {});
   if (state.releaseFocus && state.selectedWorkspaceId) {
     ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
       .then(() => {
@@ -4135,15 +4144,13 @@ async function refreshBoard() {
 
 async function refresh() {
   state.workspacesLoading = true;
-  const [sessionStatus, youtubeStatus, channelSummaries, trackReuseSummaries] = await Promise.all([
+  const [sessionStatus, youtubeStatus, channelSummaries] = await Promise.all([
     api("/api/suno/session-status"),
     api("/api/youtube/status"),
     fetchWorkspaceSummary(),
-    fetchTrackReuseSummaries().catch(() => state.trackReuseSummaries),
   ]);
   state.youtubeStatus = youtubeStatus;
   state.channelSummaries = channelSummaries;
-  state.trackReuseSummaries = trackReuseSummaries;
   renderSessionStatus(sessionStatus);
   renderYouTubeStatus(youtubeStatus);
   ensureChannelFilter();
@@ -4153,13 +4160,17 @@ async function refresh() {
   renderWorkspaceTiles();
   renderWorkspaceDetail();
 
-  const [tracks, workspaces, latestTrackReuseSummaries] = await Promise.all([
+  const [tracks, workspaces] = await Promise.all([
     fetchReviewTracks(),
     fetchWorkspaceList(),
-    fetchTrackReuseSummaries().catch(() => state.trackReuseSummaries),
   ]);
-  state.trackReuseSummaries = latestTrackReuseSummaries;
   applyBoardData(tracks, workspaces);
+  fetchTrackReuseSummaries()
+    .then((trackReuseSummaries) => {
+      state.trackReuseSummaries = trackReuseSummaries;
+      renderTrackReuseList();
+    })
+    .catch(() => {});
   if (state.releaseFocus && state.selectedWorkspaceId) {
     ensureWorkspaceDetailLoaded(state.selectedWorkspaceId)
       .then(() => {
