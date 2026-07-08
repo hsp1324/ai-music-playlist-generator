@@ -17,6 +17,7 @@ from app.models.playlist import Playlist
 OPENCLAW_RUNTIME_STATE_FILE = "openclaw-runtime-state.json"
 OPENCLAW_AUTO_LOOP_STATE_FILE = "openclaw-auto-loop-state.json"
 EMPTY_DUPLICATE_SHELL_ARCHIVE_RETENTION_DAYS = 7
+OPENCLAW_BACKLOG_UPLOADED_LOOKBACK_DAYS = 1
 
 MANUAL_ONLY_CHANNEL_TITLES = {"MusicSun"}
 RETIRED_CHANNEL_TITLES = {"Signal Room Radio", "Signal Desk Radio", "Midnight Cue Radio", "AI썰전", "AnimeMix"}
@@ -760,8 +761,17 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
     }
     unknown_channel_releases: list[dict[str, Any]] = []
 
-    playlists = db.scalars(select(Playlist).order_by(Playlist.updated_at.desc())).all()
     now = _utcnow()
+    uploaded_cutoff = now - timedelta(days=OPENCLAW_BACKLOG_UPLOADED_LOOKBACK_DAYS)
+    playlists = db.scalars(
+        select(Playlist)
+        .where(
+            (Playlist.status != PlaylistStatus.uploaded)
+            | (Playlist.youtube_video_id.is_(None))
+            | (Playlist.updated_at >= uploaded_cutoff)
+        )
+        .order_by(Playlist.updated_at.desc())
+    ).all()
     schedule_tz = _youtube_schedule_timezone(services)
     scheduled_local_dates: dict[str, set[str]] = {title: set() for title in channel_titles}
     uploaded_by_key: dict[tuple[str, str], dict[str, Any]] = {}

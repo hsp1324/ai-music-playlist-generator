@@ -6,7 +6,7 @@ Use this after the selected channel is `불송`. `불송` is a Korean vocal chan
 
 불송 is for modern Korean vocal music that transforms Buddhist sources/themes into universal pop language. Keep the source/theme in planning and app metadata, but new lyrics and public metadata should avoid obvious Buddhist vocabulary unless the human explicitly requests a source-explicit release.
 
-This is not a chanting archive, sermon channel, literal scripture-reading channel, trot channel, or old Korean cabaret-pop channel. OpenClaw should create modern lyric songs that communicate the emotional idea in accessible language. The internal source/theme is fixed, but the music lane and artwork should vary widely. Hip-hop/rap remains a strong lane, but OpenClaw should also explore R&B, trip-hop, glitch-hop, drum and bass, hyperpop, art-pop, psychedelic soul, avant-jazz rap, dark pop, new-age electronica, cinematic trap, spoken-word rap, or other coherent modern lanes when they make the release feel fresh.
+This is not a chanting archive, sermon channel, literal scripture-reading channel, trot channel, or old Korean cabaret-pop channel. OpenClaw should create modern lyric songs that communicate the emotional idea in accessible language. The internal source/theme is fixed, but the music lane and artwork should vary widely. Hip-hop/rap remains a strong lane, but OpenClaw should also explore R&B, quiet piano vocal ballads, trip-hop, glitch-hop, drum and bass, hyperpop, art-pop, psychedelic soul, avant-jazz rap, dark pop, new-age electronica, cinematic trap, spoken-word rap, or other coherent modern lanes when they make the release feel fresh.
 
 The audience should immediately feel: bold modern Korean songs with emotional depth, not old devotional music and not lyrics full of religious terms.
 
@@ -16,7 +16,7 @@ The audience should immediately feel: bold modern Korean songs with emotional de
 - Do not lead titles, thumbnail text, descriptions, or tags with obscure coined labels such as `다르마팝`, and do not overuse generic `meditation music`, `prayer`, `worship`, or devotional wording unless that is truthfully the finished asset's lane.
 - The first track and first 10-20 seconds matter. Put the strongest same-lane hook, rap entry, vocal tone, or most immediately clickable song first. Avoid long slow instrumental intros on playlist lead tracks.
 - Strong standout tracks should be considered for standalone singles and also reused as lead/funnel tracks in later same-lane playlists when appropriate.
-- For playlist releases, create roughly the first 10 minutes as new high-confidence Korean vocal audio in the selected lane, then fill toward one hour only with existing approved 불송 tracks from the same detailed lane, liked tracks first. Keep reused/fallback tracks after the fresh lead block. If there are not enough matching tracks, publish shorter rather than mixing unrelated jazz, trot, acoustic, cinematic, or generic meditation tracks into the release.
+- For playlist releases, create roughly the first 10 minutes as new high-confidence Korean vocal audio, then fill toward one hour with existing approved 불송 tracks that fit the same mainstream vocal family, liked tracks first. Rap, hip-hop, R&B, soul, and quiet piano vocal ballads may be mixed when the emotional mood works. Keep reused/fallback tracks after the fresh lead block. Do not add unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, or generic meditation tracks just to hit one hour.
 
 ## Overnight Privacy Rule
 
@@ -59,12 +59,13 @@ Every new plan must include a short `novelty_brief` that says why the music lane
 - Hyperpop/art-pop: bright synthetic hooks, fragmented self-image themes, polished but not novelty comedy.
 - Psychedelic soul / new-age electronica: surreal inner-world imagery, warm soul vocal or spoken rap, modern electronic texture.
 - Avant-jazz rap: unusual chords, live-feeling drums, poetic Korean rap, but not old cabaret, trot, or lounge parody.
+- Quiet piano vocal ballad: simple piano accompaniment, intimate Korean vocal, no beat drop, no drums required, and no long instrumental intro. This is a sung emotional song, not Soft Hour-style piano BGM or a no-vocal instrumental.
 
 ## Music Direction
 
 - Vocal songs with original lyrics are the default.
 - Korean lyrics are the default unless the human explicitly asks for another language.
-- Every track in one release must stay inside one coherent style family. If the title says hip-hop, all tracks must be hip-hop/rap-based. If the title says R&B, trip-hop, art-pop, or another lane, all tracks and reused backfill must truthfully fit that lane. Do not mix unrelated jazz, pop, R&B, acoustic, or cinematic tracks into a release just to fill time.
+- Every track in one release must stay inside one coherent emotional music family. For 불송, rap, hip-hop, R&B, soul, and quiet piano vocal ballads can share one mainstream Korean vocal playlist when the mood and lyrics feel connected. If the public title names a narrow lane such as `붐뱁`, `트랩`, or `트립합`, keep the fresh lead block and strongest early tracks honest to that lane, but later backfill may broaden into compatible 불송 vocal songs rather than blocking the release. Do not mix unrelated jazz, guitar-folk/acoustic, cinematic, instrumental BGM, or generic meditation tracks into a release just to fill time.
 - Avoid trot, ppongjjak, and old Korean cabaret-pop completely unless the human explicitly asks for them. Do not use Korean trot rhythm, two-beat ppongjjak bounce, trot vocal ornaments, accordion/brass trot clichés, nightclub/cabaret trot arrangement, or old-TV trot mood.
 - In Suno Advanced Options / excluded styles for 불송, include blockers such as `trot, Korean trot, ppongjjak, 뽕짝, 트로트, trot vocal, cabaret trot, old Korean trot, two-beat trot bounce, accordion trot, brass trot`.
 - Use the vocabulary of the selected lane in Suno style prompts. For hip-hop: Korean hip-hop, mellow boom bap, Korean rap, spoken rap verses, sung hook. For R&B/trip-hop/electronic lanes: name the real lane, rhythm, instrument palette, and vocal texture clearly. Public titles, thumbnail phrases, descriptions, and tags must use plain audience-friendly wording, not obscure coined genre labels or source-explicit Buddhist labels.
@@ -98,12 +99,13 @@ Every new plan must include a short `novelty_brief` that says why the music lane
 - `[playlist] 괜찮아지는 연습 | 새벽에 듣는 어두운 소울`
 - `[playlist] 다시 웃을 수 있게 | 지친 하루 끝의 아트팝`
 - `[playlist] 내일은 덜 아프게 | 밤공기에 어울리는 랩과 R&B`
+- `[playlist] 괜찮아질 때까지 | 피아노에 기대어 듣는 잔잔한 노래`
 
 ## Bad Directions
 
 - Generic meditation BGM with no lyrics or teaching.
 - Literal scripture reading, chanting, or sermon format.
-- Randomly mixing jazz, hip-hop, R&B, folk, and cinematic pop in one release.
+- Randomly mixing unrelated jazz, guitar-folk/acoustic, cinematic pop, instrumental BGM, and meditation tracks into one release. Mixing rap, R&B, soul, and quiet piano vocal ballads is allowed only when it remains a coherent 불송 vocal song package.
 - Using obscure coined genre labels in YouTube titles, thumbnail phrases, descriptions, or tags instead of plain public wording for the real lane.
 - Repeating the same Buddhist hip-hop beat, same visual subject, same face/pose, or same devotional statue/temple image because it is familiar.
 - Any trot, ppongjjak, cabaret trot, old-TV trot, or accordion/brass trot feel.

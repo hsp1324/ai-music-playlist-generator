@@ -4,6 +4,8 @@ Use this taxonomy when planning every playlist release. Each release chooses one
 
 Do not make one release a sampler of unrelated styles. Slight variation inside the lane is fine: for example, a HaruHaru trap K-pop release may vary drum density, vocal tone, or chorus energy, but it should not mix trap, ballad, pop-rock, and R&B in the same rendered video.
 
+불송 has a channel-specific exception: rap, hip-hop, R&B, soul, and quiet piano vocal ballads may share one mainstream Korean vocal release when the emotional mood is coherent. This exception does not allow unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, no-vocal piano, or generic meditation tracks.
+
 ## Operating Rule
 
 - Pick a channel first, then pick one broad genre bucket and one detailed style lane before Suno generation.
@@ -107,6 +109,7 @@ BibliaCanto keeps the existing Old/New Testament passage playlist plus one moder
 - `Korean Hip-Hop`: hip-hop, rap, boom bap, rap-pop, trap-soul, phonk, or restrained trap lanes.
 - `Korean Experimental Rap`: drill/trap-soul, glitch-hop, trip-hop, drum and bass, UK garage, spoken-word rap, avant-jazz rap, cinematic trap, or other coherent experimental rap lanes.
 - `Korean R&B / Soul`: dark R&B, neo-soul, psychedelic soul, alternative R&B, soul-rap, or intimate duet lanes.
+- `Korean Ballad / Piano Vocal`: quiet piano vocal ballad, simple piano accompaniment, gentle Korean vocal, no beat drop, no drums required. This is a vocal song bucket, not Soft Hour-style piano BGM or no-vocal instrumental music.
 - `Korean Art Pop / Electronic`: hyperpop, new-age electronica, art-pop, dream-pop, ambient rap, psychedelic electronic, or cyber/neon lanes when the song and visual package intentionally push the channel into a new style.
 - 불송 should rotate across these buckets instead of repeating one hip-hop formula. New default public titles, descriptions, tags, and sung lyrics should avoid overt Buddhist/source vocabulary such as `불교`, `불경`, `법구경`, `금강경`, `반야심경`, `자비`, `가르침`, `무상`, or `무아` unless the human explicitly asks for a source-explicit release. Do not use obscure coined genre labels in public titles, descriptions, or tags. Do not put source/genre labels on 불송 thumbnails/covers by default.
-- When filling 불송 playlists toward one hour, use only previous same-channel tracks that match the selected detailed lane; keep reused/fallback tracks after the fresh lead block and publish shorter rather than adding unrelated jazz, trot, acoustic, cinematic, or meditation tracks. Already-uploaded/source-explicit videos go to the YouTube playlist `불송`; new mainstream videos go to `노래`.
+- When filling 불송 playlists toward one hour, use previous same-channel tracks from the mainstream Korean vocal pool: rap, hip-hop, R&B, soul, and quiet piano vocal ballads may be mixed when the emotional mood fits. Keep reused/fallback tracks after the fresh lead block and keep the strongest title-relevant lane first. Publish shorter rather than adding unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, no-vocal piano, or meditation tracks. Already-uploaded/source-explicit videos go to the YouTube playlist `불송`; new mainstream videos go to `노래`.

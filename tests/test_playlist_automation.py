@@ -6914,9 +6914,12 @@ def test_explicit_genre_lane_channel_reuse_requires_specific_lane_and_preserves_
             assert workspace is not None
             meta = workspace.metadata_json or {}
             assert meta["last_render_preserved_reused_back_half"] is True
-            assert meta["auto_reuse_last_attempt"]["selection_policy"] == (
-                "strict_genre_lane_liked_then_least_reused_back_half"
+            expected_policy = (
+                "bulsong_mainstream_vocal_pool_liked_then_least_reused_back_half"
+                if channel_title == "불송"
+                else "strict_genre_lane_liked_then_least_reused_back_half"
             )
+            assert meta["auto_reuse_last_attempt"]["selection_policy"] == expected_policy
     finally:
         clear_isolated_client_env()
 

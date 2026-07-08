@@ -516,6 +516,70 @@ GENRE_LANE_FALLBACK_GROUPS = {
     "jpop": {"jpop"},
     "latin-pop": {"latin-pop"},
 }
+BULSONG_MAINSTREAM_VOCAL_REUSE_TOKENS = {
+    "alt-pop",
+    "ballad",
+    "bedroom-pop",
+    "boom-bap",
+    "dnb",
+    "hip-hop",
+    "indie-pop",
+    "kpop",
+    "neo-soul",
+    "piano",
+    "pop",
+    "rap-pop",
+    "rnb",
+    "street-pop",
+    "synth-pop",
+    "trap",
+    "uk-garage",
+}
+BULSONG_MAINSTREAM_VOCAL_BLOCKED_TOKENS = {
+    "bgm",
+    "cinematic",
+    "game",
+    "gospel",
+    "jazz",
+    "lofi",
+    "orchestral",
+    "scripture",
+}
+BULSONG_SOLO_PIANO_VOCAL_CONTEXT_TOKENS = {
+    "ballad",
+    "hip-hop",
+    "kpop",
+    "neo-soul",
+    "pop",
+    "rap-pop",
+    "rnb",
+    "street-pop",
+}
+BULSONG_MAINSTREAM_VOCAL_BLOCKED_PHRASES = (
+    "acoustic guitar",
+    "cabaret",
+    "chant",
+    "chanting",
+    "choir",
+    "folk pop",
+    "folk-pop",
+    "gospel",
+    "hymn",
+    "instrumental",
+    "meditation music",
+    "no vocal",
+    "no-vocal",
+    "old korean trot",
+    "ppongjjak",
+    "sermon",
+    "temple bgm",
+    "trot",
+    "worship",
+    "뽕짝",
+    "연주곡",
+    "트로트",
+    "무보컬",
+)
 GENRE_LANE_ORDER_PRESERVE_CHANNEL_TITLES = {
     HARUHARU_CHANNEL_TITLE,
     "tokyo daydream radio",
@@ -611,6 +675,10 @@ def _is_haruharu_channel_title(channel_title: str | None) -> bool:
 
 def _is_soft_hour_channel_title(channel_title: str | None) -> bool:
     return _normalize_reuse_channel_title(channel_title) == _normalize_reuse_channel_title(SOFT_HOUR_CHANNEL_TITLE)
+
+
+def _is_bulsong_channel_title(channel_title: str | None) -> bool:
+    return _normalize_reuse_channel_title(channel_title) == NEW_VERSE_YOUTUBE_CHANNEL_TITLE
 
 
 def _without_negated_phrases(text: str, phrases: tuple[str, ...]) -> str:
@@ -2355,6 +2423,43 @@ def _strict_reuse_candidate_matches_declared_lane(
     return bool(required_source_tokens & source_tokens)
 
 
+def _bulsong_reuse_candidate_matches_vocal_pool(
+    *,
+    target_playlist: Playlist,
+    target_genre_tokens: set[str],
+    source_tokens: set[str],
+    source_text: str,
+) -> bool:
+    declared_tokens = _declared_reuse_genre_tokens_for_playlist(target_playlist)
+    target_lane_tokens = declared_tokens or target_genre_tokens
+    target_is_mainstream_vocal = (
+        not target_lane_tokens
+        or bool(target_lane_tokens & BULSONG_MAINSTREAM_VOCAL_REUSE_TOKENS)
+    )
+    if not target_is_mainstream_vocal:
+        return _strict_reuse_candidate_matches_declared_lane(
+            target_playlist=target_playlist,
+            target_genre_tokens=target_genre_tokens,
+            source_tokens=source_tokens,
+        )
+
+    if not source_tokens & BULSONG_MAINSTREAM_VOCAL_REUSE_TOKENS:
+        return False
+    if (
+        "solo-piano" in source_tokens
+        and not source_tokens & BULSONG_SOLO_PIANO_VOCAL_CONTEXT_TOKENS
+    ):
+        return False
+    if source_tokens & BULSONG_MAINSTREAM_VOCAL_BLOCKED_TOKENS:
+        return False
+
+    blocked_text = _without_negated_phrases(
+        source_text.lower(),
+        BULSONG_MAINSTREAM_VOCAL_BLOCKED_PHRASES,
+    )
+    return not any(phrase in blocked_text for phrase in BULSONG_MAINSTREAM_VOCAL_BLOCKED_PHRASES)
+
+
 def _playlist_reuse_source_sort_key(playlist: Playlist) -> datetime:
     meta = _playlist_meta(playlist)
     for key in (
@@ -2430,17 +2535,30 @@ def _reuse_candidate_is_similar(
     source_meta = source_playlist.metadata_json or {}
     source_track_tokens = set(cached_track_genre_tokens(track))
     source_tokens = set(source_track_tokens)
-    source_tokens.update(
-        extract_genre_tokens_from_values(
-            [
-                source_playlist.title,
-                str(source_meta.get("description") or ""),
-                str(source_meta.get("youtube_title") or ""),
-                str(source_meta.get("channel_style_lane") or ""),
-                str(source_meta.get("channel_broad_genre") or ""),
-            ]
-        )
+    source_values = [
+        source_playlist.title,
+        str(source_meta.get("description") or ""),
+        str(source_meta.get("youtube_title") or ""),
+        str(source_meta.get("channel_style_lane") or ""),
+        str(source_meta.get("channel_broad_genre") or ""),
+    ]
+    source_tokens.update(extract_genre_tokens_from_values(source_values))
+    source_text = " ".join(
+        str(value or "")
+        for value in [
+            _track_genre_haystack(track),
+            *source_values,
+        ]
     )
+
+    if _is_bulsong_channel_title(target_channel_title):
+        return _bulsong_reuse_candidate_matches_vocal_pool(
+            target_playlist=target_playlist,
+            target_genre_tokens=target_genre_tokens,
+            source_tokens=source_tokens,
+            source_text=source_text,
+        )
+
     if target_genre_tokens and source_tokens:
         if _strict_genre_lane_channel_title(target_channel_title):
             return _strict_reuse_candidate_matches_declared_lane(
@@ -2812,6 +2930,8 @@ def _maybe_add_reused_back_half_tracks(
         "selection_policy": (
             "soft_hour_piano_first_liked_then_similar_back_half"
             if _is_soft_hour_channel_title(target_channel_title)
+            else "bulsong_mainstream_vocal_pool_liked_then_least_reused_back_half"
+            if _is_bulsong_channel_title(target_channel_title)
             else "strict_genre_lane_liked_then_least_reused_back_half"
             if _strict_genre_lane_channel_title(target_channel_title)
             else "liked_then_least_reused_similar_back_half"
