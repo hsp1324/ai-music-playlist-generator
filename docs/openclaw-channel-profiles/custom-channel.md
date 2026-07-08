@@ -22,7 +22,7 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 ## Loop Video
 
 - Use the uploaded cover/first-frame image as the exact starting frame.
-- Generate a short loop video. Use Gemini first as-is; for Dreamina/Seedance use `Seedance Mini 2.0`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, and exactly `10 seconds` unless the human explicitly requests another setup.
+- Generate a short loop video with Gemini only when the custom channel needs motion. Do not use Dreamina, Seedance, or CapCut. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback unless the human explicitly asks to wait.
 - Animate only visual elements that already fit the first frame and playlist concept.
 - If the first frame has a short style/theme phrase, keep it stable and readable. Do not invent a channel name.
 - The final frame should return close to the opening composition so the app's loop crossfade feels natural. The app uses 2.0 seconds for Gemini-tagged loop videos and 1.5 seconds for the default provider path.

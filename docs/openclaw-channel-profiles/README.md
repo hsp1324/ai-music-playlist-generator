@@ -32,7 +32,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Text must be integrated into the artwork with safe margins and a transparent background. Letters should sit directly on the image; use only typography choices such as font weight, color, subtle shadow, thin outline, or local contrast for readability. Do not use hard black boxes, semi-transparent black panels, white or colored rectangles, gradient scrims, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks behind text. Reject/regenerate thumbnails when the text is placed inside any filled background shape.
 - The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
 - The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
-- For Dreamina/Seedance, use `Seedance Mini 2.0`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, and exactly `10 seconds` in the provider UI, not in the prompt. The mode offers `5 seconds` or `10 seconds`; always choose `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. HaruHaru, sundaze, Solwave Radio, and Club Bloom do not use provider clips by default; render them from the still cover image. 불송 is a standing still-image channel and should not use provider clips in normal automation. If the duration selector is hidden when the screen opens, gently drag/scroll the settings/control row to the right until it is visible, then set `10 seconds` before Generate.
+- Use Gemini only for moving provider clips. Do not use Dreamina, Seedance, or CapCut for new OpenClaw automation. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers. HaruHaru, sundaze, Solwave Radio, and Club Bloom do not use provider clips by default; render them from the still cover image. 불송 is a standing still-image channel and should not use provider clips in normal automation.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
 - Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
@@ -63,7 +63,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Default visual package is photorealistic English/American lifestyle still images, not provider loop video.
 - Prefer casual friend-taken smartphone/Instagram snapshots: clearly adult road-trip, rooftop, beach boardwalk, cafe terrace, country road, Americana diner, indie room, festival lawn, neon night drive, or downtown walk moments with natural side/three-quarter angles, medium or farther framing, slight phone-photo imperfection, and enough environment to feel real.
 - If text is useful, use one natural integrated English-pop lane phrase, preferably upper-left: `POP R&B`, `DANCE POP`, `SYNTH POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
-- Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
+- Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### Solwave Radio
 
@@ -72,7 +72,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Prefer casual friend-taken smartphone/Instagram snapshots: clearly adult night-out, travel, cafe terrace, beach road, plaza dance, rooftop, open-air bar, or city-street moments with natural side/three-quarter/phone-glance angles, medium or farther framing, slight phone-photo imperfection, and enough environment to feel real.
 - Avoid professional photographer shoots, studio portraits, glossy fashion campaigns, tight straight-on AI-beauty close-ups, minors, celebrity lookalikes, and over-retouched model faces.
 - If text is useful, use one natural integrated Latin/Spanish lane phrase, preferably upper-left: `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
-- Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
+- Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### HaruHaru
 
@@ -83,7 +83,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Prefer friend-taken adult day-trip/cafe/seaside snapshots over studio or fashion-campaign portraits. Faces may be visible, but avoid tight straight-on AI-beauty close-ups. Prefer side profile, three-quarter view, candid looking-away, laughing/smiling travel moments, or medium/farther framing where the place and mood also matter.
 - A fresh 청순 idol-inspired adult woman can work for bright K-pop concepts, but keep her fictional, natural, and varied; no real idol/member lookalikes, no minors, no school uniforms, no doll-like symmetry, and no over-retouched skin.
 - Do not add channel names, logos, style text, title text, badges, or stickers to the cover/thumbnail by default.
-- Queue final render as still image with app spectrum lower-right and app lyric overlay lower-left. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
+- Queue final render as still image with app spectrum lower-right and app lyric overlay lower-left. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### Storylight-Style Lane On Cinematic Pulse
 
@@ -104,7 +104,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Default visual package is now HaruHaru-style photorealistic friend-taken smartphone/Instagram still images, not provider loop video.
 - Prefer attractive clearly adult women in revealing YouTube-safe club fashion at places where club music naturally plays: nightclub, bar, lounge, rooftop club, beach club, pool party, festival VIP area, DJ booth, dance floor, neon city terrace, or yacht/harbor party. Use natural side or three-quarter phone-photo framing, medium or farther composition, slight motion/focus imperfection, and no glossy campaign or centered AI-model headshot. Keep it YouTube-safe with no nudity, sexual acts, minors, teen-coded styling, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
 - Keep thumbnails text-free by default. If text is useful, name the club lane with one short transparent-background phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
-- Queue final render as still image with app spectrum lower-right. Do not create or upload a Gemini/Dreamina/Seedance loop video unless the human explicitly asks for motion.
+- Queue final render as still image with app spectrum lower-right. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### BibliaCanto
 
@@ -122,7 +122,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - For vocal tracks, include a concrete Korean lead-vocal tone or delivery phrase in each Suno style string and vary it across tracks, such as `calm low-register Korean rap`, `warm soulful male vocal`, `airy female hook vocal`, `restrained boom-bap spoken rap`, or `warm male/female duet`.
 - Keep Buddhist/music cues subtle and respectful, such as headphones, earbuds, a small speaker, prayer beads, a human-held microphone, mandala geometry, lotus symbolism, temple architecture, or surreal Buddhist objects. Avoid stale Buddha-only wallpapers, generic old sutra-desk scenes, singing/dancing Buddha, glossy idol/model studio posing, comedic gadget focus, fantasy deity effects, or plain background-only temple/lotus/lantern images.
 - Queue final render as still image with `--video-render-source-mode still_image --video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
-- 불송 is always an app-rendered still-image video channel in normal automation, not a moving-video channel and not a quota fallback. Do not create, upload, or wait for a Gemini/Dreamina/Seedance loop video unless the human explicitly changes this standing 불송 still-image rule in the current request. Image prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene.
+- 불송 is always an app-rendered still-image video channel in normal automation, not a moving-video channel and not a quota fallback. Do not create, upload, or wait for a provider loop video unless the human explicitly changes this standing 불송 still-image rule in the current request; if motion is requested, use Gemini only. Image prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene.
 
 Profiles:
 

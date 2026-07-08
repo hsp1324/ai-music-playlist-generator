@@ -20,7 +20,7 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Do not put `BibliaCanto`, `Old Verse`, `New Verse`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - If text is useful, use the exact selected passage range and/or modern music lane, such as `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Hip-Hop`, `New Testament R&B`, `Bible K-Pop`, or `Scripture Rap`.
 - Do not add scripture paragraphs, title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
@@ -43,9 +43,9 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 
 ## Loop Video
 
-- Use Dreamina/Seedance or Gemini only for the moving clip.
-- For Dreamina/Seedance, use `Seedance Mini 2.0`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
+- Use Gemini only for the moving clip. Do not use Dreamina, Seedance, or CapCut for BibliaCanto moving visuals.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - Animate the selected cover concept with reverent environmental motion: slow light over water, drifting stars, candle or oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, leaves, or temple light when appropriate.
 - If the first frame contains a passage range or short style phrase, keep it stable and readable. Do not invent a channel name.
 - Queue final render with `--video-spectrum-overlay-style none`. BibliaCanto must not use app-rendered spectrum bars, radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or equalizer graphics.

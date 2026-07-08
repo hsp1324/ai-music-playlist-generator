@@ -26,7 +26,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Do not put `Cinematic Pulse`, the channel name, a channel logo, or a brand line on the cover/first-frame image.
 - Cinematic Pulse cover/first-frame art should usually include one short integrated cinematic style phrase in the upper-left area so the video does not feel empty and will not collide with lower-left lyric overlays on vocal channels. Use phrases such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`.
 - For former Storylight-style releases, use truthful phrases such as `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM` instead of dark fantasy / battle / movie-orchestra phrases.
@@ -48,8 +48,8 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 
 - Create a very high quality 16:9 cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080. Use the film-real lane for movie/film-score concepts and the premium game-animation lane for game-orchestra, anime action-RPG, sci-fi heroine, or graceful fantasy game-score concepts.
 - The uploaded first-frame image for the provider loop should be this cover image with the upper-left style phrase already integrated.
-- Create a subtle provider loop video from that first frame. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
-- Dreamina/Seedance clips should use `Seedance Mini 2.0`, first-frame/start-frame only, no last-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. Gemini clips are uploaded as generated after inspection.
+- Create a subtle Gemini loop video from that first frame when Gemini is available. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
+- Do not use Dreamina, Seedance, or CapCut for Cinematic Pulse. Gemini clips are uploaded as generated after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
 - Queue final render with:
 
 ```bash
@@ -61,7 +61,7 @@ scripts/openclaw-release render-video \
 ```
 
 - The app/render worker will use the uploaded loop video and add only the clean bar spectrum overlay. Do not bake spectrum graphics into the image or provider video itself.
-- Use `--allow-still-image-video --video-render-source-mode still_image` only when the human explicitly approves a static-cover fallback for that release.
+- Use `--allow-still-image-video --video-render-source-mode still_image` when Gemini cannot produce a usable moving clip, or when the human explicitly approves a static-cover fallback for that release.
 
 First-frame prompt shape:
 

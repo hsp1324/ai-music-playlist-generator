@@ -20,7 +20,7 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Do not put `Storylight OST`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - If text is useful, use only a short integrated game/anime/theme-park BGM phrase such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, `COZY GAME MUSIC`, `THEME PARK BGM`, or `HAPPY PARK`.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
@@ -37,10 +37,10 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 
 ## Loop Video
 
-- Use Dreamina/Seedance or Gemini only for the moving clip.
-- Storylight OST should use an uploaded provider-generated loop MP4 before final render while a video provider is available. If Dreamina/Seedance is blocked by credits/account/quota/CAPTCHA/browser/provider failure and Gemini already has 3 successful generations in the current 24 hour window, do not defer the release; use the standing human-approved still-image fallback with `--allow-still-image-video --video-render-source-mode still_image`, then render/publish with the same cover, spectrum, and normal channel metadata.
-- For Dreamina/Seedance, use `Seedance Mini 2.0`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
+- Use Gemini only for the moving clip. Do not use Dreamina, Seedance, or CapCut for Storylight-style moving visuals.
+- Storylight OST should use an uploaded Gemini loop MP4 before final render while Gemini is available. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, do not defer the release; use the standing human-approved still-image fallback with `--allow-still-image-video --video-render-source-mode still_image`, then render/publish with the same cover, spectrum, and normal channel metadata.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
+- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - The loop video should animate the selected cover concept with visible playful game/anime/theme-park motion: cabinet light pulses, pixel sparkle, floating item icons, UI-like magical glows, bouncing props, lantern shimmer, shop lights, carousel bulbs, ferris-wheel glow, parade flags, candy-stand lights, toy-like particles, confetti, leaves, water shimmer, or soft character/mascot idle motion when appropriate.
 - If the first frame has a short game/anime BGM phrase, keep it stable and readable. Do not invent a channel name.
 - Keep the final moment close to the opening crop, framing, camera distance, lighting, palette, and subject placement so the app can repeat it smoothly.

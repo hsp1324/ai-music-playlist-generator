@@ -21,7 +21,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Make the cover photorealistic, high-resolution, clean, and calm. It should look like a real quiet BGM environment with soft natural light, believable materials, and restrained composition.
 - Do not put `Soft Hour Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - If text is useful, use only a short integrated use-case or style phrase that still signals piano, such as `SOLO PIANO`, `CAFE PIANO`, `PIANO BGM`, `STUDY PIANO`, `SLEEP PIANO`, `RAINY PIANO`, or `READING PIANO`.
@@ -39,16 +39,16 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 ## Loop Video
 
-- Use Dreamina/Seedance or Gemini only for the moving clip.
-- For Dreamina/Seedance, use `Seedance Mini 2.0`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
+- Use Gemini only for the moving clip. Do not use Dreamina, Seedance, or CapCut for Soft Hour moving visuals.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - The loop video should preserve the same photorealistic high-quality background feeling as the cover. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
 - If the first-frame cover contains short piano/use-case text, the provider video must keep that text as plain letters directly on the scene with a transparent background. Do not add, preserve, or animate in any black box, semi-transparent dark panel, rectangle, gradient scrim, sticker, badge, pill, capsule, or filled label shape behind the text. Reject/regenerate if the moving clip wraps clean first-frame text in a new box.
 - The camera must be completely static: locked-off tripod, fixed frame, no pan, tilt, zoom, push-in, pull-back, dolly, handheld shake, camera breathing, camera drift, camera follow, parallax camera move, or any other camera movement.
 - Use only subtle environmental motion already present or naturally implied by the first frame, such as rain on glass, steam from a mug, candle or lamp flicker, curtain edge movement, drifting dust motes, smoke, firelight, soft reflections, or gentle leaf movement. Do not move the camera to create motion.
 - Write prompts with positive motion language: `calm but clearly visible natural motion across several environmental layers`.
 - The final moment should keep the same crop, framing, camera distance, lighting, palette, and subject placement. The app handles smooth repetition with provider-aware crossfade timing, so do not force the model to zoom out or return the camera to the opening frame.
-- If Dreamina rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared 10-attempt retry rule in `README.md` and `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and stop before render/publish after 10 failures.
+- If Gemini rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared retry rule in `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and use the approved still-image fallback when safe Gemini retries are exhausted.
 - For very calm piano, greenhouse, cafe, reading, sleep, or quiet focus releases, prefer `--video-spectrum-overlay-style none` so the final video stays visually restful. Do not use the retired thin waveform style from `아침 온실 피아노 BGM`; it looked too busy for this channel.
 
 Prompt shape:

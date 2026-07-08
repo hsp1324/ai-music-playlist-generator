@@ -14,7 +14,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 - Music identity: popular J-pop first. Keep the sound accessible, hook-driven, vocal, and playlist-friendly. Do not make every release feel like anime OST.
 - Tokyo Daydream now has two allowed visual systems:
-  - `animated_moving_video`: for mainstream J-pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, arcade/game-center pop, fantasy/anime-feeling J-pop, and other releases that should feel like Japanese animation. This lane uses an animated/anime/illustrated cover plus a short Gemini/Dreamina/Seedance loop video.
+  - `animated_moving_video`: for mainstream J-pop, city-pop, dance-pop, synth-pop, pop-rock, anime-pop, arcade/game-center pop, fantasy/anime-feeling J-pop, and other releases that should feel like Japanese animation. This lane uses an animated/anime/illustrated cover plus a short Gemini loop video when Gemini is available, otherwise the approved still-image fallback.
   - `photorealistic_still_image`: for Japanese rap, Japanese hip-hop, Japanese R&B, Japanese neo-soul, trap-soul, boom-bap, Tokyo/Shibuya street R&B, and other hipper Japan vocal lanes. This lane uses a photorealistic friend-taken smartphone/Instagram still image only, with app-managed lower-left lyrics and lower-right spectrum during final render.
 - For the animated moving-video lane, the legacy signature remains: exactly three people walking toward the viewer in a front-view composition. The camera/viewer sees the people from the front, preferably a medium-wide or full-body view rather than a close-up face shot. The three people stay centered and visually important.
 - For the photorealistic still-image lane, do not force the three-person walking signature. Use natural candid Japanese street/lifestyle photography: stylish clearly adult Japanese friends, solo woman/man, couple, or small group in Shibuya, Shimokitazawa, Koenji, Harajuku, Daikanyama, a record shop, small live bar, club-side alley, rooftop, late-night convenience-store street, train station exit, or Tokyo streetwear scene. Prefer a friend-taken phone-photo feeling, slight focus shake or motion softness, natural side/three-quarter angles, medium framing, visible environment, and hip streetwear. Avoid glossy idol portraits, studio fashion campaigns, celebrity likenesses, minors, school uniforms, and over-retouched AI-beauty close-ups.
@@ -26,7 +26,7 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 ## Cover
 
 - Create one final 16:9 cover first.
-- In the animated moving-video lane, the cover is the playback visual and first-frame reference for Dreamina/Seedance/Gemini.
+- In the animated moving-video lane, the cover is the playback visual and first-frame reference for Gemini.
 - In the photorealistic still-image lane, the cover is the final video visual itself; do not make or upload a provider loop video.
 - Do not put `Tokyo Daydream Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - If text is useful, use only a short integrated J-pop/style phrase such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, `SUMMER J-POP`, `J-RAP`, `TOKYO R&B`, or `J-HIP-HOP`.
@@ -44,20 +44,20 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 ## Loop Video
 
-- Use Dreamina/Seedance or Gemini only for the animated moving-video lane. Do not create a loop video for the photorealistic still-image lane.
+- Use Gemini only for the animated moving-video lane. Do not use Dreamina, Seedance, or CapCut. Do not create a loop video for the photorealistic still-image lane.
 - For photorealistic Japanese hip-hop/R&B/rap releases, queue final render with:
 
 ```bash
 scripts/openclaw-release render-video --release-id RELEASE_ID --allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style bars --lyrics-overlay --lyrics-overlay-style editorial-lower-left
 ```
 
-- For Dreamina/Seedance, use `Seedance Mini 2.0`, first-frame/start-frame only, no Omni Reference, no last-frame/end-frame reference, `16:9`, `720p`, exactly `10 seconds`. Do not upload both first and last frames, because Dreamina switches that setup back to `Seedance 2.0 Fast`. For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection; try Gemini first unless its 24 hour cooldown is active; count only successful Gemini video generations, and after the 3rd successful Gemini video use Dreamina/Seedance until 24 hours have passed from that 3rd generation.
-- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts. Set duration only in Dreamina/Seedance controls.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - The loop video should keep the three people walking toward the camera while the camera dollies backward at the same pace. The people must not grow larger or smaller in frame.
 - Keep the three-person silhouette at roughly the same screen size and centered placement throughout the clip. Reject/regenerate if the people noticeably scale up, the frame feels like a dolly-in, or the camera zooms into the subjects.
 - Let the side/background environment provide most of the motion: street lights, signs, rain, water, trees, reflections, people far in the background, or parallax should move naturally around the centered subjects.
 - The final moment should return close to the opening composition, camera distance, lighting, palette, and subject placement while maintaining natural motion, so the app's loop crossfade does not feel like a jump.
-- If Dreamina rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared 10-attempt retry rule in `README.md` and `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and stop before render/publish after 10 failures.
+- If Gemini rejects generation for inappropriate content, copyright, moderation, or policy reasons, follow the shared retry rule in `docs/openclaw-visual-assets.md`: send Slack before every retry, remove protected IP or risky terms from the prompt, and use the approved still-image fallback when safe Gemini retries are exhausted.
 
 Prompt shape:
 
