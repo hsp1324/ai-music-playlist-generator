@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import secrets
+import threading
+import time
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
@@ -32,6 +34,9 @@ from app.workflows.scripture_sequence import (
 router = APIRouter(prefix="/openclaw", tags=["openclaw"])
 
 BIBLE_SCRIPTURE_UPLOAD_CHANNEL_TITLE = "BibliaCanto"
+BACKLOG_STATUS_CACHE_TTL_SECONDS = 10.0
+_backlog_status_cache_lock = threading.Lock()
+_backlog_status_cache: tuple[float, dict] | None = None
 
 
 def _canonical_scripture_branch_title(channel_title: str) -> str:
@@ -308,13 +313,23 @@ def backlog_status(
     db: Session = Depends(get_db),
     token: str = Depends(_request_token),
 ) -> dict:
+    global _backlog_status_cache
+
     services = get_services(request)
     _require_openclaw_token(services, token)
-    return {
+    now = time.monotonic()
+    with _backlog_status_cache_lock:
+        if _backlog_status_cache and now - _backlog_status_cache[0] < BACKLOG_STATUS_CACHE_TTL_SECONDS:
+            return _backlog_status_cache[1]
+    evaluation = evaluate_openclaw_backlog_scheduler(db, services)
+    response = {
         "ok": True,
-        "evaluation": evaluate_openclaw_backlog_scheduler(db, services),
-        "summary": build_openclaw_backlog_summary(db, services),
+        "evaluation": evaluation,
+        "summary": evaluation.get("summary") or build_openclaw_backlog_summary(db, services),
     }
+    with _backlog_status_cache_lock:
+        _backlog_status_cache = (now, response)
+    return response
 
 
 @router.post("/backlog/request")
