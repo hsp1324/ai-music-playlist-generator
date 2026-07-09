@@ -82,7 +82,16 @@ scripts/openclaw-release render-video \
 - Provide Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic, Simplified Chinese, and Traditional Chinese metadata.
 - The top-level `--title` / `--description-file` and `--ko-title` / `--ko-description-file` should match.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial K-pop playlists, not raw workspace names.
-- Use a clickable Korean title shape: `[playlist] 짧은 감정/상황 훅 | 상황에 듣기 좋은 장르 노래모음`. Put the hook before the separator and the truthful genre/listening promise after it. Good examples: `[playlist] 나랑 데이트 할래? | 데이트하기 전 기분 좋아지는 K-POP 힙합 노래모음`, `[playlist] 오늘 좀 예뻐 보이고 싶어 | 약속 전 자신감 올리는 K-POP 트랩 노래모음`, `[playlist] 전남친이 후회하게 | 외출 준비할 때 듣기 좋은 랩팝 노래모음`, `[playlist] 너도 나 좋아하잖아 | 썸 타기 전 설레는 Korean R&B 노래모음`.
+- HaruHaru titles must not keep copying one fixed formula. Start with `[playlist]`, keep the main title under 100 characters, then rotate between curiosity-led and searchable title shapes. Compare against at least the latest 15 HaruHaru titles before approval; if the new title reuses the same first-half hook family, same listening situation, or same sentence skeleton, rewrite it.
+- Avoid overusing `상황에 듣기 좋은`, `기분 좋아지는`, `자신감 올리는`, `홍대 가기 전`, `답장 오기 전까지`, and `노래모음`. These phrases are allowed only when they are clearly the best natural copy and have not appeared in recent HaruHaru uploads. Rotate endings such as `K-힙합 믹스`, `랩팝 모음`, `Korean R&B`, `밤에 틀어놓는 노래`, `외출 준비 음악`, `러닝 K-POP`, or `새벽 R&B` when accurate.
+- Use one of several title structures instead of a single template:
+  - Dialogue hook first: `[playlist] 오늘 연락하지 마 | 혼자 나갈 때 켜는 다크 K-POP 트랩`
+  - Genre/use-case first: `[playlist] 붐뱁 K-POP으로 걷는 밤 | 홍대 골목에서 듣는 랩팝 믹스`
+  - Immediate payoff first: `[playlist] 첫 곡부터 고개 까딱이는 K-힙합 | 약속 전 텐션 올리는 음악`
+  - Mini-story first: `[playlist] 안 꾸민 척 나가는 밤 | 친구가 찍어준 듯한 Seoul R&B`
+  - Mood identity first: `[playlist] 차갑게 예쁜 밤공기 | 도도하게 걷는 Korean R&B`
+  - Searchable lane first when the genre is the strongest hook: `[playlist] K-POP Trap Night Mix | 러닝과 외출 준비를 위한 K-랩`
+- Keep the title truthful to the audio lane. If the release is boom bap, say boom bap/붐뱁; if it is trap, say trap/트랩; if it is Korean R&B or neo-soul, say R&B/neo-soul. Do not label a mixed or weakly matching release as a sharper lane only for clicks.
 - Keep the whole release in one lane such as K-pop hip-hop, rap-pop, K-pop trap, boom bap K-pop, Korean R&B, neo-soul pop, or dark street-pop, and name that lane in the title/description when accurate. Avoid new city-pop and generic idol dance-pop planning unless the human explicitly asks; if a release is explicitly city-pop, do not backfill it with unrelated hip-hop/R&B/ballad tracks.
 - Backfill/reuse must match the detailed lane, not only the broad `K-pop` channel identity. For example, a boom-bap release should use boom-bap/rap-pop backfill, a trap release should use trap backfill, and an R&B/neo-soul release should use R&B/neo-soul backfill. If there is not enough matching material, stop around the publishable 40 minute range instead of filling the hour with unrelated K-pop, dance-pop, synth-pop, pop-rock, or ballad tracks.
 - If you intentionally arrange tracks by genre confidence, keep strongest same-lane tracks first and any weaker/manual fallback tracks last. Do not pass `--randomize-order` for that release; if randomization is unavoidable, the app preserves reused back-half tracks after the fresh lead block.

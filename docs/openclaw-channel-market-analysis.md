@@ -103,7 +103,7 @@ What gets views:
 
 Our direction:
 
-- Title shape: `[playlist] 짧은 한국어 클릭 훅 | 상황에 듣기 좋은 장르 노래모음`. Lead with a natural emotional line or question, then explain the real use case and genre. Examples: `[playlist] 나랑 데이트 할래? | 데이트하기 전 기분 좋아지는 K-POP 힙합 노래모음`, `[playlist] 오늘 좀 예뻐 보이고 싶어 | 약속 전 자신감 올리는 K-POP 트랩 노래모음`, `[playlist] 전남친이 후회하게 | 외출 준비할 때 듣기 좋은 랩팝 노래모음`.
+- Title shape: click-led but not formula-led. Lead with a natural Korean hook, a searchable lane, or an immediate payoff depending on the concept, then explain the real use case and genre without repeating the same grammar every upload. Rotate shapes such as `[playlist] 오늘 연락하지 마 | 혼자 나갈 때 켜는 다크 K-POP 트랩`, `[playlist] 붐뱁 K-POP으로 걷는 밤 | 홍대 골목에서 듣는 랩팝 믹스`, `[playlist] 첫 곡부터 고개 까딱이는 K-힙합 | 약속 전 텐션 올리는 음악`, and `[playlist] 안 꾸민 척 나가는 밤 | 친구가 찍어준 듯한 Seoul R&B`. Avoid repeating recent HaruHaru hooks like reply-waiting, Hongdae-beforegoing, confidence boost, and `듣기 좋은 ... 노래모음`.
 - Song direction: Korean vocal pop with rap/hip-hop/R&B attitude, clean hooks, strong chorus, and a clear single lane such as K-pop hip-hop, rap-pop, trap-pop, boom bap K-pop, Korean R&B, neo-soul pop, or dark street-pop.
 - Thumbnail direction: normally no text. Use the image itself to match the title hook: date/crush hooks should feel like a stylish adult Hongdae meet-up or getting-ready moment; confidence/glow-up hooks should feel like a friend-taken night-out streetwear photo; breakup-recovery hooks should feel cool and self-possessed, not sad stock imagery.
 - Avoid: forcing `운동`, `드라이브`, or `댄스 연습실` into lyrics unless it naturally belongs to the song.

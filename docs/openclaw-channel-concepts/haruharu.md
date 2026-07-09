@@ -21,7 +21,8 @@ From `scripts/openclaw-release list-releases`, inspect recent `HaruHaru` release
 - The same lyric premise, such as first confession, last text, missed timing, reunion, moving on, summer crush, or confidence glow-up.
 - The same thumbnail phrase, such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, or `SUMMER KPOP`.
 - Generic translated title shapes that do not say what the playlist is for.
-- The same clickable hook shape. Do not repeat only `나랑 데이트 할래?` / date-beforegoing / confidence titles; rotate between crush, night-out, getting ready, breakup recovery, self-confidence, walk, drive, and weekend energy.
+- The same clickable hook shape. Do not repeat only `나랑 데이트 할래?`, `답장 오기 전까지`, `오늘은 내가 주인공`, `홍대 가기 전`, date-beforegoing, reply-waiting, or confidence titles. Rotate between crush, night-out, getting ready, breakup recovery, self-confidence, walk, drive, running, weekend energy, and cool-alone energy.
+- The same grammar skeleton. If the latest titles already look like `[hook] | [situation] 듣기 좋은 [genre] 노래모음`, change the order, ending, and sentence rhythm rather than swapping only a few words.
 
 If the latest HaruHaru upload could be summarized by the same scene plus same emotion, choose a different concept.
 
@@ -45,8 +46,16 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Original Korean lyrics are required by default.
 - One release must stay in one clear genre lane such as K-pop hip-hop, rap-pop, K-pop trap, boom bap K-pop, Korean R&B, neo-soul pop, or dark street-pop. Do not make one playlist a vague mixed K-pop sampler unless the human explicitly asks.
 - Put the selected genre lane in the release title and metadata in natural Korean, English, and localized equivalents. Examples of genre words to use when accurate: `K-POP 힙합`, `랩팝`, `K-POP 트랩`, `붐뱁 K-POP`, `Korean R&B`, `K-POP Neo Soul`, `스트릿 K-POP`.
-- Korean/default YouTube title shape: `[playlist] 짧은 클릭 훅 | 상황에 듣기 좋은 장르 노래모음`. The first half should be a punchy natural Korean phrase or question, not a keyword list. The second half should say the real listening use case and genre, such as `데이트하기 전 기분 좋아지는 K-POP 힙합 노래모음`, `약속 전 자신감 올리는 K-POP 트랩 노래모음`, `홍대 나가기 전 듣기 좋은 랩팝 노래모음`, or `썸 타기 전 설레는 Korean R&B 노래모음`.
-- Use mild YouTube-clickable tension without becoming misleading, explicit, insulting, or unrelated to the music. Good hook families: `나랑 데이트 할래?`, `오늘 좀 예뻐 보이고 싶어`, `전남친이 후회하게`, `너도 나 좋아하잖아`, `오늘은 내가 주인공`, `답장 오기 전까지`, `홍대 가기 전에 틀어줘`, `괜히 자신감 생기는 밤`.
+- Korean/default YouTube titles should feel like current music-playlist packaging: short, accurate, emotionally legible, and varied. Use one truthful genre lane plus a concrete listener moment, but do not always use `상황에 듣기 좋은 장르 노래모음`.
+- Before approval, compare the draft title with at least the latest 15 HaruHaru titles. Reject titles that repeat the same first-half hook family, same use case, or same second-half wording. Recent overused families include reply-waiting, Hongdae-beforegoing, confidence boost, date/crush setup, and `듣기 좋은 ... 노래모음`.
+- Rotate title structures:
+  - Dialogue hook first: `[playlist] 오늘 연락하지 마 | 혼자 나갈 때 켜는 다크 K-POP 트랩`
+  - Genre/use-case first: `[playlist] 붐뱁 K-POP으로 걷는 밤 | 홍대 골목에서 듣는 랩팝 믹스`
+  - Immediate payoff first: `[playlist] 첫 곡부터 고개 까딱이는 K-힙합 | 약속 전 텐션 올리는 음악`
+  - Mini-story first: `[playlist] 안 꾸민 척 나가는 밤 | 친구가 찍어준 듯한 Seoul R&B`
+  - Mood identity first: `[playlist] 차갑게 예쁜 밤공기 | 도도하게 걷는 Korean R&B`
+  - Searchable lane first when appropriate: `[playlist] K-POP Trap Night Mix | 러닝과 외출 준비를 위한 K-랩`
+- Use mild YouTube-clickable tension without becoming misleading, explicit, insulting, or unrelated to the music. Good hook families include cool-alone energy, getting ready, street confidence, first-message tension, night walk, breakup recovery, running, club-beforegoing, and weekend main-character energy. Do not rely on only `나랑 데이트 할래?`, `오늘 좀 예뻐 보이고 싶어`, `전남친이 후회하게`, `너도 나 좋아하잖아`, `오늘은 내가 주인공`, or `답장 오기 전까지`.
 - Every track needs a distinct Korean lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is `댄스 연습실 K-POP`, the beat, tempo, confidence, and performance energy should fit dance practice, but the lyrics do not need to mention dance practice, mirrors, choreography, or working out.
 - Write each song like a real standalone K-pop track: natural Korean phrasing, believable emotion, relationship tension, confidence, crush, breakup, comeback, night-out, youth, or self-belief. Avoid over-literal or cringe lyrics that repeat the YouTube title/use case.
@@ -74,11 +83,16 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 
 ## Good Fresh Concept Shapes
 
-- `[playlist] 나랑 데이트 할래? | 데이트하기 전 기분 좋아지는 K-POP 힙합 노래모음`
-- `[playlist] 오늘 좀 예뻐 보이고 싶어 | 약속 전 자신감 올리는 K-POP 트랩 노래모음`
-- `[playlist] 전남친이 후회하게 | 외출 준비할 때 듣기 좋은 랩팝 노래모음`
-- `[playlist] 너도 나 좋아하잖아 | 썸 타기 전 설레는 Korean R&B 노래모음`
-- `[playlist] 오늘은 내가 주인공 | 홍대 나가기 전 듣는 붐뱁 K-POP 노래모음`
+These are direction examples, not fixed templates. Do not copy several in a row.
+
+- `[playlist] 오늘 연락하지 마 | 혼자 나갈 때 켜는 다크 K-POP 트랩`
+- `[playlist] 붐뱁 K-POP으로 걷는 밤 | 홍대 골목에서 듣는 랩팝 믹스`
+- `[playlist] 첫 곡부터 고개 까딱이는 K-힙합 | 약속 전 텐션 올리는 음악`
+- `[playlist] 안 꾸민 척 나가는 밤 | 친구가 찍어준 듯한 Seoul R&B`
+- `[playlist] 차갑게 예쁜 밤공기 | 도도하게 걷는 Korean R&B`
+- `[playlist] K-POP Trap Night Mix | 러닝과 외출 준비를 위한 K-랩`
+- `[playlist] 오늘은 내가 좀 차가워 | 새벽 택시에서 듣는 네오소울 K-POP`
+- `[playlist] 말수 줄이고 분위기로 가는 밤 | Hongdae Rap-Pop Mix`
 
 ## Bad Directions
 
