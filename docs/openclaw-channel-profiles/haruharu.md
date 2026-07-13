@@ -6,6 +6,7 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 
 - This profile is for Korean-language hip K-pop vocal releases: K-pop hip-hop, rap-pop, K-pop trap, boom bap-influenced Korean pop, Korean R&B, neo-soul pop, dark street-pop, and similar Korean vocal tracks with rap/R&B attitude.
 - Music defaults to original Korean vocal songs with lyrics.
+- For lyrics only, do not use `홍대`, `Hongdae`, `커튼`, or `curtain`, including compounds or alternate casing. Avoid turning incidental neighborhoods, room decor, or props into repeated lyric hooks; prefer natural emotional detail and song-specific imagery. This does not restrict relevant visual or metadata planning.
 - Do not choose city-pop as the default new HaruHaru direction unless the human explicitly asks for that exact lane or an existing in-progress release is already clearly city-pop. If a HaruHaru release is city-pop, keep reused/backfill tracks city-pop-related; if it is not city-pop, do not mix city-pop tracks into it.
 - Do not route J-pop/Japanese pop here; use `Tokyo Daydream Radio`.
 - Do not route English/American pop here; use `sundaze`.
