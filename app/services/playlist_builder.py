@@ -281,9 +281,7 @@ class FFMpegPlaylistBuilder:
         source_durations: list[float] = []
         unreadable: list[str] = []
         for track, audio_path in zip(tracks, audio_paths, strict=True):
-            duration = float(track.duration_seconds or 0)
-            if duration <= 0:
-                duration = self._probe_media_duration(audio_path)
+            duration = self.get_renderable_media_duration(audio_path)
             if duration <= 0:
                 unreadable.append(f"{track.title} ({audio_path})")
             else:
@@ -1873,6 +1871,55 @@ class FFMpegPlaylistBuilder:
             return max(float(result.stdout.strip()), 0.0)
         except (OSError, subprocess.CalledProcessError, ValueError):
             return 0.0
+
+    def get_renderable_media_duration(self, media_path: Path) -> float:
+        """Return the duration ffmpeg will use while rendering a source file."""
+        decoded_duration = self._decode_media_duration(media_path)
+        if decoded_duration > 0:
+            return decoded_duration
+        return self._probe_media_duration(media_path)
+
+    def _decode_media_duration(self, media_path: Path) -> float:
+        """Return decoded duration when container metadata is incomplete or inaccurate.
+
+        Some VBR MP3 uploads have no Xing/Info duration header.  ffprobe then
+        estimates duration from the bitrate, which can be substantially longer
+        than the audio that ffmpeg will actually concatenate.  Decode to the
+        null muxer so render validation and the rendered timeline use the same
+        duration as the audio renderer.
+        """
+        try:
+            result = subprocess.run(
+                [
+                    self.settings.ffmpeg_binary,
+                    "-v",
+                    "error",
+                    "-nostats",
+                    "-progress",
+                    "pipe:1",
+                    "-i",
+                    str(media_path),
+                    "-f",
+                    "null",
+                    "-",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return 0.0
+
+        decoded_microseconds = 0.0
+        for line in result.stdout.splitlines():
+            name, separator, value = line.partition("=")
+            if not separator or name not in {"out_time_us", "out_time_ms"}:
+                continue
+            try:
+                decoded_microseconds = max(decoded_microseconds, float(value))
+            except ValueError:
+                continue
+        return max(decoded_microseconds / 1_000_000, 0.0)
 
     def _resolve_loop_source_seconds(self, clip_path: Path) -> float:
         probed_duration = self._probe_media_duration(clip_path)
