@@ -366,7 +366,7 @@ def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
     builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
     frame = Image.new("RGB", (1280, 720), "#111111")
     draw = ImageDraw.Draw(frame)
-    assert SPECTRUM_OVERLAY_WIDTH == 280
+    assert SPECTRUM_OVERLAY_WIDTH == 420
     expected = (1280 - SPECTRUM_OVERLAY_WIDTH - 55, 720 - SPECTRUM_OVERLAY_HEIGHT - 45)
     draw.rectangle(
         [
@@ -395,13 +395,15 @@ def test_bar_spectrum_is_center_weighted_and_balanced(tmp_path) -> None:
     def region_alpha(left: int, right: int) -> int:
         return sum(alpha.crop((left, 0, right, SPECTRUM_OVERLAY_HEIGHT)).getdata())
 
-    left_edge = region_alpha(0, 64)
-    center = region_alpha(108, 172)
-    right_edge = region_alpha(SPECTRUM_OVERLAY_WIDTH - 64, SPECTRUM_OVERLAY_WIDTH)
+    edge_width = 64
+    center_x = SPECTRUM_OVERLAY_WIDTH // 2
+    left_edge = region_alpha(0, edge_width)
+    center = region_alpha(center_x - (edge_width // 2), center_x + (edge_width // 2))
+    right_edge = region_alpha(SPECTRUM_OVERLAY_WIDTH - edge_width, SPECTRUM_OVERLAY_WIDTH)
 
     assert center > left_edge * 2
     assert center > right_edge * 2
-    assert abs(left_edge - right_edge) < max(left_edge, right_edge) * 0.35
+    assert abs(left_edge - right_edge) <= max(left_edge, right_edge) * 0.35
 
 
 def test_bar_spectrum_bounces_without_horizontal_drift(tmp_path) -> None:
@@ -538,20 +540,20 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
     assert len(calls) == 6
 
     normalize_filter = calls[0][calls[0].index("-vf") + 1]
-    assert "trim=duration=7" in normalize_filter
+    assert "trim=duration=10" in normalize_filter
 
     intro_call = calls[1]
-    assert intro_call[intro_call.index("-t") + 1] == "5.5"
+    assert intro_call[intro_call.index("-t") + 1] == "8.5"
 
     transition_call = calls[2]
     transition_filter = transition_call[transition_call.index("-filter_complex") + 1]
     assert "reverse" not in transition_filter
     assert "xfade=transition=fade:duration=1.5:offset=0" in transition_filter
-    assert transition_call[transition_call.index("-ss") + 1] == "5.5"
+    assert transition_call[transition_call.index("-ss") + 1] == "8.5"
 
     body_call = calls[3]
     assert body_call[body_call.index("-ss") + 1] == "1.5"
-    assert body_call[body_call.index("-t") + 1] == "4"
+    assert body_call[body_call.index("-t") + 1] == "7"
 
     loop_unit_call = calls[4]
     loop_unit_filter = loop_unit_call[loop_unit_call.index("-filter_complex") + 1]
