@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class SunoGenerationCreateRequest(BaseModel):
@@ -16,10 +16,21 @@ class SunoGenerationCreateRequest(BaseModel):
     persona_model: str | None = None
     negative_tags: str | None = None
     vocal_gender: str | None = None
-    style_weight: float | None = None
-    weirdness_constraint: float | None = None
-    audio_weight: float | None = None
+    style_weight: float | None = Field(default=None, ge=0, le=1, multiple_of=0.01)
+    weirdness_constraint: float | None = Field(default=None, ge=0, le=1, multiple_of=0.01)
+    audio_weight: float | None = Field(default=None, ge=0, le=1, multiple_of=0.01)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("vocal_gender", mode="before")
+    @classmethod
+    def normalize_vocal_gender(cls, value: Any) -> str | None:
+        clean = str(value or "").strip().lower()
+        if not clean:
+            return None
+        aliases = {"m": "m", "male": "m", "man": "m", "f": "f", "female": "f", "woman": "f"}
+        if clean not in aliases:
+            raise ValueError("vocal_gender must be male/female or m/f")
+        return aliases[clean]
 
 
 class SunoWebhookTrackPayload(BaseModel):
