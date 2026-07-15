@@ -1,6 +1,9 @@
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.services.suno_service import SunoGenerationResult
 
 
 def test_manual_suno_webhook_creates_track_and_holds_without_score() -> None:
@@ -134,6 +137,85 @@ def test_suno_generation_exclude_style_is_carried_to_callback_tracks() -> None:
     assert track["style"] == "Korean pop, clean vocal, bright chorus"
     assert track["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
     assert track["metadata_json"]["exclude_style"] == "muddy vocals, heavy reverb, concert hall echo"
+
+
+def test_suno_generation_normalizes_and_persists_advanced_variation_settings() -> None:
+    client = TestClient(create_app())
+    submitted_requests = []
+    provider_task_id = f"advanced-variation-{uuid4()}"
+
+    def submit_generation_batch(requests):
+        submitted_requests.extend(requests)
+        return [
+            SunoGenerationResult(
+                ok=True,
+                provider_job_id=provider_task_id,
+                raw={"provider_job_id": provider_task_id},
+            )
+        ]
+
+    client.app.state.services.suno.submit_generation_batch = submit_generation_batch
+    client.app.state.services.suno.download_audio_to_storage = lambda source_url, source_track_id=None: (
+        f"storage/tracks/{source_track_id}.mp3"
+    )
+
+    generation_response = client.post(
+        "/api/suno/generations",
+        json={
+            "prompt": "K-pop groove with a distinct low female lead",
+            "style": "Korean pop, low female mezzo, smoky grain, dry close-mic phrasing",
+            "vocal_gender": "female",
+            "style_weight": 0.68,
+            "weirdness_constraint": 0.57,
+        },
+    )
+
+    assert generation_response.status_code == 202
+    assert submitted_requests[0].vocal_gender == "f"
+    assert submitted_requests[0].style_weight == 0.68
+    assert submitted_requests[0].weirdness_constraint == 0.57
+    provider_job_id = generation_response.json()["provider_job_id"]
+    callback_response = client.post(
+        "/api/suno/webhook",
+        json={
+            "code": 200,
+            "msg": "All generated successfully.",
+            "data": {
+                "callbackType": "complete",
+                "task_id": provider_job_id,
+                "data": [
+                    {
+                        "id": "varied-vocal-1",
+                        "audio_url": "https://cdn.example.com/varied-vocal-1.mp3",
+                        "title": "Varied Vocal",
+                        "duration": 205.0,
+                    }
+                ],
+            },
+        },
+    )
+
+    assert callback_response.status_code == 200
+    track_id = callback_response.json()["track_ids"][0]
+    track = client.get(f"/api/tracks/{track_id}").json()
+    assert track["metadata_json"]["vocal_gender"] == "f"
+    assert track["metadata_json"]["style_weight"] == 0.68
+    assert track["metadata_json"]["weirdness_constraint"] == 0.57
+
+
+def test_suno_generation_rejects_ui_percentages_in_normalized_api_fields() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/suno/generations",
+        json={
+            "prompt": "Club instrumental",
+            "style_weight": 68,
+            "weirdness_constraint": 57,
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_sunoapi_progress_callback_only_acknowledges_without_creating_tracks() -> None:
