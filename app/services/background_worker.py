@@ -885,10 +885,10 @@ class BackgroundJobWorker:
         rendered_track_durations = []
         rendered_track_duration_sources = []
         for track in tracks:
-            probed_duration = self.services.playlist_builder._probe_media_duration(Path(track.audio_path))
+            probed_duration = self.services.playlist_builder.get_renderable_media_duration(Path(track.audio_path))
             if probed_duration > 0:
                 rendered_track_durations.append(probed_duration)
-                rendered_track_duration_sources.append("ffprobe")
+                rendered_track_duration_sources.append("decoded_media")
             else:
                 rendered_track_durations.append(float(track.duration_seconds or 0))
                 rendered_track_duration_sources.append("track_duration")

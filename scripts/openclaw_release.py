@@ -914,11 +914,11 @@ def upload_failure_notice(
 ) -> str:
     release_title = release.get("title") or release.get("id") or "unknown release"
     lines = [
-        "*OpenClaw audio upload problem*",
-        f"Release: `{release_title}`",
-        f"Action: `{action}`",
-        f"Uploaded remaining tracks: `{uploaded_count}`",
-        f"Failed after {MAX_AUDIO_UPLOAD_ATTEMPTS} attempts:",
+        "*OpenClaw 오디오 업로드 문제*",
+        f"릴리스: `{release_title}`",
+        f"동작: `{action}`",
+        f"남은 업로드 완료 트랙: `{uploaded_count}`",
+        f"{MAX_AUDIO_UPLOAD_ATTEMPTS}회 시도 후 실패:",
     ]
     for failure in failures[:10]:
         title = failure.get("title") or Path(failure.get("audio_path") or "").name
@@ -927,7 +927,7 @@ def upload_failure_notice(
         lines.append(f"- `{title}` (`{audio_name}`): {error[:300]}")
     if len(failures) > 10:
         lines.append(f"- ...and {len(failures) - 10} more")
-    lines.append("Render/publish was stopped. Re-download or re-export the failed source files and upload them again.")
+    lines.append("렌더/게시가 중단되었습니다. 실패한 소스를 다시 내려받거나 다시 내보내서 재업로드하세요.")
     return "\n".join(lines)
 
 
@@ -1490,9 +1490,9 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             "style_present": bool((track.get("metadata_json") or {}).get("style")),
         },
         "next": (
-            "Track uploaded and auto-approved into the playlist."
+            "트랙이 업로드되어 재생목록에 자동 승인되었습니다."
             if auto_approve_playlist
-            else "Review and approve the track in Slack or the web UI."
+            else "Slack 또는 웹 UI에서 트랙을 검토하고 승인하세요."
         ),
     }
 
@@ -1613,9 +1613,9 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         "tracks": tracks,
         "failed_uploads": failed_uploads,
         "next": (
-            "Human review can approve one candidate. If both candidates are good, approve the second one too; "
-            "the app will split it into its own Single Release instead of combining the two songs. "
-            "If both candidates are rejected, the release is automatically archived and can be restored from the web UI."
+            "사람 리뷰에서 후보 하나를 승인할 수 있습니다. 두 후보가 모두 괜찮다면 둘 다 승인하세요. "
+            "앱이 두 곡을 합치지 않고 각각 별도 Single Release로 분리합니다. "
+            "두 후보가 모두 거절되면 릴리스는 자동으로 보관되며 웹 UI에서 복원할 수 있습니다."
         ),
     }
 

@@ -466,6 +466,34 @@ def test_build_audio_reports_ffmpeg_progress(tmp_path, monkeypatch) -> None:
     assert progress_events == [{"stage": "audio_render", "percent": 50.0}]
 
 
+def test_build_audio_uses_decoded_duration_when_mp3_metadata_is_inaccurate(tmp_path, monkeypatch) -> None:
+    audio_paths = [tmp_path / "one.mp3", tmp_path / "two.mp3"]
+    for path in audio_paths:
+        path.write_bytes(b"fake-audio")
+    output_path = tmp_path / "release.mp3"
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    captured = {}
+
+    monkeypatch.setattr(builder, "_probe_media_duration", lambda path: 40.0 if path == output_path else 30.0)
+    monkeypatch.setattr(builder, "_decode_media_duration", lambda _path: 20.0)
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        captured["total_duration_seconds"] = total_duration_seconds
+        output_path.write_bytes(b"rendered-audio")
+
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder.build_audio(
+        [
+            Track(title="One", duration_seconds=30, audio_path=str(audio_paths[0])),
+            Track(title="Two", duration_seconds=30, audio_path=str(audio_paths[1])),
+        ],
+        output_path,
+    )
+
+    assert captured["total_duration_seconds"] == 40.0
+
+
 def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> None:
     calls_path = tmp_path / "ffmpeg-calls.jsonl"
     concat_path = tmp_path / "concat-list.txt"
