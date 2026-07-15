@@ -89,7 +89,7 @@ def _release_title_label(value: Any) -> str:
 
 
 def _artwork_title(value: Any) -> str:
-    return f"{_short(_release_title_label(value), 80)} artwork"
+    return f"{_short(_release_title_label(value), 80)} 아트워크"
 
 
 def _local_asset_path(services, path_value: Any) -> str:
@@ -202,7 +202,7 @@ def post_ops_message(
             upload_result = _run_async(
                 lambda: services.slack.upload_local_file(
                     file_path=image_path,
-                    title=image_title or "Release artwork",
+                    title=image_title or "릴리스 아트워크",
                     token=token,
                     channel=target_channel,
                     initial_comment=text,
@@ -239,11 +239,11 @@ def notify_video_render_queued(db: Session, services, *, playlist: Playlist, job
     visualizer = str(payload.get("video_spectrum_overlay_style") or "bars")
     actor = str(payload.get("actor") or "unknown")
     mode = services.settings.video_render_execution_mode
-    title = "Video render queued"
+    title = "비디오 렌더 대기"
     fields = [
-        ("Mode", mode),
-        ("Visualizer", visualizer),
-        ("Queued by", actor),
+        ("모드", mode),
+        ("비주얼라이저", visualizer),
+        ("요청자", actor),
     ]
     text = _ops_text(title=title, release_title=playlist.title, fields=fields)
     blocks = _ops_blocks(
@@ -281,10 +281,10 @@ def notify_render_worker_claimed(
     current = now or _utcnow()
     queue_elapsed = _elapsed_since(job.created_at, now=current)
     worker_label = _worker_label(worker)
-    title = "Render worker claimed"
+    title = "렌더 작업자 점유"
     fields = [
         ("작업자", worker_label),
-        ("Queued for", queue_elapsed),
+        ("큐 대기", queue_elapsed),
     ]
     text = _ops_text(title=title, release_title=playlist.title, fields=fields)
     blocks = _ops_blocks(
@@ -314,11 +314,11 @@ def notify_render_worker_completed(
     current = now or _utcnow()
     elapsed = _elapsed_since(worker.get("claimed_at") or job.started_at, now=current)
     worker_label = _worker_label(worker)
-    title = "Render worker completed"
+    title = "렌더 작업자 완료"
     fields = [
         ("작업자", worker_label),
-        ("Elapsed", elapsed),
-        ("Result", "MP4 uploaded to main VM"),
+        ("경과", elapsed),
+        ("결과", "MP4가 메인 VM에 업로드됨"),
     ]
     text = _ops_text(title=title, release_title=playlist.title, fields=fields)
     blocks = _ops_blocks(
@@ -351,11 +351,11 @@ def notify_render_worker_timeout_requeued(
     current = now or _utcnow()
     elapsed = _elapsed_since(heartbeat_at, now=current)
     worker_label = _worker_label(worker)
-    title = "Render worker timed out; job requeued"
+    title = "렌더 작업자 시간 초과, 작업 재큐"
     fields = [
         ("작업자", worker_label),
-        ("Timeout", _format_duration(timeout_seconds)),
-        ("No heartbeat for", elapsed),
+        ("타임아웃", _format_duration(timeout_seconds)),
+        ("하트비트 없음", elapsed),
     ]
     text = _ops_text(title=title, release_title=playlist_title, fields=fields)
     blocks = _ops_blocks(
@@ -384,13 +384,13 @@ def notify_youtube_publish_completed(
 ) -> dict[str, Any]:
     channel = str(channel_title or "").strip() or "unknown channel"
     youtube_link = f"https://youtu.be/{youtube_video_id}" if youtube_video_id else "missing video id"
-    title = "YouTube publish completed"
+    title = "YouTube 게시 완료"
     fields = [
-        ("Channel", channel),
-        ("Video", youtube_link),
+        ("채널", channel),
+        ("영상", youtube_link),
     ]
     if scheduled_publish_at:
-        fields.append(("Scheduled", scheduled_publish_at))
+        fields.append(("예약", scheduled_publish_at))
     text = _ops_text(title=title, release_title=playlist.title, fields=fields)
     blocks = _ops_blocks(
         title=title,

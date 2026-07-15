@@ -252,8 +252,9 @@ class LyricCaptionService:
                 "-o",
                 str(output_path),
             ]
-            if self.settings.codex_metadata_model.strip():
-                cmd.extend(["--model", self.settings.codex_metadata_model.strip()])
+            model = self._normalize_codex_model(self.settings.codex_metadata_model)
+            if model:
+                cmd.extend(["--model", model])
             cmd.append("-")
             env = dict(os.environ)
             env["NO_COLOR"] = "1"
@@ -284,6 +285,20 @@ class LyricCaptionService:
         if not resolved:
             raise RuntimeError(f"codex command not found: {command}")
         return resolved
+
+    @staticmethod
+    def _normalize_codex_model(model: str) -> str:
+        normalized = (model or "").strip()
+        if not normalized:
+            return ""
+        parts = normalized.split()
+        if len(parts) > 1 and parts[-1].lower() == "xhigh":
+            normalized = parts[0]
+        if " " in normalized:
+            normalized = normalized.replace(" ", "")
+        if normalized.endswith("-xhigh"):
+            normalized = normalized[: -len("-xhigh")]
+        return normalized
 
     def _translation_prompt(self, texts: list[str], source_language: str, target_languages: list[str]) -> str:
         language_names = {language: LANGUAGE_NAMES.get(language, language) for language in target_languages}
