@@ -70,6 +70,15 @@ def create_suno_generation(
         generation_metadata["style"] = payload.style
     if exclude_style and not generation_metadata.get("exclude_style"):
         generation_metadata["exclude_style"] = exclude_style
+    advanced_values = {
+        "vocal_gender": payload.vocal_gender,
+        "style_weight": payload.style_weight,
+        "weirdness_constraint": payload.weirdness_constraint,
+        "audio_weight": payload.audio_weight,
+    }
+    for key, value in advanced_values.items():
+        if value is not None and key not in generation_metadata:
+            generation_metadata[key] = value
 
     job_payload = payload.model_dump()
     job_payload["metadata"] = generation_metadata
@@ -240,6 +249,9 @@ async def suno_webhook(
             metadata["style"] = source_style
         if source_exclude_style and not metadata.get("exclude_style"):
             metadata["exclude_style"] = source_exclude_style
+        for key in ("vocal_gender", "style_weight", "weirdness_constraint", "audio_weight", "vocal_identity"):
+            if source_metadata.get(key) is not None and metadata.get(key) is None:
+                metadata[key] = source_metadata[key]
         metadata = annotate_short_track_metadata(
             metadata,
             duration_seconds=item.duration_seconds,
