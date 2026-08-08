@@ -136,6 +136,7 @@ SCRIPTURE_BLOCKS = {
         {"next_start": "Matthew 9:27", "passage_range": "Matthew 9:27-34", "next_start_after_completion": "Matthew 9:35"},
         {"next_start": "Matthew 9:35", "passage_range": "Matthew 9:35-38", "next_start_after_completion": "Matthew 10:1"},
         {"next_start": "Matthew 10:1", "passage_range": "Matthew 10:1-15", "next_start_after_completion": "Matthew 10:16"},
+        {"next_start": "Matthew 10:16", "passage_range": "Matthew 10:16-25", "next_start_after_completion": "Matthew 10:26"},
     ],
 }
 
