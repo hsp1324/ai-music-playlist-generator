@@ -90,3 +90,23 @@ def test_scripture_sequence_continues_into_matthew_ten(tmp_path) -> None:
 
     assert reserved["entry"]["passage_range"] == "Matthew 10:1-15"
     assert reserved["entry"]["next_start_after_completion"] == "Matthew 10:16"
+
+
+def test_scripture_sequence_continues_through_matthew_ten_mission_warning(tmp_path) -> None:
+    complete_scripture_passage(
+        tmp_path,
+        channel_title="New Testament",
+        passage_range="Matthew 10:1-15",
+        release_id="matthew-ten-sent",
+        status="scheduled",
+    )
+
+    reserved = reserve_scripture_passage(
+        tmp_path,
+        channel_title="New Testament",
+        release_id="matthew-ten-warning",
+        title="[playlist] Matthew 10:16-25 New Testament Scripture Songs",
+    )
+
+    assert reserved["entry"]["passage_range"] == "Matthew 10:16-25"
+    assert reserved["entry"]["next_start_after_completion"] == "Matthew 10:26"
