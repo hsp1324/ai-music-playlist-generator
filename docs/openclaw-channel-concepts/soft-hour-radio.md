@@ -4,7 +4,7 @@ Use this after the selected channel is `Soft Hour Radio`. This document decides 
 
 ## Channel Promise
 
-Soft Hour Radio is now for long-listening solo piano BGM: study, work, reading, sleep, rest, cafe, focus, and calm background use.
+Soft Hour Radio is for long-listening piano BGM in two equal lanes: the existing calm real-world solo-piano package and original Japanese anime/game OST-style piano music. Both lanes serve study, work, reading, sleep, rest, cafe, focus, gentle adventure, and calm background use.
 
 The audience should immediately understand the practical listening use case.
 
@@ -22,11 +22,11 @@ From `scripts/openclaw-release list-releases`, inspect recent `Soft Hour Radio` 
 - The same thumbnail phrase, such as `CAFE PIANO`, `FOCUS MUSIC`, `DEEP SLEEP`, or `RAINY NIGHT`.
 - The same visual scene if it was used recently.
 
-If the latest 3 Soft Hour releases share the same setting, use case, tempo/energy, or thumbnail phrase, choose a different one. The instrument stays solo piano.
+First run `scripts/openclaw-release soft-hour-lane`. Use its `next_lane` and store it with `create-release --soft-hour-lane classic_piano|anime_game_ost`. The command alternates against the latest classified Soft Hour release, which keeps the long-run output at 50:50 instead of allowing random streaks. If the latest 3 Soft Hour releases share the same setting, use case, tempo/energy, or thumbnail phrase, choose a different one inside the selected lane.
 
 ## Concept Lanes
 
-Combine one use case, one setting, and one solo-piano lane:
+Choose exactly one top-level lane, then combine one use case, one setting, and one piano sub-lane:
 
 Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-taxonomy.md). Make each video specific, such as rainy reading solo piano, cafe work piano, deep sleep felt piano, forest morning piano, quiet focus piano, or fireplace rest piano, while the app assigns it to a broader YouTube playlist bucket such as `Piano BGM`, `Sleep & Relax BGM`, or `Study & Focus BGM`.
 
@@ -37,28 +37,41 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Cafe: afternoon counter solo piano, candle table piano, warm upright/felt piano, no jazz trio.
 - Relaxation: moonlit room piano, garden-window piano, slow expressive solo piano, gentle cadence.
 
-Do not choose lofi beats, Rhodes, guitar, strings, ambient pads, jazz trio, bossa, drums, percussion, or mixed-instrument BGM for new Soft Hour Radio work unless the human explicitly changes this rule later.
+### `classic_piano` — current Soft Hour concept
+
+- Keep the current calm, practical solo/felt/upright piano sound and premium real-world cover system.
+- Favor quiet study, cafe work, reading, sleep, rain, rest, forest morning, greenhouse, cottage, and warm-room concepts.
+
+### `anime_game_ost` — Japanese animation/game OST piano concept
+
+- Write an original piano-led instrumental that feels at home in a warm Japanese animation or fantasy/adventure game soundtrack without copying any existing melody, harmony sequence, arrangement, title, character, or franchise.
+- The emotional range can be bright and lively, gently bouncy, warmly nostalgic, peaceful, tender, or quietly hopeful. A calm track is valid when the anime/game OST identity remains unmistakable; do not force every cue to be fast.
+- Use memorable lyrical piano motifs, clear melodic storytelling, graceful theme development, light-footed left-hand motion or broken-chord momentum when appropriate, colorful major/add9/sus harmony, and a satisfying theme return. Avoid dark trailer scoring, huge battle orchestra, ominous ambience, or generic sleep-piano drift with no theme.
+- Good concept families include a sunlit fantasy-town morning, first journey, lakeside memory, sky-island breeze, flower-field reunion, observatory night, peaceful railway departure, cozy item shop, forest save point, or hopeful ending scene. These are original mood families, not references to a real game scene.
+- The user mentioned existing soundtrack pieces only as an emotional compass. Never put `TalesWeaver`, `Reminiscence`, `Second Run`, a composer, a franchise, or an imitation request into Suno, image, video, metadata, or public titles. Translate the request into the broad musical traits above.
+
+Do not choose lofi beats, Rhodes, guitar-led, ambient-pad, jazz-trio, bossa, drum/percussion, or unrelated mixed-instrument BGM. `classic_piano` stays solo piano. `anime_game_ost` may use only the restrained support color explicitly allowed below and must remain unmistakably piano-led.
 
 ## Music Direction
 
 - Instrumental/no-vocal by default.
-- Solo piano only by default.
+- Piano-led and solo-piano-first in both lanes. Keep `classic_piano` strictly solo/felt/upright piano. Keep `anime_game_ost` centered on piano; default to solo piano, with only extremely restrained music-box/celesta, soft strings, or a light woodwind color when it materially helps the game-OST storytelling and the release concept explicitly calls for it.
 - Follow `../suno-v55-instrumental-format.md`.
 - Use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field.
-- The first roughly 10 minutes of every new Soft Hour playlist should be newly generated solo piano tracks. Use `solo piano`, `felt piano`, `upright piano`, `quiet piano`, or `calm piano` directly in every Suno style/settings field.
-- Fill Suno Advanced Options excluded styles with vocal-related, artificial-noise, and non-piano arrangement exclusions: vocals, singing, humming, spoken word, lyrics, guitar, strings, pads, synth pads, Rhodes, electric piano, organ, bass, drums, beats, percussion, lofi beats, jazz trio, bossa, sax, flute, choir, orchestra.
-- Do not force Soft Hour Radio tracks under 4 minutes, and do not use two-minute lower-bound wording in Suno fields. Build each bracket-only solo-piano flow as a full cue meant to naturally land around 4 minutes or longer: intro motif, first theme, second developed theme, middle variation, final theme return, and resolved outro. Tracks shorter than 4:00 are still valid uploads when they fit; only tracks under 1:00 are a default blocker. Longer complete tracks, including 5+ minute cues, are allowed.
-- After the fresh 10-minute solo-piano block is uploaded, let the app reuse previous same-channel similar tracks for the remaining duration. Reuse is piano-first: previous Soft Hour solo-piano tracks should be selected before any fallback material. If there are not enough piano tracks to approach one hour, similar existing Soft Hour music may fill the remaining back half instead of blocking.
-- Keep the newly generated solo-piano tracks at the beginning of the final render. If order randomization is used, it may shuffle the new solo-piano tracks among themselves, but the reused back-half tracks must stay after that fresh lead block.
+- Generate about three new piano tracks for every normal new Soft Hour playlist, usually producing roughly 10-12 minutes of fresh audio. Do not generate more than three unless one is unusable or the human explicitly asks. Put the selected lane and concrete piano wording in every Suno style/settings field: `solo piano`, `felt piano`, `upright piano`, `quiet piano`, or `Japanese anime/game OST-style piano` as appropriate.
+- For `classic_piano`, keep the existing non-piano arrangement exclusions. For `anime_game_ost`, always exclude vocals, singing, humming, spoken word, lyrics, drums, beats, percussion, lofi beats, jazz trio, bossa, EDM, rock band, trailer music, epic battle orchestra, dark ambient, and horror; also exclude any support instrument not intentionally allowed by the selected concept.
+- Do not force Soft Hour Radio tracks under 4 minutes, and do not use two-minute lower-bound wording in Suno fields. Build each bracket-only piano flow as a full cue meant to naturally land around 4 minutes or longer: intro motif, first theme, second developed theme, middle variation, final theme return, and resolved outro. Tracks shorter than 4:00 are still valid uploads when they fit; only tracks under 1:00 are a default blocker. Longer complete tracks, including 5+ minute cues, are allowed.
+- After the roughly three-track fresh piano block is uploaded, let the app reuse previous same-channel, same-lane or closely compatible piano tracks for the remaining duration. If there are not enough compatible piano tracks to approach one hour, use the fresh block instead of filling an `anime_game_ost` release with unrelated sleep/cafe piano.
+- Keep the newly generated piano tracks at the beginning of the final render. If order randomization is used, it may shuffle the new tracks among themselves, but reused back-half tracks must stay after that fresh lead block.
 - Prioritize low listener fatigue, smooth flow, and practical usefulness.
 
 ## Visual Direction
 
 - No fixed mascot, fixed character count, or required walking composition.
 - The scene should be restrained and useful for long listening.
-- Use high-quality photorealistic real-world BGM imagery by default while keeping the established calm Soft Hour background feeling: quiet cafe, study desk, rain window, greenhouse, reading room, cottage, workshop, sleep room, or similar restful spaces.
+- Follow the selected visual lane. `classic_piano` uses high-quality photorealistic real-world BGM imagery. `anime_game_ost` uses bright premium original Japanese-animation/game-key-art illustration with an inviting fantasy/adventure scene. Calm illustrated scenes are allowed; “bright” means clear, warm, hopeful visual energy, not mandatory neon saturation or frantic action.
 - Use a completely static locked-off camera in the short loop. There should be no pan, zoom, dolly, handheld drift, camera breathing, or parallax camera movement.
-- Use only subtle environmental motion that naturally belongs in the same photorealistic scene, such as rain on glass, cup steam, lamp flicker, curtain edge movement, dust in light, smoke, firelight, reflections, or leaves.
+- Use only subtle lane-matched environmental motion. `classic_piano` can use rain, steam, lamp flicker, curtains, dust, firelight, reflections, or leaves. `anime_game_ost` can use petals, grass, clouds, water sparkle, hair/cloth settling, magical motes, distant windmills, or warm light shimmer.
 - Thumbnail text should name the use case or mood, not a vague poetic title.
 
 ## Good Fresh Concept Shapes
@@ -68,13 +81,15 @@ Do not choose lofi beats, Rhodes, guitar, strings, ambient pads, jazz trio, boss
 - `[playlist] 잠들기 전 틀어놓는 잔잔한 피아노 | 깊은 밤 휴식과 수면 BGM`
 - `[playlist] Cafe Piano for Work | Calm Solo Piano Music for Focus and Reading`
 - `[playlist] 따뜻한 방에서 쉬는 피아노 연주곡 | 독서, 휴식, 조용한 저녁 BGM`
+- `[playlist] 모험이 시작될 것 같은 피아노 OST | 잔잔하게 듣는 애니·게임 감성 BGM`
+- `[playlist] Sunlit Fantasy Game Piano | Gentle Anime-Style OST Music for Study and Rest`
 
 ## Bad Directions
 
 - Vocal tracks unless the human explicitly asks.
-- Non-piano Soft Hour tracks: guitar, Rhodes, strings, lofi beats, jazz trio, bossa, synth pads, ambient pads, drums, percussion, or mixed-instrument cafe BGM.
+- Non-piano-led Soft Hour tracks: guitar-led, Rhodes-led, lofi beats, jazz trio, bossa, synth-pad ambient, drums/percussion, or unrelated mixed-instrument cafe BGM. A tiny explicitly planned support color in `anime_game_ost` is not permission to turn the release into full orchestra.
 - Reusing the same solo piano cafe setting every time.
 - Generic titles that do not include a use case.
 - Titles that are too niche for discovery, such as leading with pottery, glazing, kiln rooms, or other craft-specific terms when the music is really general focus/work/rest BGM.
 - Titles that read like translated keyword fragments instead of natural BGM copy.
-- Visuals that are too busy, flashy, or character-driven for background listening.
+- Visuals that are too busy or flashy for background listening, generic low-quality anime art, protected franchise lookalikes, or mismatched music/image lanes.

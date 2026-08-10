@@ -1,6 +1,6 @@
 # Suno V5.5 Instrumental Format
 
-Use this whenever OpenClaw creates Soft Hour Radio solo-piano tracks, BGM, cafe, study, sleep, lofi, ambient, or any other instrumental/no-vocal Suno track. New Soft Hour Radio audio should be solo piano/felt piano/quiet piano; existing similar Soft Hour tracks may temporarily fill the back half when there are not enough piano tracks to approach one hour.
+Use this whenever OpenClaw creates Soft Hour Radio piano tracks, BGM, cafe, study, sleep, lofi, ambient, or any other instrumental/no-vocal Suno track. New Soft Hour Radio audio follows its stored lane: `classic_piano` is solo/felt/quiet piano, while `anime_game_ost` is original Japanese anime/game-OST-style piano, solo-piano-first with only restrained support color when the concept explicitly allows it. Existing same-lane or closely compatible Soft Hour piano tracks may fill the back half when there are not enough new tracks to approach one hour.
 
 ## Why This Exists
 

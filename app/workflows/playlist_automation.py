@@ -1589,6 +1589,7 @@ def serialize_playlist_workspace(
         youtube_channel_id=meta.get("youtube_channel_id"),
         youtube_channel_title=_canonical_youtube_channel_title(meta.get("youtube_channel_title")),
         target_youtube_channel_title=meta.get("target_youtube_channel_title"),
+        soft_hour_lane=meta.get("soft_hour_lane"),
         youtube_scheduled_publish_at=_youtube_scheduled_publish_at(meta),
         youtube_published_at=(
             youtube_published_at_override
@@ -2100,6 +2101,7 @@ def create_playlist_workspace(
     cover_prompt: str | None = None,
     dreamina_prompt: str | None = None,
     target_youtube_channel_title: str | None = None,
+    soft_hour_lane: str | None = None,
 ) -> Playlist:
     normalized_mode = workspace_mode if workspace_mode in {"playlist", "single_track_video"} else "playlist"
     if normalized_mode == "single_track_video":
@@ -2115,6 +2117,7 @@ def create_playlist_workspace(
         "cover_prompt": cover_prompt,
         "dreamina_prompt": dreamina_prompt,
         "target_youtube_channel_title": target_youtube_channel_title,
+        "soft_hour_lane": soft_hour_lane,
         "workflow_state": "collecting",
         "publish_ready": False,
         "publish_approved": False,

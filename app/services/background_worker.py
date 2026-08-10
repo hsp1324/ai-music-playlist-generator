@@ -2365,6 +2365,11 @@ class BackgroundJobWorker:
         channel_title = str(meta.get("youtube_channel_title") or "").strip()
         if not channel_title:
             channel_title = "Tokyo Daydream Radio" if is_tokyo_visual else "Soft Hour Radio"
+        is_soft_hour = channel_title.strip().lower() == "soft hour radio"
+        is_soft_hour_anime_game_ost = (
+            is_soft_hour
+            and BackgroundJobWorker._uses_soft_hour_anime_game_ost_visuals(playlist, tracks)
+        )
         is_cinematic_pulse = channel_title.strip().lower() == "cinematic pulse"
         text_policy_prompt = (
             "The uploaded first-frame image must not contain a channel name, channel logo, watermark, UI, subtitles, "
@@ -2381,8 +2386,8 @@ class BackgroundJobWorker:
             "stable composition, no hard cuts, no subtitles, no extra people or characters. "
             f"{text_policy_prompt}"
         )
-        soft_hour_prompt = (
-            "Background-music visual system: calm, restrained visual concept matched to the release. "
+        soft_hour_classic_prompt = (
+            "Background-music visual system for the Soft Hour classic_piano lane: calm, restrained, high-resolution photorealistic real-world visual concept matched to the release. "
             "Let the release concept and first frame decide the subject; do not force a fixed recurring mascot, "
             "character count, scene list, or camera composition. Use motion derived from the first frame. "
             "Keep the camera locked in the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. "
@@ -2390,6 +2395,18 @@ class BackgroundJobWorker:
             "Keep continuous visible motion throughout the full clip while preserving the calm long-listening mood. "
             "The final moment should preserve the same crop, framing, camera distance, lighting, palette, and subject placement; only ambient details may differ. "
             "No repeated segment, no hard cuts, no subtitles, no logos, no UI. "
+            f"{text_policy_prompt}"
+        )
+        soft_hour_anime_game_ost_prompt = (
+            "Background-music visual system for the Soft Hour anime_game_ost lane: premium original Japanese-animation and fantasy-game key art, "
+            "luminous 2D animation, refined cel shading, soft painted backgrounds, clean line work, bright daylight or warm magical light, "
+            "and an inviting long-listening adventure atmosphere. The scene may be calm, tender, nostalgic, hopeful, or lightly lively; "
+            "do not force frantic action. Let the release concept and first frame decide the subject; do not force a fixed mascot, character count, or composition. "
+            "Do not copy any protected character, costume, game location, logo, UI, franchise composition, or named soundtrack artwork. "
+            "Keep the camera locked in the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. "
+            "Animate only subtle illustrated environmental details already present or naturally implied by the first frame, such as petals, grass, clouds, water sparkle, hair or cloth settling, magical motes, distant windmills, or warm light shimmer. "
+            "Keep continuous calm motion while preserving the same crop, lighting, palette, and subject placement through the final moment. "
+            "No repeated segment, no hard cuts, no subtitles, no logos, no UI, no style switching. "
             f"{text_policy_prompt}"
         )
         cinematic_pulse_prompt = (
@@ -2407,11 +2424,20 @@ class BackgroundJobWorker:
             "No gore, real war footage, real political imagery, celebrity likenesses, protected characters, franchise references, subtitles, extra text, logos, or UI. "
             f"{text_policy_prompt}"
         )
-        visual_system_prompt = cinematic_pulse_prompt if is_cinematic_pulse else (
-            "Use animated, anime, illustrated, or stylized visual language. "
-            "Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
-            f"{signature_prompt if is_tokyo_visual else soft_hour_prompt}"
-        )
+        if is_cinematic_pulse:
+            visual_system_prompt = cinematic_pulse_prompt
+        elif is_soft_hour:
+            visual_system_prompt = (
+                soft_hour_anime_game_ost_prompt
+                if is_soft_hour_anime_game_ost
+                else soft_hour_classic_prompt
+            )
+        else:
+            visual_system_prompt = (
+                "Use animated, anime, illustrated, or stylized visual language. "
+                "Do not use photorealistic, live-action, documentary, camera-photo, or realistic human footage. "
+                f"{signature_prompt if is_tokyo_visual else soft_hour_classic_prompt}"
+            )
         if tracks:
             track = tracks[0]
             track_meta = track.metadata_json or {}
@@ -2443,10 +2469,61 @@ class BackgroundJobWorker:
                 "camera moving backward at the same speed and distance so the subjects stay the same size, atmospheric lighting, final moment close to the opening composition. "
                 f"{text_policy_prompt}"
             )
+        if is_soft_hour:
+            return (
+                "Cinematic background-music visualizer shot. "
+                f"{visual_system_prompt}"
+            )
         return (
             "Cinematic background-music visualizer shot: calm, restrained illustrated scene matched to the release concept. "
             "Animated/anime/illustrated style, not photorealistic or live-action. Locked camera with the same crop and framing for the full clip; no zoom, push-in, pull-back, dolly, camera breathing, drift, camera follow, or parallax camera movement. Calm but clearly visible ambient motion across several environmental layers derived from the first frame, stable composition, no fixed recurring character/scene template, no repeated segment, continuous visible motion throughout the full clip. "
             f"{text_policy_prompt}"
+        )
+
+    @staticmethod
+    def _uses_soft_hour_anime_game_ost_visuals(playlist: Playlist, tracks: list) -> bool:
+        meta = dict(playlist.metadata_json or {})
+        lane = str(meta.get("soft_hour_lane") or "").strip().lower().replace("-", "_").replace(" ", "_")
+        if lane in {"anime", "anime_ost", "game_ost", "anime_game_ost", "japanese_anime_game_ost"}:
+            return True
+        if lane in {"classic", "classic_piano", "real_world_piano", "photorealistic_piano"}:
+            return False
+
+        haystack_parts = [
+            playlist.title,
+            str(meta.get("description") or ""),
+            str(meta.get("youtube_title") or ""),
+            str(meta.get("cover_prompt") or ""),
+        ]
+        for track in tracks:
+            track_meta = getattr(track, "metadata_json", None) or {}
+            haystack_parts.extend(
+                [
+                    getattr(track, "title", ""),
+                    getattr(track, "prompt", ""),
+                    str(track_meta.get("tags") or ""),
+                    str(track_meta.get("style") or ""),
+                ]
+            )
+        haystack = " ".join(str(part or "") for part in haystack_parts).lower()
+        return any(
+            marker in haystack
+            for marker in (
+                "anime game ost",
+                "anime ost",
+                "game ost",
+                "anime piano",
+                "game piano",
+                "fantasy rpg",
+                "japanese animation",
+                "애니 ost",
+                "애니메이션 ost",
+                "게임 ost",
+                "애니 피아노",
+                "게임 피아노",
+                "アニメost",
+                "ゲームost",
+            )
         )
 
     @staticmethod

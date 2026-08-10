@@ -207,6 +207,59 @@ def test_dreamina_prompt_soft_hour_channel_overrides_japanese_style_terms() -> N
     assert "exactly three people walking toward the viewer" not in prompt
 
 
+def test_dreamina_prompt_uses_soft_hour_anime_game_ost_visual_lane() -> None:
+    playlist = Playlist(
+        title="Sunlit Fantasy Piano",
+        metadata_json={
+            "youtube_channel_title": "Soft Hour Radio",
+            "soft_hour_lane": "anime_game_ost",
+        },
+    )
+    track = Track(
+        title="First Journey",
+        prompt="original gentle Japanese anime game OST-style piano theme",
+        metadata_json={
+            "lyrics": "[Instrumental only - no vocals]",
+            "style": "Japanese anime game OST-style piano, hopeful melodic theme",
+            "tags": "anime game ost,piano,fantasy",
+        },
+    )
+
+    prompt = BackgroundJobWorker._build_dreamina_prompt(playlist, [track])
+
+    assert "Soft Hour anime_game_ost lane" in prompt
+    assert "premium original Japanese-animation and fantasy-game key art" in prompt
+    assert "refined cel shading" in prompt
+    assert "calm, tender, nostalgic, hopeful, or lightly lively" in prompt
+    assert "Do not copy any protected character" in prompt
+    assert "high-resolution photorealistic real-world" not in prompt
+    assert "exactly three people walking toward the viewer" not in prompt
+
+
+def test_workspace_persists_soft_hour_lane_for_future_generation_steps(tmp_path) -> None:
+    try:
+        client = create_isolated_client(tmp_path)
+        response = client.post(
+            "/api/playlists/workspaces",
+            json={
+                "title": "Sunlit Fantasy Piano",
+                "target_duration_seconds": 600,
+                "workspace_mode": "playlist",
+                "target_youtube_channel_title": "Soft Hour Radio",
+                "soft_hour_lane": "anime_game_ost",
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["soft_hour_lane"] == "anime_game_ost"
+        with SessionLocal() as db:
+            playlist = db.get(Playlist, response.json()["id"])
+            assert playlist is not None
+            assert playlist.metadata_json["soft_hour_lane"] == "anime_game_ost"
+    finally:
+        clear_isolated_client_env()
+
+
 def test_dreamina_prompt_uses_cinematic_pulse_film_or_game_animation_style() -> None:
     playlist = Playlist(
         title="Cinematic Pulse Release",

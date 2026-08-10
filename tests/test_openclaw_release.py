@@ -10,6 +10,8 @@ from scripts.openclaw_release import (
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
     JAPAN_YOUTUBE_CHANNEL_TITLE,
     DEFAULT_YOUTUBE_CHANNEL_TITLE,
+    SOFT_HOUR_ANIME_GAME_OST_LANE,
+    SOFT_HOUR_CLASSIC_PIANO_LANE,
     HARUHARU_YOUTUBE_CHANNEL_TITLE,
     NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
     SIGNAL_DESK_LEGACY_CHANNEL_TITLE,
@@ -25,6 +27,7 @@ from scripts.openclaw_release import (
     infer_youtube_channel_title,
     is_bulsong_channel_title,
     is_pop_family_vocal_request,
+    plan_soft_hour_lane,
     publish_release,
     release_has_uploaded_cover,
     release_has_uploaded_loop_video,
@@ -65,6 +68,7 @@ def _auto_publish_args(audio_path: str, **overrides):
         "allow_short_track": False,
         "allow_long_track": False,
         "youtube_channel_title": "",
+        "soft_hour_lane": "",
         "youtube_channel_id": "",
         "force_under_target": False,
         "allow_reupload": False,
@@ -587,6 +591,14 @@ def test_infer_youtube_channel_routes_jpop_releases_to_tokyo_daydream() -> None:
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",
+            release_title="Calm Japanese Anime Game Piano OST",
+            description="gentle nostalgic fantasy game theme for quiet listening",
+            soft_hour_lane=SOFT_HOUR_ANIME_GAME_OST_LANE,
+        )
+    ) == DEFAULT_YOUTUBE_CHANNEL_TITLE
+    assert infer_youtube_channel_title(
+        _auto_publish_args(
+            "/tmp/audio.mp3",
             release_title="Fantasy RPG Menu Music",
             youtube_channel_title=STORYLIGHT_YOUTUBE_CHANNEL_TITLE,
         )
@@ -968,6 +980,115 @@ def test_create_release_creates_empty_workspace_before_suno_generation() -> None
     assert captured_payloads[-1]["auto_publish_when_ready"] is False
     assert result["release"]["id"] == "release-123"
     assert "--release-id" in result["next"]
+
+
+def test_create_release_persists_selected_soft_hour_lane() -> None:
+    captured_payloads = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.read())
+        captured_payloads.append(payload)
+        return httpx.Response(
+            201,
+            json={
+                "id": "release-soft-hour-ost",
+                "title": payload["title"],
+                "workspace_mode": "playlist",
+                "workflow_state": "collecting",
+                "target_duration_seconds": payload["target_duration_seconds"],
+                "target_youtube_channel_title": payload["target_youtube_channel_title"],
+                "soft_hour_lane": payload["soft_hour_lane"],
+            },
+        )
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = create_release(
+        client,
+        SimpleNamespace(
+            release_title="Sunlit Fantasy Piano",
+            workspace_mode="playlist",
+            target_seconds=0,
+            description="Original Japanese anime and game OST-style piano.",
+            youtube_channel_title=DEFAULT_YOUTUBE_CHANNEL_TITLE,
+            soft_hour_lane=SOFT_HOUR_ANIME_GAME_OST_LANE,
+        ),
+    )
+
+    assert captured_payloads == [
+        {
+            "title": "Sunlit Fantasy Piano",
+            "target_duration_seconds": 600,
+            "workspace_mode": "playlist",
+            "auto_publish_when_ready": False,
+            "description": "Original Japanese anime and game OST-style piano.",
+            "cover_prompt": "",
+            "dreamina_prompt": "",
+            "target_youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE,
+            "soft_hour_lane": SOFT_HOUR_ANIME_GAME_OST_LANE,
+        }
+    ]
+    assert result["release"]["soft_hour_lane"] == SOFT_HOUR_ANIME_GAME_OST_LANE
+
+
+def test_soft_hour_lane_plan_alternates_latest_release_for_balanced_rotation() -> None:
+    releases = [
+        {
+            "id": "newest",
+            "title": "Sunlit Fantasy Piano",
+            "workspace_mode": "playlist",
+            "workflow_state": "collecting",
+            "target_youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE,
+            "soft_hour_lane": SOFT_HOUR_ANIME_GAME_OST_LANE,
+            "created_at": "2026-08-10T10:00:00Z",
+            "updated_at": "2026-08-10T10:00:00Z",
+        },
+        {
+            "id": "older",
+            "title": "Rainy Reading Piano",
+            "workspace_mode": "playlist",
+            "workflow_state": "uploaded",
+            "youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE,
+            "soft_hour_lane": SOFT_HOUR_CLASSIC_PIANO_LANE,
+            "created_at": "2026-08-09T10:00:00Z",
+            "updated_at": "2026-08-09T10:00:00Z",
+        },
+    ]
+
+    client = httpx.Client(
+        base_url="http://test/api",
+        transport=httpx.MockTransport(lambda _request: httpx.Response(200, json=releases)),
+    )
+    result = plan_soft_hour_lane(client, SimpleNamespace())
+
+    assert result["previous_lane"] == SOFT_HOUR_ANIME_GAME_OST_LANE
+    assert result["next_lane"] == SOFT_HOUR_CLASSIC_PIANO_LANE
+    assert result["recent_lanes"] == [
+        SOFT_HOUR_ANIME_GAME_OST_LANE,
+        SOFT_HOUR_CLASSIC_PIANO_LANE,
+    ]
+
+
+def test_soft_hour_lane_plan_treats_unclassified_legacy_release_as_classic() -> None:
+    releases = [
+        {
+            "id": "legacy",
+            "title": "Quiet Cafe Piano",
+            "workspace_mode": "playlist",
+            "workflow_state": "uploaded",
+            "youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE,
+            "created_at": "2026-08-09T10:00:00Z",
+            "updated_at": "2026-08-09T10:00:00Z",
+        }
+    ]
+    client = httpx.Client(
+        base_url="http://test/api",
+        transport=httpx.MockTransport(lambda _request: httpx.Response(200, json=releases)),
+    )
+
+    result = plan_soft_hour_lane(client, SimpleNamespace())
+
+    assert result["previous_lane"] == SOFT_HOUR_CLASSIC_PIANO_LANE
+    assert result["next_lane"] == SOFT_HOUR_ANIME_GAME_OST_LANE
 
 
 def test_create_release_uses_channel_aware_playlist_target_defaults() -> None:

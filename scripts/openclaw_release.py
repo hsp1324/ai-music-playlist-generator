@@ -39,6 +39,8 @@ LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
 OPENCLAW_PROVIDER_VIDEO_WAIT_SECONDS = 20 * 60
 OPENCLAW_PROVIDER_VIDEO_STATE_PATH = "storage/openclaw-provider-video-state.json"
 DEFAULT_YOUTUBE_CHANNEL_TITLE = "Soft Hour Radio"
+SOFT_HOUR_CLASSIC_PIANO_LANE = "classic_piano"
+SOFT_HOUR_ANIME_GAME_OST_LANE = "anime_game_ost"
 JAPAN_YOUTUBE_CHANNEL_TITLE = "Tokyo Daydream Radio"
 SUNDAZE_YOUTUBE_CHANNEL_TITLE = "sundaze"
 SOLWAVE_YOUTUBE_CHANNEL_TITLE = "Solwave Radio"
@@ -960,11 +962,117 @@ def list_releases(client: httpx.Client, _args: argparse.Namespace) -> dict[str, 
                 "youtube_channel_id": release.get("youtube_channel_id"),
                 "youtube_channel_title": release.get("youtube_channel_title"),
                 "target_youtube_channel_title": release.get("target_youtube_channel_title"),
+                "soft_hour_lane": release.get("soft_hour_lane"),
                 "created_at": release.get("created_at"),
                 "updated_at": release.get("updated_at"),
             }
             for release in releases
         ]
+    }
+
+
+def normalize_soft_hour_lane(value: Any) -> str | None:
+    normalized = str(value or "").strip().casefold().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "classic": SOFT_HOUR_CLASSIC_PIANO_LANE,
+        "classic_piano": SOFT_HOUR_CLASSIC_PIANO_LANE,
+        "real_world_piano": SOFT_HOUR_CLASSIC_PIANO_LANE,
+        "photorealistic_piano": SOFT_HOUR_CLASSIC_PIANO_LANE,
+        "anime": SOFT_HOUR_ANIME_GAME_OST_LANE,
+        "anime_ost": SOFT_HOUR_ANIME_GAME_OST_LANE,
+        "game_ost": SOFT_HOUR_ANIME_GAME_OST_LANE,
+        "anime_game_ost": SOFT_HOUR_ANIME_GAME_OST_LANE,
+        "japanese_anime_game_ost": SOFT_HOUR_ANIME_GAME_OST_LANE,
+    }
+    return aliases.get(normalized)
+
+
+def infer_soft_hour_lane(release: dict[str, Any]) -> str | None:
+    channel_title = str(
+        release.get("target_youtube_channel_title")
+        or release.get("youtube_channel_title")
+        or ""
+    ).strip()
+    if channel_title.casefold() != DEFAULT_YOUTUBE_CHANNEL_TITLE.casefold():
+        return None
+
+    meta = release.get("metadata_json") if isinstance(release.get("metadata_json"), dict) else {}
+    for value in (
+        release.get("soft_hour_lane"),
+        meta.get("soft_hour_lane"),
+        meta.get("channel_style_lane"),
+        meta.get("release_lane"),
+    ):
+        lane = normalize_soft_hour_lane(value)
+        if lane:
+            return lane
+
+    haystack = " ".join(
+        str(value or "")
+        for value in (
+            release.get("title"),
+            release.get("description"),
+            release.get("youtube_title"),
+            meta.get("description"),
+            meta.get("youtube_title"),
+            meta.get("cover_prompt"),
+        )
+    ).casefold()
+    anime_game_hints = (
+        "anime game ost",
+        "anime ost",
+        "game ost",
+        "anime piano",
+        "game piano",
+        "fantasy rpg",
+        "japanese animation",
+        "애니 ost",
+        "애니메이션 ost",
+        "게임 ost",
+        "애니 피아노",
+        "게임 피아노",
+        "アニメost",
+        "ゲームost",
+    )
+    if any(hint in haystack for hint in anime_game_hints):
+        return SOFT_HOUR_ANIME_GAME_OST_LANE
+
+    # Soft Hour releases created before lane tracking used the classic real-world
+    # piano package, so an otherwise unclassified historical release is classic.
+    return SOFT_HOUR_CLASSIC_PIANO_LANE
+
+
+def plan_soft_hour_lane(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
+    releases = [
+        release
+        for release in list_release_summaries(client)
+        if not release.get("hidden") and infer_soft_hour_lane(release)
+    ]
+    releases.sort(
+        key=lambda release: str(release.get("created_at") or release.get("updated_at") or ""),
+        reverse=True,
+    )
+    classified = [
+        (release, infer_soft_hour_lane(release))
+        for release in releases
+    ]
+    previous_lane = classified[0][1] if classified else None
+    next_lane = (
+        SOFT_HOUR_CLASSIC_PIANO_LANE
+        if previous_lane == SOFT_HOUR_ANIME_GAME_OST_LANE
+        else SOFT_HOUR_ANIME_GAME_OST_LANE
+    )
+    recent_lanes = [lane for _, lane in classified[:6] if lane]
+    return {
+        "channel": DEFAULT_YOUTUBE_CHANNEL_TITLE,
+        "next_lane": next_lane,
+        "previous_lane": previous_lane,
+        "recent_lanes": recent_lanes,
+        "recent_counts": {
+            SOFT_HOUR_CLASSIC_PIANO_LANE: recent_lanes.count(SOFT_HOUR_CLASSIC_PIANO_LANE),
+            SOFT_HOUR_ANIME_GAME_OST_LANE: recent_lanes.count(SOFT_HOUR_ANIME_GAME_OST_LANE),
+        },
+        "rule": "Alternate the two Soft Hour lanes so the long-run mix stays 50:50.",
     }
 
 
@@ -997,6 +1105,7 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
             "cover_prompt": "",
             "dreamina_prompt": "",
             "target_youtube_channel_title": youtube_channel_title,
+            "soft_hour_lane": getattr(args, "soft_hour_lane", "") or None,
         },
     )
     return {
@@ -1009,6 +1118,7 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
             "workflow_state": release["workflow_state"],
             "target_duration_seconds": release["target_duration_seconds"],
             "target_youtube_channel_title": release.get("target_youtube_channel_title"),
+            "soft_hour_lane": release.get("soft_hour_lane"),
         },
         "next": (
             "Use this release.id while generating Suno output, then upload every related audio file with --release-id. "
@@ -1627,6 +1737,7 @@ def create_playlist_release(
     target_duration_seconds: int | None = None,
     description: str = "",
     youtube_channel_title: str = "",
+    soft_hour_lane: str = "",
 ) -> dict[str, Any]:
     resolved_target_duration_seconds = (
         target_duration_seconds
@@ -1646,6 +1757,7 @@ def create_playlist_release(
             "cover_prompt": "",
             "dreamina_prompt": "",
             "target_youtube_channel_title": youtube_channel_title,
+            "soft_hour_lane": soft_hour_lane or None,
         },
     )
 
@@ -1703,6 +1815,11 @@ def infer_youtube_channel_title(args: argparse.Namespace) -> str:
         }:
             return STORYLIGHT_YOUTUBE_CHANNEL_TITLE
         return explicit_title
+
+    # A planned Soft Hour lane is stronger routing evidence than generic
+    # anime/game OST words, which normally belong to Cinematic Pulse.
+    if normalize_soft_hour_lane(getattr(args, "soft_hour_lane", "")):
+        return DEFAULT_YOUTUBE_CHANNEL_TITLE
 
     haystack = " ".join(
         str(value or "")
@@ -2671,6 +2788,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
             target_duration_seconds=args.target_seconds if int(args.target_seconds or 0) > 0 else None,
             description=args.description,
             youtube_channel_title=youtube_channel_title,
+            soft_hour_lane=getattr(args, "soft_hour_lane", ""),
         )
     )
     if release["workspace_mode"] != "playlist":
@@ -3815,6 +3933,12 @@ def build_parser() -> argparse.ArgumentParser:
     list_parser = subparsers.add_parser("list-releases", help="List visible releases and ids.")
     list_parser.set_defaults(func=list_releases)
 
+    soft_hour_lane_parser = subparsers.add_parser(
+        "soft-hour-lane",
+        help="Choose the next Soft Hour lane by alternating classic piano and anime/game OST piano.",
+    )
+    soft_hour_lane_parser.set_defaults(func=plan_soft_hour_lane)
+
     create_parser = subparsers.add_parser(
         "create-release",
         help="Create an empty Single or Playlist Release workspace before generating Suno audio.",
@@ -3829,6 +3953,12 @@ def build_parser() -> argparse.ArgumentParser:
     create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 3600 seconds for BibliaCanto/불송. Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
+    create_parser.add_argument(
+        "--soft-hour-lane",
+        choices=[SOFT_HOUR_CLASSIC_PIANO_LANE, SOFT_HOUR_ANIME_GAME_OST_LANE],
+        default="",
+        help="Soft Hour 50:50 lane selected by the soft-hour-lane command.",
+    )
     create_parser.set_defaults(func=create_release)
 
     context_parser = subparsers.add_parser(
@@ -3951,6 +4081,12 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--allow-long-track", action="store_true", help="Allow playlist tracks longer than --max-track-seconds when an explicit maximum is configured.")
     auto_playlist_parser.add_argument("--randomize-order", action="store_true", help="Shuffle approved playlist track order before audio render. Metadata timestamps will use the rendered order. Soft Hour Radio keeps reused back-half tracks after the fresh solo-piano lead block.")
     auto_playlist_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Cinematic Pulse as a former Storylight-style lane, cinematic orchestra/movie OST/film score/game orchestra/anime action-RPG OST uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Korean vocal music with an internal Buddhist-source lyric plan uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
+    auto_playlist_parser.add_argument(
+        "--soft-hour-lane",
+        choices=[SOFT_HOUR_CLASSIC_PIANO_LANE, SOFT_HOUR_ANIME_GAME_OST_LANE],
+        default="",
+        help="Soft Hour lane selected by the soft-hour-lane command when auto-publish creates the workspace.",
+    )
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",

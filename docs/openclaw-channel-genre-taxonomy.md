@@ -30,11 +30,11 @@ Broad YouTube buckets and detailed video lanes:
 
 Broad YouTube buckets and detailed video lanes:
 
-- `Piano BGM`: default and preferred bucket for Soft Hour. Detailed lanes include cafe solo piano, rainy reading piano, quiet work piano, morning focus felt piano, fireplace piano, and warm room piano.
+- `Piano BGM`: default and preferred bucket for both Soft Hour rotation lanes. `classic_piano` details include cafe solo piano, rainy reading piano, quiet work piano, morning focus felt piano, fireplace piano, and warm room piano. `anime_game_ost` details include gentle anime-style piano OST, sunlit fantasy-game piano, nostalgic game-memory piano, hopeful journey piano, and calm Japanese game-score piano.
 - `Sleep & Relax BGM`: only when the music is still solo piano but the use case is sleep/rest/relaxation, such as deep night felt piano or soft bedtime piano.
 - `Study & Focus BGM`: only when the music is still solo piano but the primary hook is study/work/focus/reading.
 
-Do not use `Lofi BGM`, `Jazz BGM`, `Acoustic BGM`, or `Calm BGM` as new Soft Hour planning targets unless the human explicitly changes the channel direction later. New Soft Hour tracks should not be lofi beats, Rhodes/jazz, guitar/acoustic ensemble, ambient pads, or generic mixed-instrument calm BGM.
+Do not use `Lofi BGM`, `Jazz BGM`, `Acoustic BGM`, or generic `Calm BGM` as new Soft Hour planning targets. New Soft Hour tracks should not be lofi beats, Rhodes/jazz, guitar-led ensembles, ambient pads, or generic mixed-instrument calm BGM. `anime_game_ost` remains piano-led even when it uses one restrained support color.
 
 ## sundaze
 
