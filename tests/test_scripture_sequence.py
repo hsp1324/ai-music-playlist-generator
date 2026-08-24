@@ -72,6 +72,46 @@ def test_scripture_sequence_continues_after_biblia_current_edges(tmp_path) -> No
     assert status["next_suggestions"]["the_new_verse"]["next_start_after_completion"] == "Matthew 8:14"
 
 
+def test_scripture_sequence_continues_after_matthew_ten_twenty_five(tmp_path) -> None:
+    complete_scripture_passage(
+        tmp_path,
+        channel_title="New Testament",
+        passage_range="Matthew 10:16-25",
+        release_id="matthew-ten-persecution",
+        status="scheduled",
+    )
+
+    reserved = reserve_scripture_passage(
+        tmp_path,
+        channel_title="New Testament",
+        release_id="matthew-ten-fearless",
+        title="[playlist] Matthew 10:26-33 New Testament Scripture Songs",
+    )
+
+    assert reserved["entry"]["passage_range"] == "Matthew 10:26-33"
+    assert reserved["entry"]["next_start_after_completion"] == "Matthew 10:34"
+
+
+def test_scripture_sequence_continues_into_genesis_eighteen(tmp_path) -> None:
+    complete_scripture_passage(
+        tmp_path,
+        channel_title="The Old Verse",
+        passage_range="Genesis 17:1-27",
+        release_id="genesis-seventeen-covenant",
+        status="scheduled",
+    )
+
+    reserved = reserve_scripture_passage(
+        tmp_path,
+        channel_title="The Old Verse",
+        release_id="genesis-eighteen-promise",
+        title="[playlist] Genesis 18:1-15 Promise at the Tent Scripture Songs",
+    )
+
+    assert reserved["entry"]["passage_range"] == "Genesis 18:1-15"
+    assert reserved["entry"]["next_start_after_completion"] == "Genesis 18:16"
+
+
 def test_scripture_sequence_continues_into_matthew_ten(tmp_path) -> None:
     complete_scripture_passage(
         tmp_path,
