@@ -12,9 +12,10 @@ The channel profile docs in `docs/openclaw-channel-profiles/` control visual ide
 4. Inspect at least the latest 5 releases on the selected channel when available, plus the latest 15-20 releases globally for cross-channel repetition.
 5. Extract recent setting, use case, subgenre, lyric premise, thumbnail phrase, visual scene, and title pattern.
 6. Read [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-taxonomy.md) and pick one underused broad YouTube playlist bucket plus one detailed video style lane.
-7. Read exactly one channel concept planner from this directory.
-8. Choose one fresh concept that fits that channel, stays inside the selected detailed style lane, and does not repeat recent releases.
-9. Then read the matching channel profile and continue with `docs/openclaw-skills.md` Skill 3.
+7. If the release has singable lyrics, read [../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md) and choose exactly one of its three arrangement families before reading the channel concept planner.
+8. Read exactly one channel concept planner from this directory.
+9. Choose one fresh concept that fits that channel, stays inside the selected detailed style lane, and does not repeat recent releases.
+10. Then read the matching channel profile and continue with `docs/openclaw-skills.md` Skill 3.
 
 If the app catalog looks incomplete or the human says there are YouTube videos outside this app, report that limitation before claiming a concept is non-duplicated.
 
@@ -22,6 +23,7 @@ If the app catalog looks incomplete or the human says there are YouTube videos o
 
 - Every channel title should be broad, searchable, and useful to normal viewers. A specific cover/video scene can guide atmosphere, but the release title should usually lead with genre identity plus a listening reason or emotion.
 - Each release should be one coherent style lane, not a mixed sampler. The rendered video can use a detailed style such as trap, boom bap, bachata pop, lofi study, or tech house, while YouTube playlist assignment uses the broader bucket from the taxonomy.
+- Every new vocal release is also one coherent accompaniment family. The three allowed families are themed large-scale orchestral vocal, piano-only vocal, and acoustic-guitar-only vocal. The arrangement policy overrides older beat-led vocal examples in individual channel planners unless the human explicitly requests a one-off exception.
 - For vocal channels, the YouTube title/use case is packaging only. Lyrics should be written as strong standalone songs first; they do not need to mention or explain the title, visual scene, thumbnail text, or playlist use case.
 - Do not sacrifice lyric quality to force SEO terms into the song. The melody, beat, vocal delivery, hook, and emotional arc are the source of truth for lyrics.
 - For every vocal Suno track, plan a concrete singer identity before generation so the result does not default to the same AI-like voice. Put the voice identity in the Suno style/settings field and, when using custom lyrics, as a short bracketed cue near the top of the lyrics. Include register, timbre texture, delivery, mic distance, and emotional attitude when useful, such as `breathy intimate Korean female alto, close-mic, light rasp` or `restrained spoken-rap baritone, calm diction`.

@@ -2,6 +2,14 @@
 
 Use this after the selected channel is `sundaze`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/sundaze.md` afterward for cover, thumbnail, and still-image render rules.
 
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new sundaze vocal release uses exactly one of themed large-scale
+orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
+English-pop/R&B/hip-hop/folk lanes below guide English lyrics, delivery,
+discovery packaging, and catalog labels only; they cannot add beat-led or
+full-band accompaniment.
+
 ## Channel Promise
 
 sundaze is an English/American pop playlist channel, not a narrow single-subgenre channel. It covers mainstream English vocal pop and pop-adjacent American/global lanes that fit English playlist packaging: dance-pop, synth-pop, Pop R&B, pop hip-hop, pop-rock, indie pop, bedroom pop, alt-pop, acoustic pop, singer-songwriter pop, folk-pop, country pop, Americana pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, and Amapiano-pop.

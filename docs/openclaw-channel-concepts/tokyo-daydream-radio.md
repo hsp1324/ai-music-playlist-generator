@@ -2,6 +2,14 @@
 
 Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and either short loop-video or still-image render production rules.
 
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new Tokyo Daydream vocal release uses exactly one of themed
+large-scale orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal.
+The legacy J-pop/rap/R&B lanes below guide Japanese lyrics, delivery, discovery
+packaging, and catalog labels only; they cannot add beat-led or full-band
+accompaniment.
+
 ## Channel Promise
 
 Tokyo Daydream Radio is a mainstream J-pop/Japanese pop channel. It can include anime-pop, Japanese rap, Japanese hip-hop, and Japanese R&B, but it is not an anime OST-only channel. The channel name contains Tokyo, but release titles do not need to contain `Tokyo` unless the selected concept is actually Tokyo-specific.

@@ -2,6 +2,14 @@
 
 Use this after the selected channel is `불송`. `불송` is a Korean vocal channel internally inspired by Buddhist sources/themes, but new releases should sound and read like accessible mainstream songs.
 
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new 불송 vocal release uses exactly one of themed large-scale
+orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
+rap/R&B/electronic lanes below guide Korean lyrics, delivery, discovery
+packaging, and catalog labels only; they cannot add beat-led or full-band
+accompaniment. The old mixed-lane reuse exception no longer applies.
+
 ## Channel Promise
 
 불송 is for modern Korean vocal music that transforms Buddhist sources/themes into universal pop language. Keep the source/theme in planning and app metadata, but new lyrics and public metadata should avoid obvious Buddhist vocabulary unless the human explicitly requests a source-explicit release.

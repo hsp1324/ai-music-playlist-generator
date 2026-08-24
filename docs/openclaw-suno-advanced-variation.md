@@ -4,6 +4,13 @@ Use this policy for every new Suno generation on every channel. The goal is to
 keep a playlist coherent without producing the same arrangement, singer, or
 mix profile repeatedly.
 
+For every lyric/vocal generation, first read and obey
+[openclaw-vocal-arrangement-policy.md](openclaw-vocal-arrangement-policy.md).
+That standing direction limits new vocal music to one release-level family:
+themed large-scale orchestra, piano-only accompaniment, or acoustic-guitar-only
+accompaniment. It overrides older beat-led vocal lane examples unless the
+human explicitly requests a one-off exception.
+
 Suno defines `50%` Weirdness as the normal expected result. Style Influence
 runs from Loose to Strong. The ranges below are this project's operating
 heuristics, not universal Suno quality claims.
@@ -17,7 +24,9 @@ Before pressing Create, record these choices for each track:
 - genre/subgenre and BPM or tempo feel
 - rhythmic feel and two or three defining instruments
 - arrangement role, such as anchor, contrast, peak, or closer
-- for vocal songs: vocal gender control plus a distinct singer identity
+- for vocal songs: `vocal_arrangement_family`, the orchestral theme when
+  applicable, the hard allowed/forbidden instrument palette, vocal gender
+  control, and a distinct singer identity
 
 Do not leave every track at `50 / 50`. Do not reuse the same slider pair for
 every track in a release. For three or more newly generated tracks, use at least
@@ -44,7 +53,11 @@ same safe output pattern.
 Slider changes are only one source of variation. Also change meaningful musical
 inputs: tempo, drum pocket, bass movement, key/mode, instrumentation, harmonic
 color, section order, intro texture, breakdown/drop design, vocal register, and
-delivery. Keep the release inside its selected genre lane.
+delivery. Keep the release inside its selected genre lane and arrangement
+family. For piano-only and guitar-only vocal work, do not add drums, bass,
+synths, strings, or other instruments merely to create variation. For
+orchestral vocal work, vary within the one selected release theme instead of
+switching eras or replacing the orchestra with a pop rhythm section.
 
 ## Adaptive correction
 
@@ -113,5 +126,8 @@ exclusion list.
 - Weirdness and Style Influence were chosen for this track, not copied from the
   previous track or left at `50 / 50` without a reason.
 - Vocal gender matches the intended lead, or is intentionally unselected.
+- Every vocal track stays inside the release's selected orchestral,
+  piano-only, or acoustic-guitar-only family; orchestral tracks also match the
+  one declared theme.
 - Every vocal track has a distinct detailed singer identity in Style and Lyrics.
 - The exact values and singer identity are recorded with the track plan.
