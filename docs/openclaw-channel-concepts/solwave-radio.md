@@ -2,6 +2,14 @@
 
 Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and still-image render rules.
 
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new Solwave vocal release uses exactly one of themed large-scale
+orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
+Latin-pop/reggaeton/R&B lanes below guide Spanish lyrics, delivery, discovery
+packaging, and catalog labels only; they cannot add beat-led or full-band
+accompaniment.
+
 ## Channel Promise
 
 Solwave Radio is a Spanish/Latin vocal music channel: Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, and verano latino.

@@ -2,6 +2,13 @@
 
 Use this after the selected channel is `HaruHaru`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/haruharu.md` afterward for cover, thumbnail, and still-image render production rules.
 
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new HaruHaru vocal release uses exactly one of themed large-scale
+orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
+K-pop/rap/R&B lanes below guide Korean lyrics, delivery, discovery packaging,
+and catalog labels only; they cannot add beat-led or full-band accompaniment.
+
 ## Channel Promise
 
 HaruHaru is a Korean-language vocal channel centered on hipper Korean pop: K-pop hip-hop, rap-pop, Korean trap-pop, boom bap-influenced Korean pop, Korean R&B, neo-soul pop, and street-style Korean vocal tracks. Do not choose city-pop as the default new HaruHaru direction unless the human explicitly asks for that lane or an existing in-progress release is already clearly city-pop.

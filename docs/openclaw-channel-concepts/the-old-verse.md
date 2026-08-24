@@ -2,6 +2,14 @@
 
 Use this after the selected upload channel is `BibliaCanto`. This document decides the next scripture playlist concept for either the Old Testament branch or the New Testament branch. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new BibliaCanto vocal release uses exactly one of themed
+large-scale orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal.
+The legacy scripture hip-hop/R&B/K-pop lanes below guide English lyric delivery,
+discovery packaging, and catalog labels only; they cannot add beat-led or
+full-band accompaniment. Do not turn orchestral work into gospel or worship.
+
 ## Channel Promise
 
 BibliaCanto is the combined scripture-inspired music channel for both Old Testament and New Testament releases.

@@ -2,16 +2,47 @@
 
 Use this taxonomy when planning every playlist release. Each release chooses one detailed video style lane, keeps all tracks close to that lane, and is assigned to one broader YouTube playlist bucket.
 
-Do not make one release a sampler of unrelated styles. Slight variation inside the lane is fine: for example, a HaruHaru trap K-pop release may vary drum density, vocal tone, or chorus energy, but it should not mix trap, ballad, pop-rock, and R&B in the same rendered video.
+Do not make one release a sampler of unrelated styles. Slight variation inside the lane is fine, but the release must preserve one coherent arrangement and mood.
 
-불송 has a channel-specific exception: rap, hip-hop, R&B, soul, and quiet piano vocal ballads may share one mainstream Korean vocal release when the emotional mood is coherent. This exception does not allow unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, no-vocal piano, or generic meditation tracks.
+## New Vocal Arrangement Override
+
+For every new release with singable lyrics, read
+[openclaw-vocal-arrangement-policy.md](openclaw-vocal-arrangement-policy.md)
+before choosing a lane. New vocal music may use only one release-level family:
+
+1. themed large-scale orchestral vocal,
+2. piano-only vocal, or
+3. acoustic-guitar-only vocal.
+
+The normal rotation is orchestral, piano-only, a different orchestral theme,
+then guitar-only. Each orchestral playlist chooses one theme such as lyrical,
+epic, majestic, Nordic, medieval, dark-fantasy, mythic, romantic, or celestial
+and keeps all tracks inside it.
+
+This override is stronger than older channel-specific vocal lane wording below.
+Trap, R&B, synth-pop, dance-pop, hip-hop, Afropop, neo-soul, and similar vocal
+labels remain useful for legacy catalog classification, lyrical/vocal flavor,
+or YouTube playlist mapping, but they do not authorize beat-led or mixed-band
+new vocal arrangements outside the three families. Instrumental channels and
+explicit no-vocal requests continue to use their existing lanes.
+
+The former 불송 mixed rap/R&B/piano exception is legacy-only and does not
+apply to new generation. A new 불송 vocal release follows the same single-family
+rule as every other vocal channel. Its Korean delivery and public taxonomy may
+still carry modern rap, R&B, or soul flavor, but the accompaniment remains the
+chosen orchestra, piano-only, or guitar-only family.
 
 ## Operating Rule
 
 - Pick a channel first, then pick one broad genre bucket and one detailed style lane before Suno generation.
 - The YouTube video title/description/thumbnail phrase should name the detailed lane when it is useful: `K-POP Trap`, `Boom Bap K-POP`, `Bachata Pop`, `Tech House`, `Lofi Study BGM`, etc.
 - The app assigns the uploaded video to a broader YouTube playlist bucket: trap and boom bap both go into `K-pop Hip-Hop`; tech house and deep house both go into `House Music`.
-- Reused tracks must match the selected lane. If the reuse pool changes the actual sound, retitle the release to the true majority lane or choose different reused tracks.
+- Reused tracks must match the selected lane. New vocal releases may reuse only
+  same-channel vocal tracks in the same one of three arrangement families;
+  orchestral reuse must also match the selected theme. If that pool is too
+  small, publish shorter instead of adding legacy beat-led or unrelated tracks.
+  If the reuse pool changes the actual sound, retitle the release to the true
+  majority lane or choose different reused tracks.
 - Rotate across underused buckets for each channel before repeating a recently used lane.
 
 ## HaruHaru
