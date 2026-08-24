@@ -42,7 +42,7 @@ Good style lanes:
 - Big-room / festival EDM: big kicks, simple anthem leads, laser-stage energy, no crowd-chant vocals.
 - Bass house: aggressive bass movement, punchy drums, darker club attitude.
 - Electro house: sharp synth riffs, high-energy drops, retro-futuristic club feel.
-- Garage / UK garage: shuffling rhythm, bouncy bass, late-night city movement, no vocal samples.
+- Garage / UK garage may remain a private production style: shuffling rhythm, bouncy bass, late-night movement, and no vocal samples. Never surface Garage, UK Garage, UKG, or a localized equivalent in the public title or artwork text; package it as Dance Music, Bass Music, EDM, or Club Mix and pair it with a more recognizable compatible lane.
 - Drum and bass / liquid DnB: fast breakbeats, rolling bass, liquid pads for running/gaming energy.
 - Tropical house / beach club: warm percussion, sunset deck mood, light dance rhythm, no vocal hooks.
 - Afro house: organic percussion, deep groove, hypnotic club pulse, no chant/vocal phrases.

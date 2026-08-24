@@ -63,7 +63,9 @@ Every new plan must include a short `novelty_brief` that says why the music lane
 - Dark R&B: close vocal, low light, sparse drums, intimate hook, letting-go imagery without religious vocabulary.
 - Trip-hop: downtempo drums, smoky bass, abstract texture, reflective spoken rap or sung hook.
 - Glitch-hop: chopped percussion, digital fragments, clear vocal center, lyrics about change, illusion, or emotional release in ordinary language.
-- Drum and bass or UK garage: faster rhythmic energy, clean Korean vocal/rap, reflective rather than rave-only.
+- Faster modern vocal energy may inform delivery privately, but do not select
+  garage as a new release concept or public label. Stay inside the global
+  orchestral-vocal, piano-only-vocal, or acoustic-guitar-only-vocal family.
 - Hyperpop/art-pop: bright synthetic hooks, fragmented self-image themes, polished but not novelty comedy.
 - Psychedelic soul / new-age electronica: surreal inner-world imagery, warm soul vocal or spoken rap, modern electronic texture.
 - Avant-jazz rap: unusual chords, live-feeling drums, poetic Korean rap, but not old cabaret, trot, or lounge parody.

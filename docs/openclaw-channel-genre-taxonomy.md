@@ -99,7 +99,10 @@ Broad YouTube buckets and detailed video lanes:
 Broad YouTube buckets and detailed video lanes:
 
 - `House Music`: deep house, tech house, progressive house, future house.
-- `Bass & Garage`: bass house, UK garage, darker shuffling bass.
+- `Bass Music`: bass house, UK garage, and darker shuffling bass. `UK garage`
+  remains an internal style label only; public video titles, localized titles,
+  thumbnail text, and the YouTube playlist name use `Bass Music`, `Dance
+  Music`, `EDM`, or `Club Mix` instead.
 - `Drum & Bass`: drum and bass, liquid DnB.
 - `Techno`: melodic techno, peak-time techno.
 - `Trance`: trance, progressive trance.

@@ -49,6 +49,25 @@ def test_channel_specific_genre_playlist_classification() -> None:
     assert club.playlist_titles == ("House Music",)
 
 
+def test_club_bloom_garage_style_uses_mainstream_public_playlist_name() -> None:
+    classification = infer_channel_genre_classification(
+        {
+            "youtube_channel_title": "Club Bloom",
+            "youtube_title": "[playlist] Dance Music Night Drive Mix",
+        },
+        tracks=[
+            SimpleNamespace(
+                title="Shuffle Current",
+                prompt="UK garage instrumental club rhythm",
+                metadata_json={"style": "UK garage, no vocals"},
+            )
+        ],
+    )
+
+    assert classification.style_lane == "UK garage"
+    assert classification.playlist_titles == ("Bass Music",)
+
+
 def test_bulsong_source_explicit_titles_archive_to_bulsong_playlist() -> None:
     classification = infer_channel_genre_classification(
         {"youtube_channel_title": "불송", "youtube_title": "[playlist] 마음을 다스리는 법구경 힙합"},
