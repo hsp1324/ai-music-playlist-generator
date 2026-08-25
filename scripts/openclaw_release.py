@@ -3422,6 +3422,32 @@ def delete_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
     }
 
 
+def archive_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/archive",
+        json={
+            "actor": args.actor,
+            "archived": True,
+            "revive_rejected": False,
+            "reason": args.reason,
+        },
+    )
+    return {
+        "ok": True,
+        "action": "archive-release",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "archived": bool(release.get("hidden")),
+        },
+        "reason": args.reason,
+    }
+
+
 def render_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
     release = request_json(
@@ -4091,6 +4117,16 @@ def build_parser() -> argparse.ArgumentParser:
     delete_loop_video_parser.add_argument("--release-title", default="", help="Existing release title.")
     delete_loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     delete_loop_video_parser.set_defaults(func=delete_loop_video)
+
+    archive_release_parser = subparsers.add_parser(
+        "archive-release",
+        help="Archive an unstarted or unrecoverable release so it no longer occupies the active backlog.",
+    )
+    archive_release_parser.add_argument("--release-id", default="", help="Existing release id.")
+    archive_release_parser.add_argument("--release-title", default="", help="Existing release title.")
+    archive_release_parser.add_argument("--reason", required=True, help="Concise reason retained in archive history.")
+    archive_release_parser.add_argument("--actor", default="openclaw:self-heal", help="Actor name recorded in release history.")
+    archive_release_parser.set_defaults(func=archive_release)
 
     render_audio_parser = subparsers.add_parser("render-audio", help="Render playlist audio for an existing release.")
     render_audio_parser.add_argument("--release-id", default="", help="Existing release id.")

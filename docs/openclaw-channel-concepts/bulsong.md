@@ -24,7 +24,7 @@ The audience should immediately feel: bold modern Korean songs with emotional de
 - Do not lead titles, thumbnail text, descriptions, or tags with obscure coined labels such as `다르마팝`, and do not overuse generic `meditation music`, `prayer`, `worship`, or devotional wording unless that is truthfully the finished asset's lane.
 - The first track and first 10-20 seconds matter. Put the strongest same-lane hook, rap entry, vocal tone, or most immediately clickable song first. Avoid long slow instrumental intros on playlist lead tracks.
 - Strong standout tracks should be considered for standalone singles and also reused as lead/funnel tracks in later same-lane playlists when appropriate.
-- For playlist releases, create roughly the first 10 minutes as new high-confidence Korean vocal audio, then fill toward one hour with existing approved 불송 tracks that fit the same mainstream vocal family, liked tracks first. Rap, hip-hop, R&B, soul, and quiet piano vocal ballads may be mixed when the emotional mood works. Keep reused/fallback tracks after the fresh lead block. Do not add unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, or generic meditation tracks just to hit one hour.
+- For playlist releases, use existing approved 불송 tracks that fit the same mainstream vocal family first, liked tracks first, then create enough additional same-family, same-theme Korean vocal Suno tracks to meet the one-hour policy. Rap, hip-hop, R&B, soul, and quiet piano vocal ballads may be mixed when the emotional mood works. Keep reused tracks after the fresh lead block. Do not add unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, or generic meditation tracks just to hit one hour.
 
 ## Overnight Privacy Rule
 

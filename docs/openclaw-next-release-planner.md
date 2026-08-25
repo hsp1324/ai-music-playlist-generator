@@ -1,28 +1,24 @@
 # OpenClaw Next Release Planner Skill
 
-Use this skill when the AI Music web app asks OpenClaw to choose the next playlist concept for the backlog queue.
+Use this skill when the hourly OpenClaw automation or a human asks OpenClaw to choose the next playlist concept for the backlog queue.
 
 This is the channel/concept selection step inside the continuous automation loop. For queue sizing and producer/finisher behavior, read [openclaw-backlog-queue.md](openclaw-backlog-queue.md) first. This planner chooses the next channel, delegates channel-specific concept selection to `docs/openclaw-channel-concepts/`, then hands off to the production/publish instructions in [openclaw-skills.md](openclaw-skills.md).
 
-## Slack Trigger Contract
+## Autonomous Hourly Contract
 
-The AI Music web app starts the continuous loop by posting a Slack message into the configured OpenClaw channel. Real app-originated automation requests start with this exact prefix:
+The continuous loop is started by the OpenClaw cron job `ai-music-hourly-autonomous`, every hour on the hour in `Asia/Seoul`. It must run independently of Slack activity: `OPENCLAW_RUN:` is a retired app trigger and the web app must not rely on it to keep production moving.
 
-```text
-OPENCLAW_RUN:
-```
+At the start of each pass, inspect the app state through `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status`; do not assume a quiet Slack channel means that there is no work. Before any substantive action, post one concise Korean plan notice to the configured OpenClaw Slack channel using `scripts/openclaw-release slack-notify`. Slack is a monitoring surface, not the scheduler.
 
-When the OpenClaw Slack listener receives a channel message that starts with `OPENCLAW_RUN:`, it should strip the prefix and execute the remaining instruction as an approved automation request. Do not require an `@OpenClaw` mention for these app-originated messages.
+When a release is blocked, first diagnose and repair any safe deterministic cause. If it still needs unavailable credentials/provider capacity or explicit human approval, preserve that release's blocker and continue within the same pass to the next eligible release or below-target channel. A blocked release must never prevent the rest of the rotation from progressing. Do not create duplicate work when the app-side OpenClaw lock is active.
 
-For safety, ignore ordinary channel messages that do not start with `OPENCLAW_RUN:` unless the human explicitly addresses OpenClaw through the listener's normal manual command path. The prefix is what separates web-app automation from casual Slack conversation.
-
-Slack command text is intentionally compact so the human monitoring channel stays readable. Do not expect the Slack message to include channel priorities, release lists, blockers, or backlog snapshots. After receiving `OPENCLAW_RUN:`, pull the latest `main`, then call the app APIs through `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status` to get the detailed queue, lock, channel, and scheduler context.
-
-The web app may cap this automatic loop with `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS`. `0` means unlimited. If the cap is reached after a successful YouTube upload, or if the human posts a stop command in the configured OpenClaw Slack channel, the app intentionally stops sending `OPENCLAW_RUN:` messages. Do not treat silence after a completed publish as an error unless the human asks.
+Do not run `git pull` merely because an hourly pass began. Use the checked-out runtime repository and its current local changes; report a repository divergence only when it prevents the selected action.
 
 ## Goal
 
-Choose the next channel and a fresh playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely. Suno credits are available again after the human added 500 credits on 2026-06-05, so OpenClaw may select concepts that need new Suno generation. Spend credits conservatively: normal playlist channels and 불송 normally need about 10 minutes of new audio, then app-side same-channel/similar-genre reuse fills the rest toward one hour or longer. `Storylight OST` is manual-only; former Storylight-style playful game/anime/arcade/theme-park BGM concepts route to `Cinematic Pulse` as the former Storylight lane and are reuse-first by default unless the human explicitly asks for new music. BibliaCanto should aim for about 60 minutes of new passage-based audio and is not backfilled from old Bible passages.
+**One-hour production requirement:** For each new or pre-render resumed Playlist Release, follow [openclaw-one-hour-new-audio-policy.md](openclaw-one-hour-new-audio-policy.md). A scarce same-lane reuse catalog means “generate more new Suno tracks in that lane,” never “render short,” “choose another lane,” or “use unrelated filler.” This requirement supersedes legacy 10-minute, reuse-first, and short-release wording below.
+
+Choose the next channel and a fresh playlist concept that fits that channel, avoids recent repetition, and can be pushed into the backlog queue safely. Suno credits are available again after the human added 500 credits on 2026-06-05, so OpenClaw may select concepts that need new Suno generation. For every new or pre-render resumed playlist, generate and/or reuse only approved matching-lane tracks until the playlist reaches at least one hour; when matching reuse is scarce, use Suno to create more tracks in the selected lane. `Storylight OST` is manual-only; former Storylight-style playful game/anime/arcade/theme-park BGM concepts route to `Cinematic Pulse` as the former Storylight lane and are reuse-first by default unless the human explicitly asks for new music. BibliaCanto should aim for about 60 minutes of new passage-based audio and is not backfilled from old Bible passages.
 
 The active channel roster is dynamic. Always read `/youtube/status` and use every connected channel in its `channels` list unless a channel is explicitly marked inactive/excluded in these docs. `MusicSun` is manual-only and is excluded from automatic rotation. Current known active channels include:
 
@@ -105,7 +101,7 @@ Empty duplicate app workspaces are cleanup, not blockers. If `list-releases` sho
 
 ## Channel Concept Delegation
 
-After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title and read [openclaw-channel-genre-taxonomy.md](openclaw-channel-genre-taxonomy.md). Pick one underused broad YouTube playlist bucket and one detailed video style lane before Suno generation or existing-track search. If the selected channel is `BibliaCanto`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md). Create the release, then reserve the next app-owned canonical Old Testament or New Testament passage with `scripts/openclaw-release openclaw-scripture-reserve` before generating audio. If the selected channel is `불송`, use its Buddhist concept/profile docs and do not use the Bible scripture ledger. Read both returned docs:
+After selecting a channel, run `scripts/openclaw-release channel-profile` with the selected channel title and read [openclaw-channel-genre-taxonomy.md](openclaw-channel-genre-taxonomy.md). Pick one underused broad YouTube playlist bucket and one detailed video style lane before Suno generation or existing-track search. If the selected channel is `BibliaCanto`, first read [openclaw-scripture-sequence.md](openclaw-scripture-sequence.md). Create the release, then reserve the next app-owned canonical Old Testament or New Testament passage with `scripts/openclaw-release openclaw-scripture-reserve` before generating audio. If that reservation returns `next_block_missing` / HTTP 409, do not select a later Matthew or other Bible passage and do not generate any assets. Diagnose and make the documented bounded repair first; only after a successful deployed-API verification may the same release resume. If repair cannot be verified in this pass, archive the asset-free release with `scripts/openclaw-release archive-release --release-id RELEASE_ID --reason "next_block_missing: CAUSE"`, add BibliaCanto plus the blocker fingerprint to the pass skip set, and rerun channel selection immediately with BibliaCanto excluded. If the release already has real assets or a reservation, preserve it and do not create a duplicate. Continue with the next eligible connected non-`BibliaCanto` channel. If the selected channel is `불송`, use its Buddhist concept/profile docs and do not use the Bible scripture ledger. Read both returned docs:
 
 - `concept_doc`: choose the next playlist concept and avoid recent repetition.
 - `profile_doc`: generate cover, thumbnail, and the required visual source without mixing channel visual signatures. This is a short loop video for moving-video channels, but a still-image render package for HaruHaru, sundaze, Solwave Radio, Tokyo Daydream Radio photorealistic Japanese hip-hop/R&B/rap releases, and Club Bloom.

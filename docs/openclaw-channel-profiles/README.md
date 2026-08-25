@@ -25,6 +25,8 @@ scripts/openclaw-release channel-profile \
 
 The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. Read `concept_doc` for the next playlist concept and `profile_doc` for visual execution. Do not mix visual signatures from another channel.
 
+For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md) supersedes older profile wording about a 10-minute fresh block, exhausted reuse, or a publishable shorter release. Generate more same-lane Suno material until approved audio reaches one hour; do not use unrelated filler.
+
 ## Global Visual Rules
 
 - Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
