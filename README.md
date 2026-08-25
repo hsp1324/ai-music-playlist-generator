@@ -146,7 +146,7 @@ Production Slack channel routing:
 | Purpose | Channel | Current Slack ID | Environment variable |
 | --- | --- | --- | --- |
 | Operator/status notices, including video-render queued, external worker claim/complete, timeout requeue, and YouTube publish-complete reports | `#all-ai-music-playlist-generator` | `C0ATYMCMLLE` | `AIMP_SLACK_OPS_CHANNEL_ID` |
-| OpenClaw command loop only, including `OPENCLAW_RUN:` requests and human start/stop commands | `#openclaw` | `C0AVBUYP150` | `AIMP_OPENCLAW_SLACK_CHANNEL_ID` |
+| OpenClaw hourly-work notices and optional human control messages; not a production trigger | `#openclaw` | `C0AVBUYP150` | `AIMP_OPENCLAW_SLACK_CHANNEL_ID` |
 
 Do not point `AIMP_SLACK_OPS_CHANNEL_ID` at `#openclaw` / `C0AVBUYP150`. Render-worker claim/complete and upload reports are operational notices, not OpenClaw commands.
 
@@ -309,14 +309,15 @@ AIMP_CODEX_METADATA_ENABLED=false
 AIMP_CODEX_METADATA_COMMAND=codex
 AIMP_CODEX_METADATA_MODEL=gpt-5.3-codex-spark
 AIMP_CODEX_METADATA_TIMEOUT_SECONDS=420
-# #openclaw: OpenClaw command loop only.
+# #openclaw: hourly OpenClaw plan notices and optional human control messages.
 AIMP_OPENCLAW_SLACK_CHANNEL_ID=C0AVBUYP150
 # #all-ai-music-playlist-generator: render/publish operational notices.
 AIMP_SLACK_OPS_CHANNEL_ID=C0ATYMCMLLE
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=false
 AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=false
 AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=0
-AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX=OPENCLAW_RUN:
+# Retired legacy trigger; leave empty/disabled in production. OpenClaw cron owns scheduling.
+AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX=
 AIMP_OPENCLAW_NEXT_PLAYLIST_PROMPT=
 AIMP_VIDEO_RENDER_EXECUTION_MODE=local
 AIMP_RENDER_WORKER_SHARED_TOKEN=
@@ -344,10 +345,10 @@ Runtime behavior:
 - Release cards are returned from the workspace API in stable Published sort order: unpublished releases first, then scheduled publish time, then actual publish/upload time, then creation time. Channel filters preserve that same API order by default, and the web UI can toggle Published, Updated, or Created sorting in either direction for the current view.
 - If `AIMP_CODEX_METADATA_ENABLED=true`, `Generate Metadata` / `Regenerate Metadata Draft` calls the VM's local Codex CLI to write the YouTube title, description, and tags. The app allows one Codex metadata run at a time and falls back to deterministic templates if Codex fails or times out.
 - Playlist Release YouTube titles are normalized with a `[playlist]` prefix across the default title and localized `ko`/`ja`/`en`/`es` titles. Redundant playlist words like `플레이리스트` / `Playlist` are removed from the title body. Single Release titles are not prefixed.
-- Normal automated Playlist Releases now save Suno credits by asking OpenClaw for roughly 10 minutes of new approved audio on normal playlist channels and 불송, then the app tries to build a roughly 40-60 minute base block by reusing previous same-channel, similar-genre tracks from the back half of already uploaded YouTube releases. 불송 is a strict-lane exception inside that reuse path: it can backfill only from previous same-channel, compatible mainstream 불송 vocal material, liked first, with reused tracks kept after the fresh lead block. BibliaCanto remains excluded from back-half reuse and should create new passage-based audio. The optional final-video repeat feature is kept behind `AIMP_PLAYLIST_FINAL_VIDEO_REPEAT_ENABLED=false` during the trial period, so current render workers can keep rendering the base block without an update.
+- New automated Playlist Releases follow [openclaw-one-hour-new-audio-policy.md](docs/openclaw-one-hour-new-audio-policy.md): before render, they need at least one hour of approved audio in one detailed genre lane. Existing same-lane tracks may be reused, liked tracks first, but missing reuse capacity means OpenClaw creates additional complete Suno tracks in that lane until the target is reached. It must not render a new playlist short, switch genres, or use unrelated filler merely because a lane is new or sparsely cataloged. The optional final-video repeat feature remains behind `AIMP_PLAYLIST_FINAL_VIDEO_REPEAT_ENABLED=false` during the trial period.
 - OpenClaw continuous playlist automation uses step commands so external video rendering can overlap with the next release's asset production. It can still run `scripts/openclaw-release auto-publish-single` when the human explicitly asks for a newly generated standalone single to be privately uploaded end-to-end. If the human marked an existing track with `user_rating=like`, OpenClaw should treat it as a standalone single candidate too: search with `scripts/openclaw-release search-tracks --user-rating like --exclude-single-uploaded --full`, create a new Single Release, attach the existing track with `scripts/openclaw-release reuse-track`, and create special song-specific cover/thumbnail artwork from the lyrics/title/style. After a single upload succeeds, the app records `single_youtube_uploaded`, `single_youtube_video_id`, and `single_youtube_uploads` on the source track so OpenClaw does not upload the same liked song again unless explicitly asked.
 - OpenClaw auto-publish helpers refuse to re-upload a release that already has a `youtube_video_id` unless `--allow-reupload` is passed, preventing accidental duplicate private uploads.
-- Published releases show `Request Next Playlist`, which posts a Slack command into the configured OpenClaw channel with the `AIMP_OPENCLAW_SLACK_TRIGGER_PREFIX` prefix. Set `AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=true` for the production lookahead loop: when the VM starts rendering a release, the app asks OpenClaw to prepare the next release; when the VM finishes rendering, the app asks OpenClaw to finish metadata/publish. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=true` only for the older publish-completion trigger mode. Set `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_MAX_UPLOADS=N` to stop after N successful YouTube uploads in the older auto loop; `0` means no upload cap. A human Slack message in the configured OpenClaw channel such as `OpenClaw 자동화 멈춰`, `OpenClaw stop`, or `OPENCLAW_LOOP_STOP` stores a stop state and prevents the app from sending the next automatic request. `OpenClaw 자동화 다시 시작` or `OPENCLAW_LOOP_START` clears that stop state. Slack event routing and mention-only behavior should be configured in the Slack App/OpenClaw listener, not in the release-production skill docs.
+- OpenClaw production is scheduled by its `ai-music-hourly-autonomous` cron job, not by Slack or render events. Keep `AIMP_OPENCLAW_AUTO_REQUEST_NEXT_ON_PUBLISH=false`, `AIMP_OPENCLAW_REQUEST_NEXT_ON_VIDEO_RENDER_EVENTS=false`, and the legacy Slack trigger prefix disabled. Before each substantive action, the cron pass posts one concise plan notice to `#openclaw`; Slack is for visibility and optional human control, not for starting the production loop.
 - The next-release loop is planned by `docs/openclaw-next-release-planner.md`: it reads `/youtube/status`, rotates every connected non-excluded YouTube channel, reads the selected channel's concept planner/profile in `docs/openclaw-channel-concepts/` and `docs/openclaw-channel-profiles/`, avoids recent concept repetition, and then hands off to the automatic private playlist publisher. New connected channels enter rotation automatically by default; if no dedicated docs exist, the planner uses the `custom-channel` fallback docs.
 
 For `single_track_video` workspaces, the app also auto-generates YouTube title, description, and tags from the track metadata and workspace description.

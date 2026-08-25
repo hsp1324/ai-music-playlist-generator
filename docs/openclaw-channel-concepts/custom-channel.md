@@ -4,7 +4,7 @@ Use this when `scripts/openclaw-release channel-profile` returns `custom-channel
 
 ## Goal
 
-Infer the channel identity from the connected channel title, the human request, and the channel's existing uploads. Then choose a fresh playlist concept that fits that inferred identity without copying recent releases. Normal non-scripture channels need about 10 minutes of new audio before app-side reuse; the app tries to extend them toward about 60 minutes or longer and can still publish below one hour if reuse is limited. Scripture/Buddhist channels should aim for about 60 minutes of new passage-based audio.
+Infer the channel identity from the connected channel title, the human request, and the channel's existing uploads. Then choose a fresh playlist concept that fits that inferred identity without copying recent releases. Follow [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md): every new automatic playlist needs at least one hour of same-lane approved audio; reuse is optional and insufficient reuse requires additional Suno generation, not a short render.
 
 ## Required Checks
 

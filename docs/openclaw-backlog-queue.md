@@ -1,10 +1,12 @@
 # OpenClaw Backlog Queue Planner
 
-Use this skill when the AI Music app asks OpenClaw to produce the next release through the deployed Oracle VM app.
+Use this skill when the hourly OpenClaw automation or a human asks OpenClaw to produce the next release through the deployed Oracle VM app.
 
 The current production mode is external-render lookahead: the Oracle VM app owns state, Slack, and YouTube publish, while OpenClaw prepares the next release's audio, cover, thumbnail, and visual source. Moving-video channels need a short provider loop video. HaruHaru, sundaze, Solwave Radio, and Club Bloom use a photorealistic still-image cover/thumbnail package and `still_image` render instead of a provider loop video; Club Bloom should use the same friend-taken smartphone/Instagram still-image feel as HaruHaru, with club/bar/lounge/festival backgrounds. A separate render worker machine claims queued video jobs and uploads the finished MP4 back to the app. Cinematic Pulse still uses photorealistic high-resolution first-frame art, but it also needs a restrained provider loop video by default. For Cinematic Pulse, OpenClaw must keep the actual audio lane and public packaging aligned: former Storylight-style cute/playful game/anime/theme-park tracks need former Storylight-style titles/thumbnail phrases, while dark fantasy / epic battle / cinematic orchestra packaging requires matching cinematic/orchestral tracks.
 
 ## Core Rule
+
+For every new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio-policy.md](openclaw-one-hour-new-audio-policy.md) controls Suno generation and duration. Do not queue audio/video render until approved same-lane audio totals at least one hour; when reuse is scarce, generate additional Suno tracks rather than creating a short release, switching lanes, or using unrelated filler.
 
 Maintain a bounded unfinished Playlist Release backlog per connected, automated channel:
 
@@ -27,11 +29,11 @@ Do not count archived releases, deleted releases, failed releases that require h
 
 ## Work Order
 
-On each `OPENCLAW_RUN:` backlog request:
+On each hourly autonomous backlog pass:
 
-Slack command text is intentionally compact. Treat it as a trigger, then fetch details from the app API instead of expecting channel priorities or release lists in Slack: run `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status`.
+Slack is not a trigger. Fetch details from the app API instead of expecting channel priorities or release lists in Slack: run `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status`. Before every substantive action, send one concise Korean plan notice with `scripts/openclaw-release slack-notify`.
 
-1. Update the repo and confirm `AIMP_LOCAL_API_BASE` points at the deployed VM app API.
+1. Use the checked-out runtime repository and confirm `AIMP_LOCAL_API_BASE` points at the deployed VM app API. Do not run `git pull` solely because a pass started.
 2. Acquire the app-side OpenClaw lock before opening Suno, Gemini, or creating a release.
 3. Keep the lock alive with heartbeat while working.
 4. Run `scripts/openclaw-release list-releases`.
@@ -43,6 +45,7 @@ Slack command text is intentionally compact. Treat it as a trigger, then fetch d
     - `publish_queued`: do not sit idle polling for a YouTube id. The app upload worker owns the upload. Treat it as deferred work, then continue with the next eligible backlog item in the same pass when the OpenClaw lock is still held and no human action is needed; otherwise finish the lock as `completed` and let the app request the next pass.
     - YouTube API upload quota blockers, including `Video Uploads per day`, `rateLimitExceeded`, `quotaExceeded`, HTTP 403 quota, or HTTP 429 rate limit: do not retry publish in the same pass and do not stop production. Leave the rendered release and approved metadata in the app for the next quota window, report the blocker compactly, do not finish the OpenClaw lock as `blocked`, and continue making/resuming the next playlist workspace, cover, thumbnail, and required visual source.
     - `youtube_upload_failed`: retry only if the error is transient and not a YouTube upload quota blocker. If the error says the stored YouTube channel token expired/was revoked or asks to reconnect the channel, report it as a human-auth blocker. Do not make new releases for that same channel until the human reconnects it; continue only with other eligible channels.
+    - BibliaCanto scripture reservation returns `next_block_missing` / HTTP 409: diagnose the deployed app sequence first. When the missing entry is a deterministic contiguous-block configuration omission, repair it in the app repo, run focused tests, deploy through the established path when available, confirm the deployed API now reserves the same release, and continue that release. Do not guess a later Bible passage or start Suno/image/video work before a successful reservation. If the repair cannot be completed and verified in this pass, archive the unstarted/asset-free release with `scripts/openclaw-release archive-release --release-id RELEASE_ID --reason "next_block_missing: CAUSE"`; never create another BibliaCanto workspace for the same blocker in that pass. Preserve a workspace that already has real assets or a reservation, record its blocker, and do not duplicate it. Exclude BibliaCanto for the remainder of the pass, then immediately continue with the next eligible connected non-`BibliaCanto` channel. Finish the app lock as `completed` when the remaining eligible work is done, not `blocked` because of this one channel.
     - `ready_for_youtube_auth` or long-video verification deferred: leave the release intact and move on.
     - loop-video unavailable because Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window: use the approved still-image fallback instead of leaving the release deferred only for video generation. Do not replace the missing provider video with Dreamina, Seedance, CapCut, or a local motion-loop workaround. This does not apply to HaruHaru, sundaze, Solwave Radio, or Club Bloom, which already use the still cover image by default.
     - Gemini/Veo may add its own provider logo or watermark, usually in the bottom-right corner. This is acceptable and is not a reason to remake an otherwise valid loop video. The no-logo rule only forbids OpenClaw-requested/generated extra logos, UI, brand marks, or unrelated text.
@@ -53,6 +56,16 @@ Slack command text is intentionally compact. Treat it as a trigger, then fetch d
 10. OpenClaw requests should not be triggered by render-worker claim/start alone. The app may ask for more backlog work after the OpenClaw lock is released, and it asks OpenClaw to finish metadata/publish after the external worker completes and uploads the rendered MP4.
 11. Stop making new releases only for channels that have reached the configured maximum backlog.
 12. When creating a new release, stop after queuing video render. Release the app-side lock so the app can ask for the next finish/prepare step later.
+
+## Fault Recovery And Workspace Hygiene
+
+For every unexpected API, provider, app, or sequence failure, OpenClaw must first keep the current lock alive and inspect the release state, app status/backlog, error response, and relevant local/deployed logs. Identify one concrete root cause before acting; do not blindly retry a failing command or create a second workspace.
+
+Make one bounded self-healing attempt when the correction is deterministic, reversible, and can be verified in the same pass. Safe examples include retrying a transient request with bounded backoff, refreshing a stale local checkout, repairing a missing app-owned sequence/configuration entry, or using an already-approved documented render fallback. For code/configuration fixes, run focused tests, use only the established deployment path available to the worker, and verify the deployed API or release state before resuming the original release.
+
+Never automatically alter OAuth or other credentials, billing/payment settings, cloud/firewall permissions, connected YouTube accounts, published videos, or real generated assets to force recovery. If a repair requires any of those, human access, an unavailable deployment path, or cannot be verified, defer only the affected channel/release and continue eligible work.
+
+Before deferring, inspect the workspace. Archive only a workspace created in the current pass that has no real tracks, audio render, cover, thumbnail, loop video, output video, YouTube video id, or scripture reservation, using `scripts/openclaw-release archive-release --release-id RELEASE_ID --reason "SHORT_ROOT_CAUSE"`. This removes the empty shell from active backlog while preserving an auditable reason. If the workspace has real assets or a reservation, preserve it, record the concise blocker, and do not create another workspace for that channel/blocker in the same pass. Keep an in-memory skip set keyed by channel plus root-cause fingerprint for the current pass, so repeated failures cannot create accumulating empty workspaces.
 
 `AIMP_LOCAL_API_BASE` should point at the deployed VM FastAPI backend. The public `https://ai-music.168.107.34.175.sslip.io/api` URL is Google-login protected and needs `AIMP_API_COOKIE`; `AIMP_OPENCLAW_SHARED_TOKEN` alone is not enough for upload/publish helper calls.
 

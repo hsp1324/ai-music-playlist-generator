@@ -104,6 +104,50 @@ def test_public_oauth_api_base_requires_cookie(monkeypatch) -> None:
     )
 
 
+def test_archive_release_records_a_self_heal_reason() -> None:
+    release = {
+        "id": "release-1",
+        "title": "Blocked BibliaCanto release",
+        "workflow_state": "collecting",
+        "hidden": False,
+    }
+    captured_payloads = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/api/playlists/workspaces/release-1":
+            return httpx.Response(200, json=release)
+        if request.method == "POST" and request.url.path == "/api/playlists/release-1/archive":
+            captured_payloads.append(json.loads(request.read()))
+            return httpx.Response(200, json={**release, "workflow_state": "archived", "hidden": True})
+        return httpx.Response(500, json={"detail": "unexpected request"})
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = openclaw_release.archive_release(
+        client,
+        SimpleNamespace(
+            release_id="release-1",
+            release_title="",
+            actor="openclaw:self-heal",
+            reason="next_block_missing; safely deferred",
+        ),
+    )
+
+    assert captured_payloads == [
+        {
+            "actor": "openclaw:self-heal",
+            "archived": True,
+            "revive_rejected": False,
+            "reason": "next_block_missing; safely deferred",
+        }
+    ]
+    assert result["release"] == {
+        "id": "release-1",
+        "title": "Blocked BibliaCanto release",
+        "workflow_state": "archived",
+        "archived": True,
+    }
+
+
 def test_still_image_pop_channels_enable_lyrics_overlay_by_default() -> None:
     args = SimpleNamespace(lyrics_overlay=False)
 

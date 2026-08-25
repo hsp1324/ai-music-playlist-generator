@@ -21,6 +21,7 @@ If the app catalog looks incomplete or the human says there are YouTube videos o
 
 ## Global Planning Rules
 
+- For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md) is mandatory. Scarce matching reuse requires additional same-lane Suno generation until one hour, not a shorter render, an unrelated filler track, or a different concept.
 - Every channel title should be broad, searchable, and useful to normal viewers. A specific cover/video scene can guide atmosphere, but the release title should usually lead with genre identity plus a listening reason or emotion.
 - Each release should be one coherent style lane, not a mixed sampler. The rendered video can use a detailed style such as trap, boom bap, bachata pop, lofi study, or tech house, while YouTube playlist assignment uses the broader bucket from the taxonomy.
 - Every new vocal release is also one coherent accompaniment family. The three allowed families are themed large-scale orchestral vocal, piano-only vocal, and acoustic-guitar-only vocal. The arrangement policy overrides older beat-led vocal examples in individual channel planners unless the human explicitly requests a one-off exception.

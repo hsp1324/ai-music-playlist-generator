@@ -60,8 +60,8 @@ key is retried.
 
 ## OpenClaw processing rules
 
-When an app-originated `OPENCLAW_RUN:` asks for comment requests, read the
-queued request endpoint before normal channel rotation.
+At the start of every hourly autonomous OpenClaw pass, read the queued request
+endpoint before normal channel rotation.
 
 - Claim at most one request per run, and only when `channel_title` is exactly
   `Club Bloom`. The app returns the oldest eligible request by `(created_at,

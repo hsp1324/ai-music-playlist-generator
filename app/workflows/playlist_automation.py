@@ -2150,6 +2150,7 @@ def set_playlist_workspace_archive_state(
     actor: str,
     archived: bool,
     revive_rejected: bool = True,
+    reason: str = "",
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -2161,6 +2162,7 @@ def set_playlist_workspace_archive_state(
         {
             "actor": actor,
             "archived": archived,
+            "reason": str(reason or "").strip(),
             "decided_at": _utcnow().isoformat(),
         }
     )
@@ -2177,6 +2179,7 @@ def set_playlist_workspace_archive_state(
         meta["archived_at"] = now.isoformat()
         meta["purge_after"] = purge_after.isoformat()
         meta["archived_by"] = actor
+        meta["archive_reason"] = str(reason or "").strip()
         meta["archive_retention_days"] = ARCHIVE_RETENTION_DAYS
         meta["workflow_state"] = "archived"
         if previous_workflow_state in FAILED_WORKFLOW_STATES or playlist.status == PlaylistStatus.failed:
@@ -2187,6 +2190,7 @@ def set_playlist_workspace_archive_state(
         meta.pop("archived_at", None)
         meta.pop("purge_after", None)
         meta.pop("archived_by", None)
+        meta.pop("archive_reason", None)
         meta.pop("archive_retention_days", None)
         previous_workflow_state = meta.pop("pre_archive_workflow_state", None)
         previous_status = meta.pop("pre_archive_status", None)
