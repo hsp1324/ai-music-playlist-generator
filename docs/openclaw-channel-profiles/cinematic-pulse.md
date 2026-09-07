@@ -49,7 +49,7 @@ Use this profile only after channel selection returns `Cinematic Pulse`, or when
 - Create a very high quality 16:9 cover/first-frame image, preferably 2560x1440 (`2k`) or at minimum 1920x1080. Use the film-real lane for movie/film-score concepts and the premium game-animation lane for game-orchestra, anime action-RPG, sci-fi heroine, or graceful fantasy game-score concepts.
 - The uploaded first-frame image for the provider loop should be this cover image with the upper-left style phrase already integrated.
 - Create a subtle Gemini loop video from that first frame when Gemini is available. The motion should feel like a premium movie shot: restrained atmosphere, light, smoke, rain, clouds, water, flags, or camera ambience, not fast scene changes.
-- Do not use Dreamina, Seedance, or CapCut for Cinematic Pulse. Gemini clips are uploaded as generated after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- If Gemini quota is exhausted, unavailable, or on cooldown, use Dreamina **Seedance Mini** from the same first frame; do not use another Dreamina model or CapCut. Upload a Gemini or Seedance Mini clip only after it passes the fixed camera-angle/crop/focus inspection. If either provider cannot produce that stable result, use the approved still-image fallback immediately.
 - Queue final render with:
 
 ```bash

@@ -24,7 +24,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 ## Cover
 
 - Create one final 16:9 cover first.
-- The cover is the playback visual and still-image render source. Club Bloom does not create or upload a Dreamina/Seedance/Gemini loop video in normal automation.
+- The cover is the playback visual and still-image render source. The Club Bloom MP4 must use the exact final approved cover file, never the thumbnail, an earlier cover/draft, a track image, or a provider loop. Club Bloom does not create or upload a Dreamina/Seedance/Gemini loop video in normal automation.
 - Do not put `Club Bloom`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - Club Bloom covers should normally be text-free, like HaruHaru. If text is truly useful, use only a short integrated EDM/club style phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`, with transparent background.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
@@ -45,8 +45,10 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 ## Render Visual
 
 - Do not create or upload a Gemini, Dreamina, or Seedance loop video for normal Club Bloom releases.
-- Upload the final cover and separate YouTube thumbnail, approve the cover, then queue final render as a still image:
+- Upload the final cover and separate YouTube thumbnail, approve the cover, confirm there is no legacy loop video (`delete-loop-video` if there is), then queue final render as a still image:
   `scripts/openclaw-release render-video --release-id RELEASE_ID --allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style bars`
+- Do not use `auto` for Club Bloom. Once that command is queued, do not replace the cover or thumbnail. If either asset needs correction, do not publish the old render; upload the completed replacement package, approve its cover, and queue a fresh still-image render.
+- Before metadata approval, inspect the completed playback frame against the final cover. Any scene/crop/subject/lighting/text mismatch means the video is stale and must be re-rendered from the final cover; changing only the YouTube thumbnail is not a fix.
 - Do not pass `--loop-video`, `--loop-video-provider`, or browser-generated provider clips unless the human explicitly asks for motion on a specific release.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, exposed nipples, visible genitals, sexual acts, unsafe minors, protected brands, or real club footage to the generated images.
 - Keep spectrum graphics out of the static images; the app adds lower-right `bars` spectrum during final render.

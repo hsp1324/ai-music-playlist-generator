@@ -31,7 +31,7 @@ Do not count archived releases, deleted releases, failed releases that require h
 
 On each hourly autonomous backlog pass:
 
-Slack is not a trigger. Fetch details from the app API instead of expecting channel priorities or release lists in Slack: run `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status`. Before every substantive action, send one concise Korean plan notice with `scripts/openclaw-release slack-notify`.
+Slack is not a trigger. Fetch details from the app API instead of expecting channel priorities or release lists in Slack: run `scripts/openclaw-release openclaw-status` and `scripts/openclaw-release openclaw-backlog-status`. Before a substantive action, send exactly one concise one- or two-line Korean plan notice through the OpenClaw Slack account: `openclaw message send --channel slack --target C0AVBUYP150 --message "▶ CHANNEL · ACTION"`. Do not use `scripts/openclaw-release slack-notify`, which posts as the web-app bot.
 
 1. Use the checked-out runtime repository and confirm `AIMP_LOCAL_API_BASE` points at the deployed VM app API. Do not run `git pull` solely because a pass started.
 2. Acquire the app-side OpenClaw lock before opening Suno, Gemini, or creating a release.

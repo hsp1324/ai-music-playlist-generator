@@ -43,8 +43,8 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 
 ## Loop Video
 
-- Use Gemini only for the moving clip. Do not use Dreamina, Seedance, or CapCut for BibliaCanto moving visuals.
-- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- Use Gemini first for the moving clip. If Gemini quota is exhausted, unavailable, or on cooldown, use Dreamina **Seedance Mini** from the same first-frame cover; do not use another Dreamina model or CapCut.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, and do not mention duration. Seedance Mini uses its 10-second provider control. Inspect either result before upload: if camera angle, crop, camera distance, or focus changes, reject it and use the approved still-image fallback immediately.
 - Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - Animate the selected cover concept with reverent environmental motion: slow light over water, drifting stars, candle or oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, leaves, or temple light when appropriate.
 - If the first frame contains a passage range or short style phrase, keep it stable and readable. Do not invent a channel name.

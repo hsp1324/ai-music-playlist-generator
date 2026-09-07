@@ -39,8 +39,8 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 ## Loop Video
 
-- Use Gemini only for the moving clip. Do not use Dreamina, Seedance, or CapCut for Soft Hour moving visuals.
-- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- Use Gemini first for the moving clip. If Gemini quota is exhausted, unavailable, or on cooldown, use Dreamina **Seedance Mini** from the same first-frame cover; do not use another Dreamina model or CapCut.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, and do not mention duration. Seedance Mini uses its 10-second provider control. Inspect either result before upload: if camera angle, crop, camera distance, or focus changes, reject it and use the approved still-image fallback immediately.
 - Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - The loop video should preserve the same photorealistic high-quality background feeling as the cover. Avoid hard-coded scene/motion templates unless the human requested a specific visual.
 - If the first-frame cover contains short piano/use-case text, the provider video must keep that text as plain letters directly on the scene with a transparent background. Do not add, preserve, or animate in any black box, semi-transparent dark panel, rectangle, gradient scrim, sticker, badge, pill, capsule, or filled label shape behind the text. Reject/regenerate if the moving clip wraps clean first-frame text in a new box.

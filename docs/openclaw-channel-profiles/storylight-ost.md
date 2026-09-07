@@ -37,8 +37,8 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 
 ## Loop Video
 
-- Use Gemini only for the moving clip. Do not use Dreamina, Seedance, or CapCut for Storylight-style moving visuals.
-- Storylight OST should use an uploaded Gemini loop MP4 before final render while Gemini is available. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, do not defer the release; use the standing human-approved still-image fallback with `--allow-still-image-video --video-render-source-mode still_image`, then render/publish with the same cover, spectrum, and normal channel metadata.
+- Use Gemini first for the moving clip. If Gemini quota is exhausted, unavailable, or on cooldown, use Dreamina **Seedance Mini** from the same first frame; do not use another Dreamina model or CapCut.
+- Storylight OST should use an uploaded provider loop MP4 only when it passes the fixed camera-angle/crop/focus inspection. If Gemini or Seedance Mini cannot produce that stable result, do not defer the release; use the standing human-approved still-image fallback with `--allow-still-image-video --video-render-source-mode still_image`, then render/publish with the same cover, spectrum, and normal channel metadata.
 - For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection.
 - Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - The loop video should animate the selected cover concept with visible playful game/anime/theme-park motion: cabinet light pulses, pixel sparkle, floating item icons, UI-like magical glows, bouncing props, lantern shimmer, shop lights, carousel bulbs, ferris-wheel glow, parade flags, candy-stand lights, toy-like particles, confetti, leaves, water shimmer, or soft character/mascot idle motion when appropriate.

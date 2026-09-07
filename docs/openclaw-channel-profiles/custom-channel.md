@@ -22,7 +22,7 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 ## Loop Video
 
 - Use the uploaded cover/first-frame image as the exact starting frame.
-- Generate a short loop video with Gemini only when the custom channel needs motion. Do not use Dreamina, Seedance, or CapCut. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback unless the human explicitly asks to wait.
+- Generate a short loop video with Gemini first when the custom channel needs motion. If Gemini quota is exhausted, unavailable, or on cooldown, use Dreamina **Seedance Mini** from the same first frame; do not use another Dreamina model or CapCut. Every provider output must pass the fixed camera-angle/crop/focus check in `docs/openclaw-visual-assets.md`; otherwise use the approved still-image fallback immediately.
 - Animate only visual elements that already fit the first frame and playlist concept.
 - If the first frame has a short style/theme phrase, keep it stable and readable. Do not invent a channel name.
 - The final frame should return close to the opening composition so the app's loop crossfade feels natural. The app uses 2.0 seconds for Gemini-tagged loop videos and 1.5 seconds for the default provider path.

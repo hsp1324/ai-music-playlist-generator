@@ -44,14 +44,14 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 ## Loop Video
 
-- Use Gemini only for the animated moving-video lane. Do not use Dreamina, Seedance, or CapCut. Do not create a loop video for the photorealistic still-image lane.
+- Use Gemini first for the animated moving-video lane. If Gemini quota is exhausted, unavailable, or on cooldown, use Dreamina **Seedance Mini** from the same first frame; do not use another Dreamina model or CapCut. Do not create a loop video for the photorealistic still-image lane.
 - For photorealistic Japanese hip-hop/R&B/rap releases, queue final render with:
 
 ```bash
 scripts/openclaw-release render-video --release-id RELEASE_ID --allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style bars --lyrics-overlay --lyrics-overlay-style editorial-lower-left
 ```
 
-- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, do not mention duration, and download the generated MP4 as-is after inspection. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers.
+- For Gemini, use image-to-video/Create video from the same first-frame cover, choose `16:9` when available, and do not mention duration. Seedance Mini uses its 10-second provider control. Inspect either result before upload: if camera angle, crop, camera distance, or focus changes, reject it and use the approved still-image fallback immediately.
 - Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - The loop video should keep the three people walking toward the camera while the camera dollies backward at the same pace. The people must not grow larger or smaller in frame.
 - Keep the three-person silhouette at roughly the same screen size and centered placement throughout the clip. Reject/regenerate if the people noticeably scale up, the frame feels like a dolly-in, or the camera zooms into the subjects.
