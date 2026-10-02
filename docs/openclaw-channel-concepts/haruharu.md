@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: HaruHaru
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free image; put a hook such as `괜히 설레는 오늘` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `HaruHaru`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/haruharu.md` afterward for cover, thumbnail, and still-image render production rules.
 
 Mandatory vocal arrangement override: read
@@ -26,7 +31,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `HaruHaru` release
 - The same scene, such as Seoul night walk, school hallway, rainy bus stop, Han River, rooftop, convenience store, beach trip, cafe date, or dance practice room.
 - The same K-pop substyle, especially K-pop hip-hop, rap-pop, trap-pop, boom bap, Korean R&B, neo-soul pop, darker street-pop, or explicit city-pop. Do not choose city-pop for a new HaruHaru lane unless the human asked for it or the release is already a city-pop release that should be completed consistently.
 - The same lyric premise, such as first confession, last text, missed timing, reunion, moving on, summer crush, or confidence glow-up.
-- The same thumbnail phrase, such as `K-POP`, `SEOUL POP`, `DANCE POP`, `HEARTBREAK`, or `SUMMER KPOP`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 - Generic translated title shapes that do not say what the playlist is for.
 - The same clickable hook shape. Do not repeat only `나랑 데이트 할래?`, `답장 오기 전까지`, `오늘은 내가 주인공`, `홍대 가기 전`, date-beforegoing, reply-waiting, or confidence titles. Rotate between crush, night-out, getting ready, breakup recovery, self-confidence, walk, drive, running, weekend energy, and cool-alone energy.
 - The same grammar skeleton. If the latest titles already look like `[hook] | [situation] 듣기 좋은 [genre] 노래모음`, change the order, ending, and sentence rhythm rather than swapping only a few words.

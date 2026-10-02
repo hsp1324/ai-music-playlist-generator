@@ -1,6 +1,10 @@
-# Suno V5.5 Instrumental Format
+# Suno Instrumental Format (Legacy Filename)
 
-Use this whenever OpenClaw creates Soft Hour Radio solo-piano tracks, BGM, cafe, study, sleep, lofi, ambient, or any other instrumental/no-vocal Suno track. New Soft Hour Radio audio should be solo piano/felt piano/quiet piano; existing similar Soft Hour tracks may temporarily fill the back half when there are not enough piano tracks to approach one hour.
+## Current generation model — 2026-10-02
+
+This filename is retained so existing links do not break; it does not select a model. All new generation uses standard v6 under [the model policy](openclaw-suno-v6-policy.md). Preserve existing songs/releases. The bracket-only lyrics rule below remains our instrumental input format; do not claim historical v5.5 prompting observations are a guarantee about v6 output. Verify actual current UI controls and listen to each result.
+
+Use this whenever OpenClaw creates Soft Hour Radio solo-piano tracks, BGM, cafe, study, sleep, lofi, ambient, or any other instrumental/no-vocal Suno track. New Soft Hour Radio audio should be solo piano/felt piano/quiet piano; new-release reuse must satisfy v6/Good-tail eligibility and solo-piano compatibility. Generate more v6 piano rather than invoke unrestricted catalog fill.
 
 ## Why This Exists
 

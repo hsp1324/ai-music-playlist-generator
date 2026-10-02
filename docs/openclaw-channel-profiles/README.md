@@ -1,5 +1,8 @@
 # OpenClaw Channel Profiles
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
 OpenClaw should decide the channel first, then read exactly one channel profile before making cover, thumbnail, or loop-video assets.
 
 For next-release concept planning, use [openclaw-channel-concepts](../openclaw-channel-concepts/README.md). Channel profiles are for visual and metadata execution, not for deciding the next fresh playlist idea.
@@ -30,7 +33,7 @@ For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio
 ## Global Visual Rules
 
 - Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
-- If text is useful, use a short natural style, genre, use-case, or passage phrase instead. Examples: `J-POP`, `LOFI`, `TECH HOUSE`, `CINEMATIC ORCHESTRA`, `GAME OST`, `Genesis 1:1-5`, `Matthew 1:18-25`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 - Text must be integrated into the artwork with safe margins and a transparent background. Letters should sit directly on the image; use only typography choices such as font weight, color, subtle shadow, thin outline, or local contrast for readability. Do not use hard black boxes, semi-transparent black panels, white or colored rectangles, gradient scrims, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks behind text. Reject/regenerate thumbnails when the text is placed inside any filled background shape.
 - The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
 - The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
@@ -49,14 +52,14 @@ For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio
 - Calm high-resolution photorealistic solo-piano BGM visuals for study, work, sleep, reading, cafe, or quiet focus.
 - Preserve the established quiet background feeling, but make it feel like a real premium cafe, study desk, rain window, greenhouse, reading room, cottage, workshop, or sleep room.
 - Use a locked-off tripod/static camera with no camera movement at all. Add only subtle environmental motion such as rain on glass, mug steam, lamp/candle flicker, curtain edges, dust, smoke, reflections, firelight, or leaves. Prefer `none` or very restrained spectrum for very quiet releases.
-- If text is useful, use piano/use-case phrases such as `SOLO PIANO`, `CAFE PIANO`, `FOCUS PIANO`, `STUDY PIANO`, `SLEEP PIANO`, or `RAINY PIANO`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 
 ### Tokyo Daydream Radio
 
 - Mainstream J-pop/Japanese pop visual identity.
 - Default signature: exactly three people walking toward the viewer in a front-view composition.
 - In loop video, the people walk forward while the camera moves backward at the same speed so subject size stays stable.
-- If text is useful, use short J-pop/style phrases such as `J-POP`, `CITY POP`, `ANIME POP`, `J-POP DRIVE`, or `SUMMER J-POP`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 
 ### sundaze
 
@@ -64,7 +67,7 @@ For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio
 - Covers mainstream English pop plus pop-adjacent playlist lanes such as Pop R&B, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie/bedroom/alt-pop, singer-songwriter/folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, and Amapiano-pop.
 - Default visual package is photorealistic English/American lifestyle still images, not provider loop video.
 - Prefer casual friend-taken smartphone/Instagram snapshots: clearly adult road-trip, rooftop, beach boardwalk, cafe terrace, country road, Americana diner, indie room, festival lawn, neon night drive, or downtown walk moments with natural side/three-quarter angles, medium or farther framing, slight phone-photo imperfection, and enough environment to feel real.
-- If text is useful, use one natural integrated English-pop lane phrase, preferably upper-left: `POP R&B`, `DANCE POP`, `SYNTH POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 - Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### Solwave Radio
@@ -73,7 +76,7 @@ For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio
 - Default visual package is photorealistic Latin/Spanish lifestyle still images, not provider loop video.
 - Prefer casual friend-taken smartphone/Instagram snapshots: clearly adult night-out, travel, cafe terrace, beach road, plaza dance, rooftop, open-air bar, or city-street moments with natural side/three-quarter/phone-glance angles, medium or farther framing, slight phone-photo imperfection, and enough environment to feel real.
 - Avoid professional photographer shoots, studio portraits, glossy fashion campaigns, tight straight-on AI-beauty close-ups, minors, celebrity lookalikes, and over-retouched model faces.
-- If text is useful, use one natural integrated Latin/Spanish lane phrase, preferably upper-left: `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 - Queue final render as still image with app lyrics lower-left and app spectrum lower-right. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### HaruHaru
@@ -91,28 +94,28 @@ For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio
 
 - `Storylight OST` is now manual-only. For automation, upload playful no-vocal Japanese game/anime OST, happy amusement park BGM, and feel-good background music to `Cinematic Pulse` as a former Storylight-style lane.
 - Use game/anime/theme-park environmental motion such as cabinet lights, carousel bulbs, ferris-wheel glow, magical glows, flags, lantern shimmer, toy-like particles, confetti, or water shimmer.
-- If text is useful, use broad clickable benefit/style phrases such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, `COZY GAME MUSIC`, `THEME PARK BGM`, or `HAPPY PARK`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 
 ### Cinematic Pulse
 
 - No-vocal cinematic orchestra, movie OST, film score, trailer, heroic, sci-fi, dark fantasy, mystery, or emotional cinematic music.
 - Use photorealistic cinematic first-frame / premium movie-poster realism and create a restrained provider loop video.
 - Queue renders with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly approves a still-image fallback.
-- Include a tasteful upper-left cinematic style phrase on the cover/first-frame and use that image as the loop-video starting frame. Use `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`, not the channel name.
+- An optional cinematic listener-promise hook such as `Your Next Great Adventure` may appear on the new cover/first frame; a strong text-free image is valid. Do not use a bare genre-label headline or channel name.
 
 ### Club Bloom
 
 - No-vocal EDM, house, techno, trance, club, festival, workout, night-drive, or party-energy releases.
 - Default visual package is now HaruHaru-style photorealistic friend-taken smartphone/Instagram still images, not provider loop video.
 - Prefer attractive clearly adult women in revealing YouTube-safe club fashion at places where club music naturally plays: nightclub, bar, lounge, rooftop club, beach club, pool party, festival VIP area, DJ booth, dance floor, neon city terrace, or yacht/harbor party. Use natural side or three-quarter phone-photo framing, medium or farther composition, slight motion/focus imperfection, and no glossy campaign or centered AI-model headshot. Keep it YouTube-safe with no nudity, sexual acts, minors, teen-coded styling, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
-- Keep thumbnails text-free by default. If text is useful, name the club lane with one short transparent-background phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 - Queue final render as still image with app spectrum lower-right. Do not create or upload a provider loop video unless the human explicitly asks for motion; if motion is requested, use Gemini only.
 
 ### BibliaCanto
 
 - Combined Bible music channel for Old Testament and New Testament releases.
 - Do not put `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, or the channel name on visuals.
-- If text is useful, use the exact passage range and/or modern music lane: `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Hip-Hop`, `New Testament R&B`, `Bible K-Pop`, or `Scripture Rap`.
+- Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 - Queue final render with `--video-spectrum-overlay-style none`.
 
 ### 불송

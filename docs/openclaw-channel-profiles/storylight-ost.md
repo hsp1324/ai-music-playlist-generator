@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: Storylight OST
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only when a former Storylight-style playful game/anime/theme-park BGM release is being uploaded to `Cinematic Pulse`, or when a human explicitly asks to inspect the legacy `Storylight OST` visual style. Do not publish new automation output to `Storylight OST`; the human manages that channel personally.
 
 ## Routing Contract
@@ -22,7 +27,7 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Do not put `Storylight OST`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- If text is useful, use only a short integrated game/anime/theme-park BGM phrase such as `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE GAME BGM`, `HAPPY GAME MUSIC`, `COZY GAME MUSIC`, `THEME PARK BGM`, or `HAPPY PARK`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Keep the scene coherent with the playlist concept: arcade cabinets, item shop, fantasy RPG plaza, magical menu, mini-game field, school-game hallway, festival street, amusement park plaza, carousel, ferris wheel, parade street, candy stall, puzzle room, toy-like dungeon, quest map, or other playful game/anime location.
 
@@ -30,7 +35,7 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Add short readable click text, for example `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, `FANTASY GAME`, `THEME PARK BGM`, or `HAPPY PARK`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `STORYLIGHT OST`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.

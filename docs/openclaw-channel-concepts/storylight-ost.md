@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Storylight OST
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Storylight OST`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/storylight-ost.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
@@ -24,7 +29,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `Storylight OST` r
 - The same adventure mood, such as cozy town, quest start, secret library, night market, healing forest, or final farewell.
 - The same happy attraction setting, such as carousel plaza, parade street, ferris wheel, candy stand, or toy train.
 - The same instrument palette, such as music box, harp, celesta, strings, flute, soft choir pads, piano, or orchestral swells.
-- The same thumbnail phrase, such as `FANTASY OST`, `COZY RPG`, `MAGIC VILLAGE`, or `STORY BGM`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 - The same visual scene if used recently.
 
 If the latest 3 Storylight releases share the same location or instrument lead, choose a different one.
@@ -43,15 +48,15 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 ## Music Direction
 
 - Instrumental/no-vocal by default.
-- Storylight OST playlist production is reuse-only by default. Do not open Suno or start new Suno generation for this channel unless the human explicitly overrides the reuse-only rule. If OpenClaw already generated/downloaded Storylight audio before seeing this rule, upload and use it instead of wasting the spent credit.
+- Storylight OST remains manual-only. For newly requested music, follow the standard-v6 policy: generate v6 songs and reuse only eligible v6 or explicit-Good legacy tail tracks. Existing releases/audio remain intact and continue normally.
 - Create or select the Playlist Release first, then search existing app tracks with `scripts/openclaw-release search-tracks --q "storylight arcade game bgm"` or lane-specific keywords such as `cute fantasy RPG`, `anime game BGM`, `item shop`, `mini game`, `magical menu`, `playful OST`, `happy amusement park`, `theme park BGM`, `carousel`, `parade`, or `carnival`.
 - Attach existing approved tracks with `scripts/openclaw-release reuse-track --release-id RELEASE_ID --track-id TRACK_ID`. Keep all selected tracks in one coherent lane; do not mix arcade, fantasy town, puzzle room, and dramatic OST cues just to reach a duration target.
 - Existing approved Storylight-compatible tracks can be reused even when they are short, because the Suno credit has already been spent. Prefer stronger/full-length tracks when choosing between otherwise similar candidates, but do not block render or publish only because an already-made cue is under 1:00.
 - If there are not enough matching tracks for the first concept, keep the selected concept and generate additional original same-lane Suno tracks until the new playlist meets the one-hour requirement in [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md). Do not switch lanes merely for catalog availability or use unrelated filler.
 - Cover, thumbnail, and provider loop-video assets can still be newly generated for the selected recombination concept.
-- Only when the human explicitly asks for new Storylight OST music, or when documenting/uploading audio that was already generated before the reuse-only rule was noticed, follow `../suno-v55-instrumental-format.md`, use bracket-only Suno instrumental metatags in the lyrics/custom-lyrics field, and fill Suno Advanced Options excluded styles with vocal-related and artificial-noise exclusions.
+- When the human requests new Storylight music, use standard v6 and the bracket-only instrumental format; retain original lyrics-free structure and vocal/noise exclusions. The old format filename is not permission to select v5.5.
 - Do not reference protected studios, franchises, characters, composers, songs, real theme parks, or specific artists in Suno or Dreamina prompts. Use safe generic wording such as `playful Japanese arcade-game OST`, `cute fantasy RPG BGM`, `anime side-story instrumental`, `kawaii game menu music`, `feel-good amusement park BGM`, `happy theme-park parade instrumental`, or `lighthearted game background music`.
-- If the human explicitly overrides reuse-only and asks for new Storylight music, do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Build each bracket-only game/OST flow as a full cue meant to naturally land around 4 minutes or longer: intro motif, A section, B section, playful/developed variation, final theme return, and resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit; only stop and report tracks under 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
+- When the human requests new Storylight music, do not put duration caps or two-minute lower-bound wording into Suno fields unless the human explicitly asks for that exact wording. Build each bracket-only game/OST flow as a full cue meant to naturally land around 4 minutes or longer: intro motif, A section, B section, playful/developed variation, final theme return, and resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit; only stop and report tracks under 1:00. Tracks under 2:00 are accepted but recorded for later analysis. Complete 5+ minute tracks are allowed.
 - Music should be melodic, catchy, scene-rich, and loop-friendly without sounding like generic sleep music or mainstream vocal J-pop.
 
 ## Visual Direction
@@ -60,7 +65,7 @@ If the latest 3 Storylight releases share the same location or instrument lead, 
 - Use strong scene identity: arcade cabinets, item shop, fantasy RPG plaza, magical menu, mini-game field, school-game hallway, festival street, amusement park plaza, carousel, ferris wheel, parade street, candy stall, puzzle room, toy-like dungeon, or bright quest map.
 - Cover and loop video should feel like the first frame of a fun Japanese game/anime OST scene.
 - Human or mascot characters are optional. If used, they should feel like small story/game figures inside the environment, not idol/pop thumbnails.
-- Thumbnail text should be clear and genre-searchable: `GAME OST`, `ANIME BGM`, `ARCADE BGM`, `CUTE RPG`, `KAWAII GAME`, `PLAYFUL OST`, `FANTASY GAME`, `THEME PARK BGM`, or `HAPPY PARK`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 
 ## Good Fresh Concept Shapes
 

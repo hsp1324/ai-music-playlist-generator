@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Soft Hour Radio
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `A Quiet Place to Focus` or `Piano for a Slow Morning`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Soft Hour Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/soft-hour-radio.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
@@ -19,7 +24,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `Soft Hour Radio` 
 - The same use case, such as study, work, sleep, reading, rest, cafe, or focus.
 - The same setting, such as rain, forest, ocean, fireplace, window, morning, late night, garden, or cottage.
 - The same piano lane and setting combination, such as rainy reading felt piano, cafe work solo piano, sleep piano, morning focus piano, fireplace piano, or greenhouse study piano.
-- The same thumbnail phrase, such as `CAFE PIANO`, `FOCUS MUSIC`, `DEEP SLEEP`, or `RAINY NIGHT`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 - The same visual scene if it was used recently.
 
 If the latest 3 Soft Hour releases share the same setting, use case, tempo/energy, or thumbnail phrase, choose a different one. The instrument stays solo piano.

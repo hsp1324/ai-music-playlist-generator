@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Club Bloom
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free nightlife image, or `Keep the Night Moving` when a hook is useful. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Club Bloom`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/club-bloom.md` afterward for cover, thumbnail, and still-image render rules.
 
 ## Channel Promise
@@ -21,7 +26,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` relea
 - The same dance lane, such as house, future house, dance-pop, festival EDM, techno-pop, night drive, workout, or gaming mix.
 - The same venue/performance setting, such as beach-club adult female DJ/BJ deck, rooftop skyline adult female DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, cyber club, gym event stage, highway/night-drive visual, or DJ booth.
 - The same energy curve, such as warmup, peak-time, late-night, workout sprint, or chill-house.
-- The same thumbnail phrase, such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, or `WORKOUT EDM`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 - The same visual scene if used recently.
 
 If the latest Club Bloom release was generic neon club or night drive, choose a stronger venue-based adult female DJ/BJ performance setup next, such as beach club, rooftop skyline, concert/festival stage, warehouse rave, pool party, open-air stage, or cyber club.
@@ -68,7 +73,7 @@ Good style lanes:
 - Unless the human explicitly asks for a non-DJ concept, make the visual read as a beautiful adult female DJ/BJ performance through visible decks/mixer, performer, crowd, lighting rig, stage, or dance-floor action.
 - Human figures are expected by default when the concept allows it. Use a stylish adult woman DJ/BJ with bold revealing club fashion, confident poses, glossy nightlife styling, and sexy high-energy club presence. Vary the subject, setting, camera, composition, crowd presence, outfit palette, venue type, and action so each release feels fresh.
 - Keep adult nightlife imagery bold and revealing but YouTube-safe. Use daring club outfits, crop tops, metallic mini dresses, sheer outer layers, bikini-style festival tops, bodycon silhouettes, and dramatic stage lighting, but avoid full nudity, visible genitals, exposed nipples, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
-- Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`. The text is the hook; the image should sell the DJ/performance venue.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): a text-free nightlife image, or `Keep the Night Moving` when a hook is useful. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 
 ## Good Fresh Concept Shapes
 

@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: BibliaCanto
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a passage-specific theme such as `Light After the Darkness`, with the exact verified passage range as smaller supporting text. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected upload channel is `BibliaCanto`. This document decides the next scripture playlist concept for either the Old Testament branch or the New Testament branch. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 Mandatory vocal arrangement override: read
@@ -57,7 +62,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `BibliaCanto` rele
 - The same biblical scene, such as creation light, Eden garden, flood water, desert road, covenant stars, Exodus sea, tabernacle, temple, psalm lament, or prophetic vision.
 - The same release-level music lane or instrument palette, such as scripture hip-hop, trap-soul, boom-bap scripture rap, Bible R&B, alt-R&B, neo-soul, K-pop-inspired scripture pop, dark street-pop, Afropop/Amapiano-pop, synth-pop, 808 drums, or sung-rap hooks.
 - The same emotional direction, such as awe, repentance, covenant hope, lament, wilderness trust, deliverance, wisdom, or prophetic warning.
-- The same thumbnail phrase, such as `GENESIS SONGS`, `OLD TESTAMENT`, `BIBLE MUSIC`, `PSALMS MUSIC`, or `SCRIPTURE SONGS`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 
 ## Concept Lanes
 
@@ -113,7 +118,7 @@ New Testament branch:
 - Visuals can include creation light over waters, stars, wilderness, tents, scrolls, stone paths, ark silhouettes, desert mountains, olive trees, ancient city gates, temple light, symbolic fire/cloud, Galilee shoreline, empty tomb light, bread and cup symbolism, hillside teaching, prayer hands, or warm doorway light.
 - Do not make photorealistic biblical reenactment footage.
 - Do not use protected film/TV/game designs.
-- Thumbnail text should be clear and searchable and branch-aware: `GENESIS 1:1-5`, `OLD TESTAMENT HIP-HOP`, `NEW TESTAMENT R&B`, `BIBLE K-POP`, `SCRIPTURE RAP`, `MATTHEW R&B`, `PSALMS HIP-HOP`, or `EXODUS TRAP`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): a passage-specific theme such as `Light After the Darkness`, with the exact verified passage range as smaller supporting text. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 
 ## Good Fresh Concept Shapes
 

@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: 불송
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free mainstream music image; put a hook such as `잡고 있던 걸 놓는 밤` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `불송`. `불송` is a Korean vocal channel internally inspired by Buddhist sources/themes, but new releases should sound and read like accessible mainstream songs.
 
 Mandatory vocal arrangement override: read

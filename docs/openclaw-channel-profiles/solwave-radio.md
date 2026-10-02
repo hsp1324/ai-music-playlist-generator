@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: Solwave Radio
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `Hoy se siente bonito` or `Canciones para soltar`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `Solwave Radio`, or when the human explicitly says to upload to `Solwave Radio`.
 
 ## Routing Contract
@@ -26,7 +31,7 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 - Create one final photorealistic 16:9 cover first, preferably 1920x1080 or higher.
 - The cover is the playback visual for the still-image render.
 - Do not put `Solwave Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- By default, keep the cover clean and text-free. If text is useful for the release concept, use only one small integrated upper-left Latin/Spanish lane phrase such as `POP LATINO`, `REGGAETON SUAVE`, `BACHATA POP`, `LATIN R&B`, `VERANO LATINO`, or `NOCHE LATINA`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `Hoy se siente bonito` or `Canciones para soltar`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - The cover should feel like a friend snapped it on a recent phone for Instagram: candid, relaxed, slightly imperfect, and place-aware. Do not make it look like a studio shoot, fashion editorial, luxury ad, or professional photographer portfolio image.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Leave clean lower-left and lower-right space when possible, because the app places lyric subtitles near the lower-left and the spectrum overlay near the lower-right in the final render.
@@ -35,7 +40,7 @@ Use this profile only after channel selection returns `Solwave Radio`, or when t
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Keep the same photorealistic friend-taken Instagram phone-photo image package. Add one short readable Latin/Spanish click phrase matched to the playlist concept, preferably integrated in upper-left negative space, for example `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, `BACHATA POP`, `LATIN R&B`, or `NOCHE LATINA`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `Hoy se siente bonito` or `Canciones para soltar`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - The thumbnail may slightly improve contrast/readability, but it should still feel like a real friend/phone photo, not a polished campaign key visual.
 - Text should feel integrated into the photo, not like a pasted sticker, badge, button, or hard box. The text background must stay transparent: letters sit directly on the photo, with readability from font weight, color, subtle shadow, thin outline, or local contrast only. Do not add black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text. Keep the main subject visually important and do not push the subject into an awkward crop.
 - Do not add `SOLWAVE RADIO`, the channel name, or a channel logo.

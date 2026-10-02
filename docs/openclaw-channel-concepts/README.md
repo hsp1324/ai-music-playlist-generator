@@ -1,5 +1,8 @@
 # OpenClaw Channel Concept Planners
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
 Use these documents after the next-release planner selects a channel, or when the human explicitly names a channel. They are for deciding the next playlist concept, not for final cover/video rendering details.
 
 The channel profile docs in `docs/openclaw-channel-profiles/` control visual identity, cover, thumbnail, loop video, and channel-specific metadata details. These concept planner docs control what kind of playlist to make next and how to avoid repetition.

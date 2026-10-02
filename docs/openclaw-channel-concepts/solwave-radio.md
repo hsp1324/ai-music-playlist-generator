@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Solwave Radio
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `Hoy se siente bonito` or `Canciones para soltar`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and still-image render rules.
 
 Mandatory vocal arrangement override: read
@@ -68,7 +73,7 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Use clearly adult Latin/Spanish lifestyle subjects when people fit the concept: a stylish adult woman/man, tasteful adult couple, or adult friend pair. Faces may be visible, but prefer candid side/three-quarter/phone-glance angles, laughing or relaxed moments, medium or farther framing, slight phone-photo imperfection, and enough environment to make the scene believable.
 - Good scene families: Latin coastal cafe terrace, warm city street after rain, beach road at golden hour, rooftop fiesta, tropical rain window, plaza dance night, seaside drive, open-air bar, summer balcony, night-market street, or poolside resort walkway.
 - Normal Solwave Radio releases do not need provider loop videos. Render from the still cover image with app-managed lower-left lyric subtitles and lower-right `bars` spectrum, matching HaruHaru's final video layout.
-- Thumbnail text should match the mood, preferably as one integrated upper-left phrase, such as `LATIN POP`, `REGGAETON`, `VERANO LATINO`, `SPANISH POP`, `FIESTA LATINA`, `BACHATA POP`, `LATIN R&B`, or `NOCHE LATINA`.
+- Thumbnail wording follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): one natural audience-language feeling or listening-situation hook, or text-free; no standalone genre-tag headline.
 
 ## Good Fresh Concept Shapes
 

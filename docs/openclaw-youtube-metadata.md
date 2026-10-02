@@ -1,5 +1,8 @@
 # OpenClaw YouTube Metadata Skill
 
+## Standing update — new work from 2026-10-02
+
+Read [audience-first cover/thumbnail copy](openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](openclaw-suno-v6-policy.md). Preserve and continue all existing songs, images, releases, jobs, and approved briefs; do not delete or remake them. Newly generated songs use standard v6 even when completing an existing release. New releases begin with v6; only verified v6 may be reused, except explicit human-Good (`user_rating="like"`) legacy tracks at the tail after all v6 songs. Never use global `--randomize-order` on a new release with this ordering policy. Fill at least 3600 seconds with eligible material before render rather than relying on unfiltered server backfill. New images use a short natural emotion/situation hook or remain text-free, not a standalone genre-tag headline. These prospective rules override older model fallback, reuse-first, genre-label image, and short-block instructions below; they do not reopen legacy releases.
 Use this when the release already has rendered video and the human asks OpenClaw to write YouTube metadata.
 
 OpenClaw should write:
