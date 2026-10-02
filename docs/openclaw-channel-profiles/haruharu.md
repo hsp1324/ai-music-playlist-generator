@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: HaruHaru
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free image; put a hook such as `괜히 설레는 오늘` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `HaruHaru`, or when the human explicitly says to upload to `HaruHaru`.
 
 ## Routing Contract

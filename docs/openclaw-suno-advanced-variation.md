@@ -1,5 +1,8 @@
 # OpenClaw Suno Advanced Variation Policy
 
+## Standing update — new work from 2026-10-02
+
+Read [audience-first cover/thumbnail copy](openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](openclaw-suno-v6-policy.md). Preserve and continue all existing songs, images, releases, jobs, and approved briefs; do not delete or remake them. Newly generated songs use standard v6 even when completing an existing release. New releases begin with v6; only verified v6 may be reused, except explicit human-Good (`user_rating="like"`) legacy tracks at the tail after all v6 songs. Never use global `--randomize-order` on a new release with this ordering policy. Fill at least 3600 seconds with eligible material before render rather than relying on unfiltered server backfill. New images use a short natural emotion/situation hook or remain text-free, not a standalone genre-tag headline. These prospective rules override older model fallback, reuse-first, genre-label image, and short-block instructions below; they do not reopen legacy releases.
 Use this policy for every new Suno generation on every channel. The goal is to
 keep a playlist coherent without producing the same arrangement, singer, or
 mix profile repeatedly.
@@ -11,7 +14,11 @@ themed large-scale orchestra, piano-only accompaniment, or acoustic-guitar-only
 accompaniment. It overrides older beat-led vocal lane examples unless the
 human explicitly requests a one-off exception.
 
-Suno defines `50%` Weirdness as the normal expected result. Style Influence
+## v6 UI compatibility
+
+Select standard v6 first and inspect the current More options UI. Apply the Weirdness/Style Influence bands below only to controls actually exposed; do not claim absent controls were set or fall back to v5.5 to access them. Record any current Variety control separately (it is not the old Weirdness slider), keep requested prompt intent under control, and do not enable Max Mode without authorization. If mandatory controls cannot be set, record the incompatibility and pause dependent generation.
+
+The legacy slider guidance defines `50%` Weirdness as the normal expected result. Style Influence
 runs from Loose to Strong. The ranges below are this project's operating
 heuristics, not universal Suno quality claims.
 

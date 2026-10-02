@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Tokyo Daydream Radio
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `帰り道が好きになる` or `晴れた日に聴きたい`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and either short loop-video or still-image render production rules.
 
 Mandatory vocal arrangement override: read
@@ -73,7 +78,7 @@ Use one lane, then vary substyle and lyric premise:
 
 - Animated moving-video releases use the legacy Tokyo signature: exactly three people walking toward the viewer in a front-view composition. The setting should match the selected concept, not a generic Tokyo scene. For moving clips, keep the camera moving backward at the same pace as the people so the subjects stay the same size; let the side/background motion carry the loop instead of zooming into the people.
 - Photorealistic still-image releases should feel like a friend-taken Japanese Instagram/smartphone photo: stylish adult Japanese streetwear, Shibuya/Shimokitazawa/Koenji/Harajuku/Tokyo nightlife, record-shop, small bar, rooftop, club-side alley, station-exit, or late-night convenience-store street mood. Use still-image render only; no loop video.
-- Thumbnail text can use large `J-POP`, `CITY POP`, `ANIME POP`, `J-RAP`, `TOKYO R&B`, `J-HIP-HOP`, or a short scene/style phrase, but never `TOKYO DAYDREAM RADIO` or any channel-name brand label.
+- Thumbnail wording follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): one natural audience-language feeling or listening-situation hook, or text-free; no standalone genre-tag headline.
 
 ## Good Fresh Concept Shapes
 

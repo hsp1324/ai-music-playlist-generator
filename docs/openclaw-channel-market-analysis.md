@@ -1,8 +1,11 @@
 # OpenClaw Channel Market Analysis
 
+## Standing update — new work from 2026-10-02
+
+Read [audience-first cover/thumbnail copy](openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](openclaw-suno-v6-policy.md). Preserve and continue all existing songs, images, releases, jobs, and approved briefs; do not delete or remake them. Newly generated songs use standard v6 even when completing an existing release. New releases begin with v6; only verified v6 may be reused, except explicit human-Good (`user_rating="like"`) legacy tracks at the tail after all v6 songs. Never use global `--randomize-order` on a new release with this ordering policy. Fill at least 3600 seconds with eligible material before render rather than relying on unfiltered server backfill. New images use a short natural emotion/situation hook or remain text-free, not a standalone genre-tag headline. These prospective rules override older model fallback, reuse-first, genre-label image, and short-block instructions below; they do not reopen legacy releases.
 Last reviewed: 2026-05-17.
 
-Use this document when choosing playlist concepts, YouTube titles, thumbnail text, and song direction. The genre-matched market comparison has already been done here. During normal release automation, OpenClaw should read the selected channel's section and apply its fixed title/content rules without doing live YouTube competitor research.
+Use this document when choosing playlist concepts, YouTube titles, thumbnail text, and song direction. The genre-matched market comparison has already been done here. During normal release automation, OpenClaw should read the selected channel's section and apply its musical-lane guidance together with the newer copy policy (older label examples are not new-image defaults) without doing live YouTube competitor research.
 
 The reference channels below are not style-copy targets. They are market signals for title shape, genre labeling, audience intent, and content packaging. Subscriber and view counts are third-party snapshots from vidIQ, SocialBlade, SpeakRJ, HypeAuditor, HunterTuber, TrendAtlas, SocialCounts, FollowerCharts, ChartMasters, or similar public stats pages; treat them as directional background for the written recommendations below.
 
@@ -26,7 +29,7 @@ Recent 14-day public-upload stats show that the strongest local packaging is not
 
 The weakest current patterns are:
 
-- `Soft Hour Radio`: repeated calm piano BGM title shapes with similar quiet-room thumbnails are not earning clicks. Every Soft Hour release still needs piano/search clarity, but the thumbnail must make the piano promise obvious in one glance with visible piano keys, sheet music, headphones, desk/cafe context, rain/sleep/reading cue, and large text such as `SOLO PIANO`, `SLEEP PIANO`, `RAINY PIANO`, or `STUDY PIANO`. Do not let consecutive Soft Hour thumbnails look like interchangeable calm rooms.
+- `Soft Hour Radio`: repeated calm piano BGM title shapes with similar quiet-room thumbnails are not earning clicks. Every Soft Hour release still needs piano/search clarity, but the thumbnail must make the piano promise obvious in one glance with visible piano keys, sheet music, headphones, desk/cafe context, rain/sleep/reading cue, and an optional quiet-focus/rest hook rather than a bare piano label. Do not let consecutive Soft Hour thumbnails look like interchangeable calm rooms.
 - `Storylight`-style / playful Cinematic Pulse lane: repeated `Happy Game BGM` or `Cute Game BGM` titles are too generic unless the image has a strong anime/game scene. Give every release a distinctive public hook such as cozy fantasy, theme-park parade, arcade mood boost, princess-maker-like anime room, carousel daydream, or cheerful RPG town, then keep the title broad enough for work/reading/gaming.
 - `BibliaCanto`: passage references are required, but a passage number plus internal phrase is not enough. Thumbnail and title must show the passage, branch, modern lane, and one plain theme promise in a few seconds. Prefer `Genesis 13 Abram & Lot Boom-Bap`, `Matthew 8 Healing R&B`, `Narrow Gate Bible Rap`, or similar public clarity over vague poetic labels alone. Avoid generic Bible landscapes that could belong to any passage.
 - `불송`: avoid statue-only, temple-only, lotus-only, or generic devotional images. The better channel direction is contemporary Korean hip-hop/R&B/pop with a clear adult woman/practitioner/listener or fresh stylized female-led subject, a subtle Buddhist cue, and a subtle music cue. The new default title should name a real emotional problem and the music lane in mainstream language, while the Buddhist source/theme stays internal unless the human asks for source-explicit packaging.
@@ -54,7 +57,7 @@ Our direction:
 
 - Title shape: `[playlist] 조용히 집중하고 싶을 때 듣는 피아노 BGM | 공부와 작업을 위한 솔로 피아노` or `[playlist] Rainy Window Piano BGM | Soft Solo Piano for Reading and Quiet Work`.
 - Song direction: solo piano only: felt piano, upright piano, quiet piano, cafe piano, sleep piano, reading piano, and warm room tone; no lofi beats, guitar, Rhodes, strings, pads, jazz trio, bossa, vocals, dramatic crescendos, or busy percussion.
-- Thumbnail text: `SOLO PIANO`, `CAFE PIANO`, `STUDY PIANO`, `SLEEP PIANO`, `FOCUS PIANO`, `RAINY PIANO`.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: poetic object-first titles like `Ceramic Window Morning` when the release is really study/work BGM.
 
 ## Tokyo Daydream Radio
@@ -81,7 +84,7 @@ Our direction:
 - Title shape: `[playlist] Bright J-POP Drive | Japanese Pop for Weekend Energy`.
 - Alternate release visuals when practical: animated/anime moving-video for J-pop/city-pop/anime-pop lanes, then photorealistic friend-taken still-image for Japanese rap/hip-hop/R&B/neo-soul lanes.
 - Song direction: Japanese vocal pop with memorable chorus, natural Japanese phrasing, youth/confidence/first-love/new-start stories, or Japanese rap/R&B with credible groove, hooks, and street/night-out mood. Prompt around 4 minute complete songs; do not use minimum-duration wording.
-- Thumbnail text: `J-POP`, `J-RAP`, `J-HIP-HOP`, `TOKYO R&B`, or a short scene/style phrase. Do not add `TOKYO DAYDREAM RADIO` or any channel-name brand label.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Visual direction: animated lane uses anime/illustrated moving clips; Japanese rap/R&B lane uses photorealistic Japanese smartphone/Instagram stills, like a friend took the photo around Shibuya, Harajuku, Shimokitazawa, Koenji, record shops, small bars, club-side alleys, rooftops, or station exits.
 - Avoid: `Japanese vocal`, `일본어 보컬`, or every title containing `Tokyo`.
 
@@ -129,8 +132,8 @@ Our direction:
 - Title shape: `[playlist] Sunset Highway Pop Drive | Windows Down Road Trip Music`.
 - Channel shape: English/American pop playlist hub, not a narrow English-pop-only channel. Use one clear lane per release: Pop R&B, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie/bedroom/alt-pop, singer-songwriter/folk-pop, soft rock, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop.
 - Song direction: English-forward vocal pop with standalone song concepts, sticky chorus, emotional clarity, modern production, and no BGM-like flatness.
-- Thumbnail text: `POP DRIVE`, `FEEL-GOOD POP`, `HEARTBREAK POP`, `SUMMER POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, or `AMAPIANO POP`.
-- Keep the channel brand as plain integrated text. Avoid pill/capsule/button badges for `SUNDAZE`; they read like pasted UI and can make the thumbnail feel less premium.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
+- Do not put the channel brand on new images. Use a natural listener hook when helpful, or keep the image text-free.
 - Avoid: generic `English Pop` or lyrics that only paraphrase the playlist title.
 
 ## Solwave Radio
@@ -153,7 +156,7 @@ Our direction:
 
 - Title shape: `[playlist] Pop Latino para Ruta al Atardecer | Carretera, Verano y Buenas Vibras`.
 - Song direction: Spanish vocal pop, reggaeton pop, urbano latino, bachata-pop, tropical pop; short repeatable hooks and danceable rhythm.
-- Thumbnail text: `POP LATINO`, `REGGAETON POP`, `VERANO`, `BUENAS VIBRAS`.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: English-first titles, generic `Latin Pop`, or non-danceable soft pop when the channel promise is sunny Latin energy.
 
 ## Club Bloom
@@ -178,7 +181,7 @@ Our direction:
 - Title shape: `[playlist] Progressive Trance x EDM Mix | Night Drive & Gaming Club Music`.
 - Song direction: one club style lane per release; no-vocal, clean drops, strong groove, 40-minute playlist flow.
 - Visual direction: sell the channel as a real adult female DJ/BJ performance destination, not abstract neon. Prefer beautiful adult female DJ/BJ sets in premium places such as beach clubs, rooftop skylines, packed nightclubs, concert/festival stages, warehouse raves, pool-party decks, open-air stages, yacht/harbor parties, neon city terraces, or cyber clubs. Use bold revealing club fashion and sexy nightlife energy while staying YouTube-safe: no full nudity, exposed nipples/genitals, sexual acts, minors, fetish framing, celebrity likenesses, protected brands, or porn-style composition.
-- Thumbnail text: `TRANCE MIX`, `TECH HOUSE`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: keyword-stuffed strings like `for Night Roads, Gaming Focus and Club Drive`.
 
 ## Storylight OST
@@ -203,7 +206,7 @@ Our direction:
 
 - Title shape: `[playlist] Feel-Good Arcade BGM | Happy Game Music for Gaming, Work and Mood Boost`.
 - Song direction: original no-vocal game/anime-style cues; bright melodies, short motifs, loopable sections, light percussion, playful synths, small orchestra, chiptune accents.
-- Thumbnail text: `CUTE GAME OST`, `RPG TOWN`, `ITEM SHOP`, `ARCADE BGM`.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: Nintendo, Pokemon, Zelda, Ghibli, franchise names, character names, direct style imitation, or titles that sound like a game settings/menu label instead of a music video people would click.
 
 ## Cinematic Pulse
@@ -226,7 +229,7 @@ Our direction:
 
 - Title shape: `[playlist] Final Battle Scene Cinematic Music | Dark Fantasy Orchestra`.
 - Song direction: no-vocal orchestral/cinematic score, strong motifs, trailer builds, percussion, strings, brass, choir-like pads only if non-lyrical.
-- Thumbnail text: `EPIC ORCHESTRA`, `FILM SCORE`, `DARK FANTASY`, `BATTLE MUSIC`.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: `Boss BGM`, `Final Boss Focus Music`, bare `BGM`, or titles that sound like a game settings menu.
 
 ## BibliaCanto
@@ -248,7 +251,7 @@ Our direction:
 - Title shape: `[playlist] Genesis 1:1-5 Creation Hip-Hop | Old Testament Rap & R&B Songs`.
 - Song direction: original English lyric songs grounded in the selected Old Testament passage, with paraphrase instead of long copied scripture text. Choose one modern style family per release, such as scripture hip-hop, trap-soul, boom-bap Bible rap, Bible R&B, alt-R&B, K-pop-inspired scripture pop, or neo-soul scripture songs.
 - Description direction: first paragraph states the passage and theme; second paragraph or style line names the modern music style family in natural language.
-- Thumbnail text: passage-aware modern Bible music wording, not church/worship wording. Use the selected book, passage theme, or style lane when it improves clarity; `OLD TESTAMENT HIP-HOP`, `GENESIS 1:1-5`, `SCRIPTURE RAP`, or `BIBLE R&B` can support the layout but should not be the only hook if the passage has a clearer theme.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: skipping canonical sequence, gospel/worship/holy/church style music, vague titles without passage reference, or copying long Bible text.
 
 ## BibliaCanto New Testament Branch
@@ -269,7 +272,7 @@ Our direction:
 - Title shape: `[playlist] Matthew 5:1-12 Beatitudes R&B | New Testament Alt-R&B Songs`.
 - Song direction: original English scripture-inspired songs with strong hooks, melodic rap or sung choruses, and New Testament passage sequence. Choose one style family per release, such as Bible R&B, K-pop-inspired scripture pop, scripture rap-pop, trap-soul scripture songs, boom-bap Bible rap, alt-R&B scripture songs, or neo-soul scripture songs.
 - Description direction: first paragraph states the passage and adapted theme; second paragraph or style line names the modern music style family in natural language.
-- Thumbnail text: passage-aware modern Bible music wording, not Gospel/worship wording. Use the selected passage, theme, or style lane when it improves clarity; `NEW TESTAMENT R&B`, `BIBLE K-POP`, `SCRIPTURE RAP`, or `MATTHEW 5:1-12` can support the layout but should not be the only hook if the passage has a clearer theme.
+- New thumbnail copy: use the channel-native feeling/situation examples in [the 2026-10-02 policy](openclaw-thumbnail-copy-policy.md), or stay text-free where the profile requires it. Keep exact BibliaCanto passage information as supporting text.
 - Avoid: generic `Christian music`, Old Testament passage confusion, gospel/worship/holy/church style music, or titles without the passage reference.
 
 ## 불송 Buddhist Scripture

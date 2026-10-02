@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: Club Bloom
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free nightlife image, or `Keep the Night Moving` when a hook is useful. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `Club Bloom`, or when the human explicitly says to upload to `Club Bloom`.
 
 ## Routing Contract
@@ -26,7 +31,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Create one final 16:9 cover first.
 - The cover is the playback visual and still-image render source. Club Bloom does not create or upload a Dreamina/Seedance/Gemini loop video in normal automation.
 - Do not put `Club Bloom`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- Club Bloom covers should normally be text-free, like HaruHaru. If text is truly useful, use only a short integrated EDM/club style phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`, with transparent background.
+- Club Bloom covers remain text-free by default. If text is genuinely helpful, use a short movement/energy promise such as `Keep the Night Moving`, not a bare club-style label; keep its background transparent.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the scene to the selected club style lane. The image should feel like a real club/bar/lounge/festival place where this music would play, through venue, lights, crowd energy, DJ/decks when useful, adult women in revealing club outfits, cocktails or party details, and candid nightlife atmosphere, while still staying original and varied.
 - Do not accept a cover that reads as generic ambient neon, quiet lounge art, abstract wallpaper, empty venue, random glowing background, or low-energy image. Unless the human asked otherwise, reject covers that do not clearly show attractive adult nightlife subjects in a nightclub, bar, lounge, festival, pool-party, rooftop, or DJ setting. The cover should already feel energetic and sexy enough to justify a strong thumbnail while still looking like a candid friend-taken phone photo.
@@ -36,7 +41,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Club Bloom thumbnails should normally be text-free, like HaruHaru, when the candid club photo is strong enough to click on its own.
-- If short readable click text is needed, use a mainstream public lane, for example `DEEP HOUSE`, `TECH HOUSE`, `MELODIC TECHNO`, `TRANCE MIX`, `BASS HOUSE`, `FESTIVAL EDM`, `WORKOUT EDM`, `DANCE MUSIC`, `LIQUID DNB`, `TROPICAL HOUSE`, `AFRO HOUSE`, `SYNTHWAVE DRIVE`, or `CLUB MIX`. Never put `GARAGE`, `UK GARAGE`, or `UKG` on the thumbnail; a garage-influenced private style uses `DANCE MUSIC`, `BASS MUSIC`, `EDM`, or `CLUB MIX` publicly.
+- Optional click text conveys energy or a listening situation, such as `Keep the Night Moving` or `One More Lap`. Do not use standalone club-genre tags; existing public naming exclusions such as `GARAGE`, `UK GARAGE`, and `UKG` remain in force.
 - Keep any thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `CLUB BLOOM`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.

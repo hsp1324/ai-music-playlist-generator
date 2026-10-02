@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: BibliaCanto
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a passage-specific theme such as `Light After the Darkness`, with the exact verified passage range as smaller supporting text. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `BibliaCanto`, or when the human explicitly says to upload scripture music to `BibliaCanto`.
 
 ## Routing Contract
@@ -22,7 +27,7 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 - Create one final 16:9 cover first.
 - The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Do not put `BibliaCanto`, `Old Verse`, `New Verse`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- If text is useful, use the exact selected passage range and/or modern music lane, such as `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Hip-Hop`, `New Testament R&B`, `Bible K-Pop`, or `Scripture Rap`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): a passage-specific theme such as `Light After the Darkness`, with the exact verified passage range as smaller supporting text. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Do not add scripture paragraphs, title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 - Match the cover scene to the selected passage and branch. Old Testament examples: creation waters, Eden, wilderness, covenant stars, ark, desert road, tabernacle, temple, psalm imagery, or prophetic landscape. New Testament examples: road, hillside, Galilee shore, table, lamp, doorway, empty tomb light, cross silhouette, prayer hands, scroll, or warm passage-based landscape.
 

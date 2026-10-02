@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: Custom Channel
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: one audience-native feeling or listening-situation hook, or a strong text-free image. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this when the selected connected YouTube channel does not yet have a dedicated profile file.
 
 ## Visual Identity
@@ -8,13 +13,13 @@ Use this when the selected connected YouTube channel does not yet have a dedicat
 - Do not reuse another channel's fixed signature unless the human explicitly asks.
 - The cover/first-frame must be 16:9 and illustrated, anime, stylized, painterly, graphic, or otherwise non-photorealistic unless the channel identity clearly requires another style.
 - Do not put the selected channel name, a channel logo, or a channel-brand line on the cover/first-frame.
-- If text is useful, use only a short integrated style, genre, use-case, or theme phrase that fits the release.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): one audience-native feeling or listening-situation hook, or a strong text-free image. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image reference/edit derivative.
 - Preserve the same subject, scene, camera angle, palette, and main composition so the thumbnail and rendered video feel connected.
-- Add one large click-friendly phrase that fits the selected channel and release concept.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): one audience-native feeling or listening-situation hook, or a strong text-free image. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add the selected channel name or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.

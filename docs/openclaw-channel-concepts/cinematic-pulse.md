@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Cinematic Pulse
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `Your Next Great Adventure` for orchestral music, or `기분 좋은 게임 OST 모음` for the playful game lane. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Cinematic Pulse`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/cinematic-pulse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
 ## Channel Promise
@@ -30,7 +35,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `Cinematic Pulse` 
 - The same movie scene type, such as final battle, dark castle, space journey, knight army, desert chase, quiet aftermath, mystery reveal, or emotional farewell.
 - The same energy type, such as heroic, dark, sci-fi, final confrontation, chase, war drums, emotional trailer, quiet tension, or hopeful rise.
 - The same instrument palette, such as taiko drums, brass, choir pads, hybrid synth, strings ostinato, piano-and-strings, impacts, or distorted pulses.
-- The same thumbnail phrase, such as `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `TRAILER MUSIC`, or `FILM SCORE`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 - The same poster-like visual scene if used recently.
 
 If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi journey, emotional film score, mystery tension, heroic rise, chase, or quiet aftermath next.
@@ -49,7 +54,7 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Gentle game orchestra: soft strings, harp, celesta, piano, warm woodwinds, delicate mallets, lyrical theme, calm fantasy town, moonlit garden, quiet character memory.
 - Bittersweet anime action-RPG score: emotional strings, cinematic piano, light hybrid pads, graceful heroine theme, post-battle sunrise, city ruins, longing but hopeful mood.
 - Romantic/sweet fantasy game OST: flowing strings, flute/oboe, harp, soft percussion, warm melodic theme, castle balcony, flowered courtyard, elegant festival night.
-- Former Storylight game/anime BGM: playful Japanese-style game OST, cute fantasy RPG town, item shop, puzzle room, arcade stage, amusement park, theme-park parade, carousel, toy-town, cozy anime side-story, happy reading/work/gaming BGM. This lane is allowed on Cinematic Pulse, but the public title/thumbnail should say `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM`, never `DARK FANTASY`, `EPIC BATTLE`, or `CINEMATIC ORCHESTRA`.
+- Former Storylight game/anime BGM: playful Japanese-style game OST, cute fantasy RPG town, item shop, puzzle room, arcade stage, amusement park, theme-park parade, carousel, toy-town, cozy anime side-story, happy reading/work/gaming BGM. This lane is allowed on Cinematic Pulse, but the public title should truthfully identify game/anime BGM, while the thumbnail conveys its mood, for example `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`, never `DARK FANTASY`, `EPIC BATTLE`, or `CINEMATIC ORCHESTRA`.
 
 ## Music Direction
 
@@ -69,8 +74,8 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Visuals may include castles, dragons, knights, armies, spacecraft, robots, storm skies, cities, portals, lonely roads, vast oceans, mountain horizons, ruins, emotional movie-poster silhouettes, elegant game heroines, sci-fi gardens, fantasy courtyards, or quiet post-battle scenes when conceptually relevant.
 - Avoid gore, graphic violence, real war footage, real flags, political symbols, protected IP, and exact franchise references.
 - App-rendered visualizer should be `bars` for every Cinematic Pulse render. Keep the bar spectrum clean and restrained; do not use radial, multiwave, small dots/particles, or busy waveform presets.
-- Thumbnail text should be bold and clickable: `MOVIE OST`, `CINEMATIC ORCHESTRA`, `EPIC BATTLE`, `DARK FANTASY`, `HEROIC MUSIC`, `SCI-FI ACTION`, `TRAILER MUSIC`, `FILM SCORE`, `GAME ORCHESTRA`, or `ANIME RPG OST`. Use `FINAL BOSS` only if the human explicitly asks for game-combat packaging; do not use it as the default Cinematic Pulse hook.
-- For former Storylight-style cute/game/anime BGM, use matching thumbnail text such as `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM`. Never use dark fantasy or battle poster text on cute/playful audio.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `Your Next Great Adventure` for orchestral music, or `기분 좋은 게임 OST 모음` for the playful game lane. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `Your Next Great Adventure` for orchestral music, or `기분 좋은 게임 OST 모음` for the playful game lane. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 
 ## Good Fresh Concept Shapes
 

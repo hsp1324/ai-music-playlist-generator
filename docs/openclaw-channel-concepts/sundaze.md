@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: sundaze
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `Windows Down, Mood Up` or `Songs for a Slow Sunday`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `sundaze`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/sundaze.md` afterward for cover, thumbnail, and still-image render rules.
 
 Mandatory vocal arrangement override: read
@@ -75,7 +80,7 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Reject or regenerate covers that look anime, illustrated, stylized, abstract, generic graphic, or detached from the playlist's English/American pop lane.
 - Use clearly adult road-trip, rooftop, beach boardwalk, cafe terrace, country road, Americana diner, indie room, festival lawn, neon night drive, or downtown walk scenes when they fit the playlist lane.
 - Normal sundaze releases do not need provider loop videos. Render from the still cover image with app-managed lower-left lyric subtitles and lower-right `bars` spectrum.
-- Thumbnail text should match the mood and lane, such as `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `POP R&B`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
+- Thumbnail wording follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): one natural audience-language feeling or listening-situation hook, or text-free; no standalone genre-tag headline.
 
 ## Good Fresh Concept Shapes
 
