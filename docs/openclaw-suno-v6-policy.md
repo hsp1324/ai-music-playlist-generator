@@ -19,6 +19,14 @@ Standing human direction, 2026-10-02 (Asia/Seoul). Applies to **all new song gen
 
 [Official model-selection instructions](https://help.suno.com/en/articles/13924993) identify the Create-page model picker. [Suno's current-model guide](https://help.suno.com/en/articles/13924737) distinguishes v6, v6-wild, and v6-mini. [The v6 FAQ](https://help.suno.com/en/articles/13924481) states that previous songs are retained even though old generation models were retired. These sources were checked 2026-10-02; availability must still be verified in the actual signed-in UI.
 
+## Official file acquisition when normal downloads are exhausted
+
+Generation credits and song-download allowances are separate. `Downloads Remaining = 0` is not proof that standard v6 generation or every official export route is unavailable. [Suno's download allowance guide](https://help.suno.com/en/articles/13926209) explicitly excludes Suno Studio workflows from the normal limits; [Studio export instructions](https://help.suno.com/en/articles/13925249) document the official export controls. Verify the current plan and Studio access in the signed-in UI; do not buy downloads, enable paid modes, or change subscriptions automatically.
+
+When Studio is available, use the existing song's **single-track full mix**, not a paid stem split, and preserve the source unchanged. Use Studio's official clip `Download .WAV`, or `Export > Full Song` and the resulting song's official Download menu. Saving to the library or seeing “unlocked” is not a completed local download. Verify an actual complete local file, duration, and successful full audio decode before uploading it to the app. Record both the original standard-v6 generation proof and the derived Studio export ID; Studio export is not a new song generation and cannot turn legacy/unknown material into v6.
+
+On 2026-10-06, the Premier account had 9,410 generation credits and zero normal downloads. A Studio export was officially unlocked, but the managed browser's file-reception attempts timed out and Chrome recorded cancelled, zero-byte downloads. After restarting only the managed browser with its existing profile, the same official MP3 download succeeded: 219.576 seconds, 4,731,248 bytes, complete decode without errors. This establishes a working recovery, not the precise cause of the earlier cancellations. Before a similar controlled restart, confirm there is no active generation, unsaved edit, CAPTCHA, or manual-verification screen; preserve the account/profile and saved project, then reopen the same export rather than making duplicate projects. Never restart away from a human-verification screen. Never use private APIs, raw CDN URLs, or cache extraction as a download/quota workaround.
+
 ## Catalog eligibility for new releases
 
 Apply model eligibility **in addition to**, not instead of, same-channel/lane, rights, approved/renderable file, singer/arrangement, dislike, and reuse-disabled checks.
