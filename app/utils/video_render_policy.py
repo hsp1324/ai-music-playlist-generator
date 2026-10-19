@@ -8,12 +8,9 @@ from app.utils.lyric_subtitles import lyric_lines_from_text
 
 
 CINEMATIC_PULSE_CHANNEL_TITLE = "cinematic pulse"
+CINEMATIC_PULSE_ORCHESTRA_LANE = "orchestra"
+CINEMATIC_PULSE_CUTE_GAME_LANE = "cute_game"
 STORYLIGHT_OST_CHANNEL_TITLE = "storylight ost"
-LOW_MOTION_SPECTRUM_CHANNEL_TITLES = {
-    "불송",
-    "the new verse",
-    "bulsong",
-}
 LYRIC_CENTER_CHANNEL_TITLES = {
     "불송",
     "the new verse",
@@ -41,12 +38,6 @@ LYRIC_SOFT_CHANNEL_TITLES = {
     "club bloom",
     "bibliacanto",
     "the old verse",
-}
-RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES = {
-    "bibliacanto",
-    "the old verse",
-    "old testament",
-    "new testament",
 }
 VOCAL_RELEASE_CHANNEL_TITLES = {
     "불송",
@@ -113,34 +104,6 @@ VIDEO_LYRICS_OVERLAY_STYLE_ALIASES = {
     "center-breath-serif": "center_breath_serif",
     "center_breath_serif": "center_breath_serif",
 }
-RELIGIOUS_TITLE_HINTS = (
-    "genesis",
-    "old testament",
-    "new testament",
-    "bible",
-    "biblical",
-    "scripture",
-    "gospel",
-    "worship",
-    "psalm",
-    "dhammapada",
-    "heart sutra",
-    "diamond sutra",
-    "lotus sutra",
-    "buddhist",
-    "sutra",
-    "창세기",
-    "성경",
-    "구약",
-    "신약",
-    "복음",
-    "찬양",
-    "시편",
-    "불교",
-    "불경",
-    "법구경",
-    "반야심경",
-)
 LYRIC_EDITORIAL_TEXT_HINTS = (
     "j-pop",
     "jpop",
@@ -297,6 +260,105 @@ def is_cinematic_pulse_release(meta: dict[str, Any]) -> bool:
     return CINEMATIC_PULSE_CHANNEL_TITLE in _release_channel_titles(meta)
 
 
+def infer_cinematic_pulse_lane(
+    meta: dict[str, Any],
+    *,
+    title: str = "",
+    tracks: list[dict[str, Any]] | None = None,
+) -> str | None:
+    """Classify Cinematic Pulse inventory without merging its two daily lanes."""
+
+    if not is_cinematic_pulse_release(meta):
+        return None
+
+    aliases = {
+        "orchestra": CINEMATIC_PULSE_ORCHESTRA_LANE,
+        "orchestral": CINEMATIC_PULSE_ORCHESTRA_LANE,
+        "cinematic-orchestra": CINEMATIC_PULSE_ORCHESTRA_LANE,
+        "cinematic-orchestral": CINEMATIC_PULSE_ORCHESTRA_LANE,
+        "cinematic-orchestra-lane": CINEMATIC_PULSE_ORCHESTRA_LANE,
+        "cinematic-orchestra-slot": CINEMATIC_PULSE_ORCHESTRA_LANE,
+        "cute": CINEMATIC_PULSE_CUTE_GAME_LANE,
+        "cute-game": CINEMATIC_PULSE_CUTE_GAME_LANE,
+        "cute-game-music": CINEMATIC_PULSE_CUTE_GAME_LANE,
+        "storylight": CINEMATIC_PULSE_CUTE_GAME_LANE,
+        "former-storylight": CINEMATIC_PULSE_CUTE_GAME_LANE,
+        "cinematic-cute-game": CINEMATIC_PULSE_CUTE_GAME_LANE,
+    }
+    for key in (
+        "cinematic_pulse_lane",
+        "channel_lane",
+        "release_lane",
+        "youtube_schedule_label",
+    ):
+        value = str(meta.get(key) or "").strip().lower().replace("_", "-").replace(" ", "-")
+        if value in aliases:
+            return aliases[value]
+
+    values: list[Any] = [
+        title,
+        meta.get("title"),
+        meta.get("release_title"),
+        meta.get("youtube_title"),
+        meta.get("description"),
+        meta.get("youtube_description"),
+        meta.get("music_direction"),
+        meta.get("style"),
+        meta.get("prompt"),
+    ]
+    for track in tracks or []:
+        values.extend((track.get("title"), track.get("style"), track.get("prompt")))
+        track_meta = track.get("metadata_json") or track.get("metadata")
+        if isinstance(track_meta, dict):
+            values.extend(track_meta.values())
+    haystack = " ".join(str(value or "") for value in values).casefold()
+
+    cute_hints = (
+        "cute game",
+        "cozy game",
+        "kawaii",
+        "adorable",
+        "playful",
+        "whimsical",
+        "item shop",
+        "theme park",
+        "amusement park",
+        "toy town",
+        "fantasy town",
+        "storybook",
+        "celesta",
+        "pizzicato",
+        "귀여운",
+        "아기자기",
+        "게임 음악",
+        "게임음악",
+    )
+    if any(hint in haystack for hint in cute_hints):
+        return CINEMATIC_PULSE_CUTE_GAME_LANE
+
+    orchestra_hints = (
+        "orchestra",
+        "orchestral",
+        "chamber music",
+        "chamber ensemble",
+        "string ensemble",
+        "symphonic",
+        "symphony",
+        "film score",
+        "movie score",
+        "neoclassical",
+        "woodwind",
+        "string quartet",
+        "오케스트라",
+        "관현악",
+        "현악",
+        "교향곡",
+    )
+    if any(hint in haystack for hint in orchestra_hints):
+        return CINEMATIC_PULSE_ORCHESTRA_LANE
+    return None
+
+
 def is_storylight_ost_release(meta: dict[str, Any]) -> bool:
     return STORYLIGHT_OST_CHANNEL_TITLE in _release_channel_titles(meta)
 
@@ -309,37 +371,34 @@ def is_bulsong_release(meta: dict[str, Any]) -> bool:
     return bool(_release_channel_titles(meta) & LYRIC_CENTER_CHANNEL_TITLES)
 
 
-def is_religious_no_spectrum_release(meta: dict[str, Any], *, title: str = "") -> bool:
-    titles = _release_channel_titles(meta)
-    if titles & RELIGIOUS_NO_SPECTRUM_CHANNEL_TITLES:
-        return True
-    if str(meta.get("scripture_passage_range") or "").strip():
-        return True
-    haystack = " ".join(
-        str(value or "")
-        for value in (
-            title,
-            meta.get("youtube_title"),
-            meta.get("description"),
-            meta.get("youtube_description"),
-        )
-    ).lower()
-    return any(hint in haystack for hint in RELIGIOUS_TITLE_HINTS)
-
-
 def apply_video_spectrum_channel_policy(
     style: str,
     meta: dict[str, Any],
     *,
     title: str = "",
 ) -> str:
-    if _release_channel_titles(meta) & LOW_MOTION_SPECTRUM_CHANNEL_TITLES:
-        return "calm-bars"
-    if is_religious_no_spectrum_release(meta, title=title):
-        return "none"
-    if is_cinematic_pulse_release(meta):
-        return "bars"
-    return style
+    channel_titles = _release_channel_titles(meta)
+    if "club bloom" in channel_titles:
+        normalized = str(style or "").strip().lower().replace("_", "-")
+        legacy_aliases = {
+            "club-neon": "club-floor-cyan",
+            "club-mirror": "club-floor-mirror",
+            "club-radial": "club-floor-white",
+            "crate-notes": "club-crate-notes",
+            "club-crate": "club-crate-notes",
+        }
+        normalized = legacy_aliases.get(normalized, normalized)
+        if normalized in {
+            "club-floor-white",
+            "club-floor-cyan",
+            "club-floor-dual",
+            "club-floor-amber",
+            "club-floor-mirror",
+            "club-crate-notes",
+        }:
+            return normalized
+        return "club-floor-cyan"
+    return "bars"
 
 
 def normalize_video_lyrics_overlay_style(value: Any) -> str:

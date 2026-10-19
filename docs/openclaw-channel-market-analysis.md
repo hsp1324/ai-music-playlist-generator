@@ -24,14 +24,18 @@ Last checked from the connected YouTube accounts through the app on 2026-06-26.
 
 Recent 14-day public-upload stats show that the strongest local packaging is not the most generic keyword title. `Solwave Radio` and `HaruHaru` are currently the healthiest channels because their best titles make a clear human situation or emotion visible immediately: party/patio/route/romance for Solwave, and confidence/crush/getting-ready hooks for HaruHaru. `불송` can work when the source/theme and practical emotional promise are clear, such as speech karma, letting go, anger, mindfulness, or attachment.
 
+Current external YouTube music signals also support a song-first strategy. YouTube's own chart documentation ranks Top Songs by combining official music videos, user-generated videos that use the song, and lyric videos; it also tracks Top Music Videos and Top Songs on Shorts separately. This means strong standalone songs, lyric identity, memorable hooks, and shareable concepts matter more than only making long generic playlist uploads. Current global music charts and YouTube trend reporting continue to reward distinct song identities, OST/fandom moments, K-pop/global pop/Latin crossover, danceable hooks, and emotionally legible titles over anonymous background labels.
+
 The weakest current patterns are:
 
 - `Soft Hour Radio`: repeated calm piano BGM title shapes with similar quiet-room thumbnails are not earning clicks. Every Soft Hour release still needs piano/search clarity, but the thumbnail must make the piano promise obvious in one glance with visible piano keys, sheet music, headphones, desk/cafe context, rain/sleep/reading cue, and large text such as `SOLO PIANO`, `SLEEP PIANO`, `RAINY PIANO`, or `STUDY PIANO`. Do not let consecutive Soft Hour thumbnails look like interchangeable calm rooms.
 - `Storylight`-style / playful Cinematic Pulse lane: repeated `Happy Game BGM` or `Cute Game BGM` titles are too generic unless the image has a strong anime/game scene. Give every release a distinctive public hook such as cozy fantasy, theme-park parade, arcade mood boost, princess-maker-like anime room, carousel daydream, or cheerful RPG town, then keep the title broad enough for work/reading/gaming.
 - `BibliaCanto`: passage references are required, but a passage number plus internal phrase is not enough. Thumbnail and title must show the passage, branch, modern lane, and one plain theme promise in a few seconds. Prefer `Genesis 13 Abram & Lot Boom-Bap`, `Matthew 8 Healing R&B`, `Narrow Gate Bible Rap`, or similar public clarity over vague poetic labels alone. Avoid generic Bible landscapes that could belong to any passage.
-- `불송`: avoid statue-only, temple-only, lotus-only, or generic devotional images. The better channel direction is contemporary Korean hip-hop/R&B/pop with a clear adult woman/practitioner/listener or fresh stylized female-led subject, a subtle Buddhist cue, and a subtle music cue. The new default title should name a real emotional problem and the music lane in mainstream language, while the Buddhist source/theme stays internal unless the human asks for source-explicit packaging.
+- `불송`: use contemporary Korean hip-hop/R&B/pop packaging with a strong adult subject, emotional scene, or modern album-art concept. Avoid all Buddhist-looking cues by default; the source/theme stays internal unless the human asks for source-explicit packaging. The title should name a real emotional problem and the actual music lane in mainstream language.
 
 When local stats are weak, OpenClaw should not respond by making more uploads in the same packaging shape. It should change the next release's title/thumbnail concept first: clearer one-glance genre, stronger human/emotional promise, and a visibly different thumbnail composition from recent releases. Keep the claim truthful to the music; do not use a click hook that the first few tracks cannot satisfy.
+
+Liked tracks are a separate growth signal. If the human marks a track with `user_rating=like`, it may be promoted through the explicit standalone-single workflow, but it must not be used as vocal-playlist backfill. Before making a single, run `scripts/openclaw-release search-tracks --user-rating like --exclude-single-uploaded --full` and choose only tracks whose lyrics, hook, or instrumental identity can carry a single video. Do not upload a liked track twice as a standalone single; the app marks successful single uploads on the source track with `single_youtube_uploaded`, `single_youtube_video_id`, and `single_youtube_uploads`.
 
 ## Soft Hour Radio
 
@@ -272,7 +276,7 @@ Our direction:
 - Thumbnail text: passage-aware modern Bible music wording, not Gospel/worship wording. Use the selected passage, theme, or style lane when it improves clarity; `NEW TESTAMENT R&B`, `BIBLE K-POP`, `SCRIPTURE RAP`, or `MATTHEW 5:1-12` can support the layout but should not be the only hook if the passage has a clearer theme.
 - Avoid: generic `Christian music`, Old Testament passage confusion, gospel/worship/holy/church style music, or titles without the passage reference.
 
-## 불송 Buddhist Scripture
+## 불송 Mainstream Korean Vocal
 
 Reference set:
 
@@ -282,7 +286,7 @@ Reference set:
 
 What gets views:
 
-- Buddhist scripture-inspired releases should name the teaching source or theme, such as Dhammapada-inspired wisdom, Heart Sutra-inspired letting go, compassion, mindfulness, impermanence, or non-attachment.
+- Legacy/source-explicit releases may name the verified teaching source or theme when the human requests it. New default releases translate the internal theme into ordinary emotional language without exposing the source.
 - The channel should not look like generic meditation BGM. It should be modern vocal music with one coherent style lane per release.
 - Korean default titles can be more clickable than literal English translations. Localized titles should be natural transcreations for each language.
 
@@ -291,11 +295,13 @@ Our direction:
 - Title shape: Korean default title that combines a mainstream emotional hook plus the actual lane, for example `오늘은 조금 가벼워져 | 흔들리는 밤에 듣는 힙합 노래`, `말이 날카로워질 때 | 마음을 식혀주는 R&B 노래`, or `잡고 있던 걸 놓는 밤 | 혼자 걷기 좋은 트립합`. Do not use obscure coined genre labels or source-heavy Buddhist wording in new default public metadata.
 - Song direction: original Korean lyrics inspired by the internal source/theme, not direct scripture recitation, chanting, or Buddhist vocabulary. Keep one lane per release and rotate lanes across uploads.
 - Description direction: first paragraph gives a broad emotional/listening promise; second paragraph names the music lane. Keep the Buddhist source/theme in planning/app metadata unless the human asks for source-explicit public copy.
-- Thumbnail direction: use the same calm photorealistic/premium cinematic-real Buddhist cover/first-frame package as the thumbnail. The primary visible human subject should be a clearly adult woman by default: temple-stay woman, Hongdae/Seoul streetwear woman practitioner/listener, Buddha/statue plus modern woman listener, two adult women for duet songs, or a female-coded stylized Buddhist practitioner. Do not use men, male monks, male rappers, male listeners, male/female visual couples, or male-only visual pairs unless the human explicitly asks for a male visual subject in the current request. This visual rule does not restrict male lead vocals or male duet audio. It may contain one short Korean passage/theme + hip-hop style phrase, but do not add the `불송` channel label, badges, hard text boxes, or separate channel branding.
+- Thumbnail direction: reuse the same text-free, non-Buddhist mainstream Korean-song cover/first-frame package. Rotate photorealistic street/lifestyle scenes, R&B city nights, rainy rooms or car windows, stylish clearly adult portraits, duet/couple tension, cinematic city stills, surreal nonreligious symbols, anime/illustrated modern music art, dark fashion editorial, and object-led album art. Male, female, and mixed adult subjects are all allowed when concept-appropriate. Do not add source labels, the `불송` channel name, badges, hard text boxes, or separate channel branding.
 - Avoid: claiming exact chapter/verse coverage without verification, copying long sutra passages, sermon/chant format, disrespectful religious imagery, or public scheduling before human review.
 
 ## Source Index
 
+- YouTube Charts & Insights official criteria: https://support.google.com/youtube/answer/9014376
+- YouTube Charts Global Top Songs entry point: https://charts.youtube.com/charts/TopSongs/global
 - vidIQ Music category and channel stats: https://vidiq.com/youtube-stats/
 - HYBE LABELS stats: https://vidiq.com/tr/youtube-stats/channel/UC3IZKseVpdzPSBaWxBxundA
 - SMTOWN stats: https://vidiq.com/youtube-stats/channel/UCEf_Bc-KVd7onSeifS3py9g/

@@ -1848,6 +1848,63 @@ label .channel-avatar-select span {
   grid-column: 1 / -1;
 }
 
+.quality-warning-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid #a66608;
+  border-radius: 8px;
+  background: #fff7df;
+  color: #4f350b;
+}
+
+.quality-warning-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quality-warning-header strong {
+  font-family: "Archivo", "Noto Sans KR", sans-serif;
+  font-size: 0.78rem;
+}
+
+.quality-warning-header span {
+  color: #72531d;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.quality-warning-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quality-warning-list li {
+  display: grid;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(166, 102, 8, 0.25);
+}
+
+.quality-warning-list li > span {
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.quality-warning-list small {
+  color: #80632e;
+  font-family: monospace;
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
 .detail-group-head {
   display: grid;
   gap: 2px;

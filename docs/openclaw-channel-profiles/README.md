@@ -35,7 +35,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Use Gemini only for moving provider clips. Do not use Dreamina, Seedance, or CapCut for new OpenClaw automation. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers. HaruHaru, sundaze, Solwave Radio, and Club Bloom do not use provider clips by default; render them from the still cover image. 불송 is a standing still-image channel and should not use provider clips in normal automation.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
-- Use positive fixed-shot language: `single fixed camera shot`, `locked-off camera`, `one uninterrupted calm environmental take`, `same composition from first to last frame`.
+- Use positive fixed-shot language for profiles that require a locked camera. When a profile such as Cinematic Pulse allows camera and subject movement, describe the natural end-to-start handoff instead; subject scale, position, pose, and camera distance do not need to remain fixed.
 - Keep negative prompt lists short. Overloaded `do not` wording can cause provider models to focus on the forbidden action and create hard cuts, resets, or layout changes.
 - If Gemini/Veo adds its own provider logo or watermark, usually in the bottom-right corner, accept it as an unavoidable provider artifact. Do not regenerate only because that provider logo is present.
 - If Gemini blocks generation for copyright, protected IP, policy, moderation, or similar issues, retry safely up to 10 blocked attempts. Remove protected names and risky terms rather than retrying the same prompt.
@@ -94,8 +94,9 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 ### Cinematic Pulse
 
 - No-vocal cinematic orchestra, movie OST, film score, trailer, heroic, sci-fi, dark fantasy, mystery, or emotional cinematic music.
-- Use photorealistic cinematic first-frame / premium movie-poster realism and create a restrained provider loop video.
-- Queue renders with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars` unless a human explicitly approves a still-image fallback.
+- Use photorealistic cinematic first-frame / premium movie-poster realism or concept-matched premium game-animation key art. Cinematic Pulse is a Gemini moving-video channel for normal playlist automation.
+- Create the Gemini/Veo clip with any suitable locked or moving-camera shot. Camera motion, subject size/position/pose changes, and transient subjects entering/leaving are allowed. A bird may fly into and out of the scene as long as the ending base scene remains broadly similar to the opening base scene. Do not ask Gemini for a `loop`, `loop video`, `seamless loop`, `repeat`, or `cyclic` result; the app owns repetition. Preview at least three consecutive repeats and reject only visible boundary discontinuities such as unrelated scene changes, teleports, incompatible direction/speed or action phase, cuts, lighting resets, or text flicker.
+- Upload with `--loop-video-provider gemini`, then queue renders with `--video-render-source-mode loop_video --video-render-resolution 720p --video-spectrum-overlay-style bars`. If Gemini is unavailable or unusable, use the approved still-image fallback; do not switch to Dreamina, Seedance, or CapCut.
 - Include a tasteful upper-left cinematic style phrase on the cover/first-frame and use that image as the loop-video starting frame. Use `MOVIE OST`, `CINEMATIC ORCHESTRA`, `FILM SCORE`, `TRAILER MUSIC`, `DARK FANTASY`, or `HEROIC MUSIC`, not the channel name.
 
 ### Club Bloom
@@ -111,7 +112,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Combined Bible music channel for Old Testament and New Testament releases.
 - Do not put `Old Verse`, `New Verse`, `The Old Verse`, `The New Verse`, or the channel name on visuals.
 - If text is useful, use the exact passage range and/or modern music lane: `Genesis 1:1-5`, `Matthew 1:18-25`, `Old Testament Hip-Hop`, `New Testament R&B`, `Bible K-Pop`, or `Scripture Rap`.
-- Queue final render with `--video-spectrum-overlay-style none`.
+- Queue final render with `--video-spectrum-overlay-style bars`.
 
 ### 불송
 
@@ -121,7 +122,7 @@ The command returns `youtube_channel_title`, `concept_doc`, and `profile_doc`. R
 - Every new 불송 plan should include a `novelty_brief` explaining why the selected music lane and visual lane do not repeat recent uploads. Avoid repeating the same face/body type, prayer pose, Buddha close-up, outfit, camera angle, warm-gold temple palette, old sutra-desk template, or any visible Buddhist motif.
 - For vocal tracks, include a concrete Korean lead-vocal tone or delivery phrase in each Suno style string and vary it across tracks, such as `calm low-register Korean rap`, `warm soulful male vocal`, `airy female hook vocal`, `restrained boom-bap spoken rap`, or `warm male/female duet`.
 - Visuals should use mainstream music/lifestyle cues instead: friend-taken adult Korean street scenes, R&B city nights, rainy room/car windows, stylish adult portraits, duet/couple tension, object-led album art, cinematic city stills, surreal nonreligious symbols, or bold graphic album-cover realism. Avoid stale religious wallpaper, generic old sutra-desk scenes, temple/lotus/lantern imagery, and visible Buddhist objects.
-- Queue final render as still image with `--video-render-source-mode still_image --video-spectrum-overlay-style calm-bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
+- Queue final render as still image with `--video-render-source-mode still_image --video-spectrum-overlay-style bars`; the app burns lyrics in centered `center-breath-serif` style when lyrics are present.
 - 불송 is always an app-rendered still-image video channel in normal automation, not a moving-video channel and not a quota fallback. Do not create, upload, or wait for a provider loop video unless the human explicitly changes this standing 불송 still-image rule in the current request; if motion is requested, use Gemini only. Image prompts must avoid conceptual words such as `playlist` or `Four Noble Truths`; describe only the visible scene.
 
 Profiles:

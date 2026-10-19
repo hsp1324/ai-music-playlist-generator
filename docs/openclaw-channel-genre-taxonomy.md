@@ -4,7 +4,7 @@ Use this taxonomy when planning every playlist release. Each release chooses one
 
 Do not make one release a sampler of unrelated styles. Slight variation inside the lane is fine: for example, a HaruHaru trap K-pop release may vary drum density, vocal tone, or chorus energy, but it should not mix trap, ballad, pop-rock, and R&B in the same rendered video.
 
-불송 has a channel-specific exception: rap, hip-hop, R&B, soul, and quiet piano vocal ballads may share one mainstream Korean vocal release when the emotional mood is coherent. This exception does not allow unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, no-vocal piano, or generic meditation tracks.
+불송 has a channel-specific exception: rap, hip-hop, R&B, soul, quiet piano-only vocal songs, acoustic-guitar-only vocal songs, and fresh Korean indie-acoustic pop may share one mainstream Korean vocal release when the emotional mood is coherent. This exception does not allow unrelated jazz, trot, cinematic, instrumental BGM, no-vocal piano/guitar, or generic meditation tracks.
 
 ## Operating Rule
 
@@ -21,9 +21,10 @@ Broad YouTube buckets and detailed video lanes:
 - `K-pop Hip-Hop`: K-pop trap, K-pop boom bap, rap-pop, 808 confidence pop, dark street-pop with rap verses.
 - `Korean R&B`: Korean R&B pop, K-pop soul, neo-soul pop.
 - `K-pop Dance-Pop`: idol-pop, performance dance-pop, running/workout K-pop. Secondary for HaruHaru; prefer hip-hop/R&B lanes unless explicitly requested.
-- `K-pop Synth-Pop`: neon drive synth-pop and explicit HaruHaru city-pop/city-pop influenced K-pop when the human asks or an existing release is already city-pop. For non-city-pop HaruHaru lanes, do not use city-pop tracks as backfill.
+- `K-pop Synth-Pop`: synth-pop and explicit HaruHaru city-pop/city-pop-influenced K-pop only when the human asks. HaruHaru vocal releases are all-new and must not use backfill.
 - `K-pop Pop-Rock`: guitar pop, pop-rock drive, weekend band-pop. Secondary for HaruHaru.
-- `K-pop Ballads`: ballad-pop, breakup pop, piano/guitar emotional pop. Secondary for HaruHaru.
+- `K-Indie & Acoustic Pop`: refreshing Korean indie-acoustic pop, witty conversational acoustic pop, acoustic-guitar-only vocal songs, and light youthful singer-songwriter pop.
+- `K-pop Ballads`: ballad-pop, breakup pop, and piano-only vocal pop. Piano-only means vocal plus acoustic/upright piano only, without drums, bass, guitar, strings, synths, or pads.
 - `K-pop Mixes`: only when the sound is broad mainstream K-pop and no tighter lane is truthful. Avoid this as a planning target.
 
 ## Soft Hour Radio
@@ -48,7 +49,7 @@ Broad YouTube buckets and detailed video lanes:
 - `Country Pop`: country pop road trip, small-town summer pop.
 - `Americana & Folk Pop`: Americana pop, folk-pop, singer-songwriter pop.
 - `Indie & Alt Pop`: indie pop, bedroom pop, alt-pop.
-- `Acoustic & Ballad Pop`: rainy bedroom, heartbreak acoustic pop, ballad-pop.
+- `Acoustic & Ballad Pop`: fresh indie acoustic, acoustic-guitar-only vocal pop, piano-only vocal pop, rainy bedroom acoustic songs, and ballad-pop.
 - `Afropop & Amapiano`: English-forward Afropop, Afrobeats, Amapiano-pop.
 - `English Pop`: fallback for broad feel-good English/American pop when no tighter bucket is truthful.
 
@@ -61,6 +62,7 @@ Broad YouTube buckets and detailed video lanes:
 - `Salsa & Cumbia Pop`: salsa pop, cumbia pop, plaza/festival Latin groove.
 - `Latin R&B & Soul`: Latin R&B, Spanish R&B, Latin soul, neo-soul pop.
 - `Latin Pop-Rock`: pop-rock latino, guitar-driven Latin pop.
+- `Latin Indie & Acoustic Pop`: refreshing Spanish indie acoustic, acoustic-guitar-only vocal songs, piano-only Spanish vocal pop, and witty/light singer-songwriter pop.
 - `Pop Latino`: warm Latin pop, Spanish pop, verano latino when no tighter bucket is more accurate.
 
 ## Club Bloom
@@ -75,6 +77,11 @@ Broad YouTube buckets and detailed video lanes:
 - `Afro & Tropical House`: Afro house, tropical house, beach club house.
 - `Synthwave Club`: synthwave club, retro neon night-drive club.
 - `EDM & Festival`: trap EDM, electro house, big-room/festival EDM.
+- `Boom Bap & Jazz-Hop`: 1990s/2000s Korean/global boom bap instrumentals, jazz-hop, turntablism-friendly beats.
+- `Trip-Hop & Downtempo`: trip-hop, downtempo breaks, noir groove, chill breakbeat.
+- `Rare Groove & Soul Breaks`: rare groove, funk/soul breaks, acid jazz, record-bar selections.
+- `Disco, Boogie & Broken Beat`: disco/boogie, early-house roots, broken beat, future jazz.
+- `Instrumental R&B & Neo-Soul`: Y2K R&B grooves, Rhodes-led neo-soul, smooth DJ-crate instrumentals without vocals.
 
 ## Tokyo Daydream Radio
 
@@ -87,11 +94,15 @@ Broad YouTube buckets and detailed video lanes:
 
 ## Cinematic Pulse
 
+- `Lyrical & Chamber Orchestra`: chamber ensemble, lyrical strings, woodwind-led orchestra, piano optional.
+- `Pastoral & Neoclassical Orchestra`: impressionistic, romantic, seasonal, travel, gentle, and modern neoclassical orchestra.
+- `Light Orchestra`: family-animation color, orchestral comedy, warm small-scale orchestral music.
 - `Dark Fantasy Cinematic`: dark fantasy orchestra, final battle fantasy.
 - `Sci-Fi Action Cinematic`: sci-fi action, cyber chase, combat score.
 - `Emotional Film Score`: emotional piano/strings, hopeful cinematic score.
 - `Mystery & Tension Score`: mystery, suspense, dark investigation music.
 - `Epic Trailer Music`: epic orchestra, trailer, heroic battle music.
+- `Cute Game OST`: former Storylight cute arcade, playful game, item-shop, fantasy-town, and theme-park music. This is the separate `cute_game` daily lane; every other bucket above belongs to the `orchestra` daily lane.
 
 ## Storylight OST
 
@@ -110,6 +121,7 @@ BibliaCanto keeps the existing Old/New Testament passage playlist plus one moder
 - `Korean Experimental Rap`: drill/trap-soul, glitch-hop, trip-hop, drum and bass, UK garage, spoken-word rap, avant-jazz rap, cinematic trap, or other coherent experimental rap lanes.
 - `Korean R&B / Soul`: dark R&B, neo-soul, psychedelic soul, alternative R&B, soul-rap, or intimate duet lanes.
 - `Korean Ballad / Piano Vocal`: quiet piano vocal ballad, simple piano accompaniment, gentle Korean vocal, no beat drop, no drums required. This is a vocal song bucket, not Soft Hour-style piano BGM or no-vocal instrumental music.
+- `Korean Indie / Acoustic Vocal`: refreshing Korean indie-acoustic pop, acoustic-guitar-only vocal songs, light conversational singer-songwriter pop, and bright everyday storytelling. This remains a lyric/vocal bucket and every 불송 song still requires its verified Buddhist source-to-lyric mapping.
 - `Korean Art Pop / Electronic`: hyperpop, new-age electronica, art-pop, dream-pop, ambient rap, psychedelic electronic, or cyber/neon lanes when the song and visual package intentionally push the channel into a new style.
-- 불송 should rotate across these buckets instead of repeating one hip-hop formula. New default public titles, descriptions, tags, and sung lyrics should avoid overt Buddhist/source vocabulary such as `불교`, `불경`, `법구경`, `금강경`, `반야심경`, `자비`, `가르침`, `무상`, or `무아` unless the human explicitly asks for a source-explicit release. Do not use obscure coined genre labels in public titles, descriptions, or tags. Do not put source/genre labels on 불송 thumbnails/covers by default.
-- When filling 불송 playlists toward one hour, use previous same-channel tracks from the mainstream Korean vocal pool: rap, hip-hop, R&B, soul, and quiet piano vocal ballads may be mixed when the emotional mood fits. Keep reused/fallback tracks after the fresh lead block and keep the strongest title-relevant lane first. Publish shorter rather than adding unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, no-vocal piano, or meditation tracks. Already-uploaded/source-explicit videos go to the YouTube playlist `불송`; new mainstream videos go to `노래`.
+- 불송 should rotate across these buckets instead of repeating one hip-hop formula, but every track must remain a faithful ordinary-language transformation of a verified Buddhist teaching. Avoiding terms such as `불교`, `불경`, `자비`, `번뇌`, `업`, `무상`, or `수행` is a lexical rule, not a reason to remove the scripture's meaning. Reject generic lyrics with no trackable source relationship. Do not put source/genre labels on public thumbnails/covers by default.
+- Build 불송 playlists toward one hour entirely from newly generated Korean vocal tracks in one coherent emotional family. Do not attach previous same-channel tracks. Already-uploaded/source-explicit videos go to the YouTube playlist `불송`; new mainstream videos go to `노래`.

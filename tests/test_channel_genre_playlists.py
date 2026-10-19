@@ -28,6 +28,48 @@ def test_haruharu_citypop_maps_to_synthpop_playlist_when_explicit() -> None:
     assert citypop.playlist_titles == ("K-pop Synth-Pop",)
 
 
+def test_vocal_acoustic_lanes_map_to_each_channel_playlist() -> None:
+    haruharu = infer_channel_genre_classification(
+        {"youtube_channel_title": "HaruHaru", "youtube_title": "[playlist] 오늘은 가볍게 | 상쾌한 K-인디 어쿠스틱"},
+    )
+    sundaze = infer_channel_genre_classification(
+        {"youtube_channel_title": "sundaze", "youtube_title": "[playlist] Fresh Indie Acoustic Mornings"},
+    )
+    solwave = infer_channel_genre_classification(
+        {"youtube_channel_title": "Solwave Radio", "youtube_title": "[playlist] Indie Acústico para Empezar Ligero"},
+    )
+    bulsong = infer_channel_genre_classification(
+        {"youtube_channel_title": "불송", "youtube_title": "[playlist] 오늘은 조금 가볍게 | 상쾌한 인디 어쿠스틱"},
+    )
+
+    assert haruharu.playlist_titles == ("K-Indie & Acoustic Pop",)
+    assert sundaze.playlist_titles == ("Acoustic & Ballad Pop",)
+    assert solwave.playlist_titles == ("Latin Indie & Acoustic Pop",)
+    assert bulsong.playlist_titles == ("노래",)
+    assert bulsong.broad_genre == "Korean Indie & Acoustic"
+
+
+def test_vocal_piano_only_lanes_map_to_each_channel_playlist() -> None:
+    haruharu = infer_channel_genre_classification(
+        {"youtube_channel_title": "HaruHaru", "youtube_title": "[playlist] 피아노와 목소리만 남긴 밤"},
+    )
+    sundaze = infer_channel_genre_classification(
+        {"youtube_channel_title": "sundaze", "youtube_title": "[playlist] Piano and Voice After Midnight"},
+    )
+    solwave = infer_channel_genre_classification(
+        {"youtube_channel_title": "Solwave Radio", "youtube_title": "[playlist] Piano y Voz de Noche"},
+    )
+    bulsong = infer_channel_genre_classification(
+        {"youtube_channel_title": "불송", "youtube_title": "[playlist] 피아노와 목소리만 남은 밤"},
+    )
+
+    assert haruharu.playlist_titles == ("K-pop Ballads",)
+    assert sundaze.playlist_titles == ("Acoustic & Ballad Pop",)
+    assert solwave.playlist_titles == ("Latin Indie & Acoustic Pop",)
+    assert bulsong.playlist_titles == ("노래",)
+    assert bulsong.broad_genre == "Korean Ballad"
+
+
 def test_channel_specific_genre_playlist_classification() -> None:
     soft = infer_channel_genre_classification(
         {"youtube_channel_title": "Soft Hour Radio", "youtube_title": "[playlist] Lofi Study BGM"},

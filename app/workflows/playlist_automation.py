@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import random
 import re
@@ -8,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
@@ -31,6 +32,13 @@ from app.utils.loop_video import (
     loop_video_provider_from_meta,
     normalize_loop_video_provider,
 )
+from app.utils.lyric_subtitles import lyric_lines_from_text
+from app.utils.bulsong_source import (
+    append_bulsong_quality_warning,
+    bulsong_quality_monitoring_enabled,
+    make_bulsong_quality_warning,
+    validate_bulsong_source_map,
+)
 from app.utils.short_track_observations import (
     annotate_short_track_metadata,
     record_playlist_short_track_observation,
@@ -38,11 +46,13 @@ from app.utils.short_track_observations import (
 from app.utils.track_search import sync_track_search_document
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
+    ensure_youtube_description_request_cta,
     ensure_playlist_localization_title_prefix,
     ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
+    single_release_youtube_title,
 )
 from app.utils.youtube_tags import (
     hashtag_from_youtube_tag,
@@ -50,8 +60,11 @@ from app.utils.youtube_tags import (
     sanitize_description_hashtags,
 )
 from app.utils.video_render_policy import (
+    CINEMATIC_PULSE_CUTE_GAME_LANE,
+    CINEMATIC_PULSE_ORCHESTRA_LANE,
     apply_release_vocal_metadata,
     apply_video_spectrum_channel_policy,
+    infer_cinematic_pulse_lane,
     is_cinematic_pulse_release,
     is_still_image_render_default_release,
     release_vocal_metadata,
@@ -77,12 +90,15 @@ SCRIPTURE_UPLOAD_CHANNEL_TITLE = "BibliaCanto"
 SCRIPTURE_OLD_BRANCH_TITLE = "The Old Verse"
 SCRIPTURE_NEW_BRANCH_TITLE = "New Testament"
 NEW_VERSE_YOUTUBE_CHANNEL_TITLE = "불송"
+CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
 SCRIPTURE_OLD_TESTAMENT_PLAYLIST_TITLE = "Old Testament Songs"
 SCRIPTURE_NEW_TESTAMENT_PLAYLIST_TITLE = "New Testament Songs"
 SCRIPTURE_OLD_TESTAMENT_SCHEDULE = (7, 0)
 SCRIPTURE_NEW_TESTAMENT_SCHEDULE = (16, 0)
 BUDDHIST_SCRIPTURE_SCHEDULE = (7, 0)
 BUDDHIST_SCRIPTURE_SCHEDULE_INTERVAL_DAYS = 1
+CINEMATIC_PULSE_ORCHESTRA_SCHEDULE = (7, 0)
+CINEMATIC_PULSE_CUTE_GAME_SCHEDULE = (19, 0)
 NEW_TESTAMENT_BOOKS = {
     "matthew",
     "mark",
@@ -234,10 +250,15 @@ VIDEO_RENDER_SOURCE_MODE_ALIASES = {
     "image": "still_image",
     "cover": "still_image",
 }
-REUSE_FALLBACK_CHANNEL_MATCH_TITLES = {
-    "cinematic pulse",
-    "soft hour radio",
-    "storylight ost",
+GENERIC_REUSE_GENRE_TOKENS = {
+    "bgm",
+    "cinematic",
+    "club",
+    "edm",
+    "game",
+    "jpop",
+    "kpop",
+    "pop",
 }
 LEGACY_REUSE_AMBIGUOUS_CHANNEL_TITLES = {
     "old verse",
@@ -358,6 +379,25 @@ def youtube_schedule_options_for_playlist(playlist: Playlist) -> dict:
             "schedule_scope": "date",
             "schedule_label": "buddhist_scripture",
         }
+    if CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE in channel_titles:
+        lane = infer_cinematic_pulse_lane(meta, title=playlist.title)
+        if lane == CINEMATIC_PULSE_ORCHESTRA_LANE:
+            hour, minute = CINEMATIC_PULSE_ORCHESTRA_SCHEDULE
+            return {
+                "schedule_hour": hour,
+                "schedule_minute": minute,
+                "schedule_scope": "slot",
+                "schedule_label": "cinematic_orchestra",
+            }
+        if lane == CINEMATIC_PULSE_CUTE_GAME_LANE:
+            hour, minute = CINEMATIC_PULSE_CUTE_GAME_SCHEDULE
+            return {
+                "schedule_hour": hour,
+                "schedule_minute": minute,
+                "schedule_scope": "slot",
+                "schedule_label": "cinematic_cute_game",
+            }
+        return {}
     if not _scripture_upload_channel_selected(meta):
         return {}
     branch = scripture_branch_from_metadata(meta, title=playlist.title)
@@ -516,70 +556,6 @@ GENRE_LANE_FALLBACK_GROUPS = {
     "jpop": {"jpop"},
     "latin-pop": {"latin-pop"},
 }
-BULSONG_MAINSTREAM_VOCAL_REUSE_TOKENS = {
-    "alt-pop",
-    "ballad",
-    "bedroom-pop",
-    "boom-bap",
-    "dnb",
-    "hip-hop",
-    "indie-pop",
-    "kpop",
-    "neo-soul",
-    "piano",
-    "pop",
-    "rap-pop",
-    "rnb",
-    "street-pop",
-    "synth-pop",
-    "trap",
-    "uk-garage",
-}
-BULSONG_MAINSTREAM_VOCAL_BLOCKED_TOKENS = {
-    "bgm",
-    "cinematic",
-    "game",
-    "gospel",
-    "jazz",
-    "lofi",
-    "orchestral",
-    "scripture",
-}
-BULSONG_SOLO_PIANO_VOCAL_CONTEXT_TOKENS = {
-    "ballad",
-    "hip-hop",
-    "kpop",
-    "neo-soul",
-    "pop",
-    "rap-pop",
-    "rnb",
-    "street-pop",
-}
-BULSONG_MAINSTREAM_VOCAL_BLOCKED_PHRASES = (
-    "acoustic guitar",
-    "cabaret",
-    "chant",
-    "chanting",
-    "choir",
-    "folk pop",
-    "folk-pop",
-    "gospel",
-    "hymn",
-    "instrumental",
-    "meditation music",
-    "no vocal",
-    "no-vocal",
-    "old korean trot",
-    "ppongjjak",
-    "sermon",
-    "temple bgm",
-    "trot",
-    "worship",
-    "뽕짝",
-    "연주곡",
-    "트로트",
-    "무보컬",
-)
 GENRE_LANE_ORDER_PRESERVE_CHANNEL_TITLES = {
     HARUHARU_CHANNEL_TITLE,
     "tokyo daydream radio",
@@ -812,12 +788,22 @@ def reconcile_due_scheduled_youtube_public_states(
 ) -> int:
     current = _parse_metadata_datetime(now) or _utcnow()
     updated = 0
+    scheduled_publish_at = func.json_extract(Playlist.metadata_json, "$.youtube_scheduled_publish_at")
+    publish_at = func.json_extract(Playlist.metadata_json, "$.youtube_publish_at")
+    response_publish_at = func.json_extract(Playlist.metadata_json, "$.youtube_response.status.publishAt")
     playlists = db.scalars(
-        select(Playlist).where(
+        select(Playlist)
+        .where(
             Playlist.status == PlaylistStatus.uploaded,
             Playlist.youtube_video_id.is_not(None),
+            or_(
+                scheduled_publish_at.is_not(None),
+                publish_at.is_not(None),
+                response_publish_at.is_not(None),
+            ),
         )
-    ).all()
+        .execution_options(yield_per=50)
+    )
     for playlist in playlists:
         meta = _playlist_meta(playlist)
         due_at = _due_scheduled_publish_at(meta, now=current)
@@ -1268,12 +1254,33 @@ def _cache_database_key() -> str:
 
 
 def _workspace_collection_fingerprint(db: Session) -> tuple[int, str]:
-    count, updated_at = db.execute(select(func.count(Playlist.id), func.max(Playlist.updated_at))).one()
-    if isinstance(updated_at, datetime):
-        updated_key = updated_at.isoformat()
-    else:
-        updated_key = str(updated_at or "")
-    return int(count or 0), updated_key
+    active_playlist_ids = [
+        playlist_id
+        for playlist_id in db.scalars(
+            select(Job.playlist_id)
+            .where(
+                Job.playlist_id.is_not(None),
+                Job.status.in_([JobStatus.queued, JobStatus.running]),
+            )
+            .distinct()
+        )
+        if playlist_id
+    ]
+    count = db.scalar(select(func.count(Playlist.id))) or 0
+    created_at = db.scalar(select(Playlist.created_at).order_by(Playlist.created_at.desc()).limit(1))
+    stable_updated_statement = select(Playlist.updated_at)
+    if active_playlist_ids:
+        stable_updated_statement = stable_updated_statement.where(
+            Playlist.id.not_in(active_playlist_ids)
+        )
+    stable_updated_at = db.scalar(
+        stable_updated_statement.order_by(Playlist.updated_at.desc()).limit(1)
+    )
+
+    def timestamp_key(value: object) -> str:
+        return value.isoformat() if isinstance(value, datetime) else str(value or "")
+
+    return int(count), f"{timestamp_key(created_at)}|{timestamp_key(stable_updated_at)}"
 
 
 def _cache_is_fresh(stored_at: float) -> bool:
@@ -1314,14 +1321,19 @@ def _load_channel_summary_cache(
     if fingerprint is None:
         if not allow_stale and age_seconds > _CHANNEL_SUMMARY_PERSISTED_STALE_SECONDS:
             return None
-    elif not allow_stale and stored_fingerprint != fingerprint and age_seconds > _CHANNEL_SUMMARY_PERSISTED_STALE_SECONDS:
+    elif stored_fingerprint != fingerprint:
         return None
 
     return [dict(item) for item in summaries if isinstance(item, dict)]
 
 
-def load_cached_workspace_channel_summaries(*, allow_stale: bool = True) -> list[dict] | None:
-    return _load_channel_summary_cache(allow_stale=allow_stale)
+def load_cached_workspace_channel_summaries(
+    *,
+    db: Session | None = None,
+    allow_stale: bool = True,
+) -> list[dict] | None:
+    fingerprint = _workspace_collection_fingerprint(db) if db is not None else None
+    return _load_channel_summary_cache(fingerprint=fingerprint, allow_stale=allow_stale)
 
 
 def _store_channel_summary_cache(fingerprint: tuple[int, str], summaries: list[dict]) -> None:
@@ -1340,7 +1352,12 @@ def _store_channel_summary_cache(fingerprint: tuple[int, str], summaries: list[d
         return
 
 
-def load_cached_compact_playlist_workspaces(*, limit: int | None = None, allow_stale: bool = True) -> list[dict] | None:
+def load_cached_compact_playlist_workspaces(
+    *,
+    limit: int | None = None,
+    db: Session | None = None,
+    allow_stale: bool = True,
+) -> list[dict] | None:
     try:
         payload = json.loads(_COMPACT_WORKSPACE_CACHE_PATH.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -1352,6 +1369,10 @@ def load_cached_compact_playlist_workspaces(*, limit: int | None = None, allow_s
     if payload.get("limit") != limit:
         return None
 
+    stored_fingerprint = _stored_channel_summary_fingerprint(payload.get("fingerprint"))
+    if db is not None and stored_fingerprint != _workspace_collection_fingerprint(db):
+        return None
+
     workspaces = payload.get("workspaces")
     if not isinstance(workspaces, list):
         return None
@@ -1360,7 +1381,10 @@ def load_cached_compact_playlist_workspaces(*, limit: int | None = None, allow_s
     age_seconds = time.time() - stored_at if stored_at else _COMPACT_WORKSPACE_PERSISTED_STALE_SECONDS + 1.0
     if not allow_stale and age_seconds > _COMPACT_WORKSPACE_PERSISTED_STALE_SECONDS:
         return None
-    return [dict(item) for item in workspaces if isinstance(item, dict)]
+    cached_workspaces = [dict(item) for item in workspaces if isinstance(item, dict)]
+    if db is not None:
+        return _refresh_cached_workspace_runtime_fields(db, cached_workspaces)
+    return cached_workspaces
 
 
 def _store_compact_workspace_cache(
@@ -1582,6 +1606,7 @@ def serialize_playlist_workspace(
         youtube_default_language=normalize_youtube_language(meta.get("youtube_default_language")),
         metadata_provider=meta.get("metadata_provider"),
         metadata_generation_error=meta.get("metadata_generation_error"),
+        bulsong_quality_warnings=list(meta.get("bulsong_quality_warnings") or []),
         rendered_timeline=[] if compact else list(meta.get("rendered_timeline") or []),
         rendered_track_ids=[] if compact else list(meta.get("rendered_track_ids") or []),
         rendered_duration_seconds=meta.get("rendered_duration_seconds"),
@@ -1590,6 +1615,7 @@ def serialize_playlist_workspace(
         youtube_channel_title=_canonical_youtube_channel_title(meta.get("youtube_channel_title")),
         target_youtube_channel_title=meta.get("target_youtube_channel_title"),
         soft_hour_lane=meta.get("soft_hour_lane"),
+        cinematic_pulse_lane=infer_cinematic_pulse_lane(meta, title=playlist.title),
         youtube_scheduled_publish_at=_youtube_scheduled_publish_at(meta),
         youtube_published_at=(
             youtube_published_at_override
@@ -1673,6 +1699,28 @@ def _compact_render_jobs(db: Session, playlist_ids: list[str]) -> dict[str, Play
     return result
 
 
+def _refresh_cached_workspace_runtime_fields(
+    db: Session,
+    workspaces: list[dict],
+) -> list[dict]:
+    playlist_ids = [str(workspace.get("id") or "") for workspace in workspaces]
+    active_jobs = _compact_render_jobs(db, [playlist_id for playlist_id in playlist_ids if playlist_id])
+    refreshed: list[dict] = []
+    for workspace in workspaces:
+        item = dict(workspace)
+        playlist_id = str(item.get("id") or "")
+        active_job = active_jobs.get(playlist_id)
+        if active_job is not None:
+            item["render_job"] = active_job.model_dump(mode="json")
+        elif isinstance(item.get("render_job"), dict) and item["render_job"].get("status") in {
+            JobStatus.queued.value,
+            JobStatus.running.value,
+        }:
+            item["render_job"] = None
+        refreshed.append(item)
+    return refreshed
+
+
 def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[str, datetime]:
     if not playlist_ids:
         return {}
@@ -1694,7 +1742,12 @@ def _compact_upload_finished_at(db: Session, playlist_ids: list[str]) -> dict[st
     }
 
 
-def _compact_playlist_records(db: Session, *, limit: int | None = None) -> list[Playlist]:
+def _compact_playlist_records(
+    db: Session,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[Playlist]:
     statement = (
         select(
             Playlist.id,
@@ -1711,6 +1764,8 @@ def _compact_playlist_records(db: Session, *, limit: int | None = None) -> list[
         )
         .order_by(Playlist.updated_at.desc())
     )
+    if offset:
+        statement = statement.offset(offset)
     if limit:
         statement = statement.limit(limit)
     rows = db.execute(statement).all()
@@ -1732,14 +1787,19 @@ def _compact_playlist_records(db: Session, *, limit: int | None = None) -> list[
     ]
 
 
-def list_compact_playlist_workspaces(db: Session, *, limit: int | None = None) -> list[PlaylistWorkspaceRead]:
+def list_compact_playlist_workspaces(
+    db: Session,
+    *,
+    limit: int | None = None,
+    offset: int = 0,
+) -> list[PlaylistWorkspaceRead]:
     fingerprint = _workspace_collection_fingerprint(db)
-    cache_key = (limit, *fingerprint)
+    cache_key = (limit, offset, *fingerprint)
     cached = _COMPACT_WORKSPACE_CACHE.get(cache_key)
     if cached and _cache_is_fresh(cached[0]):
         return cached[1]
 
-    playlists = _compact_playlist_records(db, limit=limit)
+    playlists = _compact_playlist_records(db, limit=limit, offset=offset)
     playlist_ids = [playlist.id for playlist in playlists]
     item_counts = _playlist_item_counts(db, playlist_ids)
     render_jobs = _compact_render_jobs(db, playlist_ids)
@@ -1761,7 +1821,8 @@ def list_compact_playlist_workspaces(db: Session, *, limit: int | None = None) -
     ]
     _COMPACT_WORKSPACE_CACHE.clear()
     _COMPACT_WORKSPACE_CACHE[cache_key] = (time.monotonic(), workspaces)
-    _store_compact_workspace_cache(limit=limit, fingerprint=fingerprint, workspaces=workspaces)
+    if offset == 0:
+        _store_compact_workspace_cache(limit=limit, fingerprint=fingerprint, workspaces=workspaces)
     return workspaces
 
 
@@ -2102,6 +2163,7 @@ def create_playlist_workspace(
     dreamina_prompt: str | None = None,
     target_youtube_channel_title: str | None = None,
     soft_hour_lane: str | None = None,
+    cinematic_pulse_lane: str | None = None,
 ) -> Playlist:
     normalized_mode = workspace_mode if workspace_mode in {"playlist", "single_track_video"} else "playlist"
     if normalized_mode == "single_track_video":
@@ -2118,12 +2180,17 @@ def create_playlist_workspace(
         "dreamina_prompt": dreamina_prompt,
         "target_youtube_channel_title": target_youtube_channel_title,
         "soft_hour_lane": soft_hour_lane,
+        "cinematic_pulse_lane": cinematic_pulse_lane,
         "workflow_state": "collecting",
         "publish_ready": False,
         "publish_approved": False,
         "cover_approved": False,
         "metadata_approved": False,
     }
+    if _is_bulsong_channel_title(target_youtube_channel_title):
+        meta["bulsong_quality_monitoring_enabled"] = True
+        meta["bulsong_source_fidelity_required"] = False
+        meta["bulsong_source_fidelity_version"] = 1
     apply_release_vocal_metadata(meta)
 
     playlist = Playlist(
@@ -2359,6 +2426,14 @@ def _track_reuse_blocked(track: Track | None) -> bool:
     )
 
 
+def _track_has_singable_lyrics(track: Track | None) -> bool:
+    return bool(track and lyric_lines_from_text(track.lyrics))
+
+
+def _playlist_has_singable_lyrics(playlist: Playlist) -> bool:
+    return any(_track_has_singable_lyrics(track) for track in _playlist_tracks(playlist))
+
+
 def _track_liked_reuse_priority(track: Track | None) -> int:
     if track is None:
         return 1
@@ -2424,43 +2499,6 @@ def _strict_reuse_candidate_matches_declared_lane(
     if not required_source_tokens:
         return False
     return bool(required_source_tokens & source_tokens)
-
-
-def _bulsong_reuse_candidate_matches_vocal_pool(
-    *,
-    target_playlist: Playlist,
-    target_genre_tokens: set[str],
-    source_tokens: set[str],
-    source_text: str,
-) -> bool:
-    declared_tokens = _declared_reuse_genre_tokens_for_playlist(target_playlist)
-    target_lane_tokens = declared_tokens or target_genre_tokens
-    target_is_mainstream_vocal = (
-        not target_lane_tokens
-        or bool(target_lane_tokens & BULSONG_MAINSTREAM_VOCAL_REUSE_TOKENS)
-    )
-    if not target_is_mainstream_vocal:
-        return _strict_reuse_candidate_matches_declared_lane(
-            target_playlist=target_playlist,
-            target_genre_tokens=target_genre_tokens,
-            source_tokens=source_tokens,
-        )
-
-    if not source_tokens & BULSONG_MAINSTREAM_VOCAL_REUSE_TOKENS:
-        return False
-    if (
-        "solo-piano" in source_tokens
-        and not source_tokens & BULSONG_SOLO_PIANO_VOCAL_CONTEXT_TOKENS
-    ):
-        return False
-    if source_tokens & BULSONG_MAINSTREAM_VOCAL_BLOCKED_TOKENS:
-        return False
-
-    blocked_text = _without_negated_phrases(
-        source_text.lower(),
-        BULSONG_MAINSTREAM_VOCAL_BLOCKED_PHRASES,
-    )
-    return not any(phrase in blocked_text for phrase in BULSONG_MAINSTREAM_VOCAL_BLOCKED_PHRASES)
 
 
 def _playlist_reuse_source_sort_key(playlist: Playlist) -> datetime:
@@ -2535,46 +2573,19 @@ def _reuse_candidate_is_similar(
     if not _reuse_channel_identity_matches(target_playlist, source_playlist):
         return False
 
-    source_meta = source_playlist.metadata_json or {}
     source_track_tokens = set(cached_track_genre_tokens(track))
-    source_tokens = set(source_track_tokens)
-    source_values = [
-        source_playlist.title,
-        str(source_meta.get("description") or ""),
-        str(source_meta.get("youtube_title") or ""),
-        str(source_meta.get("channel_style_lane") or ""),
-        str(source_meta.get("channel_broad_genre") or ""),
-    ]
-    source_tokens.update(extract_genre_tokens_from_values(source_values))
-    source_text = " ".join(
-        str(value or "")
-        for value in [
-            _track_genre_haystack(track),
-            *source_values,
-        ]
-    )
-
-    if _is_bulsong_channel_title(target_channel_title):
-        return _bulsong_reuse_candidate_matches_vocal_pool(
-            target_playlist=target_playlist,
-            target_genre_tokens=target_genre_tokens,
-            source_tokens=source_tokens,
-            source_text=source_text,
-        )
-
-    if target_genre_tokens and source_tokens:
+    if target_genre_tokens and source_track_tokens:
         if _strict_genre_lane_channel_title(target_channel_title):
             return _strict_reuse_candidate_matches_declared_lane(
                 target_playlist=target_playlist,
                 target_genre_tokens=target_genre_tokens,
                 source_tokens=source_track_tokens,
             )
-        return bool(target_genre_tokens & source_tokens)
+        target_specific_tokens = target_genre_tokens - GENERIC_REUSE_GENRE_TOKENS
+        source_specific_tokens = source_track_tokens - GENERIC_REUSE_GENRE_TOKENS
+        return bool(target_specific_tokens & source_specific_tokens)
 
-    return bool(
-        target_channel_title
-        and _normalize_reuse_channel_title(target_channel_title) in REUSE_FALLBACK_CHANNEL_MATCH_TITLES
-    )
+    return False
 
 
 def _coerce_nonnegative_int(value: object) -> int:
@@ -2742,6 +2753,12 @@ def _maybe_add_reused_back_half_tracks(
         return {"added_seconds": 0, "added_track_ids": [], "reason": "not_eligible"}
     if not bool(getattr(services.settings, "playlist_reuse_back_half_enabled", True)):
         return {"added_seconds": 0, "added_track_ids": [], "reason": "disabled"}
+    if _playlist_has_singable_lyrics(playlist):
+        return {
+            "added_seconds": 0,
+            "added_track_ids": [],
+            "reason": "vocal_tracks_require_all_new_audio",
+        }
 
     playlist_target_duration_seconds = max(int(playlist.target_duration_seconds or 0), 0)
     reuse_target_duration_seconds = max(
@@ -2753,6 +2770,16 @@ def _maybe_add_reused_back_half_tracks(
 
     _refresh_playlist_duration(playlist)
     starting_duration_seconds = playlist.actual_duration_seconds
+    is_comment_request = bool(meta.get("youtube_comment_request_id"))
+    minimum_comment_request_new_seconds = int(math.ceil(reuse_target_duration_seconds * 0.40))
+    if is_comment_request and starting_duration_seconds < minimum_comment_request_new_seconds:
+        return {
+            "added_seconds": 0,
+            "added_track_ids": [],
+            "reason": "comment_request_requires_40_percent_new_audio",
+            "minimum_new_seconds": minimum_comment_request_new_seconds,
+            "starting_duration_seconds": starting_duration_seconds,
+        }
     remaining_seconds = reuse_target_duration_seconds - starting_duration_seconds
     if remaining_seconds <= 0:
         return {"added_seconds": 0, "added_track_ids": [], "reason": "reuse_target_reached"}
@@ -2808,6 +2835,7 @@ def _maybe_add_reused_back_half_tracks(
                 not track_id
                 or track_id in existing_track_ids
                 or _track_reuse_blocked(track)
+                or _track_has_singable_lyrics(track)
                 or _track_forbidden_for_reuse_target_channel(
                     target_channel_title,
                     target_has_citypop_intent=target_has_citypop_intent,
@@ -2874,6 +2902,8 @@ def _maybe_add_reused_back_half_tracks(
         if not track_id or track_id in existing_track_ids:
             continue
         duration_seconds = candidate["duration_seconds"]
+        if is_comment_request and added_seconds + duration_seconds > remaining_seconds:
+            continue
         source_playlist = candidate["source_playlist"]
         source_row = candidate["source_row"]
         reuse_count_before = candidate["reuse_count_before"]
@@ -2933,8 +2963,6 @@ def _maybe_add_reused_back_half_tracks(
         "selection_policy": (
             "soft_hour_piano_first_liked_then_similar_back_half"
             if _is_soft_hour_channel_title(target_channel_title)
-            else "bulsong_mainstream_vocal_pool_liked_then_least_reused_back_half"
-            if _is_bulsong_channel_title(target_channel_title)
             else "strict_genre_lane_liked_then_least_reused_back_half"
             if _strict_genre_lane_channel_title(target_channel_title)
             else "liked_then_least_reused_similar_back_half"
@@ -3847,12 +3875,25 @@ def generate_playlist_metadata(
         is_playlist=is_playlist_release,
     )
     meta["youtube_description"] = _ensure_description_hashtags(meta["youtube_description"], meta["youtube_tags"])
-    for localized_copy in meta["youtube_localizations"].values():
+    meta["youtube_description"] = ensure_youtube_description_request_cta(
+        meta["youtube_description"],
+        language=meta["youtube_default_language"],
+    )
+    for language, localized_copy in meta["youtube_localizations"].items():
         localized_copy["description"] = _ensure_description_hashtags(
             localized_copy.get("description") or "",
             meta["youtube_tags"],
         )
+        localized_copy["description"] = ensure_youtube_description_request_cta(
+            localized_copy["description"],
+            language=language,
+        )
     _enforce_sundaze_english_localized_titles(meta, is_playlist=is_playlist_release)
+    if not is_playlist_release and tracks:
+        single_title = single_release_youtube_title(tracks[0].title)
+        meta["youtube_title"] = single_title
+        for localized_copy in meta["youtube_localizations"].values():
+            localized_copy["title"] = single_title
     apply_channel_genre_classification(
         meta,
         infer_channel_genre_classification(meta, title=playlist.title, tracks=tracks),
@@ -3888,6 +3929,7 @@ def approve_playlist_metadata(
     description: str | None = None,
     tags: list[str] | str | None = None,
     localizations: dict[str, dict[str, str]] | None = None,
+    title_market_research: dict | None = None,
     default_language: str = DEFAULT_YOUTUBE_LANGUAGE,
     note: str | None = None,
 ) -> Playlist:
@@ -3928,11 +3970,131 @@ def approve_playlist_metadata(
             meta.get("youtube_title"),
             is_playlist=is_playlist_release,
         )
+    if not is_playlist_release:
+        tracks = _playlist_tracks(playlist)
+        if tracks:
+            single_title = single_release_youtube_title(tracks[0].title)
+            meta["youtube_title"] = single_title
+            for localized_copy in meta.get("youtube_localizations", {}).values():
+                localized_copy["title"] = single_title
+    if bulsong_quality_monitoring_enabled(meta):
+        korean_title = str(meta.get("youtube_title") or "")
+        warning_title_terms = (
+            "한글 자막",
+            "한국어",
+            "korean",
+            "garage",
+            "게러지",
+            "개러지",
+            "2-step",
+        )
+        matched_term = next(
+            (term for term in warning_title_terms if term.casefold() in korean_title.casefold()),
+            None,
+        )
+        if matched_term:
+            append_bulsong_quality_warning(
+                meta,
+                make_bulsong_quality_warning(
+                    code="bulsong_title_specialist_term",
+                    stage="metadata_approval",
+                    message=(
+                        "Bulsong Korean title contains a specialist or language label "
+                        f"({matched_term!r}); broad audience wording is recommended."
+                    ),
+                    details={"matched_term": matched_term, "title": korean_title},
+                ),
+            )
+
+        research = (
+            title_market_research
+            if title_market_research is not None
+            else meta.get("title_market_research")
+        )
+        if not isinstance(research, dict):
+            append_bulsong_quality_warning(
+                meta,
+                make_bulsong_quality_warning(
+                    code="bulsong_title_market_research_missing",
+                    stage="metadata_approval",
+                    message=(
+                        "Metadata was approved without a Bulsong title market-research record. "
+                        "Approval continued because this check is warning-only."
+                    ),
+                ),
+            )
+        else:
+            meta["title_market_research"] = research
+            checked_at = _parse_metadata_datetime(research.get("checked_at"))
+            if checked_at is None or not (
+                -timedelta(days=1) <= _utcnow() - checked_at <= timedelta(days=14)
+            ):
+                append_bulsong_quality_warning(
+                    meta,
+                    make_bulsong_quality_warning(
+                        code="bulsong_title_market_research_stale",
+                        stage="metadata_approval",
+                        message="Bulsong title market research is missing a recent checked_at value.",
+                    ),
+                )
+            queries = [
+                str(value).strip()
+                for value in research.get("queries") or []
+                if str(value).strip()
+            ]
+            sampled_videos = [
+                value
+                for value in research.get("sampled_videos") or []
+                if isinstance(value, dict)
+                and str(value.get("title") or "").strip()
+                and str(value.get("url") or "").startswith(
+                    (
+                        "https://youtube.com/",
+                        "https://www.youtube.com/",
+                        "https://music.youtube.com/",
+                        "https://youtu.be/",
+                    )
+                )
+            ]
+            incomplete_fields = []
+            if len(set(queries)) < 3:
+                incomplete_fields.append("queries (3 distinct)")
+            if len(sampled_videos) < 8:
+                incomplete_fields.append("sampled_videos (8 YouTube links)")
+            if not [
+                value
+                for value in research.get("observed_title_structures") or []
+                if str(value).strip()
+            ]:
+                incomplete_fields.append("observed_title_structures")
+            if not isinstance(research.get("overused_phrases_to_avoid"), list):
+                incomplete_fields.append("overused_phrases_to_avoid")
+            if not isinstance(research.get("last_10_bulsong_titles_reviewed"), list):
+                incomplete_fields.append("last_10_bulsong_titles_reviewed")
+            if not str(research.get("final_title_rationale") or "").strip():
+                incomplete_fields.append("final_title_rationale")
+            if incomplete_fields:
+                append_bulsong_quality_warning(
+                    meta,
+                    make_bulsong_quality_warning(
+                        code="bulsong_title_market_research_incomplete",
+                        stage="metadata_approval",
+                        message=(
+                            "Bulsong title market research is incomplete: "
+                            + ", ".join(incomplete_fields)
+                        ),
+                        details={"incomplete_fields": incomplete_fields},
+                    ),
+                )
     if not meta.get("youtube_title") or not meta.get("youtube_description"):
         raise ValueError("YouTube metadata draft is missing. Generate metadata first.")
     meta["youtube_description"] = _ensure_description_hashtags(
         str(meta.get("youtube_description") or ""),
         meta.get("youtube_tags"),
+    )
+    meta["youtube_description"] = ensure_youtube_description_request_cta(
+        meta["youtube_description"],
+        language=default_language,
     )
     if meta.get("youtube_localizations"):
         localized_metadata = ensure_playlist_localization_title_prefix(
@@ -3944,10 +4106,14 @@ def approve_playlist_metadata(
             ),
             is_playlist=is_playlist_release,
         )
-        for localized_copy in localized_metadata.values():
+        for language, localized_copy in localized_metadata.items():
             localized_copy["description"] = _ensure_description_hashtags(
                 localized_copy.get("description") or "",
                 meta.get("youtube_tags"),
+            )
+            localized_copy["description"] = ensure_youtube_description_request_cta(
+                localized_copy["description"],
+                language=language,
             )
         meta["youtube_localizations"] = localized_metadata
         default_copy = localized_metadata.get(default_language)
@@ -4471,6 +4637,26 @@ def queue_workspace_audio_render(
         raise ValueError("Playlist has no approved tracks to render.")
     if not _all_tracks_renderable(playlist):
         raise ValueError("All approved tracks must be local audio files before rendering.")
+
+    meta = _playlist_meta(playlist)
+    if bulsong_quality_monitoring_enabled(meta):
+        for track in _playlist_tracks(playlist):
+            try:
+                validate_bulsong_source_map((track.metadata_json or {}).get("bulsong_source_map"))
+            except ValueError as exc:
+                append_bulsong_quality_warning(
+                    meta,
+                    make_bulsong_quality_warning(
+                        code="bulsong_render_source_map_missing",
+                        stage="audio_render",
+                        message=(
+                            f"Audio render continued for {track.title!r} with a source-map warning: {exc}"
+                        ),
+                        track_id=track.id,
+                        track_title=track.title,
+                    ),
+                )
+        playlist.metadata_json = meta
 
     _refresh_playlist_duration(playlist)
     if _workspace_mode(playlist) == "single_track_video":

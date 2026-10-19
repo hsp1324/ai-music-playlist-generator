@@ -107,7 +107,7 @@ class Settings(BaseSettings):
     youtube_schedule_hour: int = 7
     youtube_schedule_minute: int = 0
     youtube_schedule_min_lead_minutes: int = 30
-    youtube_title_suffix: str = "Official AI Visualizer"
+    youtube_title_suffix: str = "AI 음원 싱글곡"
     youtube_default_hashtags: str = "#Music #Visualizer #BackgroundMusic"
     youtube_lyrics_captions_enabled: bool = True
     youtube_lyrics_captions_languages: str = (
@@ -118,6 +118,15 @@ class Settings(BaseSettings):
     youtube_api_timeout_seconds: int = 120
     youtube_adopt_existing_upload_on_retry: bool = True
     youtube_adopt_existing_upload_max_age_hours: int = 72
+    youtube_comment_requests_enabled: bool = False
+    youtube_comment_request_channel_title: str = "Club Bloom"
+    youtube_comment_request_channels: str = "Club Bloom"
+    youtube_comment_request_poll_max_results: int = 100
+    youtube_comment_request_per_run_limit: int = 1
+    youtube_comment_request_default_duration_seconds: int = 3600
+    youtube_comment_request_min_duration_seconds: int = 1800
+    youtube_comment_request_max_duration_seconds: int = 7200
+    youtube_comment_request_claim_lease_seconds: int = 7200
 
     codex_metadata_enabled: bool = False
     codex_metadata_command: str = "codex"
@@ -133,8 +142,8 @@ class Settings(BaseSettings):
     openclaw_shared_token: str = ""
     openclaw_lock_ttl_seconds: int = 1800
     openclaw_backlog_scheduler_enabled: bool = False
-    openclaw_backlog_scheduler_interval_seconds: int = 600
-    openclaw_backlog_request_cooldown_seconds: int = 1800
+    openclaw_backlog_scheduler_interval_seconds: int = 7200
+    openclaw_backlog_request_cooldown_seconds: int = 7200
     openclaw_manual_blocker_backoff_seconds: int = 1800
     openclaw_backlog_target_per_channel: int = 10
     openclaw_backlog_max_per_channel: int = 10

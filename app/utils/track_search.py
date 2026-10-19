@@ -54,6 +54,58 @@ def ensure_track_search_schema(engine: Engine) -> None:
             "ON playlists(youtube_video_id)"
         )
         connection.exec_driver_sql(
+            """
+            CREATE INDEX IF NOT EXISTS idx_playlists_local_video_cleanup_candidates
+            ON playlists(status, youtube_video_id)
+            WHERE output_video_path IS NOT NULL
+               OR (
+                    json_extract(
+                        metadata_json,
+                        '$."local_video_retained_after_youtube_upload"'
+                    ) IS NOT NULL
+                    AND (
+                        json_extract(
+                            metadata_json,
+                            '$."local_video_deleted_after_youtube_upload"'
+                        ) IS NULL
+                        OR json_extract(
+                            metadata_json,
+                            '$."local_video_deleted_after_youtube_upload"'
+                        ) != json_extract(
+                            metadata_json,
+                            '$."local_video_retained_after_youtube_upload"'
+                        )
+                    )
+               )
+            """
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE INDEX IF NOT EXISTS idx_playlists_scheduled_publish_candidates_v2
+            ON playlists(status, youtube_video_id)
+            WHERE json_extract(metadata_json, '$.youtube_scheduled_publish_at') IS NOT NULL
+               OR json_extract(metadata_json, '$.youtube_publish_at') IS NOT NULL
+               OR json_extract(metadata_json, '$.youtube_response.status.publishAt') IS NOT NULL
+            """
+        )
+        connection.exec_driver_sql(
+            "CREATE INDEX IF NOT EXISTS idx_track_reuse_events_track_duration "
+            "ON track_reuse_events(track_id, reused_duration_seconds)"
+        )
+        connection.exec_driver_sql(
+            """
+            CREATE INDEX IF NOT EXISTS idx_tracks_reuse_summary_cover ON tracks(
+                id,
+                title,
+                duration_seconds,
+                audio_path,
+                json_extract(metadata_json, '$.playlist_last_reused_at'),
+                json_extract(metadata_json, '$.playlist_last_reused_in_playlist_id'),
+                json_extract(metadata_json, '$.playlist_last_reused_by')
+            )
+            """
+        )
+        connection.exec_driver_sql(
             f"""
             CREATE VIRTUAL TABLE IF NOT EXISTS {TRACK_SEARCH_FTS_TABLE} USING fts5(
                 track_id UNINDEXED,
@@ -180,7 +232,8 @@ def rebuild_track_search_index(db: Session) -> None:
     if db.bind is None or db.bind.dialect.name != "sqlite":
         return
     db.execute(text(f"DELETE FROM {TRACK_SEARCH_FTS_TABLE}"))
-    for track in db.scalars(select(Track)).all():
+    tracks = db.scalars(select(Track).execution_options(yield_per=100))
+    for track in tracks:
         sync_track_search_document(db, track)
 
 

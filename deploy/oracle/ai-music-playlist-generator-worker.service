@@ -1,0 +1,23 @@
+[Unit]
+Description=AI Music Playlist Generator Background Worker
+After=network.target ai-music-playlist-generator.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/ai-music-playlist-generator
+EnvironmentFile=/etc/ai-music-playlist-generator.env
+Environment=MALLOC_ARENA_MAX=1
+ExecStart=/opt/ai-music-playlist-generator/.venv/bin/python scripts/run_background_worker.py
+Restart=always
+RestartSec=5
+Nice=19
+IOSchedulingClass=idle
+CPUWeight=1
+CPUQuota=25%
+IOWeight=1
+MemoryHigh=220M
+
+[Install]
+WantedBy=multi-user.target

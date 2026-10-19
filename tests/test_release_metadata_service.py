@@ -9,12 +9,16 @@ from app.services.codex_metadata_service import CodexMetadataService
 from app.services.release_metadata_service import ReleaseMetadataService
 from app.utils.youtube_localizations import (
     SUPPORTED_YOUTUBE_LANGUAGES,
+    YOUTUBE_DESCRIPTION_REQUEST_CTA,
+    ensure_youtube_description_request_cta,
     ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
+    single_release_youtube_title,
 )
 from app.workflows.playlist_automation import _normalize_youtube_tags, _validate_playlist_metadata_ready
+from app.utils.youtube_metadata_state import apply_generated_youtube_metadata
 from scripts.openclaw_release import release_timeline
 from app.utils.track_titles import upload_track_title
 
@@ -124,6 +128,20 @@ def test_turkish_youtube_language_is_supported() -> None:
     assert localizations["tr"]["title"] == "Turkce Baslik"
 
 
+def test_youtube_description_request_cta_is_localized_idempotent_and_last() -> None:
+    description = "Music for a late-night drive.\n\n#NightDrive #Playlist"
+
+    english = ensure_youtube_description_request_cta(description, language="en")
+    assert english.endswith(YOUTUBE_DESCRIPTION_REQUEST_CTA["en"])
+    assert english.count(YOUTUBE_DESCRIPTION_REQUEST_CTA["en"]) == 1
+    assert ensure_youtube_description_request_cta(english, language="en") == english
+
+    korean = ensure_youtube_description_request_cta(english, language="ko")
+    assert korean.endswith(YOUTUBE_DESCRIPTION_REQUEST_CTA["ko"])
+    assert YOUTUBE_DESCRIPTION_REQUEST_CTA["en"] not in korean
+    assert "#NightDrive #Playlist" in korean
+
+
 def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:
     assert sanitize_youtube_copy("숲길 산책 J-pop 감성 인스트루멘털 플레이리스트") == "숲길 산책 J-pop 감성 BGM 플레이리스트"
     localizations = normalize_youtube_localizations(
@@ -151,6 +169,56 @@ def test_playlist_title_prefix_is_enforced_only_for_playlist_releases() -> None:
     )
     assert ensure_playlist_title_prefix("作業用プレイリスト", is_playlist=True) == "[playlist] 作業用音楽"
     assert ensure_playlist_title_prefix("싱글 트랙", is_playlist=False) == "싱글 트랙"
+
+
+def test_single_release_title_keeps_original_song_title_and_fixed_suffix() -> None:
+    assert single_release_youtube_title("비교는 여기 두고") == "비교는 여기 두고 | AI 음원 싱글곡"
+    assert single_release_youtube_title("비교는 여기 두고 | AI 음원 싱글곡") == (
+        "비교는 여기 두고 | AI 음원 싱글곡"
+    )
+
+    service = ReleaseMetadataService(Settings())
+    metadata = service.build_youtube_metadata(
+        Playlist(
+            title="마케팅용 릴리스 제목",
+            metadata_json={"workspace_mode": "single_track_video", "description": "싱글 설명"},
+        ),
+        [Track(title="기울지 않는 마음", prompt="Korean trap-soul", metadata_json={})],
+    )
+
+    assert metadata.title == "기울지 않는 마음 | AI 음원 싱글곡"
+
+
+def test_generated_single_metadata_forces_fixed_title_in_every_localization() -> None:
+    meta = {}
+    generated = type(
+        "GeneratedMetadata",
+        (),
+        {
+            "title": "Marketing hook",
+            "description": "Description",
+            "tags": ["music"],
+            "default_language": "ko",
+            "provider": "test",
+            "error": None,
+            "localizations": {
+                "ko": {"title": "마케팅 제목", "description": "설명"},
+                "en": {"title": "Translated marketing title", "description": "Description"},
+            },
+        },
+    )()
+
+    apply_generated_youtube_metadata(
+        meta,
+        generated,
+        is_playlist_release=False,
+        single_track_title="비교는 여기 두고",
+    )
+
+    assert meta["youtube_title"] == "비교는 여기 두고 | AI 음원 싱글곡"
+    assert {copy["title"] for copy in meta["youtube_localizations"].values()} == {
+        "비교는 여기 두고 | AI 음원 싱글곡"
+    }
 
 
 def test_openclaw_metadata_context_timeline_uses_final_order() -> None:

@@ -1360,27 +1360,7 @@ def render_upload_status(
     }
 
 
-@router.put("/jobs/{job_id}/upload")
-async def upload_render_chunk(
-    job_id: str,
-    request: Request,
-    content_range: str | None = Header(default=None, alias="Content-Range"),
-    services: ServiceRegistry = Depends(get_services),
-    token: str = Depends(_request_token),
-    db: Session = Depends(get_db),
-) -> dict:
-    _require_render_worker_token(services, token)
-    if not content_range:
-        raise HTTPException(status_code=411, detail="Content-Range header is required for resumable upload.")
-    match = CONTENT_RANGE_RE.match(content_range.strip())
-    if not match:
-        raise HTTPException(status_code=400, detail="Invalid Content-Range header.")
-    start = int(match.group(1))
-    end = int(match.group(2))
-    total = None if match.group(3) == "*" else int(match.group(3))
-    if end < start:
-        raise HTTPException(status_code=400, detail="Invalid upload byte range.")
-
+def _verify_render_upload_chunk_job(db: Session, job_id: str) -> None:
     try:
         job, _playlist = _load_render_progress_job(db, job_id)
     except OperationalError as exc:
@@ -1392,6 +1372,12 @@ async def upload_render_chunk(
         raise HTTPException(status_code=409, detail="Render job is not running.")
     db.close()
 
+
+def _prepare_render_upload_chunk(
+    services: ServiceRegistry,
+    job_id: str,
+    start: int,
+) -> Path:
     part_path, _meta_path = _upload_paths(services, job_id)
     current_size = part_path.stat().st_size if part_path.exists() else 0
     if start == 0 and current_size > 0:
@@ -1402,23 +1388,16 @@ async def upload_render_chunk(
             status_code=status.HTTP_409_CONFLICT,
             detail={"expected_offset": current_size, "received_start": start},
         )
+    return part_path
 
-    bytes_written = 0
-    mode = "ab" if start else "wb"
-    with part_path.open(mode) as handle:
-        async for chunk in request.stream():
-            if not chunk:
-                continue
-            await asyncio.to_thread(handle.write, chunk)
-            bytes_written += len(chunk)
 
-    expected = end - start + 1
-    if bytes_written != expected:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Uploaded chunk size mismatch: got {bytes_written}, expected {expected}.",
-        )
-
+def _finish_render_upload_chunk(
+    db: Session,
+    services: ServiceRegistry,
+    job_id: str,
+    part_path: Path,
+    total: int | None,
+) -> dict:
     try:
         job, playlist = _load_render_progress_job(db, job_id)
     except OperationalError as exc:
@@ -1452,6 +1431,52 @@ async def upload_render_chunk(
         if not _is_database_locked(exc):
             raise
     return {"ok": True, "received_bytes": received, "complete": bool(total and received >= total)}
+
+
+@router.put("/jobs/{job_id}/upload")
+async def upload_render_chunk(
+    job_id: str,
+    request: Request,
+    content_range: str | None = Header(default=None, alias="Content-Range"),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+    db: Session = Depends(get_db),
+) -> dict:
+    _require_render_worker_token(services, token)
+    if not content_range:
+        raise HTTPException(status_code=411, detail="Content-Range header is required for resumable upload.")
+    match = CONTENT_RANGE_RE.match(content_range.strip())
+    if not match:
+        raise HTTPException(status_code=400, detail="Invalid Content-Range header.")
+    start = int(match.group(1))
+    end = int(match.group(2))
+    total = None if match.group(3) == "*" else int(match.group(3))
+    if end < start:
+        raise HTTPException(status_code=400, detail="Invalid upload byte range.")
+
+    await asyncio.to_thread(_verify_render_upload_chunk_job, db, job_id)
+    part_path = await asyncio.to_thread(_prepare_render_upload_chunk, services, job_id, start)
+
+    bytes_written = 0
+    mode = "ab" if start else "wb"
+    handle = await asyncio.to_thread(part_path.open, mode)
+    try:
+        async for chunk in request.stream():
+            if not chunk:
+                continue
+            await asyncio.to_thread(handle.write, chunk)
+            bytes_written += len(chunk)
+    finally:
+        await asyncio.to_thread(handle.close)
+
+    expected = end - start + 1
+    if bytes_written != expected:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Uploaded chunk size mismatch: got {bytes_written}, expected {expected}.",
+        )
+
+    return await asyncio.to_thread(_finish_render_upload_chunk, db, services, job_id, part_path, total)
 
 
 def _sha256_file(path: Path) -> str:
@@ -1592,7 +1617,12 @@ def complete_render_job(
     else:
         tracks = [item.track for item in sorted(playlist.items, key=lambda item: item.order_index) if item.track]
         youtube_metadata = services.release_metadata.build_youtube_metadata(playlist, tracks)
-        apply_generated_youtube_metadata(meta, youtube_metadata, is_playlist_release=is_playlist_release)
+        apply_generated_youtube_metadata(
+            meta,
+            youtube_metadata,
+            is_playlist_release=is_playlist_release,
+            single_track_title=tracks[0].title if not is_playlist_release and tracks else None,
+        )
         meta["youtube_title"] = ensure_playlist_title_prefix(
             meta["youtube_title"],
             is_playlist=is_playlist_release,

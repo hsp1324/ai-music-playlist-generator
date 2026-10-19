@@ -37,7 +37,10 @@ from app.utils.openclaw_slack_loop import (
     post_next_playlist_request,
     record_auto_loop_upload,
 )
-from app.utils.ops_notifications import notify_youtube_publish_completed
+from app.utils.ops_notifications import (
+    notify_video_render_queued,
+    notify_youtube_publish_completed,
+)
 from app.utils.local_video_cleanup import (
     cleanup_public_uploaded_local_videos,
     mark_local_video_retained_after_youtube_upload,
@@ -81,6 +84,54 @@ def _parse_progress_timestamp(value):
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def _record_track_single_youtube_upload(
+    track: Track,
+    *,
+    playlist: Playlist,
+    meta: dict,
+) -> None:
+    video_id = str(playlist.youtube_video_id or "").strip()
+    if not video_id:
+        return
+
+    track_meta = dict(track.metadata_json or {})
+    uploaded_at = _utcnow().isoformat()
+    entry = {
+        "release_id": playlist.id,
+        "release_title": playlist.title,
+        "youtube_video_id": video_id,
+        "youtube_channel_id": str(meta.get("youtube_channel_id") or ""),
+        "youtube_channel_title": str(meta.get("youtube_channel_title") or meta.get("target_youtube_channel_title") or ""),
+        "youtube_title": str(meta.get("youtube_title") or playlist.title or ""),
+        "uploaded_at": uploaded_at,
+        "source": "app-upload-worker",
+    }
+    uploads = list(track_meta.get("single_youtube_uploads") or [])
+    existing_index = next(
+        (
+            index
+            for index, item in enumerate(uploads)
+            if isinstance(item, dict) and str(item.get("youtube_video_id") or "") == video_id
+        ),
+        None,
+    )
+    if existing_index is None:
+        uploads.append(entry)
+    else:
+        uploads[existing_index] = {**dict(uploads[existing_index]), **entry}
+
+    track_meta["single_youtube_uploaded"] = True
+    track_meta["single_youtube_uploaded_at"] = uploaded_at
+    track_meta["single_youtube_video_id"] = video_id
+    track_meta["single_youtube_release_id"] = playlist.id
+    track_meta["single_youtube_release_title"] = playlist.title
+    track_meta["single_youtube_channel_id"] = entry["youtube_channel_id"]
+    track_meta["single_youtube_channel_title"] = entry["youtube_channel_title"]
+    track_meta["single_youtube_title"] = entry["youtube_title"]
+    track_meta["single_youtube_uploads"] = uploads
+    track.metadata_json = track_meta
 
 
 def _progress_float(value):
@@ -737,7 +788,38 @@ class BackgroundJobWorker:
         self._last_openclaw_backlog_scheduler_check = now
 
         with SessionLocal() as db:
+            comment_request_summary: dict = {}
+            queued_comment_requests = []
+            try:
+                from app.workflows.youtube_comment_requests import (
+                    list_comment_requests,
+                    serialize_comment_request,
+                    sync_club_bloom_comment_requests,
+                )
+
+                comment_request_summary = sync_club_bloom_comment_requests(db, self.services)
+                if comment_request_summary.get("enabled"):
+                    queued_comment_requests = list_comment_requests(db, limit=1)
+                comment_request_summary["queued"] = len(queued_comment_requests)
+                if queued_comment_requests:
+                    comment_request_summary["next_request"] = serialize_comment_request(queued_comment_requests[0])
+            except Exception as exc:  # noqa: BLE001
+                db.rollback()
+                comment_request_summary = {"error": str(exc), "queued": 0}
+
             evaluation = evaluate_openclaw_backlog_scheduler(db, self.services)
+            summary = dict(evaluation.get("summary") or {})
+            summary["youtube_comment_requests"] = comment_request_summary
+            evaluation["summary"] = summary
+            blocking_reason = str(evaluation.get("reason") or "")
+            if queued_comment_requests and blocking_reason not in {
+                "openclaw_lock_active",
+                "backlog_request_cooldown",
+                "auto_loop_stopped",
+                "max_uploads_reached",
+            }:
+                evaluation["should_request"] = True
+                evaluation["reason"] = "youtube_comment_request"
             if not evaluation.get("should_request"):
                 return
             try:
@@ -746,7 +828,7 @@ class BackgroundJobWorker:
                         db,
                         self.services,
                         reason=str(evaluation.get("reason") or "scheduler"),
-                        backlog_summary=evaluation.get("summary"),
+                        backlog_summary=summary,
                     )
                 )
             except Exception as exc:  # noqa: BLE001
@@ -796,14 +878,16 @@ class BackgroundJobWorker:
 
     def _process_job(self, job_id: str) -> None:
         post_commit_openclaw_request: dict | None = None
+        post_commit_video_queued_notification: dict | None = None
         with SessionLocal() as db:
             job = db.get(Job, job_id)
             if not job:
                 return
 
             try:
+                queued_video_job = None
                 if job.type == JobType.build_playlist:
-                    self._process_build_playlist_job(db, job)
+                    queued_video_job = self._process_build_playlist_job(db, job)
                 elif job.type == JobType.build_video:
                     self._process_build_video_job(db, job)
                 elif job.type == JobType.upload_youtube:
@@ -821,14 +905,35 @@ class BackgroundJobWorker:
                 job.status = JobStatus.succeeded
                 job.finished_at = _utcnow()
                 db.add(job)
+                should_notify_video_queued = (
+                    queued_video_job is not None and queued_video_job.status == JobStatus.queued
+                )
                 db.commit()
+                if should_notify_video_queued:
+                    post_commit_video_queued_notification = {
+                        "playlist_id": queued_video_job.playlist_id,
+                        "job_id": queued_video_job.id,
+                    }
             except Exception as exc:  # noqa: BLE001
                 self._mark_job_failed(db, job, str(exc))
                 post_commit_openclaw_request = None
+                post_commit_video_queued_notification = None
+        if post_commit_video_queued_notification:
+            with SessionLocal() as db:
+                playlist = db.get(Playlist, post_commit_video_queued_notification["playlist_id"])
+                video_job = db.get(Job, post_commit_video_queued_notification["job_id"])
+                if playlist is not None:
+                    notify_video_render_queued(
+                        db,
+                        self.services,
+                        playlist=playlist,
+                        job=video_job,
+                        allow_started=True,
+                    )
         if post_commit_openclaw_request:
             self._request_openclaw_for_publish_event(**post_commit_openclaw_request)
 
-    def _process_build_playlist_job(self, db: Session, job: Job) -> None:
+    def _process_build_playlist_job(self, db: Session, job: Job) -> Job | None:
         playlist = db.scalars(
             select(Playlist)
             .options(selectinload(Playlist.items).selectinload(PlaylistItem.track))
@@ -885,13 +990,12 @@ class BackgroundJobWorker:
         rendered_track_durations = []
         rendered_track_duration_sources = []
         for track in tracks:
-            probed_duration = self.services.playlist_builder.get_renderable_media_duration(Path(track.audio_path))
-            if probed_duration > 0:
-                rendered_track_durations.append(probed_duration)
-                rendered_track_duration_sources.append("decoded_media")
-            else:
-                rendered_track_durations.append(float(track.duration_seconds or 0))
-                rendered_track_duration_sources.append("track_duration")
+            # Uploaded tracks retain the duration measured at ingest. Do not
+            # fully decode every source again before an audio render: a slow
+            # volume or hung decoder otherwise aborts a valid release before
+            # ffmpeg can perform the real concat/re-encode.
+            rendered_track_durations.append(float(track.duration_seconds or 0))
+            rendered_track_duration_sources.append("track_duration")
         rendered_timeline = build_rendered_timeline_snapshot(
             rendered_track_dicts,
             rendered_track_durations,
@@ -905,6 +1009,7 @@ class BackgroundJobWorker:
             output_path,
             progress_callback=progress_callback,
             total_duration_seconds=sum(rendered_track_durations),
+            verify_source_duration=False,
         )
         db.expire_all()
         playlist = db.scalars(
@@ -958,7 +1063,7 @@ class BackgroundJobWorker:
                     playlist=playlist,
                 )
             )
-            return
+            return None
 
         playlist.output_audio_path = str(rendered_path)
 
@@ -1016,6 +1121,7 @@ class BackgroundJobWorker:
         )
         if auto_publish_job is not None:
             db.add(auto_publish_job)
+        return pending_video_job
 
     def _process_build_video_job(self, db: Session, job: Job) -> None:
         playlist = db.scalars(
@@ -1263,6 +1369,7 @@ class BackgroundJobWorker:
                 meta,
                 youtube_metadata,
                 is_playlist_release=is_playlist_release,
+                single_track_title=tracks[0].title if not is_playlist_release and tracks else None,
             )
             meta["youtube_title"] = ensure_playlist_title_prefix(
                 meta["youtube_title"],
@@ -1797,6 +1904,14 @@ class BackgroundJobWorker:
                             except Exception as exc:  # noqa: BLE001
                                 meta["relocation_original_youtube_delete_error"] = str(exc)
                     for item in playlist.items:
+                        if not item.track:
+                            continue
+                        if not is_playlist_release:
+                            _record_track_single_youtube_upload(
+                                item.track,
+                                playlist=playlist,
+                                meta=meta,
+                            )
                         item.track.status = TrackStatus.uploaded
                         db.add(item.track)
                     notify_youtube_publish_completed(

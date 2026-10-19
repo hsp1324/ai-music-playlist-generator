@@ -14,7 +14,8 @@ The channel profile docs in `docs/openclaw-channel-profiles/` control visual ide
 6. Read [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-taxonomy.md) and pick one underused broad YouTube playlist bucket plus one detailed video style lane.
 7. Read exactly one channel concept planner from this directory.
 8. Choose one fresh concept that fits that channel, stays inside the selected detailed style lane, and does not repeat recent releases.
-9. Then read the matching channel profile and continue with `docs/openclaw-skills.md` Skill 3.
+9. Apply `docs/openclaw-seasonal-programming.md` for the intended public date and target market.
+10. Then read the matching channel profile and continue with `docs/openclaw-skills.md` Skill 3.
 
 If the app catalog looks incomplete or the human says there are YouTube videos outside this app, report that limitation before claiming a concept is non-duplicated.
 
@@ -26,6 +27,7 @@ If the app catalog looks incomplete or the human says there are YouTube videos o
 - Do not sacrifice lyric quality to force SEO terms into the song. The melody, beat, vocal delivery, hook, and emotional arc are the source of truth for lyrics.
 - For every vocal Suno track, plan a concrete singer identity before generation so the result does not default to the same AI-like voice. Put the voice identity in the Suno style/settings field and, when using custom lyrics, as a short bracketed cue near the top of the lyrics. Include register, timbre texture, delivery, mic distance, and emotional attitude when useful, such as `breathy intimate Korean female alto, close-mic, light rasp` or `restrained spoken-rap baritone, calm diction`.
 - For every Suno generation on every channel, treat the prompt as a credit-bearing full song/cue, not a short sketch. Do not use lower-bound duration wording such as `at least 2 minutes` or `minimum 2 minutes`; instead build enough song/arrangement structure to naturally land near a full 4-minute result. For vocal songs, write longer lyrics with a real first verse, second verse, chorus returns, bridge/breakdown or rap/sung contrast, final lift, and ending when the genre supports it. For instrumental/no-vocal tracks, write longer bracket-only section metatags with intro, developed main sections, variation/breakdown, final theme, and resolved outro. Tracks shorter than 4:00 are still valid uploads when they fit; only tracks under 1:00 are a default blocker, and 1:00-1:59 tracks are accepted and recorded for later analysis.
+- Vocal-song intros are uncommon, not a default template step. Across a vocal playlist or generation sequence, allow a distinct intro in only about one out of every five songs; at least four out of five should begin directly with a verse, hook, chorus, rap verse, or brief vocal pickup. A lead-vocal direction metatag does not count as an intro. Do not hide an intro as an unnamed instrumental lead-in when `[Intro]` is omitted. Standalone vocal singles default to no intro unless the song genuinely needs one. This does not change instrumental/no-vocal arrangement rules.
 - `thumbnail_text` is only the short phrase to place on the image. It must never imply a black box, dark panel, sticker, badge, pill, capsule, or any filled background behind the letters; final rendering rules in the channel profile require transparent-background text directly on the artwork.
 
 ## Output Contract

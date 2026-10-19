@@ -88,6 +88,43 @@ YOUTUBE_LANGUAGE_ALIASES = {
     "chinese-traditional": "zh-TW",
 }
 PLAYLIST_TITLE_PREFIX = "[playlist]"
+SINGLE_RELEASE_TITLE_SUFFIX = "AI 음원 싱글곡"
+YOUTUBE_DESCRIPTION_REQUEST_CTA = {
+    "ko": "댓글로 듣고 싶은 음악 스타일을 남겨주세요. 다음 플레이리스트로 만들어 드릴게요.",
+    "ja": "コメントで聴きたい音楽スタイルを教えてください。次のプレイリストとしてお届けします。",
+    "en": "Leave the music style you'd like to hear in the comments. We'll turn it into a future playlist.",
+    "es": "Cuéntanos en los comentarios qué estilo de música quieres escuchar. Lo convertiremos en una próxima playlist.",
+    "vi": "Hãy để lại phong cách âm nhạc bạn muốn nghe trong phần bình luận. Chúng tôi sẽ biến nó thành một playlist sắp tới.",
+    "th": "บอกสไตล์เพลงที่คุณอยากฟังไว้ในคอมเมนต์ แล้วเราจะนำไปทำเป็นเพลย์ลิสต์ถัดไป",
+    "hi": "कमेंट में बताएं कि आप किस तरह का संगीत सुनना चाहते हैं। हम उसे आने वाली प्लेलिस्ट में बनाएंगे।",
+    "fil": "I-comment ang music style na gusto mong marinig. Gagawin namin itong isa sa mga susunod na playlist.",
+    "id": "Tulis gaya musik yang ingin kamu dengar di komentar. Kami akan membuatnya menjadi playlist berikutnya.",
+    "tr": "Dinlemek istediğiniz müzik tarzını yorumlara yazın. Onu gelecek çalma listelerimizden birine dönüştürelim.",
+    "pt-BR": "Conte nos comentários qual estilo musical você quer ouvir. Vamos transformá-lo em uma próxima playlist.",
+    "pt-PT": "Diz nos comentários que estilo musical gostarias de ouvir. Vamos transformá-lo numa próxima playlist.",
+    "fr": "Indiquez en commentaire le style de musique que vous aimeriez écouter. Nous en ferons une prochaine playlist.",
+    "de": "Schreib uns in die Kommentare, welchen Musikstil du hören möchtest. Wir machen daraus eine der nächsten Playlists.",
+    "ar": "اكتب في التعليقات نوع الموسيقى الذي تود سماعه، وسنحوّله إلى قائمة تشغيل قادمة.",
+    "zh-CN": "请在评论区告诉我们你想听的音乐风格，我们会把它做成接下来的播放列表。",
+    "zh-TW": "請在留言區告訴我們你想聽的音樂風格，我們會把它做成接下來的播放清單。",
+}
+
+
+def ensure_youtube_description_request_cta(
+    value: Any,
+    *,
+    language: str = DEFAULT_YOUTUBE_LANGUAGE,
+) -> str:
+    """Keep one localized listener-request call to action as the final paragraph."""
+    description = sanitize_youtube_copy(value).strip()
+    if not description:
+        return description
+
+    cta = YOUTUBE_DESCRIPTION_REQUEST_CTA[normalize_youtube_language(language)]
+    known_ctas = set(YOUTUBE_DESCRIPTION_REQUEST_CTA.values())
+    lines = [line for line in description.splitlines() if line.strip() not in known_ctas]
+    description = "\n".join(lines).strip()
+    return f"{description}\n\n{cta}" if description else cta
 
 
 def sanitize_youtube_copy(value: Any) -> str:
@@ -144,6 +181,17 @@ def ensure_playlist_title_prefix(value: Any, *, is_playlist: bool) -> str:
     if not title:
         return ""
     return f"{PLAYLIST_TITLE_PREFIX} {title}"[:100]
+
+
+def single_release_youtube_title(value: Any) -> str:
+    """Keep standalone releases song-first with the user-approved AI single label."""
+    song_title = sanitize_youtube_copy(value).strip()
+    suffix = f" | {SINGLE_RELEASE_TITLE_SUFFIX}"
+    if song_title.endswith(suffix):
+        song_title = song_title[: -len(suffix)].rstrip()
+    max_song_title_length = max(100 - len(suffix), 1)
+    song_title = song_title[:max_song_title_length].rstrip()
+    return f"{song_title}{suffix}" if song_title else SINGLE_RELEASE_TITLE_SUFFIX
 
 
 def ensure_playlist_localization_title_prefix(

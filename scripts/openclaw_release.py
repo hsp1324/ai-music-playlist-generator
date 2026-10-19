@@ -33,6 +33,7 @@ MAX_AUDIO_UPLOAD_ATTEMPTS = 3
 DEFAULT_MIN_PLAYLIST_TRACK_SECONDS = 60
 DEFAULT_MAX_PLAYLIST_TRACK_SECONDS = 0
 DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS = 10 * 60
+DEFAULT_VOCAL_PLAYLIST_TARGET_SECONDS = 60 * 60
 DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS = 60 * 60
 MIN_NORMAL_LOOP_VIDEO_SECONDS = 1.0
 LOOP_VIDEO_PROVIDERS = ("gemini", "dreamina", "seedance", "manual", "unknown")
@@ -58,6 +59,14 @@ LONG_PLAYLIST_TRACK_ALLOWED_CHANNEL_TITLES = {
     CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
 }
 SCRIPTURE_PLAYLIST_CHANNEL_TITLES = {
+    OLD_VERSE_YOUTUBE_CHANNEL_TITLE,
+    NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
+}
+VOCAL_PLAYLIST_CHANNEL_TITLES = {
+    JAPAN_YOUTUBE_CHANNEL_TITLE,
+    SUNDAZE_YOUTUBE_CHANNEL_TITLE,
+    SOLWAVE_YOUTUBE_CHANNEL_TITLE,
+    HARUHARU_YOUTUBE_CHANNEL_TITLE,
     OLD_VERSE_YOUTUBE_CHANNEL_TITLE,
     NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
 }
@@ -1106,6 +1115,7 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
             "dreamina_prompt": "",
             "target_youtube_channel_title": youtube_channel_title,
             "soft_hour_lane": getattr(args, "soft_hour_lane", "") or None,
+            "cinematic_pulse_lane": getattr(args, "cinematic_pulse_lane", "") or None,
         },
     )
     return {
@@ -1119,6 +1129,7 @@ def create_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, 
             "target_duration_seconds": release["target_duration_seconds"],
             "target_youtube_channel_title": release.get("target_youtube_channel_title"),
             "soft_hour_lane": release.get("soft_hour_lane"),
+            "cinematic_pulse_lane": release.get("cinematic_pulse_lane"),
         },
         "next": (
             "Use this release.id while generating Suno output, then upload every related audio file with --release-id. "
@@ -1175,6 +1186,58 @@ def read_single_lyrics(args: argparse.Namespace) -> str:
     if inline and file_value:
         raise RuntimeError("Use either --lyrics or --lyrics-file, not both.")
     return read_text_file(file_value, label="Lyrics") if file_value else inline
+
+
+def print_quality_warning(message: str) -> None:
+    print(f"WARNING: {message}", file=sys.stderr, flush=True)
+
+
+def read_bulsong_source_map_file(value: str | None) -> dict[str, Any] | None:
+    if not value:
+        return None
+    path = Path(value).expanduser().resolve()
+    if not path.exists() or not path.is_file():
+        print_quality_warning(f"Bulsong source map file does not exist: {path}. Continuing without it.")
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        print_quality_warning(f"Bulsong source map is not valid JSON: {path}: {exc}. Continuing without it.")
+        return None
+    if not isinstance(payload, dict):
+        print_quality_warning(f"Bulsong source map is not one JSON object: {path}. Continuing without it.")
+        return None
+    required = (
+        "source_name",
+        "source_section_or_reference",
+        "core_teaching",
+        "ordinary_language_paraphrase",
+        "verse_hook_expression",
+    )
+    missing = [field for field in required if not str(payload.get(field) or "").strip()]
+    if missing:
+        print_quality_warning(
+            "Bulsong source map is missing fields "
+            + ", ".join(missing)
+            + ". Continuing without a valid map."
+        )
+        return None
+    return payload
+
+
+def resolve_bulsong_source_maps(audio_count: int, values: list[str]) -> list[dict[str, Any] | None]:
+    maps = [read_bulsong_source_map_file(value) for value in values]
+    if not maps:
+        return [None] * audio_count
+    if len(maps) == 1:
+        return maps * audio_count
+    if len(maps) != audio_count:
+        print_quality_warning(
+            "Bulsong source-map count does not match the audio count. "
+            "Unmatched audio will continue without a map."
+        )
+        return (maps + [None] * audio_count)[:audio_count]
+    return maps
 
 
 def resolve_lyrics_items(audio_count: int, *, lyrics: list[str], lyrics_files: list[str]) -> list[str]:
@@ -1355,6 +1418,7 @@ def upload_audio_file_to_release(
     lyrics: str = "",
     style: str = "",
     exclude_style: str = "",
+    bulsong_source_map: dict[str, Any] | None = None,
     cover_path: Path | None = None,
     dispatch_review: bool = True,
     attempts: int = MAX_AUDIO_UPLOAD_ATTEMPTS,
@@ -1385,6 +1449,11 @@ def upload_audio_file_to_release(
                         "lyrics": lyrics or "",
                         "style": style or "",
                         "exclude_style": exclude_style or "",
+                        "bulsong_source_map_json": (
+                            json.dumps(bulsong_source_map, ensure_ascii=False)
+                            if bulsong_source_map
+                            else ""
+                        ),
                         "dispatch_review": str(dispatch_review).lower(),
                     },
                     files=files,
@@ -1532,6 +1601,15 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
     else:
         raise RuntimeError("Use --new-single, --release-id, or --release-title.")
 
+    bulsong_source_map = read_bulsong_source_map_file(
+        getattr(args, "bulsong_source_map_file", "")
+    )
+    if is_bulsong_channel_title(release_youtube_channel_title(release)) and not bulsong_source_map:
+        print_quality_warning(
+            "Bulsong audio has no verified scripture-to-lyric source map. "
+            "The app will record the warning and continue the upload."
+        )
+
     auto_approve_playlist = release["workspace_mode"] == "playlist" and not args.pending_review
     require_pop_family_lyrics(
         lyrics_items=[lyrics],
@@ -1549,6 +1627,7 @@ def upload_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, An
             lyrics=lyrics,
             style=args.style,
             exclude_style=getattr(args, "exclude_style", ""),
+            bulsong_source_map=bulsong_source_map,
             cover_path=cover_path,
             dispatch_review=not auto_approve_playlist,
         )
@@ -1634,6 +1713,10 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
         len(audio_paths),
         exclude_styles=getattr(args, "exclude_style", []) or [],
     )
+    bulsong_source_maps = resolve_bulsong_source_maps(
+        len(audio_paths),
+        getattr(args, "bulsong_source_map_file", []) or [],
+    )
     require_pop_family_lyrics(
         lyrics_items=lyrics_items,
         context="upload-single-candidates",
@@ -1674,6 +1757,7 @@ def upload_single_candidates(client: httpx.Client, args: argparse.Namespace) -> 
                 lyrics=lyrics_items[index - 1],
                 style=style_items[index - 1],
                 exclude_style=exclude_style_items[index - 1],
+                bulsong_source_map=bulsong_source_maps[index - 1],
                 cover_path=cover_path,
             )
         except Exception as exc:  # noqa: BLE001
@@ -1876,6 +1960,12 @@ def is_scripture_playlist_channel_title(value: str | None) -> bool:
 def default_playlist_target_seconds_for_channel(value: str | None) -> int:
     if is_scripture_playlist_channel_title(value):
         return DEFAULT_SCRIPTURE_PLAYLIST_TARGET_SECONDS
+    title = str(value or "").strip().lower()
+    for channel in VOCAL_PLAYLIST_CHANNEL_TITLES:
+        aliases = {channel.lower()}
+        aliases.update(alias.lower() for alias in CHANNEL_TITLE_ALIASES.get(channel, ()))
+        if title in aliases:
+            return DEFAULT_VOCAL_PLAYLIST_TARGET_SECONDS
     return DEFAULT_GENERAL_PLAYLIST_TARGET_SECONDS
 
 
@@ -2140,7 +2230,7 @@ def approve_track_to_playlist(client: httpx.Client, *, track_id: str, release_id
         track_id=track_id,
         release_id=release_id,
         actor=actor,
-        rationale="Auto-approved for app-managed playlist publishing.",
+        rationale="Auto-approved for app-managed release publishing.",
     )
 
 
@@ -2157,6 +2247,9 @@ def track_reuse_summary(track: dict[str, Any]) -> dict[str, Any]:
         "reuse_count": meta.get("playlist_reuse_count") or 0,
         "reused_seconds": meta.get("playlist_reused_seconds") or 0,
         "last_reused_in_playlist_id": meta.get("playlist_last_reused_in_playlist_id") or "",
+        "single_youtube_uploaded": bool(meta.get("single_youtube_uploaded")),
+        "single_youtube_video_id": meta.get("single_youtube_video_id") or "",
+        "single_youtube_release_id": meta.get("single_youtube_release_id") or "",
         "audio_path": track.get("audio_path"),
         "created_at": track.get("created_at"),
         "updated_at": track.get("updated_at"),
@@ -2185,6 +2278,8 @@ def search_tracks(client: httpx.Client, args: argparse.Namespace) -> dict[str, A
         params["status_filter"] = args.status_filter
     if args.user_rating:
         params["user_rating"] = args.user_rating
+    if getattr(args, "exclude_single_uploaded", False):
+        params["single_youtube_uploaded"] = "false"
     tracks = request_json(client, "GET", "/tracks", params=params)
     if filter_short_tracks:
         tracks = [track for track in tracks if track_duration_seconds_value(track) >= min_track_seconds]
@@ -2203,8 +2298,10 @@ def search_tracks(client: httpx.Client, args: argparse.Namespace) -> dict[str, A
 
 def reuse_track(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
-    if release.get("workspace_mode") != "playlist":
-        raise RuntimeError("reuse-track requires a Playlist Release.")
+    if release.get("workspace_mode") not in {"playlist", "single_track_video"}:
+        raise RuntimeError("reuse-track requires a Playlist or Single Release.")
+    if release.get("workspace_mode") == "single_track_video" and len(args.track_id) != 1:
+        raise RuntimeError("A Single Release can attach exactly one existing track.")
 
     attached_tracks = []
     for track_id in args.track_id:
@@ -2224,13 +2321,17 @@ def reuse_track(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any
             "id": release["id"],
             "title": release["title"],
             "workflow_state": release["workflow_state"],
+            "workspace_mode": release.get("workspace_mode"),
             "track_count": int(release.get("track_count") or len(release.get("tracks") or [])),
             "actual_duration_seconds": release.get("actual_duration_seconds", 0),
             "target_duration_seconds": release.get("target_duration_seconds", 0),
             "target_youtube_channel_title": release.get("target_youtube_channel_title"),
         },
         "tracks": attached_tracks,
-        "next": "After enough same-lane tracks are attached, upload visuals, render audio, approve cover, and render video.",
+        "next": (
+            "For a Single Release, upload special single cover/thumbnail assets, render audio/video, approve metadata, and publish. "
+            "For a Playlist Release, attach enough same-lane tracks, upload visuals, render audio, approve cover, and render video."
+        ),
     }
 
 
@@ -2451,6 +2552,77 @@ def openclaw_backlog_status(client: httpx.Client, _args: argparse.Namespace) -> 
 
 def openclaw_scripture_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
     return request_json(client, "GET", "/openclaw/scripture/status")
+
+
+def youtube_comment_requests(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "GET",
+        "/openclaw/youtube-comment-requests",
+        params={
+            "channel": args.channel,
+            "status": args.status,
+            "sync": not args.no_sync,
+            "limit": args.limit,
+        },
+    )
+
+
+def youtube_comment_request_claim(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        f"/openclaw/youtube-comment-requests/{args.request_id}/claim",
+        json={"owner": args.owner, "run_id": args.run_id},
+    )
+
+
+def youtube_comment_request_complete(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    provenance = {"openclaw_run_id": args.run_id} if args.run_id else {}
+    idempotency_key = args.idempotency_key or (
+        f"{args.run_id}:complete" if args.run_id else f"{args.request_id}:{args.release_id}:complete"
+    )
+    return request_json(
+        client,
+        "POST",
+        f"/openclaw/youtube-comment-requests/{args.request_id}/complete",
+        json={
+            "release_id": args.release_id,
+            "provenance": provenance,
+            "scheduled_publish_at": args.scheduled_publish_at or None,
+            "idempotency_key": idempotency_key,
+        },
+    )
+
+
+def youtube_comment_request_defer(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        f"/openclaw/youtube-comment-requests/{args.request_id}/defer",
+        json={
+            "reason": args.reason,
+            "release_id": args.release_id,
+            "idempotency_key": args.idempotency_key or f"{args.request_id}:defer:{args.reason[:40]}",
+        },
+    )
+
+
+def youtube_comment_request_requeue(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        f"/openclaw/youtube-comment-requests/{args.request_id}/requeue",
+    )
+
+
+def prioritize_youtube_comment_request(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    return request_json(
+        client,
+        "POST",
+        f"/openclaw/releases/{args.release_id}/prioritize-request",
+        headers={"Idempotency-Key": args.idempotency_key or f"{args.release_id}:prioritize-request"},
+    )
 
 
 def youtube_status(client: httpx.Client, _args: argparse.Namespace) -> dict[str, Any]:
@@ -2743,6 +2915,10 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
         len(audio_paths),
         exclude_styles=getattr(args, "exclude_style", []) or [],
     )
+    bulsong_source_maps = resolve_bulsong_source_maps(
+        len(audio_paths),
+        getattr(args, "bulsong_source_map_file", []) or [],
+    )
     youtube_channel_title = infer_youtube_channel_title(args)
     allow_cover_as_thumbnail = bool(args.allow_cover_as_thumbnail or is_bulsong_channel_title(youtube_channel_title))
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
@@ -2794,6 +2970,13 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
     if release["workspace_mode"] != "playlist":
         raise RuntimeError("auto-publish-playlist requires a Playlist Release, not a Single Release.")
     release_channel_title = release_youtube_channel_title(release, fallback=youtube_channel_title)
+    if is_bulsong_channel_title(release_channel_title) and any(
+        source_map is None for source_map in bulsong_source_maps
+    ):
+        print_quality_warning(
+            "One or more Bulsong audio tracks have no verified source map. "
+            "The app will record warnings and continue."
+        )
     still_image_render = should_use_still_image_render(args, release=release, channel_title=release_channel_title)
     video_render_source_mode = effective_video_render_source_mode(args, release=release, channel_title=release_channel_title)
     allow_cover_as_thumbnail = bool(allow_cover_as_thumbnail or is_bulsong_channel_title(release_channel_title))
@@ -2849,12 +3032,13 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
 
     uploaded_tracks = []
     failed_uploads: list[dict[str, str]] = []
-    for audio_path, track_title, lyrics, style, exclude_style in zip(
+    for audio_path, track_title, lyrics, style, exclude_style, bulsong_source_map in zip(
         audio_paths,
         display_titles,
         lyrics_items,
         style_items,
         exclude_style_items,
+        bulsong_source_maps,
     ):
         try:
             track = upload_audio_file_to_release(
@@ -2867,6 +3051,7 @@ def auto_publish_playlist(client: httpx.Client, args: argparse.Namespace) -> dic
                 lyrics=lyrics,
                 style=style,
                 exclude_style=exclude_style,
+                bulsong_source_map=bulsong_source_map,
                 cover_path=None,
                 dispatch_review=False,
             )
@@ -3100,6 +3285,10 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
         len(audio_paths),
         exclude_styles=getattr(args, "exclude_style", []) or [],
     )
+    bulsong_source_maps = resolve_bulsong_source_maps(
+        len(audio_paths),
+        getattr(args, "bulsong_source_map_file", []) or [],
+    )
     youtube_channel_title = infer_youtube_channel_title(args)
     allow_cover_as_thumbnail = bool(args.allow_cover_as_thumbnail or is_bulsong_channel_title(youtube_channel_title))
     if not cover_path and not args.release_id and not args.allow_generated_draft_cover:
@@ -3147,6 +3336,13 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
     if release["workspace_mode"] != "single_track_video":
         raise RuntimeError("auto-publish-single requires a Single Release, not a Playlist Release.")
     release_channel_title = release_youtube_channel_title(release, fallback=youtube_channel_title)
+    if is_bulsong_channel_title(release_channel_title) and any(
+        source_map is None for source_map in bulsong_source_maps
+    ):
+        print_quality_warning(
+            "One or more Bulsong audio tracks have no verified source map. "
+            "The app will record warnings and continue."
+        )
     still_image_render = should_use_still_image_render(args, release=release, channel_title=release_channel_title)
     video_render_source_mode = effective_video_render_source_mode(args, release=release, channel_title=release_channel_title)
     allow_cover_as_thumbnail = bool(allow_cover_as_thumbnail or is_bulsong_channel_title(release_channel_title))
@@ -3204,12 +3400,13 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
             )
 
     uploaded_tracks = []
-    for audio_path, track_title, lyrics, style, exclude_style in zip(
+    for audio_path, track_title, lyrics, style, exclude_style, bulsong_source_map in zip(
         audio_paths,
         track_titles,
         lyrics_items,
         style_items,
         exclude_style_items,
+        bulsong_source_maps,
     ):
         try:
             track = upload_audio_file_to_release(
@@ -3222,6 +3419,7 @@ def auto_publish_single(client: httpx.Client, args: argparse.Namespace) -> dict[
                 lyrics=lyrics,
                 style=style,
                 exclude_style=exclude_style,
+                bulsong_source_map=bulsong_source_map,
                 cover_path=None,
                 dispatch_review=False,
             )
@@ -3698,7 +3896,9 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
             "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic orchestra, movie OST, film score, trailer, final battle scene, orchestral battle, emotional film score, mystery-tension, dark fantasy, sci-fi, heroic, premium game orchestra, anime action-RPG OST, cinematic game score, gentle game orchestra, sweet fantasy game score, or lyrical game-focus scene music. Do not treat the channel as only huge epic battle music. Do not use juvenile game-menu title wording such as Boss BGM, Final Boss Music, Final Boss Focus Music, 보스, 보스전, or bare BGM. Rotate among varied cinematic and game-score title lanes such as final battle, dark fantasy, heroic trailer, emotional score, sci-fi action, mystery tension, grand journey, orchestral battle, writing music, movie OST focus, gentle game orchestra, lyrical fantasy RPG score, bittersweet anime action-RPG OST, and soft/sweet game orchestra; examples are style references, not fixed templates to repeat. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. Club Bloom titles must put the exact genre, subgenre, or genre fusion immediately after [playlist] using mainstream mix language such as Progressive Trance x EDM Mix, Tech House Workout Mix, Hype Trap x EDM Mix, Melodic Techno Night Drive, Bass House Club Mix, or Festival EDM Mix; put only one or two public use cases after the separator and avoid awkward lists like Progressive Trance for Night Roads, Gaming Focus and Club Drive. "
             "For BibliaCanto scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament scripture-inspired music from Matthew onward. New Testament scripture releases now upload to BibliaCanto too, not 불송. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent modern lane, rotating across uploads; lanes can include scripture hip-hop, Bible R&B, K-pop-inspired scripture pop, scripture rap-pop, trap-soul scripture songs, boom-bap Bible rap, alt-R&B scripture songs, neo-soul scripture songs, Afropop/Amapiano-pop scripture songs, dark street-pop scripture, or synth-pop scripture songs. Never position BibliaCanto as Gospel music, worship, holy worship, church choir, hymns, praise band, CCM, congregational music, or prayer-ballad worship. "
-            "For 불송 releases, write Korean default metadata and treat the Buddhist source/theme only as internal lyric inspiration and app metadata unless the human explicitly asks for a legacy/source-explicit public package. New default public titles, descriptions, tags, covers, thumbnails, and visible image text should avoid overt Buddhist vocabulary and source names such as 불교, 불경, 법구경, 금강경, 반야심경, 법화경, 부처, 자비, 가르침, 무상, 무아, 팔정도, 정어, other Eightfold Path terms, Dharma, Dhammapada, Heart Sutra, Diamond Sutra, or Buddhist. Use mainstream song-first Korean wording that names the real lane and a broad emotional/listening promise, such as 힙합, 랩, R&B, 소울, 트립합, 아트팝, or 노래. Korean/default titles should not waste title space on redundant language labels such as 한국어 랩 or 한국어 힙합. Do not relabel an already-rendered source-explicit or Dharma-pop 불송 video as a different lane if the audio or burned-in visual text says otherwise; keep metadata truthful to the finished video. Already-uploaded/source-explicit 불송 videos belong in the YouTube playlist 불송; new mainstream 불송 videos belong in 노래. Avoid trot, ppongjjak, old Korean cabaret-pop, trot vocal ornaments, and accordion/brass trot cliches unless the human explicitly asks for that sound. "
+            "For 불송 releases, the Buddhist scripture teaching is mandatory semantic content, not optional mood inspiration. Every song should have an internally verified source-to-lyric mapping and preserve the teaching in ordinary Korean actions, choices, consequences, and emotion. Avoiding words such as 불교, 불경, 법구경, 금강경, 반야심경, 부처, 자비, 번뇌, 업, 무상, 수행, Dharma, or Buddhist is a lexical rule only; do not flatten the result into generic comfort or breakup lyrics. Public metadata remains mainstream and song-first unless the human requests source-explicit packaging. Already-uploaded/source-explicit videos belong in 불송; new mainstream videos belong in 노래. Avoid trot, ppongjjak, old Korean cabaret-pop, trot vocal ornaments, and accordion/brass trot cliches unless explicitly requested. "
+            "For 불송 Korean/default titles, lead with a short colloquial emotion or situation hook and follow with a familiar listening phrase or broad genre. Never use 한글 자막. Do not waste the title on language or specialist catalog labels such as 한국어, Korean, Korean vocal, UK Garage, Korean UK Garage, or 2-step unless the human explicitly requests them. Keep truthful narrow genre details in the description and tags. Prefer natural shapes such as '[playlist] 이제 진짜 안 돌아봐 | 새벽 귀가길 감성 R&B'. "
+            "Every 불송 title should use current Korean YouTube market research in title_market_research: at least 3 relevant queries, 8 recently active comparable video titles/URLs, checked_at, observed structures, overused phrases, a last-10-own-title comparison, and the original-title rationale. Use patterns without copying wording, rotate hook forms, and never claim a trend from memory. If research is absent, use best judgment and continue; the app records a warning instead of blocking. UK Garage and 게러지 are prohibited in the Korean title; keep them in description/tags only. "
             "Use each track's style and exclude_style fields as Suno generation context for later thumbnails, loop video or still-image visual, and metadata. "
             "Write tags as comma-separated plain tags without # symbols, and never use AI/process/tool tags such as AIMusic, AI music, AI generated, AI visualizer, Suno, OpenClaw, or Codex. "
             "For Tokyo/J-pop/Japan, HaruHaru/K-pop/Korean pop, Cinematic Pulse/game-anime/movie OST, Club Bloom/EDM, BibliaCanto/Bible scripture, 불송/internal Buddhist-source Korean vocal, sundaze/English-American pop playlist, and Solwave/Latin/Spanish pop releases, write Korean, Japanese, English, Spanish, Vietnamese, Thai, Hindi, Filipino, Indonesian, Turkish, Brazilian Portuguese, European Portuguese, French, German, Arabic suitable for Arabic/Egyptian audiences, Simplified Chinese, and Traditional Chinese title/description versions and pass them to approve-metadata. "
@@ -3893,6 +4093,26 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
     if not tags:
         raise RuntimeError("--tags is required as a comma-separated string.")
     localizations = metadata_localizations_from_args(args, title=title, description=description)
+    title_market_research = None
+    if getattr(args, "title_market_research_file", ""):
+        research_path = Path(args.title_market_research_file).expanduser().resolve()
+        if not research_path.exists() or not research_path.is_file():
+            print_quality_warning(
+                f"Title market research file does not exist: {research_path}. Continuing without it."
+            )
+        else:
+            try:
+                title_market_research = json.loads(research_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                print_quality_warning(
+                    f"Title market research is not valid JSON: {research_path}: {exc}. "
+                    "Continuing without it."
+                )
+            if title_market_research is not None and not isinstance(title_market_research, dict):
+                print_quality_warning(
+                    "Title market research is not one JSON object. Continuing without it."
+                )
+                title_market_research = None
     release = request_json(
         client,
         "POST",
@@ -3904,6 +4124,7 @@ def approve_metadata(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "tags": tags,
             "default_language": getattr(args, "default_language", "") or "ko",
             "localizations": localizations,
+            "title_market_research": title_market_research,
             "note": args.note or "Metadata approved from OpenClaw.",
         },
     )
@@ -3950,7 +4171,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Use single for one standalone song candidate set, or playlist for a multi-song mix.",
     )
-    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 3600 seconds for BibliaCanto/불송. Ignored for single releases.")
+    create_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: 3600 seconds for known vocal channels, 600 seconds for instrumental channels. Ignored for single releases.")
     create_parser.add_argument("--description", default="", help="Short concept description for the release.")
     create_parser.add_argument("--youtube-channel-title", default="", help="Target connected YouTube channel title for backlog accounting.")
     create_parser.add_argument(
@@ -3958,6 +4179,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[SOFT_HOUR_CLASSIC_PIANO_LANE, SOFT_HOUR_ANIME_GAME_OST_LANE],
         default="",
         help="Soft Hour 50:50 lane selected by the soft-hour-lane command.",
+    )
+    create_parser.add_argument(
+        "--cinematic-pulse-lane",
+        choices=["orchestra", "cute_game"],
+        default="",
+        help="Required lane for Cinematic Pulse: orchestra publishes at 07:00 KST and cute_game at 19:00 KST.",
     )
     create_parser.set_defaults(func=create_release)
 
@@ -3996,6 +4223,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Track status filter. Default: approved.",
     )
     search_tracks_parser.add_argument("--user-rating", default="", help="Optional user rating filter: like, dislike, or none.")
+    search_tracks_parser.add_argument(
+        "--exclude-single-uploaded",
+        action="store_true",
+        help="Exclude tracks already marked as uploaded as standalone YouTube singles.",
+    )
     search_tracks_parser.add_argument("--limit", type=int, default=20, help="Maximum tracks to return.")
     search_tracks_parser.add_argument("--min-track-seconds", type=int, default=0, help="Optional minimum duration filter. Default: 0, show existing tracks even when they are short.")
     search_tracks_parser.add_argument("--allow-short-track", action="store_true", help="Ignore --min-track-seconds and show short tracks.")
@@ -4004,11 +4236,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     reuse_track_parser = subparsers.add_parser(
         "reuse-track",
-        help="Attach one or more existing approved tracks to a Playlist Release.",
+        help="Attach existing approved track(s) to a Playlist Release, or one existing approved track to a Single Release.",
     )
-    reuse_track_parser.add_argument("--release-id", default="", help="Existing Playlist Release id.")
-    reuse_track_parser.add_argument("--release-title", default="", help="Existing Playlist Release title.")
-    reuse_track_parser.add_argument("--track-id", action="append", required=True, help="Existing track id to attach. Repeat in final playlist order.")
+    reuse_track_parser.add_argument("--release-id", default="", help="Existing Playlist or Single Release id.")
+    reuse_track_parser.add_argument("--release-title", default="", help="Existing Playlist or Single Release title.")
+    reuse_track_parser.add_argument("--track-id", action="append", required=True, help="Existing track id to attach. Repeat for playlist order; use exactly one for Single Release.")
     reuse_track_parser.add_argument("--actor", default="openclaw:reuse-track", help="Actor name recorded in histories.")
     reuse_track_parser.set_defaults(func=reuse_track)
 
@@ -4021,6 +4253,7 @@ def build_parser() -> argparse.ArgumentParser:
     audio_parser.add_argument("--tags", default="", help="Comma-separated tags.")
     audio_parser.add_argument("--lyrics", default="", help="Optional lyrics or content notes for this audio. Empty is allowed.")
     audio_parser.add_argument("--lyrics-file", default="", help="Optional UTF-8 text file containing lyrics or content notes.")
+    audio_parser.add_argument("--bulsong-source-map-file", default="", help="Recommended JSON source-to-lyric map for a Bulsong track. Missing or invalid maps are logged as warnings and do not block upload.")
     audio_parser.add_argument("--cover", default="", help="Optional cover image file to upload with this audio.")
     audio_parser.add_argument("--new-single", action="store_true", help="Create a new Single Release from this audio.")
     audio_parser.add_argument("--release-id", default="", help="Existing release id.")
@@ -4048,6 +4281,7 @@ def build_parser() -> argparse.ArgumentParser:
     candidates_parser.add_argument("--tags", default="", help="Comma-separated tags shared by the candidates.")
     candidates_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     candidates_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
+    candidates_parser.add_argument("--bulsong-source-map-file", action="append", default=[], help="Recommended Bulsong source-map JSON file. Repeat once per --audio, or provide one shared file; missing maps only warn.")
     candidates_parser.set_defaults(func=upload_single_candidates)
 
     auto_playlist_parser = subparsers.add_parser(
@@ -4074,7 +4308,8 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_playlist_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_playlist_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
-    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: auto by channel: 600 seconds for normal channels, 3600 seconds for BibliaCanto/불송.")
+    auto_playlist_parser.add_argument("--bulsong-source-map-file", action="append", default=[], help="Recommended Bulsong source-map JSON file. Repeat once per --audio; missing maps are recorded as warnings without stopping automation.")
+    auto_playlist_parser.add_argument("--target-seconds", type=int, default=0, help="Playlist target duration. Default: 3600 seconds for known vocal channels, 600 seconds for instrumental channels.")
     auto_playlist_parser.add_argument("--min-track-seconds", type=int, default=DEFAULT_MIN_PLAYLIST_TRACK_SECONDS, help="Minimum allowed duration for each playlist track. Default: 60 seconds.")
     auto_playlist_parser.add_argument("--max-track-seconds", type=int, default=DEFAULT_MAX_PLAYLIST_TRACK_SECONDS, help="Maximum allowed duration for each playlist track. Default: 0, no maximum.")
     auto_playlist_parser.add_argument("--allow-short-track", action="store_true", help="Allow playlist tracks shorter than --min-track-seconds. Use only with explicit human approval.")
@@ -4090,7 +4325,7 @@ def build_parser() -> argparse.ArgumentParser:
     auto_playlist_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_playlist_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "mirror-bars", "calm-bars", "none"],
+        choices=["bars", "mirror-bars", "calm-bars", "club-floor-white", "club-floor-cyan", "club-floor-dual", "club-floor-amber", "club-floor-mirror", "club-crate-notes", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
@@ -4154,11 +4389,12 @@ def build_parser() -> argparse.ArgumentParser:
     auto_single_parser.add_argument("--tags", default="", help="Comma-separated tags shared by uploaded tracks.")
     auto_single_parser.add_argument("--lyrics", action="append", default=[], help="Optional lyrics/content notes. Repeat once per --audio, or provide one shared value.")
     auto_single_parser.add_argument("--lyrics-file", action="append", default=[], help="Optional UTF-8 lyrics file. Repeat once per --audio, or provide one shared file.")
+    auto_single_parser.add_argument("--bulsong-source-map-file", action="append", default=[], help="Recommended source-map JSON file for a Bulsong single; missing maps only warn.")
     auto_single_parser.add_argument("--youtube-channel-title", default="", help="Connected YouTube channel title. Default: inferred from release; J-pop/Tokyo uses Tokyo Daydream Radio, K-pop uses HaruHaru, playful Japanese game/anime OST and arcade/fantasy-game BGM use Cinematic Pulse as a former Storylight-style lane, cinematic orchestra/movie OST/film score/game orchestra/anime action-RPG OST uses Cinematic Pulse, no-vocal EDM/house/techno/trance club music uses Club Bloom, Old Testament and New Testament Bible scripture music use BibliaCanto, Korean vocal music with an internal Buddhist-source lyric plan uses 불송, English/American pop playlist lanes use sundaze, Latin/Spanish pop uses Solwave Radio, and solo-piano BGM uses Soft Hour Radio.")
     auto_single_parser.add_argument("--youtube-channel-id", default="", help="Optional explicit YouTube channel id. Overrides title lookup.")
     auto_single_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "mirror-bars", "calm-bars", "none"],
+        choices=["bars", "mirror-bars", "calm-bars", "club-floor-white", "club-floor-cyan", "club-floor-dual", "club-floor-amber", "club-floor-mirror", "club-crate-notes", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release; omitted fallback is bars. Use none for fastest render without spectrum overlay.",
     )
@@ -4250,7 +4486,7 @@ def build_parser() -> argparse.ArgumentParser:
     render_video_parser.add_argument("--allow-still-image-video", action="store_true", help="Allow rendering from the still cover image without a loop video. Use for HaruHaru/sundaze/Solwave Radio/Tokyo Daydream photorealistic hip-hop/R&B/Club Bloom/불송 still-image renders or a human-approved fallback.")
     render_video_parser.add_argument(
         "--video-spectrum-overlay-style",
-        choices=["bars", "mirror-bars", "calm-bars", "none"],
+        choices=["bars", "mirror-bars", "calm-bars", "club-floor-white", "club-floor-cyan", "club-floor-dual", "club-floor-amber", "club-floor-mirror", "club-crate-notes", "none"],
         default="bars",
         help="App-rendered audio visualizer preset. OpenClaw should choose this per release.",
     )
@@ -4360,6 +4596,7 @@ def build_parser() -> argparse.ArgumentParser:
     metadata_parser.add_argument("--zh-tw-description", default="", help="Traditional Chinese localized YouTube description. Prefer --zh-tw-description-file for multiline copy.")
     metadata_parser.add_argument("--zh-tw-description-file", default="", help="UTF-8 Traditional Chinese description file.")
     metadata_parser.add_argument("--default-language", default="ko", help="Default upload metadata language: ko, ja, en, es, vi, th, hi, fil, id, tr, pt-BR, pt-PT, fr, de, ar, zh-CN, or zh-TW.")
+    metadata_parser.add_argument("--title-market-research-file", default="", help="Recommended current YouTube title-research JSON for Bulsong metadata. Missing or invalid research only warns.")
     metadata_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in metadata approval history.")
     metadata_parser.add_argument("--note", default="", help="Optional approval note.")
     metadata_parser.set_defaults(func=approve_metadata)
@@ -4411,6 +4648,61 @@ def build_parser() -> argparse.ArgumentParser:
 
     backlog_status_parser = subparsers.add_parser("openclaw-backlog-status", help="Show app-side backlog scheduler evaluation.")
     backlog_status_parser.set_defaults(func=openclaw_backlog_status)
+
+    comment_requests_parser = subparsers.add_parser(
+        "youtube-comment-requests",
+        help="Sync and list eligible Club Bloom YouTube comment playlist requests.",
+    )
+    comment_requests_parser.add_argument("--channel", default="Club Bloom")
+    comment_requests_parser.add_argument("--status", default="queued")
+    comment_requests_parser.add_argument("--limit", type=int, default=1)
+    comment_requests_parser.add_argument("--no-sync", action="store_true")
+    comment_requests_parser.set_defaults(func=youtube_comment_requests)
+
+    comment_claim_parser = subparsers.add_parser(
+        "youtube-comment-request-claim",
+        help="Atomically claim one Club Bloom comment request for this OpenClaw run.",
+    )
+    comment_claim_parser.add_argument("--request-id", required=True)
+    comment_claim_parser.add_argument("--owner", default="openclaw")
+    comment_claim_parser.add_argument("--run-id", required=True)
+    comment_claim_parser.set_defaults(func=youtube_comment_request_claim)
+
+    comment_complete_parser = subparsers.add_parser(
+        "youtube-comment-request-complete",
+        help="Attach a claimed Club Bloom comment request to its release.",
+    )
+    comment_complete_parser.add_argument("--request-id", required=True)
+    comment_complete_parser.add_argument("--release-id", required=True)
+    comment_complete_parser.add_argument("--run-id", default="")
+    comment_complete_parser.add_argument("--scheduled-publish-at", default="")
+    comment_complete_parser.add_argument("--idempotency-key", default="")
+    comment_complete_parser.set_defaults(func=youtube_comment_request_complete)
+
+    comment_defer_parser = subparsers.add_parser(
+        "youtube-comment-request-defer",
+        help="Release a failed Club Bloom comment request claim for a later retry.",
+    )
+    comment_defer_parser.add_argument("--request-id", required=True)
+    comment_defer_parser.add_argument("--reason", required=True)
+    comment_defer_parser.add_argument("--release-id", default="")
+    comment_defer_parser.add_argument("--idempotency-key", default="")
+    comment_defer_parser.set_defaults(func=youtube_comment_request_defer)
+
+    comment_requeue_parser = subparsers.add_parser(
+        "youtube-comment-request-requeue",
+        help="Requeue a deferred Club Bloom request at the FIFO tail.",
+    )
+    comment_requeue_parser.add_argument("--request-id", required=True)
+    comment_requeue_parser.set_defaults(func=youtube_comment_request_requeue)
+
+    comment_prioritize_parser = subparsers.add_parser(
+        "youtube-comment-request-prioritize",
+        help="Insert a publish-ready Club Bloom request release ahead of normal scheduled releases.",
+    )
+    comment_prioritize_parser.add_argument("--release-id", required=True)
+    comment_prioritize_parser.add_argument("--idempotency-key", default="")
+    comment_prioritize_parser.set_defaults(func=prioritize_youtube_comment_request)
 
     scripture_status_parser = subparsers.add_parser("openclaw-scripture-status", help="Show app-side BibliaCanto scripture sequence state.")
     scripture_status_parser.set_defaults(func=openclaw_scripture_status)

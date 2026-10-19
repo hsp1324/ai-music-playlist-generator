@@ -22,6 +22,7 @@ class PlaylistWorkspaceCreateRequest(BaseModel):
     dreamina_prompt: str | None = None
     target_youtube_channel_title: str | None = None
     soft_hour_lane: str | None = None
+    cinematic_pulse_lane: str | None = None
 
 
 class PlaylistPublishApproveRequest(BaseModel):
@@ -65,6 +66,7 @@ class PlaylistMetadataApproveRequest(BaseModel):
     description: str | None = None
     tags: list[str] | str | None = None
     localizations: dict[str, dict[str, str]] | None = None
+    title_market_research: dict[str, Any] | None = None
     default_language: str = "ko"
     note: str | None = None
 
@@ -189,6 +191,7 @@ class PlaylistWorkspaceRead(BaseModel):
     youtube_default_language: str = "ko"
     metadata_provider: str | None = None
     metadata_generation_error: str | None = None
+    bulsong_quality_warnings: list[dict[str, Any]] = Field(default_factory=list)
     rendered_timeline: list[dict[str, Any]] = Field(default_factory=list)
     rendered_track_ids: list[str] = Field(default_factory=list)
     rendered_duration_seconds: int | None = None
@@ -197,6 +200,7 @@ class PlaylistWorkspaceRead(BaseModel):
     youtube_channel_title: str | None = None
     target_youtube_channel_title: str | None = None
     soft_hour_lane: str | None = None
+    cinematic_pulse_lane: str | None = None
     youtube_scheduled_publish_at: datetime | None = None
     youtube_published_at: datetime | None = None
     note: str | None = None

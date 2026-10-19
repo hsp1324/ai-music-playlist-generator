@@ -7,12 +7,17 @@ from PIL import Image, ImageDraw
 from app.config import Settings
 from app.models.track import Track
 from app.services.playlist_builder import (
+    AudioStreamProfile,
     FFMpegPlaylistBuilder,
     SPECTRUM_OVERLAY_HEIGHT,
     SPECTRUM_OVERLAY_WIDTH,
     YOUTUBE_STILL_IMAGE_FILTER,
 )
-from app.utils.video_render_policy import apply_video_spectrum_channel_policy, resolve_final_video_repeat_count
+from app.utils.video_render_policy import (
+    apply_video_spectrum_channel_policy,
+    infer_cinematic_pulse_lane,
+    resolve_final_video_repeat_count,
+)
 
 
 def test_build_video_normalizes_uploaded_cover_to_youtube_frame(tmp_path) -> None:
@@ -321,6 +326,42 @@ def test_build_audio_rejects_unreadable_source_file(tmp_path) -> None:
     assert not output_path.exists()
 
 
+def test_build_audio_can_use_persisted_upload_durations_without_reprobing_sources(tmp_path, monkeypatch) -> None:
+    audio_path = tmp_path / "stored-upload.mp3"
+    output_path = tmp_path / "release.mp3"
+    audio_path.write_bytes(b"uploaded-audio")
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+
+    monkeypatch.setattr(
+        builder,
+        "_decode_media_duration",
+        lambda _path: (_ for _ in ()).throw(AssertionError("source decode should be skipped")),
+    )
+    monkeypatch.setattr(
+        builder,
+        "_stream_copy_audio_paths",
+        lambda _paths: (_ for _ in ()).throw(AssertionError("stream profile probe should be skipped")),
+    )
+    monkeypatch.setattr(builder, "_probe_media_duration", lambda path: 120.0 if path == output_path else 0.0)
+
+    commands = []
+
+    def fake_run(command, *, output_path, **_kwargs):
+        commands.append(command)
+        output_path.write_bytes(b"rendered-audio")
+
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder.build_audio(
+        [Track(title="Stored Upload", duration_seconds=120, audio_path=str(audio_path))],
+        output_path,
+        verify_source_duration=False,
+    )
+
+    assert output_path.read_bytes() == b"rendered-audio"
+    assert commands[0][commands[0].index("-c:a") + 1] == "copy"
+
+
 def test_spectrum_edge_fade_softens_linear_overlay_edges(tmp_path) -> None:
     builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
     image = Image.new("RGBA", (SPECTRUM_OVERLAY_WIDTH, SPECTRUM_OVERLAY_HEIGHT), (255, 255, 255, 200))
@@ -349,17 +390,94 @@ def test_removed_dot_visualizer_aliases_fall_back_to_bars(tmp_path) -> None:
     assert builder._normalize_spectrum_overlay_style("pulse") == "bars"
     assert builder._normalize_spectrum_overlay_style("calm") == "calm-bars"
     assert builder._normalize_spectrum_overlay_style("low-motion-bars") == "calm-bars"
+    assert builder._normalize_spectrum_overlay_style("club") == "club-floor-cyan"
+    assert builder._normalize_spectrum_overlay_style("club-mirror") == "club-floor-mirror"
+    assert builder._normalize_spectrum_overlay_style("club-radial") == "club-floor-white"
+    assert builder._normalize_spectrum_overlay_style("crate-notes") == "club-crate-notes"
+    assert builder._normalize_spectrum_overlay_style("club-crate") == "club-crate-notes"
 
 
-def test_buddhist_channel_uses_low_motion_spectrum() -> None:
+@pytest.mark.parametrize(
+    ("requested_style", "channel_title"),
+    [
+        ("none", "BibliaCanto"),
+        ("calm-bars", "불송"),
+        ("mirror-bars", "Soft Hour Radio"),
+        ("bars", "HaruHaru"),
+    ],
+)
+def test_all_channels_use_haruharu_bar_spectrum(requested_style: str, channel_title: str) -> None:
     assert (
         apply_video_spectrum_channel_policy(
-            "bars",
-            {"target_youtube_channel_title": "불송"},
-            title="[playlist] 법구경 힙합",
+            requested_style,
+            {"target_youtube_channel_title": channel_title},
+            title="[playlist] Channel release",
         )
-        == "calm-bars"
+        == "bars"
     )
+
+
+@pytest.mark.parametrize(
+    ("requested_style", "expected_style"),
+    [
+        ("bars", "club-floor-cyan"),
+        ("club-neon", "club-floor-cyan"),
+        ("club-mirror", "club-floor-mirror"),
+        ("club-radial", "club-floor-white"),
+        ("club-floor-white", "club-floor-white"),
+        ("club-floor-dual", "club-floor-dual"),
+        ("club-floor-amber", "club-floor-amber"),
+        ("club-crate-notes", "club-crate-notes"),
+    ],
+)
+def test_club_bloom_uses_floor_spectrum(requested_style: str, expected_style: str) -> None:
+    assert (
+        apply_video_spectrum_channel_policy(
+            requested_style,
+            {"target_youtube_channel_title": "Club Bloom"},
+            title="[playlist] Bass House Club Mix",
+        )
+        == expected_style
+    )
+
+
+def test_club_crate_notes_builds_sample_four_editorial_filter(tmp_path) -> None:
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    commands: list[list[str]] = []
+    builder._run_ffmpeg_with_progress = lambda command, **_kwargs: commands.append(command)
+
+    builder._apply_club_crate_notes_overlay(
+        tmp_path / "base.mp4",
+        tmp_path / "audio.mp3",
+        tmp_path / "output.mp4",
+        frame_size=(1920, 1080),
+        total_duration_seconds=60,
+        progress_callback=None,
+    )
+
+    filter_complex = commands[0][commands[0].index("-filter_complex") + 1]
+    assert "hue=s=0.32" in filter_complex
+    assert "ARCHIVE / SELECTED CUTS" in filter_complex
+    assert "REVOLUTIONS / MIN" in filter_complex
+    assert "showfreqs=" in filter_complex
+    assert "0xE7533F" in filter_complex
+
+
+def test_cinematic_pulse_lane_prefers_explicit_value_and_classifies_titles() -> None:
+    channel_meta = {"target_youtube_channel_title": "Cinematic Pulse"}
+
+    assert infer_cinematic_pulse_lane(
+        {**channel_meta, "cinematic_pulse_lane": "orchestra"},
+        title="Cute game title should not override explicit lane",
+    ) == "orchestra"
+    assert infer_cinematic_pulse_lane(
+        channel_meta,
+        title="[playlist] Lyrical Chamber Orchestra with Woodwinds",
+    ) == "orchestra"
+    assert infer_cinematic_pulse_lane(
+        channel_meta,
+        title="[playlist] Cute Game BGM for an Item Shop",
+    ) == "cute_game"
 
 
 def test_spectrum_overlay_position_stays_bottom_right(tmp_path) -> None:
@@ -496,6 +614,175 @@ def test_build_audio_uses_decoded_duration_when_mp3_metadata_is_inaccurate(tmp_p
     assert captured["total_duration_seconds"] == 40.0
 
 
+def test_renderable_duration_is_cached_until_source_file_changes(tmp_path, monkeypatch) -> None:
+    audio_path = tmp_path / "vbr.mp3"
+    audio_path.write_bytes(b"first")
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    decoded_calls = []
+
+    def fake_decode(path):
+        decoded_calls.append(path)
+        return 20.0 + len(decoded_calls)
+
+    monkeypatch.setattr(builder, "_decode_media_duration", fake_decode)
+
+    assert builder.get_renderable_media_duration(audio_path) == 21.0
+    assert builder.get_renderable_media_duration(audio_path) == 21.0
+    assert len(decoded_calls) == 1
+
+    audio_path.write_bytes(b"second-version")
+    assert builder.get_renderable_media_duration(audio_path) == 22.0
+    assert len(decoded_calls) == 2
+
+
+def test_build_audio_stream_copies_compatible_mp3_sources(tmp_path, monkeypatch) -> None:
+    audio_paths = [tmp_path / "one.mp3", tmp_path / "two.mp3"]
+    for path in audio_paths:
+        path.write_bytes(b"fake-audio")
+    output_path = tmp_path / "release.mp3"
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    profile = AudioStreamProfile(codec_name="mp3", sample_rate=44100, channels=2)
+    captured = {}
+
+    monkeypatch.setattr(builder, "_probe_audio_stream_profile", lambda _path: profile)
+    monkeypatch.setattr(builder, "_probe_media_duration", lambda path: 20.0 if path == output_path else 10.0)
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        captured["command"] = command
+        output_path.write_bytes(b"stream-copy")
+
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder.build_audio(
+        [
+            Track(title="One", duration_seconds=10, audio_path=str(audio_paths[0])),
+            Track(title="Two", duration_seconds=10, audio_path=str(audio_paths[1])),
+        ],
+        output_path,
+    )
+
+    command = captured["command"]
+    assert command[command.index("-c:a") + 1] == "copy"
+
+
+def test_build_audio_normalizes_each_incompatible_source_once(tmp_path, monkeypatch) -> None:
+    source_48k = tmp_path / "source-48k.mp3"
+    source_44k = tmp_path / "source-44k.mp3"
+    source_48k.write_bytes(b"fake-48k")
+    source_44k.write_bytes(b"fake-44k")
+    output_path = tmp_path / "release.mp3"
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    profile_48k = AudioStreamProfile(codec_name="mp3", sample_rate=48000, channels=2)
+    profile_44k = AudioStreamProfile(codec_name="mp3", sample_rate=44100, channels=2)
+    normalized_path = tmp_path / "normalized-48k.mp3"
+    normalized_path.write_bytes(b"normalized")
+    normalize_calls = []
+    manifest_text = []
+
+    monkeypatch.setattr(
+        builder,
+        "_probe_audio_stream_profile",
+        lambda path: profile_48k if path == source_48k else profile_44k,
+    )
+    monkeypatch.setattr(builder, "_probe_media_duration", lambda path: 50.0 if path == output_path else 10.0)
+
+    def fake_normalize(path, target_profile):
+        normalize_calls.append((path, target_profile))
+        return normalized_path
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        manifest_path = Path(command[command.index("-i") + 1])
+        manifest_text.append(manifest_path.read_text(encoding="utf-8"))
+        output_path.write_bytes(b"stream-copy")
+
+    monkeypatch.setattr(builder, "_normalize_audio_source", fake_normalize)
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder.build_audio(
+        [
+            Track(title="48k A", duration_seconds=10, audio_path=str(source_48k)),
+            Track(title="44k", duration_seconds=10, audio_path=str(source_44k)),
+            Track(title="48k B", duration_seconds=10, audio_path=str(source_48k)),
+            Track(title="44k B", duration_seconds=10, audio_path=str(source_44k)),
+            Track(title="44k C", duration_seconds=10, audio_path=str(source_44k)),
+        ],
+        output_path,
+    )
+
+    assert normalize_calls == [(source_48k, profile_44k)]
+    assert manifest_text[0].count(str(normalized_path.resolve())) == 2
+    assert manifest_text[0].count(str(source_44k.resolve())) == 3
+
+
+def test_build_audio_falls_back_to_reencode_when_stream_copy_is_short(tmp_path, monkeypatch) -> None:
+    audio_path = tmp_path / "source.mp3"
+    audio_path.write_bytes(b"fake-audio")
+    output_path = tmp_path / "release.mp3"
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    profile = AudioStreamProfile(codec_name="mp3", sample_rate=44100, channels=2)
+    codecs = []
+
+    monkeypatch.setattr(builder, "_probe_audio_stream_profile", lambda _path: profile)
+
+    def fake_probe(path):
+        if path != output_path:
+            return 10.0
+        return 5.0 if len(codecs) == 1 else 10.0
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        codecs.append(command[command.index("-c:a") + 1])
+        output_path.write_bytes(b"rendered")
+
+    monkeypatch.setattr(builder, "_probe_media_duration", fake_probe)
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder.build_audio(
+        [Track(title="One", duration_seconds=10, audio_path=str(audio_path))],
+        output_path,
+    )
+
+    assert codecs == ["copy", "libmp3lame"]
+
+
+def test_build_audio_falls_back_to_reencode_when_normalization_fails(tmp_path, monkeypatch) -> None:
+    source_48k = tmp_path / "source-48k.mp3"
+    source_44k = tmp_path / "source-44k.mp3"
+    source_48k.write_bytes(b"fake-48k")
+    source_44k.write_bytes(b"fake-44k")
+    output_path = tmp_path / "release.mp3"
+    builder = FFMpegPlaylistBuilder(Settings(storage_root=tmp_path / "storage"))
+    profile_48k = AudioStreamProfile(codec_name="mp3", sample_rate=48000, channels=2)
+    profile_44k = AudioStreamProfile(codec_name="mp3", sample_rate=44100, channels=2)
+    captured = {}
+
+    monkeypatch.setattr(
+        builder,
+        "_probe_audio_stream_profile",
+        lambda path: profile_48k if path == source_48k else profile_44k,
+    )
+    monkeypatch.setattr(builder, "_probe_media_duration", lambda path: 30.0 if path == output_path else 10.0)
+    def fake_normalize(*_args):
+        raise RuntimeError("normalization failed")
+
+    def fake_run(command, *, output_path, total_duration_seconds, progress_callback=None, stage="video_render"):
+        captured["codec"] = command[command.index("-c:a") + 1]
+        output_path.write_bytes(b"reencoded")
+
+    monkeypatch.setattr(builder, "_normalize_audio_source", fake_normalize)
+    monkeypatch.setattr(builder, "_run_ffmpeg_with_progress", fake_run)
+
+    builder.build_audio(
+        [
+            Track(title="48k A", duration_seconds=10, audio_path=str(source_48k)),
+            Track(title="44k A", duration_seconds=10, audio_path=str(source_44k)),
+            Track(title="44k B", duration_seconds=10, audio_path=str(source_44k)),
+        ],
+        output_path,
+    )
+
+    assert captured["codec"] == "libmp3lame"
+
+
 def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> None:
     calls_path = tmp_path / "ffmpeg-calls.jsonl"
     concat_path = tmp_path / "concat-list.txt"
@@ -540,20 +827,25 @@ def test_build_looped_video_creates_forward_crossfade_loop_unit(tmp_path) -> Non
     assert len(calls) == 6
 
     normalize_filter = calls[0][calls[0].index("-vf") + 1]
-    assert "trim=duration=10" in normalize_filter
+    assert f"trim=duration={builder.settings.dreamina_video_duration_seconds:g}" in normalize_filter
+
+    source_seconds = builder.settings.dreamina_video_duration_seconds
+    transition_seconds = builder._resolve_loop_transition_seconds(source_seconds)
+    transition_offset = builder._format_seconds(source_seconds - transition_seconds)
+    body_duration = builder._format_seconds(source_seconds - (transition_seconds * 2))
 
     intro_call = calls[1]
-    assert intro_call[intro_call.index("-t") + 1] == "8.5"
+    assert intro_call[intro_call.index("-t") + 1] == transition_offset
 
     transition_call = calls[2]
     transition_filter = transition_call[transition_call.index("-filter_complex") + 1]
     assert "reverse" not in transition_filter
     assert "xfade=transition=fade:duration=1.5:offset=0" in transition_filter
-    assert transition_call[transition_call.index("-ss") + 1] == "8.5"
+    assert transition_call[transition_call.index("-ss") + 1] == transition_offset
 
     body_call = calls[3]
     assert body_call[body_call.index("-ss") + 1] == "1.5"
-    assert body_call[body_call.index("-t") + 1] == "7"
+    assert body_call[body_call.index("-t") + 1] == body_duration
 
     loop_unit_call = calls[4]
     loop_unit_filter = loop_unit_call[loop_unit_call.index("-filter_complex") + 1]

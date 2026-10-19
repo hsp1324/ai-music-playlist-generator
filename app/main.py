@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -32,6 +33,8 @@ def create_app() -> FastAPI:
     )
     app.state.settings = settings
     app.state.services = services
+    # Keep disk/network-heavy track intake from overwhelming this small VM.
+    app.state.track_media_limiter = asyncio.Semaphore(2)
 
     app.mount("/assets", StaticFiles(directory=static_dir), name="assets")
     app.mount("/media", StaticFiles(directory=settings.storage_root), name="media")

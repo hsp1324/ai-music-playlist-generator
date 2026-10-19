@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from app.config import Settings
 from app.models.playlist import Playlist
 from app.models.track import Track
-from app.utils.youtube_localizations import ensure_playlist_title_prefix
+from app.utils.youtube_localizations import ensure_playlist_title_prefix, single_release_youtube_title
 from app.utils.track_titles import clean_track_display_title, display_track_titles
 from app.utils.timeline import timeline_from_track_dicts
 from app.utils.youtube_tags import normalize_youtube_tags, sanitize_description_hashtags
@@ -43,7 +43,7 @@ class ReleaseMetadataService:
         if mode == "single_track_video" and tracks:
             track = tracks[0]
             release_title = playlist.title.strip() if len(tracks) > 1 else track.title
-            title = f"{release_title} | {self.settings.youtube_title_suffix}".strip(" |")
+            title = single_release_youtube_title(release_title)
             prompt_lines = [track.prompt for track in tracks if track.prompt]
             prompt_summary = " / ".join(prompt_lines[:2]) if prompt_lines else "N/A"
             description = "\n".join(
@@ -60,14 +60,20 @@ class ReleaseMetadataService:
                     self.settings.youtube_default_hashtags,
                 ]
             )
-            return YouTubeMetadata(
-                title=title[:100],
-                description=sanitize_description_hashtags(description),
-                tags=normalize_youtube_tags(tags or ["music", "visualizer", "electronic"]),
+            return self._apply_comment_request_attribution(
+                playlist,
+                YouTubeMetadata(
+                    title=title[:100],
+                    description=sanitize_description_hashtags(description),
+                    tags=normalize_youtube_tags(tags or ["music", "visualizer", "electronic"]),
+                ),
             )
 
         if self._is_cafe_piano_release(playlist, tracks, tags):
-            return self._build_cafe_piano_metadata(playlist, tracks)
+            return self._apply_comment_request_attribution(
+                playlist,
+                self._build_cafe_piano_metadata(playlist, tracks),
+            )
 
         track_titles = ", ".join(track.title for track in tracks[:6]) if tracks else playlist.title
         description = "\n".join(
@@ -83,10 +89,46 @@ class ReleaseMetadataService:
                 self.settings.youtube_default_hashtags,
             ]
         )
+        return self._apply_comment_request_attribution(
+            playlist,
+            YouTubeMetadata(
+                title=ensure_playlist_title_prefix(playlist.title, is_playlist=is_playlist_release),
+                description=sanitize_description_hashtags(description),
+                tags=normalize_youtube_tags(tags or ["music", "playlist", "background music"]),
+            ),
+        )
+
+    def _apply_comment_request_attribution(
+        self,
+        playlist: Playlist,
+        metadata: YouTubeMetadata,
+    ) -> YouTubeMetadata:
+        attribution = str((playlist.metadata_json or {}).get("youtube_comment_request_attribution") or "").strip()
+        korean_attribution = str(
+            (playlist.metadata_json or {}).get("youtube_comment_request_attribution_ko") or attribution
+        ).strip()
+        if not attribution:
+            return metadata
+        description = metadata.description.strip()
+        if not description.startswith(attribution):
+            description = f"{attribution}\n\n{description}" if description else attribution
+        localizations = {
+            key: dict(value)
+            for key, value in (metadata.localizations or {}).items()
+        }
+        for language, localized in localizations.items():
+            localized_description = str(localized.get("description") or "").strip()
+            localized_attribution = korean_attribution if str(language).lower().startswith("ko") else attribution
+            if localized_description and not localized_description.startswith(localized_attribution):
+                localized["description"] = f"{localized_attribution}\n\n{localized_description}"
         return YouTubeMetadata(
-            title=ensure_playlist_title_prefix(playlist.title, is_playlist=is_playlist_release),
-            description=sanitize_description_hashtags(description),
-            tags=normalize_youtube_tags(tags or ["music", "playlist", "background music"]),
+            title=metadata.title,
+            description=description,
+            tags=metadata.tags,
+            provider=metadata.provider,
+            error=metadata.error,
+            localizations=localizations,
+            default_language=metadata.default_language,
         )
 
     def _build_cafe_piano_metadata(self, playlist: Playlist, tracks: list[Track]) -> YouTubeMetadata:

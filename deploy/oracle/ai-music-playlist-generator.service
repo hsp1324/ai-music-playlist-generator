@@ -8,7 +8,7 @@ User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/ai-music-playlist-generator
 EnvironmentFile=/etc/ai-music-playlist-generator.env
-ExecStart=/bin/bash -lc 'source /opt/ai-music-playlist-generator/.venv/bin/activate && exec uv run uvicorn app.main:app --host 127.0.0.1 --port 8000'
+ExecStart=/opt/ai-music-playlist-generator/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --no-access-log --limit-concurrency 64 --backlog 512
 Restart=always
 RestartSec=5
 

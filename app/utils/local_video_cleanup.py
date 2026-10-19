@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.config import Settings
@@ -157,6 +157,26 @@ def _is_marked_deleted_video_path(meta: dict[str, Any], path: Path) -> bool:
     return str(path) == deleted_path
 
 
+def _uploaded_local_video_candidate_statement():
+    retained_path = Playlist.metadata_json["local_video_retained_after_youtube_upload"].as_string()
+    deleted_path = Playlist.metadata_json["local_video_deleted_after_youtube_upload"].as_string()
+    return (
+        select(Playlist)
+        .where(
+            Playlist.status == PlaylistStatus.uploaded,
+            Playlist.youtube_video_id.is_not(None),
+            or_(
+                Playlist.output_video_path.is_not(None),
+                and_(
+                    retained_path.is_not(None),
+                    or_(deleted_path.is_(None), deleted_path != retained_path),
+                ),
+            ),
+        )
+        .execution_options(yield_per=50)
+    )
+
+
 def collect_public_uploaded_local_video_candidates(
     db: Session,
     settings: Settings,
@@ -167,12 +187,7 @@ def collect_public_uploaded_local_video_candidates(
     retention_days = max(int(settings.local_video_cleanup_public_retention_days or 0), 0)
     retention = timedelta(days=retention_days)
     candidates: list[LocalVideoCandidate] = []
-    playlists = db.scalars(
-        select(Playlist).where(
-            Playlist.status == PlaylistStatus.uploaded,
-            Playlist.youtube_video_id.is_not(None),
-        )
-    ).all()
+    playlists = db.scalars(_uploaded_local_video_candidate_statement())
     seen_paths: set[Path] = set()
     for playlist in playlists:
         meta = dict(playlist.metadata_json or {})
@@ -215,12 +230,7 @@ def collect_emergency_uploaded_local_video_candidates(
     min_age_hours = max(float(settings.local_video_cleanup_emergency_min_uploaded_age_hours or 0), 0.0)
     min_age = timedelta(hours=min_age_hours)
     candidates: list[EmergencyLocalVideoCandidate] = []
-    playlists = db.scalars(
-        select(Playlist).where(
-            Playlist.status == PlaylistStatus.uploaded,
-            Playlist.youtube_video_id.is_not(None),
-        )
-    ).all()
+    playlists = db.scalars(_uploaded_local_video_candidate_statement())
     seen_paths: set[Path] = set()
     for playlist in playlists:
         meta = dict(playlist.metadata_json or {})

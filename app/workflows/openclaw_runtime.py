@@ -13,11 +13,21 @@ from sqlalchemy.orm import Session
 
 from app.models.enums import PlaylistStatus
 from app.models.playlist import Playlist
+from app.utils.video_render_policy import (
+    CINEMATIC_PULSE_CUTE_GAME_LANE,
+    CINEMATIC_PULSE_ORCHESTRA_LANE,
+    infer_cinematic_pulse_lane,
+)
 
 OPENCLAW_RUNTIME_STATE_FILE = "openclaw-runtime-state.json"
 OPENCLAW_AUTO_LOOP_STATE_FILE = "openclaw-auto-loop-state.json"
 EMPTY_DUPLICATE_SHELL_ARCHIVE_RETENTION_DAYS = 7
 OPENCLAW_BACKLOG_UPLOADED_LOOKBACK_DAYS = 1
+CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
+CINEMATIC_PULSE_REQUIRED_LANES = (
+    CINEMATIC_PULSE_ORCHESTRA_LANE,
+    CINEMATIC_PULSE_CUTE_GAME_LANE,
+)
 
 MANUAL_ONLY_CHANNEL_TITLES = {"MusicSun"}
 RETIRED_CHANNEL_TITLES = {"Signal Room Radio", "Signal Desk Radio", "Midnight Cue Radio", "AI썰전", "AnimeMix"}
@@ -759,6 +769,22 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
         }
         for title in channel_titles
     }
+    if CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE in channels:
+        channels[CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE]["backlog_lanes"] = {
+            lane: {
+                "count": 0,
+                "finishable": 0,
+                "deferred": 0,
+                "auth_blocked": 0,
+                "youtube_uploaded_count": 0,
+                "youtube_scheduled_public_count": 0,
+                "releases": [],
+                "target": target,
+                "maximum": maximum,
+                "schedule_local_time": "07:00" if lane == CINEMATIC_PULSE_ORCHESTRA_LANE else "19:00",
+            }
+            for lane in (*CINEMATIC_PULSE_REQUIRED_LANES, "unclassified")
+        }
     unknown_channel_releases: list[dict[str, Any]] = []
 
     now = _utcnow()
@@ -821,8 +847,16 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
         if uploaded_channel_title in channels and playlist.youtube_video_id and not _playlist_is_archived(
             dict(playlist.metadata_json or {})
         ):
+            uploaded_meta = dict(playlist.metadata_json or {})
             channels[uploaded_channel_title]["youtube_uploaded_count"] += 1
             scheduled_at = _playlist_scheduled_public_at(playlist, now=now)
+            cinematic_lane = infer_cinematic_pulse_lane(uploaded_meta, title=playlist.title)
+            if uploaded_channel_title == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE:
+                lane_key = cinematic_lane or "unclassified"
+                lane_payload = channels[uploaded_channel_title]["backlog_lanes"][lane_key]
+                lane_payload["youtube_uploaded_count"] += 1
+                if scheduled_at:
+                    lane_payload["youtube_scheduled_public_count"] += 1
             if scheduled_at:
                 channels[uploaded_channel_title]["youtube_scheduled_public_count"] += 1
                 scheduled_at_iso = scheduled_at.isoformat()
@@ -855,6 +889,9 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             unknown_channel_releases.append({**release_payload, "channel_title": channel_title or None})
             continue
         channel_status = channel_statuses.get(channel_title)
+        cinematic_lane = infer_cinematic_pulse_lane(meta, title=playlist.title)
+        if channel_title == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE:
+            release_payload["cinematic_pulse_lane"] = cinematic_lane
         failure_at = _parse_datetime(meta.get("youtube_upload_failed_at")) or playlist.updated_at
         auth_blocked = _youtube_upload_failure_needs_auth(
             meta,
@@ -863,26 +900,54 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
         )
         channels[channel_title]["count"] += 1
         channels[channel_title]["releases"].append(release_payload)
-        if _playlist_is_finishable(
+        is_finishable = _playlist_is_finishable(
             workflow_state,
             meta,
             channel_status=channel_status,
             failed_at=failure_at,
-        ):
+        )
+        is_deferred = _playlist_is_deferred(
+            workflow_state,
+            meta,
+            channel_status=channel_status,
+            failed_at=failure_at,
+        )
+        if is_finishable:
             channels[channel_title]["finishable"] += 1
-        if _playlist_is_deferred(
-            workflow_state,
-            meta,
-            channel_status=channel_status,
-            failed_at=failure_at,
-        ):
+        if is_deferred:
             channels[channel_title]["deferred"] += 1
         if auth_blocked:
             channels[channel_title]["auth_blocked"] += 1
+        if channel_title == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE:
+            lane_key = cinematic_lane or "unclassified"
+            lane_payload = channels[channel_title]["backlog_lanes"][lane_key]
+            lane_payload["count"] += 1
+            lane_payload["releases"].append(release_payload)
+            if is_finishable:
+                lane_payload["finishable"] += 1
+            if is_deferred:
+                lane_payload["deferred"] += 1
+            if auth_blocked:
+                lane_payload["auth_blocked"] += 1
 
     for title, dates in scheduled_local_dates.items():
         if title in channels:
             channels[title]["youtube_scheduled_public_local_dates"] = sorted(dates)
+
+    underfilled_backlog_lanes: list[dict[str, Any]] = []
+    cinematic_payload = channels.get(CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE) or {}
+    for lane in CINEMATIC_PULSE_REQUIRED_LANES:
+        lane_payload = (cinematic_payload.get("backlog_lanes") or {}).get(lane) or {}
+        if int(lane_payload.get("count") or 0) < target:
+            underfilled_backlog_lanes.append(
+                {
+                    "channel_title": CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE,
+                    "lane": lane,
+                    "count": int(lane_payload.get("count") or 0),
+                    "target": target,
+                    "schedule_local_time": lane_payload.get("schedule_local_time"),
+                }
+            )
 
     return {
         "channels": channels,
@@ -891,6 +956,7 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
         "active_channel_titles": channel_titles,
         "target_per_channel": target,
         "max_per_channel": maximum,
+        "underfilled_backlog_lanes": underfilled_backlog_lanes,
     }
 
 
@@ -961,8 +1027,17 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
     finishable_channels = [
         title for title, payload in channel_data.items() if int(payload.get("finishable") or 0) > 0
     ]
+    underfilled_backlog_lanes = list(summary.get("underfilled_backlog_lanes") or [])
     raw_underfilled_channels = [
-        title for title, payload in channel_data.items() if int(payload.get("count") or 0) < target
+        title
+        for title, payload in channel_data.items()
+        if (
+            int(payload.get("count") or 0) < target
+            or (
+                title == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE
+                and bool(underfilled_backlog_lanes)
+            )
+        )
     ]
     auth_blocked_channels = [
         title for title, payload in channel_data.items() if int(payload.get("auth_blocked") or 0) > 0
@@ -979,9 +1054,27 @@ def evaluate_openclaw_backlog_scheduler(db: Session, services) -> dict[str, Any]
         and int(payload.get("youtube_scheduled_public_count") or 0) == 0
         and int(payload.get("auth_blocked") or 0) <= 0
     ]
-    overfull_channels = [
-        title for title, payload in channel_data.items() if int(payload.get("count") or 0) >= maximum
-    ]
+    if CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE in channel_data:
+        cinematic_payload = channel_data[CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE]
+        lanes = cinematic_payload.get("backlog_lanes") or {}
+        if any(
+            int((lanes.get(lane) or {}).get("count") or 0) == 0
+            and int((lanes.get(lane) or {}).get("youtube_scheduled_public_count") or 0) == 0
+            and int((lanes.get(lane) or {}).get("auth_blocked") or 0) <= 0
+            for lane in CINEMATIC_PULSE_REQUIRED_LANES
+        ) and CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE not in zero_scheduled_public_channels:
+            zero_scheduled_public_channels.append(CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE)
+    overfull_channels = []
+    for title, payload in channel_data.items():
+        if title == CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE:
+            lanes = payload.get("backlog_lanes") or {}
+            if all(
+                int((lanes.get(lane) or {}).get("count") or 0) >= maximum
+                for lane in CINEMATIC_PULSE_REQUIRED_LANES
+            ):
+                overfull_channels.append(title)
+        elif int(payload.get("count") or 0) >= maximum:
+            overfull_channels.append(title)
     unacknowledged_request = openclaw_recent_request_without_acknowledgement(
         storage_root=settings.storage_root,
         cooldown_seconds=cooldown_seconds,

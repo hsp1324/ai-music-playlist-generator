@@ -34,9 +34,11 @@ from scripts.openclaw_release import (
     release_has_uploaded_thumbnail,
     release_youtube_channel_id,
     resolve_youtube_channel_id,
+    resolve_bulsong_source_maps,
     resolve_lyrics_items,
     resolve_exclude_style_items,
     resolve_style_items,
+    reuse_track,
     search_tracks,
     should_enable_lyrics_overlay_for_release,
     should_use_still_image_render,
@@ -841,6 +843,100 @@ def test_search_tracks_shows_under_one_minute_tracks_by_default() -> None:
     assert [track["id"] for track in result["tracks"]] == ["short-track"]
 
 
+def test_search_tracks_can_exclude_single_uploaded_tracks() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and request.url.path == "/api/tracks":
+            assert request.url.params.get("user_rating") == "like"
+            assert request.url.params.get("single_youtube_uploaded") == "false"
+            return httpx.Response(
+                200,
+                json=[
+                    {
+                        "id": "liked-not-single",
+                        "title": "Liked Song",
+                        "status": "approved",
+                        "duration_seconds": 210,
+                        "metadata_json": {"user_rating": "like"},
+                    }
+                ],
+            )
+        raise AssertionError(f"unexpected API request: {request.method} {request.url.path}")
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = search_tracks(
+        client,
+        SimpleNamespace(
+            q="",
+            status_filter="approved",
+            user_rating="like",
+            limit=20,
+            full=False,
+            min_track_seconds=0,
+            allow_short_track=False,
+            exclude_single_uploaded=True,
+        ),
+    )
+
+    assert result["tracks"][0]["id"] == "liked-not-single"
+    assert result["tracks"][0]["single_youtube_uploaded"] is False
+
+
+def test_reuse_track_can_attach_one_existing_track_to_single_release() -> None:
+    requested_paths = []
+
+    def release_payload() -> dict:
+        return {
+            "id": "single-release-1",
+            "title": "Liked Single",
+            "workspace_mode": "single_track_video",
+            "workflow_state": "collecting",
+            "tracks": [{"id": "liked-track-1"}],
+            "track_count": 1,
+            "actual_duration_seconds": 210,
+            "target_duration_seconds": 1,
+        }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requested_paths.append((request.method, request.url.path))
+        if request.method == "GET" and request.url.path == "/api/playlists/workspaces/single-release-1":
+            return httpx.Response(200, json=release_payload())
+        if request.method == "POST" and request.url.path == "/api/tracks/liked-track-1/decisions":
+            payload = json.loads(request.content.decode("utf-8"))
+            assert payload["playlist_id"] == "single-release-1"
+            assert payload["decision"] == "approve"
+            return httpx.Response(
+                200,
+                json={
+                    "id": "liked-track-1",
+                    "title": "Liked Track",
+                    "status": "approved",
+                    "duration_seconds": 210,
+                    "audio_path": "storage/tracks/liked.mp3",
+                    "metadata_json": {"user_rating": "like"},
+                },
+            )
+        raise AssertionError(f"unexpected API request: {request.method} {request.url.path}")
+
+    client = httpx.Client(base_url="http://test/api", transport=httpx.MockTransport(handler))
+    result = reuse_track(
+        client,
+        SimpleNamespace(
+            release_id="single-release-1",
+            release_title="",
+            track_id=["liked-track-1"],
+            actor="openclaw:liked-single",
+        ),
+    )
+
+    assert result["ok"] is True
+    assert result["release"]["workspace_mode"] == "single_track_video"
+    assert requested_paths == [
+        ("GET", "/api/playlists/workspaces/single-release-1"),
+        ("POST", "/api/tracks/liked-track-1/decisions"),
+        ("GET", "/api/playlists/workspaces/single-release-1"),
+    ]
+
+
 def test_resolve_youtube_channel_id_uses_signal_room_legacy_alias() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/api/youtube/status"
@@ -1025,6 +1121,7 @@ def test_create_release_persists_selected_soft_hour_lane() -> None:
             "dreamina_prompt": "",
             "target_youtube_channel_title": DEFAULT_YOUTUBE_CHANNEL_TITLE,
             "soft_hour_lane": SOFT_HOUR_ANIME_GAME_OST_LANE,
+            "cinematic_pulse_lane": None,
         }
     ]
     assert result["release"]["soft_hour_lane"] == SOFT_HOUR_ANIME_GAME_OST_LANE
@@ -1129,9 +1226,20 @@ def test_create_release_uses_channel_aware_playlist_target_defaults() -> None:
             youtube_channel_title=NEW_VERSE_YOUTUBE_CHANNEL_TITLE,
         ),
     )
+    create_release(
+        client,
+        SimpleNamespace(
+            release_title="K-pop Vocal Mix",
+            workspace_mode="playlist",
+            target_seconds=0,
+            description="All-new Korean vocal tracks.",
+            youtube_channel_title=HARUHARU_YOUTUBE_CHANNEL_TITLE,
+        ),
+    )
 
     assert captured_payloads[0]["target_duration_seconds"] == 600
     assert captured_payloads[1]["target_duration_seconds"] == 3600
+    assert captured_payloads[2]["target_duration_seconds"] == 3600
 
 
 def test_upload_single_candidates_can_target_existing_precreated_release(tmp_path) -> None:
@@ -1200,6 +1308,34 @@ def test_resolve_lyrics_items_allows_empty_shared_and_per_track(tmp_path) -> Non
 
     with pytest.raises(RuntimeError, match="exactly one per --audio"):
         resolve_lyrics_items(2, lyrics=["one", "two", "three"], lyrics_files=[])
+
+
+def test_resolve_bulsong_source_maps_warns_instead_of_blocking(tmp_path, capsys) -> None:
+    invalid_map = tmp_path / "invalid-source-map.json"
+    invalid_map.write_text("not-json", encoding="utf-8")
+
+    assert resolve_bulsong_source_maps(2, [str(invalid_map)]) == [None, None]
+    assert "WARNING:" in capsys.readouterr().err
+
+    valid_map = tmp_path / "valid-source-map.json"
+    valid_map.write_text(
+        json.dumps(
+            {
+                "source_name": "Dhammapada",
+                "source_section_or_reference": "anger teaching",
+                "core_teaching": "Do not continue harm.",
+                "ordinary_language_paraphrase": "Choose a gentler reply.",
+                "verse_hook_expression": "Stop before sending the sharp reply.",
+            }
+        ),
+        encoding="utf-8",
+    )
+    missing_map = tmp_path / "missing-source-map.json"
+
+    resolved = resolve_bulsong_source_maps(3, [str(valid_map), str(missing_map)])
+    assert resolved[0]["source_name"] == "Dhammapada"
+    assert resolved[1:] == [None, None]
+    assert "does not match the audio count" in capsys.readouterr().err
     assert infer_youtube_channel_title(
         _auto_publish_args(
             "/tmp/audio.mp3",

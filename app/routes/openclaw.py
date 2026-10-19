@@ -3,9 +3,10 @@ from __future__ import annotations
 import secrets
 import threading
 import time
+from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -29,6 +30,18 @@ from app.workflows.scripture_sequence import (
     fail_scripture_passage,
     reserve_scripture_passage,
     scripture_sequence_status,
+)
+from app.workflows.youtube_comment_requests import (
+    CLUB_BLOOM_CHANNEL_TITLE,
+    YouTubeCommentRequestError,
+    claim_comment_request,
+    complete_comment_request,
+    defer_comment_request,
+    list_comment_requests,
+    prioritize_comment_request_release,
+    requeue_comment_request,
+    serialize_comment_request,
+    sync_club_bloom_comment_requests,
 )
 
 router = APIRouter(prefix="/openclaw", tags=["openclaw"])
@@ -102,6 +115,24 @@ class OpenClawScriptureFailRequest(BaseModel):
     reason: str = ""
 
 
+class OpenClawYouTubeCommentClaimRequest(BaseModel):
+    owner: str = "openclaw"
+    run_id: str
+
+
+class OpenClawYouTubeCommentCompleteRequest(BaseModel):
+    release_id: str
+    provenance: dict = Field(default_factory=dict)
+    scheduled_publish_at: datetime | None = None
+    idempotency_key: str = ""
+
+
+class OpenClawYouTubeCommentDeferRequest(BaseModel):
+    reason: str
+    release_id: str = ""
+    idempotency_key: str = ""
+
+
 def get_services(request: Request) -> ServiceRegistry:
     return request.app.state.services
 
@@ -121,6 +152,17 @@ def _require_openclaw_token(services: ServiceRegistry, token: str) -> None:
     expected = services.settings.openclaw_shared_token.strip()
     if expected and not secrets.compare_digest(token, expected):
         raise HTTPException(status_code=403, detail="Invalid OpenClaw token.")
+
+
+def _require_comment_requests_enabled(services: ServiceRegistry) -> None:
+    if not services.settings.youtube_comment_requests_enabled:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "youtube_comment_requests_disabled",
+                "message": "The Club Bloom comment-request pilot is disabled.",
+            },
+        )
 
 
 def _record_release_channel_hint(db: Session, *, release_id: str, channel_title: str) -> bool:
@@ -221,6 +263,31 @@ def _record_release_scripture_hint(
 
 def _scripture_http_error(exc: ScriptureSequenceError) -> HTTPException:
     status_code = 409 if exc.code in {"passage_already_active", "next_block_missing"} else 400
+    return HTTPException(status_code=status_code, detail={"code": exc.code, "message": str(exc)})
+
+
+def _comment_request_http_error(exc: YouTubeCommentRequestError) -> HTTPException:
+    if exc.code in {"request_not_found", "release_not_found"}:
+        status_code = 404
+    elif exc.code in {
+        "request_not_claimable",
+        "request_not_claimed",
+        "request_completed",
+        "request_not_completed",
+        "release_channel_mismatch",
+        "release_not_publish_ready",
+        "schedule_slot_blocked",
+        "schedule_apply_partial",
+        "schedule_plan_required",
+        "earlier_request_pending",
+        "request_not_fifo",
+        "release_already_linked",
+        "request_not_deferred",
+        "request_mix_policy_failed",
+    }:
+        status_code = 409
+    else:
+        status_code = 400
     return HTTPException(status_code=status_code, detail={"code": exc.code, "message": str(exc)})
 
 
@@ -373,6 +440,167 @@ async def request_backlog(
     if not result.get("ok"):
         raise HTTPException(status_code=502, detail=result)
     return {"ok": True, "evaluation": evaluation, "slack": result}
+
+
+@router.get("/youtube-comment-requests")
+def youtube_comment_requests(
+    channel: str = Query(default=CLUB_BLOOM_CHANNEL_TITLE),
+    status: str = Query(default="queued"),
+    sync: bool = Query(default=True),
+    limit: int = Query(default=1, ge=1, le=100),
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    sync_result: dict = {"enabled": services.settings.youtube_comment_requests_enabled, "skipped": True}
+    if not services.settings.youtube_comment_requests_enabled:
+        return {
+            "ok": True,
+            "channel_title": CLUB_BLOOM_CHANNEL_TITLE,
+            "sync": sync_result,
+            "sync_error": None,
+            "requests": [],
+        }
+    sync_error = None
+    try:
+        if sync:
+            sync_result = sync_club_bloom_comment_requests(db, services)
+        requests = list_comment_requests(
+            db,
+            channel_title=channel,
+            status=status,
+            limit=min(limit, max(int(services.settings.youtube_comment_request_per_run_limit or 1), 1)),
+        )
+    except YouTubeCommentRequestError as exc:
+        raise _comment_request_http_error(exc) from exc
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        sync_error = str(exc)
+        try:
+            requests = list_comment_requests(
+                db,
+                channel_title=channel,
+                status=status,
+                limit=min(limit, max(int(services.settings.youtube_comment_request_per_run_limit or 1), 1)),
+            )
+        except YouTubeCommentRequestError as request_exc:
+            raise _comment_request_http_error(request_exc) from request_exc
+    return {
+        "ok": sync_error is None,
+        "channel_title": CLUB_BLOOM_CHANNEL_TITLE,
+        "sync": sync_result,
+        "sync_error": sync_error,
+        "requests": [serialize_comment_request(item) for item in requests],
+    }
+
+
+@router.post("/youtube-comment-requests/{request_id}/claim")
+def claim_youtube_comment_request(
+    request_id: str,
+    payload: OpenClawYouTubeCommentClaimRequest,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    _require_comment_requests_enabled(services)
+    try:
+        item = claim_comment_request(
+            db,
+            request_id=request_id,
+            owner=payload.owner,
+            run_id=payload.run_id,
+            lease_seconds=services.settings.youtube_comment_request_claim_lease_seconds,
+        )
+    except YouTubeCommentRequestError as exc:
+        raise _comment_request_http_error(exc) from exc
+    return {"ok": True, "request": serialize_comment_request(item)}
+
+
+@router.post("/youtube-comment-requests/{request_id}/complete")
+def complete_youtube_comment_request(
+    request_id: str,
+    payload: OpenClawYouTubeCommentCompleteRequest,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    _require_comment_requests_enabled(services)
+    try:
+        item = complete_comment_request(
+            db,
+            request_id=request_id,
+            release_id=payload.release_id,
+            provenance=payload.provenance,
+            scheduled_publish_at=payload.scheduled_publish_at,
+            idempotency_key=payload.idempotency_key,
+        )
+    except YouTubeCommentRequestError as exc:
+        raise _comment_request_http_error(exc) from exc
+    return {"ok": True, "request": serialize_comment_request(item)}
+
+
+@router.post("/youtube-comment-requests/{request_id}/defer")
+def defer_youtube_comment_request(
+    request_id: str,
+    payload: OpenClawYouTubeCommentDeferRequest,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    _require_comment_requests_enabled(services)
+    try:
+        item = defer_comment_request(
+            db,
+            request_id=request_id,
+            reason=payload.reason,
+            release_id=payload.release_id,
+            idempotency_key=payload.idempotency_key,
+        )
+    except YouTubeCommentRequestError as exc:
+        raise _comment_request_http_error(exc) from exc
+    return {"ok": True, "request": serialize_comment_request(item)}
+
+
+@router.post("/youtube-comment-requests/{request_id}/requeue")
+def requeue_youtube_comment_request(
+    request_id: str,
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    _require_comment_requests_enabled(services)
+    try:
+        item = requeue_comment_request(db, request_id=request_id)
+    except YouTubeCommentRequestError as exc:
+        raise _comment_request_http_error(exc) from exc
+    return {"ok": True, "request": serialize_comment_request(item)}
+
+
+@router.post("/releases/{release_id}/prioritize-request")
+def prioritize_youtube_comment_request_release(
+    release_id: str,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    db: Session = Depends(get_db),
+    services: ServiceRegistry = Depends(get_services),
+    token: str = Depends(_request_token),
+) -> dict:
+    _require_openclaw_token(services, token)
+    _require_comment_requests_enabled(services)
+    try:
+        result = prioritize_comment_request_release(
+            db,
+            services,
+            release_id=release_id,
+            idempotency_key=str(idempotency_key or ""),
+        )
+    except YouTubeCommentRequestError as exc:
+        raise _comment_request_http_error(exc) from exc
+    return {"ok": True, **result}
 
 
 @router.get("/scripture/status")

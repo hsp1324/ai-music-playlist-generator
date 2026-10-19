@@ -4,31 +4,40 @@ Use this after the selected channel is `Club Bloom`. This document decides the n
 
 ## Channel Promise
 
-Club Bloom is a no-vocal club music channel: instrumental EDM, house, techno, trance, club, workout, night-drive, gaming, festival, and party-energy releases.
+Club Bloom is a no-vocal DJ-culture and rhythm-led listening channel. It includes modern EDM, house, techno, trance, workout, night-drive, gaming, festival, and party releases, but it also includes tasteful 1990s/2000s DJ-crate music: Korean and global boom bap instrumentals, jazz-hop, trip-hop, downtempo breaks, acid jazz, rare groove, funk/soul breaks, disco/boogie, broken beat, chill breakbeat, instrumental neo-soul/R&B grooves, and turntablism-friendly beats.
 
 It fills the high-energy instrumental dance lane that is currently separate from sundaze pop, Tokyo J-pop, Solwave Latin pop, and HaruHaru K-pop.
 
-The audience should immediately understand: modern no-vocal dance music for movement, nightlife, gaming, workout, driving, and party warmup.
+The audience should immediately understand: curated instrumental music selected with a DJ's ear, ranging from a packed modern floor to a restrained record-bar or after-work vinyl session. Club Bloom must not feel trapped in peak-time club music.
 
-Titles should be broad dance/EDM packaging first, with the exact genre or subgenre visible immediately after `[playlist]`. Use clear YouTube mix language such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Workout Mix`, or `Bass Boosted EDM & Electro House Mix`. Add one or two public listening hooks after the separator, using natural phrasing such as `Heavy EDM for Gaming & Night Drive`, `Running Beats and Club Bass`, or `Night Drive & Gaming Club Music`. Do not list three awkward use cases as the main title, do not use abstract keyword tails like `Gaming Night & Workout Energy`, and do not make narrow scene names the title hook unless the scene is also a strong public search phrase.
+Titles must sound like a real curator wrote them, not like translated SEO fragments. Keep the truthful genre easy to find near the front, but natural phrasing wins over a rigid keyword template. Use one main mood or listening moment, not a chain of genre, location, activity, and emotion nouns. Modern dance releases can use clean phrases such as `Progressive Trance for the Night Drive` or `Tech House for a Late Workout`. Retro releases can use `90s Korean Boom Bap for the Ride Home`, `Jazz-Hop & Rare Groove for a Late-Night Record Bar`, or `Trip-Hop for Slow After-Hours`. Do not force `EDM`, club, workout, gaming, vinyl, or DJ keywords where they do not sound natural.
 
-Before finalizing metadata, check the main title and every localized title in its own language. If any language turns the hook into the equivalent of `게임 밤과 운동 에너지`, `밤길, 게임 집중, 클럽 드라이브`, or another awkward noun chain, rewrite it for that audience. Keep the genre clear and use a natural club-mix promise with one or two situations.
+Before finalizing metadata, read the main title and every localized title aloud in its own language. Each title must feel native, conversational, and immediately understandable without mentally translating it back to English. If a title becomes the equivalent of `퇴근 후 바이닐 세션`, `게임 밤과 운동 에너지`, `밤길, 게임 집중, 클럽 드라이브`, or another literal noun chain, discard it and write a new local title from the underlying mood. Do not translate the English word order, separator structure, idiom, or capitalization mechanically.
+
+Natural localization examples:
+
+- English: `[playlist] 90s Korean Boom Bap for the Ride Home`
+- Korean: `[playlist] 퇴근길에 듣는 90년대 한국 붐뱁`
+- English: `[playlist] Jazz-Hop & Rare Groove for a Late-Night Record Bar`
+- Korean: `[playlist] 늦은 밤 레코드 바에서 듣는 재즈힙합과 레어 그루브`
+
+These are tone references, not templates to repeat.
 
 ## Recent Release Check
 
 From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` releases and avoid repeating:
 
-- The same dance lane, such as house, future house, dance-pop, festival EDM, techno-pop, night drive, workout, or gaming mix.
+- The same lane, including modern house/techno/festival lanes and retro boom-bap/jazz-hop/trip-hop/rare-groove/disco crate lanes.
 - The same venue/performance setting, such as beach-club adult female DJ/BJ deck, rooftop skyline adult female DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, cyber club, gym event stage, highway/night-drive visual, or DJ booth.
 - The same energy curve, such as warmup, peak-time, late-night, workout sprint, or chill-house.
 - The same thumbnail phrase, such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, or `WORKOUT EDM`.
 - The same visual scene if used recently.
 
-If the latest Club Bloom release was generic neon club or night drive, choose a stronger venue-based adult female DJ/BJ performance setup next, such as beach club, rooftop skyline, concert/festival stage, warehouse rave, pool party, open-air stage, or cyber club.
+If recent releases are dominated by generic neon club, workout, or night-drive EDM, prioritize a musically credible retro record-bar, vinyl-room, listening-booth, late-night practice-room, or crate-digging concept next. If recent releases are mostly subdued retro selections, return to a modern dance floor lane.
 
-## Club Style Lanes
+## DJ Style Lanes
 
-Every Club Bloom playlist must choose one primary club style lane and stay inside that lane for the whole release. Do not make a generic all-purpose EDM playlist that mixes unrelated club subgenres. The visual concept, title, Suno style prompts, metadata, and thumbnail text should all match the selected lane.
+Every Club Bloom playlist must choose one primary lane and stay coherent. A focused house, techno, boom-bap, trip-hop, or rare-groove release should remain inside that lane. An explicitly planned DJ-crate journey may bridge adjacent styles such as boom bap, jazz-hop, soul breaks, and trip-hop, but the transitions, tempo range, instruments, title, and visual concept must make it feel like one intentional set rather than random genre dumping.
 
 Good style lanes:
 
@@ -49,6 +58,14 @@ Good style lanes:
 - Synthwave club: retro neon arps, driving electronic drums, night-drive energy.
 - Workout EDM: punchy instrumental club tracks optimized for running, gym, cycling, or sprint sets.
 - Gaming dance mix: cyber/neon instrumental club music for arcade, racing, FPS, or fast focus.
+- 1990s/2000s Korean DJ crate: dry boom-bap drums, warm Rhodes, upright/electric bass, jazzy samples recreated with original instrumentation, scratch-friendly breaks, late-night practice-room feeling.
+- Golden-age boom bap / jazz-hop: dusty-feeling drums without artificial vinyl noise, jazz harmony, soul bass, chopped-style original instrumental phrases, head-nod pacing.
+- Trip-hop / downtempo: spacious breakbeats, dubby low end, noir keys, restrained cinematic texture, after-hours listening.
+- Rare groove / funk / soul breaks: live-feeling drums, bass pocket, clavinet, brass or guitar accents, record-bar warmth.
+- Disco / boogie / early house roots: bass guitar, syncopated rhythm guitar, analog-style keys, elegant dance energy rather than festival drops.
+- Broken beat / acid jazz / future jazz: off-grid drums, jazz chords, live bass, sophisticated lounge-to-dance-floor motion.
+- Y2K instrumental R&B / neo-soul: smooth drum programming, Rhodes, melodic bass, understated DJ-set transitions, no sung or chopped vocal hooks.
+- Chill breakbeat / turntablism beats: rhythmic cuts, original instrumental phrases, dynamic deck-friendly sections, no producer tags or voice samples.
 
 ## Music Direction
 
@@ -58,14 +75,14 @@ Good style lanes:
 - Use bracketed instrumental arrangement cues only, for example `[Intro: kick and filtered bass]`, `[Build: rising synth arp]`, `[Drop: no-vocal bass house groove]`, `[Breakdown: pads and drums only]`.
 - If the human asks for vocal dance-pop, route it to sundaze, HaruHaru, Tokyo Daydream Radio, or Solwave Radio depending on language/style instead of Club Bloom.
 - Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each club prompt/metatag flow as a full track meant to naturally land around 4 minutes or longer: DJ-friendly intro, groove development, first drop or main groove, breakdown, second drop/variation, final energy lift, and resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
-- Prioritize strong groove, clean drops, energy changes, and replayable rhythm inside the selected style lane.
-- Avoid muddy mixes, overly long intros, generic mixed-genre EDM, and tracks that feel like unfinished loops.
+- Prioritize strong groove, clear low end, energy changes, and replayable rhythm inside the selected style lane. Retro does not mean lo-fi damage: keep the master clean and do not add vinyl crackle, tape hiss, static, or fake record wear.
+- Avoid muddy mixes, overly long intros, generic mixed-genre EDM, random nostalgia clichés, and tracks that feel like unfinished loops.
 
 ## Visual Direction
 
-- Illustrated/anime/stylized neon visuals. Avoid photorealistic/live-action club footage unless the human explicitly asks for photorealism.
-- Visuals should communicate club/dance energy quickly through a concrete premium venue and performance action. Prefer an active adult female DJ/BJ or club-streamer performance scene over abstract neon: beach-club DJ deck, rooftop skyline DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, neon city terrace, cyber club, or dance-floor crowd.
-- Unless the human explicitly asks for a non-DJ concept, make the visual read as a beautiful adult female DJ/BJ performance through visible decks/mixer, performer, crowd, lighting rig, stage, or dance-floor action.
+- Follow the photorealistic still-image system in the channel profile. Match the venue and treatment to the actual music rather than forcing every release into a nightclub.
+- Modern electronic lanes may use a club, rooftop, festival, dance floor, pool party, warehouse, or DJ booth.
+- Retro lanes should prefer a contemporary editorial record bar, vinyl room, record shop listening booth, after-work practice room, compact DJ setup, cassette/tape deck detail, turntable and mixer, or understated 1990s/2000s city mood. Keep the result modern and emotionally credible, not a costume-party recreation or distressed retro poster.
 - Human figures are expected by default when the concept allows it. Use a stylish adult woman DJ/BJ with bold revealing club fashion, confident poses, glossy nightlife styling, and sexy high-energy club presence. Vary the subject, setting, camera, composition, crowd presence, outfit palette, venue type, and action so each release feels fresh.
 - Keep adult nightlife imagery bold and revealing but YouTube-safe. Use daring club outfits, crop tops, metallic mini dresses, sheer outer layers, bikini-style festival tops, bodycon silhouettes, and dramatic stage lighting, but avoid full nudity, visible genitals, exposed nipples, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
 - Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`. The text is the hook; the image should sell the DJ/performance venue.
@@ -77,13 +94,17 @@ Good style lanes:
 - `[playlist] Tech House Workout Mix | Running Beats and Club Bass`
 - `[playlist] Melodic Techno Night Drive | Dark Club Mix for Gaming`
 - `[playlist] Festival EDM Mix | Big Room Drops for Party Warmup`
+- `[playlist] 90s Korean Boom Bap for the Ride Home`
+- `[playlist] Jazz-Hop & Rare Groove for a Late-Night Record Bar`
+- `[playlist] Trip-Hop for Slow After-Hours`
+- `[playlist] Disco & Boogie for a Laid-Back Weekend`
 
 ## Bad Directions
 
 - Mainstream English pop that belongs on sundaze.
 - Latin pop/reggaeton that belongs on Solwave Radio.
 - K-pop/J-pop vocal releases.
-- Cozy BGM, cinematic battle music, or fantasy OST music.
+- Generic cozy BGM, cinematic battle music, or fantasy OST music with no DJ/rhythm identity.
 - Titles that read like keyword-stuffed use-case lists, such as `[playlist] Progressive Trance for Night Roads, Gaming Focus and Club Drive`.
 - Titles that glue abstract nouns together after the separator, such as `[playlist] Bass House Club Mix | Gaming Night & Workout Energy`; this reads like a machine-translated keyword list, not a YouTube title.
 - Titles that hide the EDM/house/trance/techno lane or sound like translated keywords instead of a real mix title.

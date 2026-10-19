@@ -4,20 +4,22 @@ Use this after the selected channel is `Cinematic Pulse`. This document decides 
 
 ## Channel Promise
 
-Cinematic Pulse is a no-vocal cinematic orchestra, film-score, and premium game-score channel.
+Cinematic Pulse is a no-vocal orchestral and game-music channel. Orchestra does not have to be cinematic, epic, huge, dark, or battle-oriented.
 
 Cinematic Pulse has two separate public lanes:
 
-- **Cinematic / premium game-score lane:** music that belongs in a large-scale movie, trailer, film score, or premium console/anime action RPG: orchestra, strings, brass, percussion, choir-like pads without lyrics, cinematic piano, hybrid film-score textures, and lyrical game-orchestra writing.
-- **Former Storylight lane:** playful no-vocal Japanese-style game/anime OST, cute arcade/fantasy-game BGM, item-shop BGM, amusement/theme-park BGM, and other already-approved Storylight-style cues now upload to Cinematic Pulse because `Storylight OST` is manual-only.
+- **`orchestra` lane, daily 07:00 Asia/Seoul:** orchestral music in its full range: chamber orchestra, lyrical strings, woodwind-led pieces, piano-and-orchestra or orchestra without piano, neoclassical, romantic, impressionistic, pastoral, gentle family-animation scoring, travel, light comedy, mystery, emotional film score, premium game orchestra, heroic, sci-fi, dark fantasy, and epic battle when appropriate.
+- **`cute_game` lane, daily 19:00 Asia/Seoul:** playful no-vocal Japanese-style game/anime OST, cute arcade/fantasy-game BGM, item-shop BGM, amusement/theme-park BGM, and other approved former Storylight-style cues now uploaded to Cinematic Pulse because `Storylight OST` is manual-only.
+
+These are independent daily production and backlog lanes. Maintain and publish one `orchestra` release every morning and one `cute_game` release every evening. A large cute-game backlog or many scheduled cute-game videos never count as orchestra inventory and must never postpone the morning orchestra release. Create Cinematic Pulse workspaces with `--cinematic-pulse-lane orchestra` or `--cinematic-pulse-lane cute_game`; unclassified work does not satisfy either lane.
 
 Keep these lanes truthful. A former Storylight cute/game/anime BGM release can live on Cinematic Pulse, but it must be titled, described, and visualized as cute game/anime/theme-park BGM. It must not be packaged as dark fantasy orchestra, epic battle, final battle, trailer music, or serious film-score content.
 
 The audience should immediately understand the actual lane: instrumental cinematic orchestra music for movie scenes, trailers, fantasy worlds, sci-fi journeys, emotional climaxes, heroic moments, tension, focus, gaming, and graceful game/anime story scenes; or a clearly cute/playful former-Storylight game/anime/theme-park BGM playlist when the track list is cute.
 
-Titles should be broad cinematic orchestra / film-score / premium game-score packaging first. The music can be epic, quiet, emotional, mysterious, dark, hopeful, heroic, tense, gentle, bittersweet, romantic, or graceful; it does not always need to be huge battle music.
+Titles should truthfully package the lane. Orchestra titles may use `Orchestral Music`, `Chamber Orchestra`, `Lyrical Strings`, `Neoclassical Orchestra`, `Gentle Orchestra`, `Movie OST`, `Film Score`, or `Cinematic Orchestra` according to the actual tracks. Do not attach `cinematic`, `epic`, battle, trailer, or movie claims to a release merely because it is orchestral.
 
-For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, `보스전`, or bare `BGM`. Cinematic Pulse should feel grand, solemn, and filmic. Prefer broad titles a normal viewer would search or understand quickly, spanning varied title families such as final battle scene, dark fantasy film score, heroic trailer music, emotional film score, sci-fi cinematic music, mystery tension score, grand journey orchestra, orchestral battle music, epic writing music, and movie OST focus. Title repetition is acceptable if it protects channel fit; do not force novelty at the cost of sounding childish or off-brand. The examples below are style references, not fixed templates to repeat mechanically.
+For public YouTube titles, avoid juvenile or game-menu phrasing such as `Boss BGM`, `Final Boss Music`, `Final Boss Focus Music`, `보스`, or `보스전`. Prefer broad titles a normal viewer would understand quickly, but allow quiet, warm, playful, romantic, small-ensemble, seasonal, or everyday orchestral music to remain exactly that. The examples below are style references, not fixed templates.
 
 Before finalizing metadata, check the main title and every localized title in its own language. If any title reads like a game-menu label, focus keyword pile, `최종 보스 집중 음악`, or a local equivalent that feels minor, childish, or unclear, rewrite toward movie OST, film score, trailer music, cinematic orchestra, emotional score, dark fantasy, sci-fi action, final battle scene, gentle game orchestra, anime action-RPG OST, or writing/focus only when it sounds natural in that language.
 
@@ -35,7 +37,11 @@ From `scripts/openclaw-release list-releases`, inspect recent `Cinematic Pulse` 
 
 If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi journey, emotional film score, mystery tension, heroic rise, chase, or quiet aftermath next.
 
+Perform the recent-release check within each lane. Do not use recent `cute_game` releases to decide that the `orchestra` lane has enough inventory or has been recently served. Apply `../openclaw-seasonal-programming.md` independently to both daily lanes.
+
 ## Concept Lanes
+
+The following are substyles inside the `orchestra` lane unless explicitly marked `cute_game`:
 
 - Epic battle: orchestral percussion, brass, strings, choir-like pads without lyrics, battlefield, banners, storm light.
 - Dark fantasy confrontation: heavy drums, low brass, distorted pulses, towering mythic silhouette, ominous ritual light.
@@ -49,7 +55,11 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Gentle game orchestra: soft strings, harp, celesta, piano, warm woodwinds, delicate mallets, lyrical theme, calm fantasy town, moonlit garden, quiet character memory.
 - Bittersweet anime action-RPG score: emotional strings, cinematic piano, light hybrid pads, graceful heroine theme, post-battle sunrise, city ruins, longing but hopeful mood.
 - Romantic/sweet fantasy game OST: flowing strings, flute/oboe, harp, soft percussion, warm melodic theme, castle balcony, flowered courtyard, elegant festival night.
-- Former Storylight game/anime BGM: playful Japanese-style game OST, cute fantasy RPG town, item shop, puzzle room, arcade stage, amusement park, theme-park parade, carousel, toy-town, cozy anime side-story, happy reading/work/gaming BGM. This lane is allowed on Cinematic Pulse, but the public title/thumbnail should say `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM`, never `DARK FANTASY`, `EPIC BATTLE`, or `CINEMATIC ORCHESTRA`.
+- Chamber and lyrical orchestra: string ensemble, woodwind conversation, harp, restrained brass, subtle percussion, piano optional, intimate hall or contemporary editorial setting.
+- Pastoral / impressionistic orchestra: flowing strings, flute, oboe, clarinet, delicate color, landscape, morning, travel, reading, or seasonal atmosphere without forced grandeur.
+- Romantic / neoclassical orchestra: memorable melody, transparent orchestration, expressive strings, solo instrument optional, elegant emotional arc.
+- Light orchestral comedy / family animation: nimble woodwinds, pizzicato used tastefully, warm brass, playful rhythmic writing without becoming the separate cute-game lane.
+- Former Storylight game/anime BGM (`cute_game`): playful Japanese-style game OST, cute fantasy RPG town, item shop, puzzle room, arcade stage, amusement park, theme-park parade, carousel, toy-town, cozy anime side-story, happy reading/work/gaming BGM. Public packaging should say `GAME OST`, `ANIME BGM`, `CUTE GAME BGM`, `FANTASY GAME OST`, `ARCADE BGM`, or `THEME PARK BGM`, never `DARK FANTASY`, `EPIC BATTLE`, or `CINEMATIC ORCHESTRA`.
 
 ## Music Direction
 
@@ -60,6 +70,8 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - Do not force Cinematic Pulse tracks under 4 minutes and do not use lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` in Suno fields unless the human explicitly asks for that wording. Build each cinematic prompt/metatag flow as a full cue meant to naturally land around 4 minutes or longer: cinematic intro, developed A/B sections, tension or emotional rise, breakdown or quiet middle, final theme lift, and resolved ending, then verify the downloaded duration. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Longer complete cues, including 5+ minute tracks, are allowed.
 - Make each track feel complete, not like a short unfinished cue. Avoid abrupt fade-outs if possible.
 - The playlist should feel like a coherent album in one lane. It can move between huge, quiet, tense, emotional, gentle, sweet, and lyrical cues when those cues share a cinematic/game-orchestral identity. Do not mix cute former-Storylight BGM into the first/lead block of a dark fantasy or film-score release. If cute fallback tracks are the only available fillers, put them in a separately titled former-Storylight release instead of using them to fill a dark fantasy release.
+- The `orchestra` lane requires orchestral writing, but piano is optional. A piano-led cue is valid only when the arrangement still develops through an orchestra; a release may also contain no piano at all.
+- Apply `../openclaw-seasonal-programming.md`: orchestra can support summer travel, winter reading, spring mornings, holidays, vacations, shopping seasons, or local cultural windows without every cue literally imitating the event.
 
 ## Visual Direction
 
@@ -85,6 +97,9 @@ If the latest Cinematic Pulse release used a dark fantasy battle, choose sci-fi 
 - `[playlist] Gentle Game Orchestra | Fantasy RPG Music for Reading and Focus`
 - `[playlist] Anime Action RPG OST | Emotional Orchestra for Story Scenes`
 - `[playlist] Sweet Fantasy Game Score | Soft Orchestra for Cozy Adventure`
+- `[playlist] Lyrical Chamber Orchestra | Strings and Woodwinds for a Quiet Morning`
+- `[playlist] Summer Journey Orchestra | Warm Instrumental Music for Travel and Reading`
+- `[playlist] Neoclassical Orchestra | Elegant Strings for Evening Focus`
 - `[playlist] Cute Game BGM for Work | Happy Anime OST for Reading and Gaming`
 - `[playlist] Theme Park Game BGM | Happy Arcade Music for Reading and Play`
 

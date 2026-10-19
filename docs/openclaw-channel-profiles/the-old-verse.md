@@ -48,7 +48,7 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 - Do not put `10 seconds`, `5 seconds`, `16:9`, `720p`, `loop`, `seamless loop`, `repeat`, or `cyclic` in the generation prompt. Do not mention duration in Gemini prompts.
 - Animate the selected cover concept with reverent environmental motion: slow light over water, drifting stars, candle or oil-lamp glow, scroll dust, desert wind, cloud/fire glow, rain, water shimmer, leaves, or temple light when appropriate.
 - If the first frame contains a passage range or short style phrase, keep it stable and readable. Do not invent a channel name.
-- Queue final render with `--video-spectrum-overlay-style none`. BibliaCanto must not use app-rendered spectrum bars, radial/multiwave/pulse visualizers, waveform overlays, dots, particles, or equalizer graphics.
+- Queue final render with `--video-spectrum-overlay-style bars`, using the same lower-right spectrum as HaruHaru. Do not use radial/multiwave/pulse visualizers, waveform overlays, dots, or particles.
 - The final moment should stay close to the opening composition so the app can repeat it smoothly.
 - Do not add subtitles, lyrics, long verse text, title text, duration text, UI, logos, protected film imagery, or photorealistic reenactment footage. The exact short passage range from the title is allowed when it is already designed into the first frame.
 

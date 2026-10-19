@@ -22,6 +22,7 @@ from app.models.playlist import Playlist
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
     YOUTUBE_LANGUAGE_ALIASES,
+    ensure_youtube_description_request_cta,
     localizations_for_youtube_api,
     normalize_youtube_language,
     normalize_youtube_localizations,
@@ -320,6 +321,100 @@ class YouTubeService:
             )
         return uploads
 
+    def list_channel_comments(self, *, channel_id: str, max_results: int = 100) -> list[dict[str, Any]]:
+        credentials = self._load_credentials(youtube_channel_id=channel_id)
+        youtube = self._build_youtube_client(credentials)
+        wanted = max(1, min(int(max_results or 100), 500))
+        comments: list[dict[str, Any]] = []
+        request = youtube.commentThreads().list(
+            part="snippet",
+            allThreadsRelatedToChannelId=channel_id,
+            maxResults=min(wanted, 100),
+            moderationStatus="published",
+            order="time",
+            textFormat="plainText",
+        )
+        while request is not None and len(comments) < wanted:
+            response = request.execute()
+            for item in response.get("items") or []:
+                thread_snippet = item.get("snippet") or {}
+                top_level = thread_snippet.get("topLevelComment") or {}
+                snippet = top_level.get("snippet") or {}
+                author_channel = snippet.get("authorChannelId") or {}
+                author_channel_id = (
+                    author_channel.get("value") if isinstance(author_channel, dict) else author_channel
+                )
+                comment_id = str(top_level.get("id") or item.get("id") or "").strip()
+                source_video_id = str(thread_snippet.get("videoId") or "").strip()
+                text_original = str(snippet.get("textOriginal") or snippet.get("textDisplay") or "").strip()
+                if not comment_id or not source_video_id or not text_original:
+                    continue
+                comments.append(
+                    {
+                        "comment_id": comment_id,
+                        "source_video_id": source_video_id,
+                        "requester_display_name": str(snippet.get("authorDisplayName") or "").strip(),
+                        "requester_channel_id": str(author_channel_id or "").strip(),
+                        "text": text_original,
+                        "published_at": snippet.get("publishedAt"),
+                        "updated_at": snippet.get("updatedAt"),
+                    }
+                )
+                if len(comments) >= wanted:
+                    break
+            if len(comments) >= wanted:
+                break
+            request = youtube.commentThreads().list_next(request, response)
+        return comments
+
+    def update_video_schedule(
+        self,
+        *,
+        video_id: str,
+        scheduled_publish_at: datetime,
+        youtube_channel_id: str | None = None,
+    ) -> dict[str, Any]:
+        normalized_video_id = str(video_id or "").strip()
+        if not normalized_video_id:
+            raise ValueError("YouTube video id is required.")
+        scheduled_utc = scheduled_publish_at.astimezone(timezone.utc).replace(microsecond=0)
+        if scheduled_utc <= datetime.now(timezone.utc):
+            raise ValueError("YouTube scheduled publish time must be in the future.")
+
+        credentials = self._load_credentials(youtube_channel_id=youtube_channel_id)
+        youtube = self._build_youtube_client(credentials)
+        response = youtube.videos().list(part="status", id=normalized_video_id).execute()
+        items = response.get("items") or []
+        if not items:
+            raise ValueError(f"YouTube video not found: {normalized_video_id}")
+        current_status = dict(items[0].get("status") or {})
+        if str(current_status.get("privacyStatus") or "").lower() != "private":
+            raise ValueError("Only private, never-published YouTube videos can be rescheduled.")
+
+        writable_keys = (
+            "license",
+            "embeddable",
+            "publicStatsViewable",
+            "selfDeclaredMadeForKids",
+            "containsSyntheticMedia",
+        )
+        status_body = {
+            key: current_status[key]
+            for key in writable_keys
+            if key in current_status
+        }
+        status_body["privacyStatus"] = "private"
+        status_body["publishAt"] = scheduled_utc.isoformat().replace("+00:00", "Z")
+        result = youtube.videos().update(
+            part="status",
+            body={"id": normalized_video_id, "status": status_body},
+        ).execute()
+        return {
+            "video_id": normalized_video_id,
+            "scheduled_publish_at": scheduled_utc.isoformat(),
+            "status": result.get("status") or status_body,
+        }
+
     def find_recent_upload_by_title(
         self,
         *,
@@ -522,6 +617,11 @@ class YouTubeService:
             default_description=description,
             default_language=default_language,
         )
+        for language, localized_copy in normalized_localizations.items():
+            localized_copy["description"] = ensure_youtube_description_request_cta(
+                localized_copy.get("description"),
+                language=language,
+            )
         default_copy = normalized_localizations.get(default_language)
         if default_copy:
             title = default_copy["title"]
@@ -583,6 +683,11 @@ class YouTubeService:
             default_description=description,
             default_language=default_language,
         )
+        for language, localized_copy in normalized_localizations.items():
+            localized_copy["description"] = ensure_youtube_description_request_cta(
+                localized_copy.get("description"),
+                language=language,
+            )
         default_copy = normalized_localizations.get(default_language)
         if default_copy:
             title = default_copy["title"]
@@ -876,6 +981,20 @@ class YouTubeService:
         if selected_channel_id:
             return self._find_channel(channels, selected_channel_id)
         return None
+
+    def get_channel_by_title(self, title: str) -> dict[str, Any] | None:
+        normalized = " ".join(str(title or "").strip().lower().split())
+        if not normalized:
+            return None
+        registry = self._read_channel_registry()
+        return next(
+            (
+                channel
+                for channel in registry.get("channels", [])
+                if " ".join(str(channel.get("title") or "").strip().lower().split()) == normalized
+            ),
+            None,
+        )
 
     def _load_credentials(self, youtube_channel_id: str | None = None) -> Credentials:
         token_path = self._token_path_for_channel(youtube_channel_id)

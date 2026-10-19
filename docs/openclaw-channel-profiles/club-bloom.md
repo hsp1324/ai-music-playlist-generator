@@ -5,13 +5,13 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 ## Routing Contract
 
 - Explicit channel request wins.
-- Club Bloom is for no-vocal EDM, house, techno, trance, festival, workout, night-drive, gaming, club, and party-energy releases.
+- Club Bloom is for no-vocal DJ culture: modern EDM/house/techno/trance and broader rhythm-led selections including 1990s/2000s boom bap, jazz-hop, trip-hop, rare groove, funk/soul breaks, disco/boogie, broken beat, chill breakbeat, and instrumental R&B/neo-soul.
 - Club Bloom should not publish vocal dance-pop. If a vocal club-pop concept is requested, route it to the appropriate vocal channel instead.
 - Do not use this profile for mainstream pop playlists, Latin pop, K-pop, J-pop, cozy BGM, fantasy OST, or cinematic trailer music.
 
 ## Visual Identity
 
-- Mood: energetic, neon, rhythmic, nightlife, candid, Instagram-like, party.
+- Mood: rhythmic, curated, nightlife-aware, candid, editorial, and tactile. It may be saturated and energetic for a modern floor, or subdued and intimate for a retro crate session.
 - Style must be photorealistic still-image nightlife photography by default, not animated/anime/illustrated/poster art and not provider loop video. Treat Club Bloom like HaruHaru's natural friend-taken still-image system, but move the background and styling into clubs, bars, lounges, rooftop parties, beach clubs, festivals, DJ booths, dance floors, neon terraces, or yacht/harbor parties.
 - Let the playlist concept decide the exact venue, but default Club Bloom visuals should look like a hot adult nightlife moment casually captured by a friend on a phone in a place where club music naturally plays.
 - Prefer attractive clearly adult women partying, dancing, posing with friends, or playing/standing near a DJ booth in revealing YouTube-safe club fashion. A visible adult female DJ/BJ or club-streamer performance moment is good, but not required; a candid club/bar/lounge scene with hot adult women enjoying the music is also valid. Vary subject identity, pose, camera angle, venue, lighting, outfit color, crowd size, and action so Club Bloom does not keep generating the same woman-at-DJ-booth image.
@@ -20,6 +20,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Club Bloom visuals must be more click-stopping than calm BGM channels. Avoid timid, soft, polite, empty, or wallpaper-like covers and thumbnails. If the image would not grab attention in a mobile YouTube feed, reject it and regenerate before upload.
 - Use high-contrast crops, dramatic stage lighting, saturated neon, expressive movement, strong silhouettes, crowd heat, DJ/performance action, rooftop skyline drama, beach-club sunset color, nightclub laser haze, concert/festival-scale lighting, or open-air party atmosphere when they fit the lane.
 - Visuals should feel real, candid, and high-quality, not cluttered with random neon objects.
+- Retro DJ lanes use a separate scene family: modern record bar, vinyl room, listening booth, record-shop corner, after-work practice room, turntables and mixer, shelves of records, warm wood/metal textures, restrained tungsten light, low-saturation photography, or a subtle 1990s/2000s city reference. Avoid fake vintage damage, sepia clichés, costume styling, excessive grain, collage clutter, and obvious nostalgia props piled into one frame.
 
 ## Cover
 
@@ -28,7 +29,7 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 - Do not put `Club Bloom`, the channel name, a channel logo, or a brand line on the cover/first-frame.
 - Club Bloom covers should normally be text-free, like HaruHaru. If text is truly useful, use only a short integrated EDM/club style phrase such as `TECH HOUSE`, `BASS HOUSE`, `TRANCE MIX`, `EDM MIX`, `DEEP HOUSE`, `MELODIC TECHNO`, `FESTIVAL EDM`, or `CLUB MIX`, with transparent background.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
-- Match the scene to the selected club style lane. The image should feel like a real club/bar/lounge/festival place where this music would play, through venue, lights, crowd energy, DJ/decks when useful, adult women in revealing club outfits, cocktails or party details, and candid nightlife atmosphere, while still staying original and varied.
+- Match the scene to the selected DJ style lane. Modern dance music should feel native to its club/bar/lounge/festival setting. Retro boom-bap, jazz-hop, trip-hop, rare-groove, disco, or instrumental R&B may use a quieter record-bar, vinyl-room, listening-booth, practice-room, or record-shop setting with decks, mixer, records, and a believable adult listener/DJ when useful.
 - Do not accept a cover that reads as generic ambient neon, quiet lounge art, abstract wallpaper, empty venue, random glowing background, or low-energy image. Unless the human asked otherwise, reject covers that do not clearly show attractive adult nightlife subjects in a nightclub, bar, lounge, festival, pool-party, rooftop, or DJ setting. The cover should already feel energetic and sexy enough to justify a strong thumbnail while still looking like a candid friend-taken phone photo.
 
 ## YouTube Thumbnail
@@ -46,10 +47,23 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 
 - Do not create or upload a Gemini, Dreamina, or Seedance loop video for normal Club Bloom releases.
 - Upload the final cover and separate YouTube thumbnail, approve the cover, then queue final render as a still image:
-  `scripts/openclaw-release render-video --release-id RELEASE_ID --allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style bars`
+  `scripts/openclaw-release render-video --release-id RELEASE_ID --allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style club-floor-cyan`
 - Do not pass `--loop-video`, `--loop-video-provider`, or browser-generated provider clips unless the human explicitly asks for motion on a specific release.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, exposed nipples, visible genitals, sexual acts, unsafe minors, protected brands, or real club footage to the generated images.
-- Keep spectrum graphics out of the static images; the app adds lower-right `bars` spectrum during final render.
+- Keep spectrum graphics out of static images. For modern electronic releases, default to `club-floor-cyan`; `club-floor-white`, `club-floor-dual`, `club-floor-amber`, and `club-floor-mirror` remain approved alternatives.
+- For a retro boom-bap, jazz-hop, trip-hop, rare-groove, vinyl, record-bar, after-work DJ, or understated R&B crate concept, `club-crate-notes` is an approved occasional alternative. It applies the sample-04-inspired low-saturation/near-monochrome grade, left archive/album-note panel, red editorial accent, and contained line spectrum during app rendering.
+- Choose `club-crate-notes` only when the music and cover genuinely support it, and avoid using it on consecutive Club Bloom releases. It is a mood-based editorial treatment, not the permanent channel default. Do not use it for bright festival, bass-house, peak-techno, workout, or glossy tropical-house releases.
+
+Retro render example:
+
+```bash
+scripts/openclaw-release render-video \
+  --release-id RELEASE_ID \
+  --allow-still-image-video \
+  --video-render-source-mode still_image \
+  --video-render-resolution 1080p \
+  --video-spectrum-overlay-style club-crate-notes
+```
 
 ## Visual Rework Note
 
@@ -70,10 +84,10 @@ No full nudity, exposed nipples, visible genitals, sexual acts, minors, teen-cod
 ## Metadata
 
 - Use [../openclaw-youtube-metadata.md](../openclaw-youtube-metadata.md).
-- Localized YouTube titles must be natural transcreations in each language. If a literal translation becomes an awkward keyword tail, rewrite it while keeping the selected EDM/house/techno/trance lane and one or two real listening situations truthful.
+- Localized YouTube titles must be newly written natural titles in each language, not translations that preserve English word order. Keep the truthful genre and one clear mood or listening moment, but remove any phrase that a native curator would not normally say. Never approve awkward compounds such as `퇴근 후 바이닐 세션`, `게임 밤과 운동 에너지`, or their equivalents in other languages.
 - Default metadata language can be English unless the human asks otherwise.
-- Titles must put the selected club style lane or genre fusion near the front, immediately after `[playlist]`. Prefer direct YouTube mix wording such as `Progressive Trance x EDM Mix`, `Tech House Workout Mix`, `Hype Trap x EDM Mix`, `Melodic Techno Night Drive`, `Bass House Workout Mix`, `Bass Boosted EDM & Electro House Mix`, or `Festival EDM Mix`.
-- After the separator, add one or two clear dance-listening situations using natural YouTube phrasing, such as `Heavy EDM for Gaming & Night Drive`, `Running Beats and Club Bass`, `Night Drive & Gaming Club Music`, or `Big Room Drops for Party Warmup`. Avoid awkward three-part use-case lists such as `for Night Roads, Gaming Focus and Club Drive`, and never use keyword tails like `Gaming Night & Workout Energy`.
+- Keep the selected style or genre easy to find near the front, but do not sacrifice natural syntax to place it immediately after `[playlist]`. One fluent title is better than a genre block plus a translated keyword tail.
+- Use at most one primary listening situation in the title unless two situations form a familiar natural phrase. Avoid three-part use-case lists, abstract keyword tails, and repetitive separators. Prefer `90s Korean Boom Bap for the Ride Home` over `90s Korean Boom Bap DJ Mix | After-Work Vinyl Session`, and `늦은 밤 레코드 바에서 듣는 재즈힙합` over a literal translation of `Late-Night Record Bar Session`.
 - Make titles broad and public-facing first. Use the exact visual scene as atmosphere unless it is the strongest searchable hook.
 - Metadata should describe the release as no-vocal/instrumental club music. Do not imply vocals, singers, lyrics, or pop songs.
 - Avoid AI/process/tool hashtags and avoid overstating `hits` if the music is original.

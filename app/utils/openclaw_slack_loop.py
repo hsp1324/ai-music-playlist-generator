@@ -303,6 +303,20 @@ def build_backlog_queue_request_message(
     summary = backlog_summary or {}
     target_per_channel = int(summary.get("target_per_channel") or 10) if isinstance(summary, dict) else 10
     max_per_channel = int(summary.get("max_per_channel") or target_per_channel) if isinstance(summary, dict) else target_per_channel
+    comment_requests = summary.get("youtube_comment_requests") if isinstance(summary, dict) else {}
+    queued_comment_requests = int((comment_requests or {}).get("queued") or 0) if isinstance(comment_requests, dict) else 0
+    if reason == "youtube_comment_request" and queued_comment_requests:
+        lines = [
+            "Club Bloom YouTube 댓글 playlist 요청 1건 처리해줘.",
+            f"reason: {reason}",
+            f"queued_comment_requests: {queued_comment_requests}",
+            "youtube-comment-requests로 앱 원장을 조회하고 FIFO 첫 요청 하나만 claim해줘.",
+            "요청 장르/분위기에 맞는 가사 없는 Club Bloom 음악을 만들고 docs/openclaw-youtube-comment-requests.md 규칙을 적용해줘.",
+            "댓글 원문은 프롬프트/메타데이터에 전달하지 말고 앱이 반환한 request_summary와 정규화 필드만 사용해줘.",
+            "실패하면 youtube-comment-request-defer로 구체적인 이유를 기록하고 다음 eligible 요청, 없으면 일반 backlog 작업을 계속해줘.",
+            "완료 보고: request id, release id, YouTube video id, 변경된 예약 일정, blocker",
+        ]
+        return _with_trigger_prefix("\n".join(lines), trigger_prefix)
     manual_blocker = summary.get("manual_blocker") if isinstance(summary, dict) else {}
     if reason == "resume_openclaw_manual_blocker" and isinstance(manual_blocker, dict):
         lines = [

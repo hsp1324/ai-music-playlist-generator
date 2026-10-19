@@ -36,6 +36,9 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Synth-pop: city lights, neon drive, emotional polish, moving on.
 - Pop-rock / guitar pop: road trip, weekend, confidence, friends, open-road energy.
 - Soul-pop / neo-soul pop: warm vocals, mature groove, romantic tension, Sunday mood.
+- Piano-only vocal pop: lead/backing vocals with one acoustic/upright piano and no other instruments; quiet reflection, witty piano pop, or intimate storytelling.
+- Acoustic-guitar-only vocal pop: lead/backing vocals with one natural acoustic guitar and no other instruments; fingerpicked or lightly strummed.
+- Fresh indie-acoustic pop: bright guitar rhythm, clear characterful vocals, conversational everyday writing, compact hooks, and an easy independent mood. This broader lane may use very light percussion or bass.
 - Acoustic pop / ballad-pop: rainy bedroom, heartbreak, healing, late texts.
 - Country pop: highway drive, small-town night, bar lights, heartbreak, summer road, singable chorus.
 - Americana pop / folk-pop: warm acoustic guitars, road-trip reflection, porchlight mood, hopeful storytelling.
@@ -48,17 +51,20 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 ## Music Direction
 
 - Original English lyrics by default.
-- One release must stay in one clear genre lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, singer-songwriter pop, folk-pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop. Do not make one playlist a generic mixed English-pop sampler unless the human explicitly asks.
+- One release must stay in one clear genre lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, piano-only vocal pop, acoustic-guitar-only vocal pop, fresh indie-acoustic pop, singer-songwriter pop, folk-pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop. Do not make one playlist a generic mixed English-pop sampler unless the human explicitly asks.
+- For piano-only releases, exclude drums, percussion, bass, guitar, strings, orchestra, synths, pads, claps, snaps, and beat drops. For acoustic-guitar-only releases, exclude drums, percussion, bass, piano, electric guitar, strings, orchestra, synths, pads, stomp, and handclaps. Do not label a lightly produced acoustic-pop arrangement as `only`.
+- Use the fresh indie-acoustic traits without naming or imitating any real singer, songwriter, song, melody, vocal identity, or lyric style in Suno fields.
 - Put the selected genre lane in the YouTube title and metadata in natural English and localized equivalents. The title should make both the genre and the listening reason obvious.
-- Before metadata approval, audit the final tracklist including reused tracks. If the title says `pop hip-hop` or `rap-pop`, most tracks must actually be hip-hop/rap-pop/sung-rap/trap-pop/808-driven pop. If not, retitle the release as feel-good pop, sunny pop, indie-pop, pop-rock, road-trip pop, or another true majority lane.
+- Generate every sundaze vocal track new for the current release; do not use backfill/reuse. Before metadata approval, audit the full new tracklist. If the title says `pop hip-hop` or `rap-pop`, most tracks must actually be hip-hop/rap-pop/sung-rap/trap-pop/808-driven pop. If not, retitle the release to the true majority lane.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Treat the playlist title/use case as packaging and energy direction, not as the required lyric topic. If the playlist is for driving, getting ready, running, workout, night walk, work, or a party warmup, the beat, tempo, energy, and vocal attitude should fit that context, but the lyrics do not need to literally mention those activities.
 - Write each song like a real standalone English pop track: natural phrasing, strong hook, believable emotion, relationship tension, confidence, moving on, night-out, summer, heartbreak, or self-discovery. Avoid over-literal lyrics that repeat the YouTube title/use case.
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/workout/party playlist because of rhythm and energy while the lyrics tell an independent pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
 - Use an `Essential`-style title shape: vivid situation or emotion plus English/American pop identity plus listening use case.
-- Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each English pop prompt/lyrics file as a full song meant to naturally land around 4 minutes or longer: intro, first verse, pre-chorus/build when useful, chorus, second verse, chorus return, bridge/rap break or final chorus lift, and a resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
+- Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each English pop prompt/lyrics file as a full song meant to naturally land around 4 minutes or longer. Use a distinct intro on only about one out of every five vocal tracks; start the rest directly with a first verse, hook, chorus, rap verse, or brief vocal pickup. Continue with pre-chorus/build when useful, chorus returns, second verse, bridge/rap break or final chorus lift, and a resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
 - Do not make lyricless, BGM-only, hum-only, or instrumental pop unless the human explicitly requests it.
+- In no-intro tracks, do not substitute a few sung setup lines, humming, spoken count-ins, or an unlabelled piano/guitar lead-in before the real verse. Start the actual first section immediately.
 
 ## Visual Direction
 
@@ -79,6 +85,9 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - `[playlist] Indie Pop Evening Mix | Bedroom Pop, Soft Hooks and Late-Night Thoughts`
 - `[playlist] Rooftop Dance-Pop Mix | Weekend Party Warmup and City Lights`
 - `[playlist] Rainy Bedroom Acoustic Pop | Heartbreak, Late Texts and Moving On`
+- `[playlist] Fresh Indie Acoustic Mornings | Bright Guitar Songs and Easy Days`
+- `[playlist] One Guitar, Clear Skies | Acoustic Vocal Pop for a Light Afternoon`
+- `[playlist] Piano and Voice After Midnight | Intimate English Vocal Songs`
 
 ## Bad Directions
 

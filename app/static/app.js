@@ -21,6 +21,9 @@ const state = {
   trackLibrarySuggestLoading: false,
   trackLibrarySuggestOpen: false,
   workspacesLoading: false,
+  workspacesLoadingMore: false,
+  workspacesHasMore: true,
+  workspaceFetchedCount: 0,
   editingMetadataReleaseId: "",
   metadataExpandedByRelease: {},
   metadataLanguageByRelease: {},
@@ -123,6 +126,7 @@ const CHANNEL_FILTER_ALL = "__all_channels__";
 const QUICK_UPLOAD_NEW_SINGLE_VALUE = "__new_single_release__";
 const AUTO_REFRESH_INTERVAL_MS = 15000;
 const WORKSPACE_PAGE_SIZE = 20;
+const WORKSPACE_FETCH_SIZE = 180;
 const RELEASE_SORT_OPTIONS = [
   { key: "published", label: "Published" },
   { key: "updated", label: "Updated" },
@@ -1150,61 +1154,8 @@ function localActionButton(label, className, handler) {
   return button;
 }
 
-function chooseVisualizerStyle(workspace) {
-  const styles = {
-    bars: "center-weighted EQ bars",
-    "mirror-bars": "centered mirrored EQ bars",
-    "calm-bars": "very low-motion centered EQ bars",
-    none: "fast render, no spectrum overlay",
-  };
-  const current = workspace.video_spectrum_overlay_style || "bars";
-  const message = [
-    "Visualizer preset:",
-    ...Object.entries(styles).map(([key, label]) => `${key} - ${label}`),
-    "",
-    "Enter preset name.",
-  ].join("\n");
-  const raw = window.prompt(message, current);
-  if (raw === null) return null;
-  const normalized = raw.trim().toLowerCase().replace(/_/g, "-");
-  const aliases = {
-    bar: "bars",
-    spectrum: "bars",
-    multiwave: "bars",
-    wave: "bars",
-    waveform: "bars",
-    waves: "bars",
-    thinwave: "bars",
-    "thin-wave": "bars",
-    "clean-wave": "bars",
-    dot: "bars",
-    dots: "bars",
-    particle: "bars",
-    particles: "bars",
-    mirror: "mirror-bars",
-    mirrorbars: "mirror-bars",
-    calm: "calm-bars",
-    "low-motion": "calm-bars",
-    minimal: "calm-bars",
-    radial: "bars",
-    circle: "bars",
-    ring: "bars",
-    "radial-bars": "bars",
-    pulse: "bars",
-    "pulse-line": "bars",
-    pulses: "bars",
-    off: "none",
-    disabled: "none",
-    disable: "none",
-    "no-spectrum": "none",
-    fast: "none",
-  };
-  const style = aliases[normalized] || normalized || "bars";
-  if (!Object.prototype.hasOwnProperty.call(styles, style)) {
-    window.alert("Unknown visualizer preset. Use bars, mirror-bars, calm-bars, or none.");
-    return null;
-  }
-  return style;
+function chooseVisualizerStyle() {
+  return "bars";
 }
 
 function workspaceHasSavedLyrics(workspace) {
@@ -1329,10 +1280,7 @@ function mergeTrackUpdate(updatedTrack) {
       return {
         ...track,
         user_rating: nextRating,
-        metadata_json: {
-          ...(track.metadata_json || {}),
-          ...(updatedTrack.metadata_json || {}),
-        },
+        metadata_json: { ...(updatedTrack.metadata_json || {}) },
       };
     });
   });
@@ -1477,6 +1425,48 @@ function appendDetailGroupItem(groupKey, element) {
   }
 
   section.querySelector(".detail-group-body")?.appendChild(element);
+}
+
+function appendQualityWarnings(workspace) {
+  const warnings = Array.isArray(workspace.bulsong_quality_warnings)
+    ? workspace.bulsong_quality_warnings.filter((warning) => warning && warning.message)
+    : [];
+  if (!warnings.length) return;
+
+  const panel = document.createElement("section");
+  panel.className = "quality-warning-panel";
+
+  const header = document.createElement("div");
+  header.className = "quality-warning-header";
+  const title = document.createElement("strong");
+  title.textContent = `Quality warnings (${warnings.length})`;
+  const policy = document.createElement("span");
+  policy.textContent = "Recorded for review. Upload, render, and publish automation remain unblocked.";
+  header.appendChild(title);
+  header.appendChild(policy);
+  panel.appendChild(header);
+
+  const list = document.createElement("ul");
+  list.className = "quality-warning-list";
+  warnings.slice(-6).reverse().forEach((warning) => {
+    const item = document.createElement("li");
+    const message = document.createElement("span");
+    message.textContent = warning.message;
+    const meta = document.createElement("small");
+    const detectedAt = formatTimestamp(warning.last_detected_at || warning.detected_at);
+    const occurrences = Number(warning.occurrences || 1);
+    meta.textContent = [
+      warning.code || "quality_warning",
+      warning.stage || "unknown stage",
+      detectedAt,
+      occurrences > 1 ? `${occurrences} detections` : "",
+    ].filter(Boolean).join(" · ");
+    item.appendChild(message);
+    item.appendChild(meta);
+    list.appendChild(item);
+  });
+  panel.appendChild(list);
+  detailLinks.appendChild(panel);
 }
 
 function appendRenderStatus(workspace) {
@@ -2031,8 +2021,41 @@ async function fetchReviewTracks() {
   return [...pending, ...held];
 }
 
-async function fetchWorkspaceList() {
-  return markCompactWorkspaces(await api("/api/playlists/workspaces?compact=true"));
+async function fetchWorkspaceList({ offset = 0 } = {}) {
+  const params = new URLSearchParams({
+    compact: "true",
+    limit: String(WORKSPACE_FETCH_SIZE),
+    offset: String(offset),
+  });
+  return markCompactWorkspaces(await api(`/api/playlists/workspaces?${params.toString()}`));
+}
+
+function mergeWorkspaceLists(primary, secondary) {
+  const seen = new Set();
+  return [...primary, ...secondary].filter((workspace) => {
+    if (!workspace?.id || seen.has(workspace.id)) return false;
+    seen.add(workspace.id);
+    return true;
+  });
+}
+
+async function loadMoreWorkspaces() {
+  if (state.workspacesLoadingMore || !state.workspacesHasMore) return;
+  state.workspacesLoadingMore = true;
+  renderWorkspaceTiles();
+  try {
+    const offset = state.workspaceFetchedCount;
+    const older = await fetchWorkspaceList({ offset });
+    state.workspaceFetchedCount += older.length;
+    state.workspacesHasMore = older.length === WORKSPACE_FETCH_SIZE;
+    state.workspaces = mergeWorkspaceLists(state.workspaces, older);
+    ensureChannelFilter();
+    renderTrackWorkspaceOptions();
+  } finally {
+    state.workspacesLoadingMore = false;
+    renderWorkspaceTiles();
+    renderWorkspaceDetail();
+  }
 }
 
 async function fetchWorkspaceSummary() {
@@ -2316,18 +2339,18 @@ function workspacePageNumbers(current, total) {
 function renderWorkspacePager(container, items, tab) {
   if (!container) return;
   container.innerHTML = "";
-  if (items.length <= WORKSPACE_PAGE_SIZE) return;
-
   const key = tab === "archive" ? "archive" : "active";
   const current = clampWorkspacePage(key, items);
   const total = workspacePageCount(items);
 
-  const summary = document.createElement("span");
-  summary.className = "workspace-pager-summary";
-  const first = (current - 1) * WORKSPACE_PAGE_SIZE + 1;
-  const last = Math.min(current * WORKSPACE_PAGE_SIZE, items.length);
-  summary.textContent = `${first}-${last} / ${items.length}`;
-  container.appendChild(summary);
+  if (items.length > WORKSPACE_PAGE_SIZE) {
+    const summary = document.createElement("span");
+    summary.className = "workspace-pager-summary";
+    const first = (current - 1) * WORKSPACE_PAGE_SIZE + 1;
+    const last = Math.min(current * WORKSPACE_PAGE_SIZE, items.length);
+    summary.textContent = `${first}-${last} / ${items.length}`;
+    container.appendChild(summary);
+  }
 
   const addButton = (label, page, { active = false, disabled = false } = {}) => {
     const button = document.createElement("button");
@@ -2345,19 +2368,33 @@ function renderWorkspacePager(container, items, tab) {
     container.appendChild(button);
   };
 
-  addButton("Prev", Math.max(current - 1, 1), { disabled: current === 1 });
-  let previous = 0;
-  workspacePageNumbers(current, total).forEach((page) => {
-    if (previous && page > previous + 1) {
-      const gap = document.createElement("span");
-      gap.className = "workspace-page-gap";
-      gap.textContent = "...";
-      container.appendChild(gap);
-    }
-    addButton(String(page), page, { active: page === current });
-    previous = page;
-  });
-  addButton("Next", Math.min(current + 1, total), { disabled: current === total });
+  if (items.length > WORKSPACE_PAGE_SIZE) {
+    addButton("Prev", Math.max(current - 1, 1), { disabled: current === 1 });
+    let previous = 0;
+    workspacePageNumbers(current, total).forEach((page) => {
+      if (previous && page > previous + 1) {
+        const gap = document.createElement("span");
+        gap.className = "workspace-page-gap";
+        gap.textContent = "...";
+        container.appendChild(gap);
+      }
+      addButton(String(page), page, { active: page === current });
+      previous = page;
+    });
+    addButton("Next", Math.min(current + 1, total), { disabled: current === total });
+  }
+
+  if (state.workspacesHasMore && state.workspaceTab === tab) {
+    const loadMore = document.createElement("button");
+    loadMore.type = "button";
+    loadMore.className = "workspace-page-button workspace-load-more";
+    loadMore.textContent = state.workspacesLoadingMore ? "Loading..." : "Load older releases";
+    loadMore.disabled = state.workspacesLoadingMore;
+    loadMore.addEventListener("click", () => {
+      loadMoreWorkspaces().catch((error) => alert(error.message));
+    });
+    container.appendChild(loadMore);
+  }
 }
 
 function ensureSelectedWorkspace() {
@@ -3363,6 +3400,7 @@ function renderWorkspaceDetail() {
   }
 
   renderPipeline(detailPipeline, workspace);
+  appendQualityWarnings(workspace);
   appendRenderStatus(workspace);
   appendRenderedAudioPlayer(workspace);
   appendCoverPreview(workspace);
@@ -4108,7 +4146,13 @@ function renderYouTubeStatus(youtubeStatus) {
 
 function applyBoardData(tracks, workspaces) {
   state.tracks = tracks;
-  state.workspaces = workspaces;
+  const hadLoadedOlder = state.workspaceFetchedCount > WORKSPACE_FETCH_SIZE;
+  const previouslyLoaded = hadLoadedOlder ? state.workspaces : [];
+  state.workspaceFetchedCount = Math.max(state.workspaceFetchedCount, workspaces.length);
+  if (!hadLoadedOlder) {
+    state.workspacesHasMore = workspaces.length === WORKSPACE_FETCH_SIZE;
+  }
+  state.workspaces = mergeWorkspaceLists(workspaces, previouslyLoaded);
   state.workspacesLoading = false;
   ensureChannelFilter();
   ensureSelectedWorkspace();

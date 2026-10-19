@@ -1,12 +1,16 @@
+import asyncio
+import json
 import shutil
 import subprocess
+import threading
+import time
 from datetime import datetime, timezone
 from urllib.parse import unquote, urlparse
 from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import String, bindparam, cast, func, select, text
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import get_db
@@ -37,6 +41,12 @@ from app.workflows.playlist_automation import (
 from app.workflows.review_dispatch import dispatch_track_review, post_track_review_to_slack
 from app.workflows.slack_sync import sync_slack_review_decision, sync_slack_review_request
 from app.utils.short_track_observations import annotate_short_track_metadata
+from app.utils.bulsong_source import (
+    append_bulsong_quality_warning,
+    bulsong_quality_monitoring_enabled,
+    make_bulsong_quality_warning,
+    validate_bulsong_source_map,
+)
 from app.utils.genre_tokens import update_track_genre_token_metadata
 from app.utils.track_search import (
     best_track_match_text,
@@ -50,6 +60,11 @@ from app.utils.track_search import (
 router = APIRouter(prefix="/tracks", tags=["tracks"])
 ALLOWED_COVER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 REMOTE_AUDIO_TIMEOUT_SECONDS = 180.0
+FFPROBE_TIMEOUT_SECONDS = 30.0
+COVER_EXTRACTION_TIMEOUT_SECONDS = 30.0
+TRACK_REUSE_SUMMARY_CACHE_TTL_SECONDS = 30.0
+_track_reuse_summary_cache_lock = threading.Lock()
+_track_reuse_summary_cache: dict[tuple[int, bool, str, str], tuple[float, list[TrackReuseSummaryRead]]] = {}
 
 
 def get_services(request: Request) -> ServiceRegistry:
@@ -177,6 +192,7 @@ def _probe_duration_seconds(audio_path: str | None) -> int | None:
             check=True,
             capture_output=True,
             text=True,
+            timeout=FFPROBE_TIMEOUT_SECONDS,
         )
         value = float(result.stdout.strip())
     except (OSError, subprocess.SubprocessError, ValueError):
@@ -233,6 +249,7 @@ def _extract_embedded_cover(audio_path: str | None, covers_dir: Path) -> str | N
             check=True,
             capture_output=True,
             text=True,
+            timeout=COVER_EXTRACTION_TIMEOUT_SECONDS,
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -318,6 +335,106 @@ def _remote_audio_cache_disabled_metadata(payload: TrackCreateRequest) -> TrackC
     return payload.model_copy(update={"metadata": metadata})
 
 
+def _prepare_track_create_payload(
+    payload: TrackCreateRequest,
+    *,
+    cache_remote_audio: bool,
+    tracks_dir: Path,
+) -> TrackCreateRequest:
+    prepared = (
+        _cache_payload_remote_audio(payload, tracks_dir)
+        if cache_remote_audio
+        else _remote_audio_cache_disabled_metadata(payload)
+    )
+    return prepared.model_copy(
+        update={
+            "duration_seconds": _resolve_audio_duration_seconds(
+                prepared.audio_path,
+                prepared.duration_seconds,
+            )
+        }
+    )
+
+
+def _prepare_manual_upload_media(
+    *,
+    audio_file: UploadFile | None,
+    cover_file: UploadFile | None,
+    audio_url: str | None,
+    image_url: str | None,
+    title: str,
+    duration_seconds: int,
+    cache_remote_audio: bool,
+    tracks_dir: Path,
+    covers_dir: Path,
+) -> tuple[str | None, int, str | None, str | None]:
+    audio_path = audio_url
+    inferred_duration_seconds = duration_seconds
+    if audio_file and audio_file.filename:
+        destination = _resolve_upload_destination(tracks_dir, audio_file.filename)
+        with destination.open("wb") as handle:
+            shutil.copyfileobj(audio_file.file, handle)
+        audio_path = str(destination)
+        if not destination.exists() or destination.stat().st_size == 0:
+            destination.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
+        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
+    elif audio_url and cache_remote_audio:
+        audio_path = _cache_remote_audio_url(audio_url, tracks_dir, title=title)
+        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
+    else:
+        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
+
+    uploaded_cover_path = _store_cover_upload(cover_file, covers_dir)
+    resolved_image_url = uploaded_cover_path or image_url or _extract_embedded_cover(audio_path, covers_dir)
+    return audio_path, inferred_duration_seconds, uploaded_cover_path, resolved_image_url
+
+
+def _pending_workspace_upload_meta(db: Session, pending_workspace_id: str | None) -> dict:
+    try:
+        _validate_pending_workspace_upload(db, pending_workspace_id)
+        playlist = db.get(Playlist, pending_workspace_id) if pending_workspace_id else None
+        return dict(playlist.metadata_json or {}) if playlist else {}
+    finally:
+        # Do not hold a read transaction while media is copied or probed.
+        db.rollback()
+
+
+def _create_and_dispatch_track(db: Session, services: ServiceRegistry, payload: TrackCreateRequest) -> TrackRead:
+    track = _create_track_record(db, payload)
+    track = asyncio.run(dispatch_track_review(db, services, track))
+    return TrackRead.model_validate(track)
+
+
+def _finish_manual_upload(
+    db: Session,
+    payload: TrackCreateRequest,
+    *,
+    pending_workspace_id: str | None,
+    bulsong_warnings: list[dict],
+    dispatch_review: bool,
+) -> TrackRead:
+    track = _create_track_record(db, payload)
+    if pending_workspace_id and bulsong_warnings:
+        pending_workspace = db.get(Playlist, pending_workspace_id)
+        if pending_workspace is not None:
+            pending_meta = dict(pending_workspace.metadata_json or {})
+            for warning in bulsong_warnings:
+                release_warning = {
+                    **warning,
+                    "track_id": track.id,
+                    "track_title": track.title,
+                }
+                append_bulsong_quality_warning(pending_meta, release_warning)
+            pending_workspace.metadata_json = pending_meta
+            db.add(pending_workspace)
+            db.commit()
+    if dispatch_review:
+        _queue_slack_review_job(db, track, source="manual-upload")
+    db.refresh(track)
+    return TrackRead.model_validate(track)
+
+
 def _store_cover_upload(upload: UploadFile | None, covers_dir: Path) -> str | None:
     if not upload or not upload.filename:
         return None
@@ -343,22 +460,14 @@ async def create_track(
     db: Session = Depends(get_db),
 ) -> TrackRead:
     services = get_services(request)
-    payload = (
-        _cache_payload_remote_audio(payload, services.settings.tracks_dir)
-        if services.settings.cache_remote_audio_on_intake
-        else _remote_audio_cache_disabled_metadata(payload)
-    )
-    payload = payload.model_copy(
-        update={
-            "duration_seconds": _resolve_audio_duration_seconds(
-                payload.audio_path,
-                payload.duration_seconds,
-            )
-        }
-    )
-    track = _create_track_record(db, payload)
-    track = await dispatch_track_review(db, services, track)
-    return TrackRead.model_validate(track)
+    async with request.app.state.track_media_limiter:
+        payload = await asyncio.to_thread(
+            _prepare_track_create_payload,
+            payload,
+            cache_remote_audio=services.settings.cache_remote_audio_on_intake,
+            tracks_dir=services.settings.tracks_dir,
+        )
+    return await asyncio.to_thread(_create_and_dispatch_track, db, services, payload)
 
 
 @router.post("/manual-upload", response_model=TrackRead, status_code=status.HTTP_201_CREATED)
@@ -377,35 +486,60 @@ async def manual_upload_track(
     tags: str | None = Form(None),
     model_score: float | None = Form(None),
     pending_workspace_id: str | None = Form(None),
+    bulsong_source_map_json: str | None = Form(None),
     dispatch_review: bool = Form(True),
     audio_file: UploadFile | None = File(None),
     cover_file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
 ) -> TrackRead:
     services = get_services(request)
-    _validate_pending_workspace_upload(db, pending_workspace_id)
-    audio_path = audio_url
-    inferred_duration_seconds = duration_seconds
+    bulsong_source_map = None
+    bulsong_warnings: list[dict] = []
+    if bulsong_source_map_json:
+        try:
+            bulsong_source_map = validate_bulsong_source_map(json.loads(bulsong_source_map_json))
+        except (json.JSONDecodeError, ValueError) as exc:
+            bulsong_warnings.append(
+                make_bulsong_quality_warning(
+                    code="bulsong_source_map_invalid",
+                    stage="audio_upload",
+                    message=f"Uploaded audio has an invalid Bulsong source map: {exc}",
+                    track_title=title,
+                )
+            )
+    pending_meta = await asyncio.to_thread(_pending_workspace_upload_meta, db, pending_workspace_id)
+    if pending_workspace_id:
+        if (
+            bulsong_quality_monitoring_enabled(pending_meta)
+            and bulsong_source_map is None
+            and not bulsong_warnings
+        ):
+            bulsong_warnings.append(
+                make_bulsong_quality_warning(
+                    code="bulsong_source_map_missing",
+                    stage="audio_upload",
+                    message=(
+                        "Audio was uploaded without a verified scripture-to-lyric source map. "
+                        "Upload continued because Bulsong quality checks are warning-only."
+                    ),
+                    track_title=title,
+                )
+            )
     if not audio_file and not audio_url:
         raise HTTPException(status_code=400, detail="Either audio_file or audio_url is required.")
-
-    if audio_file and audio_file.filename:
-        destination = _resolve_upload_destination(services.settings.tracks_dir, audio_file.filename)
-        with destination.open("wb") as handle:
-            shutil.copyfileobj(audio_file.file, handle)
-        audio_path = str(destination)
-        if not destination.exists() or destination.stat().st_size == 0:
-            destination.unlink(missing_ok=True)
-            raise HTTPException(status_code=400, detail="Uploaded audio file is empty.")
-        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
-    elif audio_url and services.settings.cache_remote_audio_on_intake:
-        audio_path = _cache_remote_audio_url(audio_url, services.settings.tracks_dir, title=title)
-        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
-    else:
-        inferred_duration_seconds = _resolve_audio_duration_seconds(audio_path, inferred_duration_seconds)
-
-    uploaded_cover_path = _store_cover_upload(cover_file, services.settings.covers_dir)
-    resolved_image_url = uploaded_cover_path or image_url or _extract_embedded_cover(audio_path, services.settings.covers_dir)
+    async with request.app.state.track_media_limiter:
+        audio_path, inferred_duration_seconds, uploaded_cover_path, resolved_image_url = await asyncio.to_thread(
+            _prepare_manual_upload_media,
+            audio_file=audio_file,
+            cover_file=cover_file,
+            audio_url=audio_url,
+            image_url=image_url,
+            title=title,
+            duration_seconds=duration_seconds,
+            cache_remote_audio=services.settings.cache_remote_audio_on_intake,
+            tracks_dir=services.settings.tracks_dir,
+            covers_dir=services.settings.covers_dir,
+        )
     payload = TrackCreateRequest(
         title=title,
         prompt=prompt,
@@ -431,26 +565,36 @@ async def manual_upload_track(
             **({"tags": tags} if tags else {}),
             **({"model_score": model_score} if model_score is not None else {}),
             **({"pending_workspace_id": pending_workspace_id} if pending_workspace_id else {}),
+            **({"bulsong_source_map": bulsong_source_map} if bulsong_source_map else {}),
+            **({"bulsong_quality_warnings": bulsong_warnings} if bulsong_warnings else {}),
         },
     )
-    track = _create_track_record(db, payload)
-    if dispatch_review:
-        _queue_slack_review_job(db, track, source="manual-upload")
-    db.refresh(track)
-    return TrackRead.model_validate(track)
+    return await asyncio.to_thread(
+        _finish_manual_upload,
+        db,
+        payload,
+        pending_workspace_id=pending_workspace_id,
+        bulsong_warnings=bulsong_warnings,
+        dispatch_review=dispatch_review,
+    )
 
 
 @router.get("", response_model=list[TrackRead])
 def list_tracks(
     status_filter: TrackStatus | None = None,
     user_rating: str | None = None,
+    single_youtube_uploaded: bool | None = None,
     q: str | None = Query(default=None, max_length=200),
     limit: int = Query(default=0, ge=0, le=1000),
     compact: bool = Query(default=False),
     db: Session = Depends(get_db),
 ) -> list[TrackRead]:
     query_terms = normalize_track_search_terms(q)
-    statement = _filtered_track_statement(status_filter=status_filter, user_rating=user_rating)
+    statement = _filtered_track_statement(
+        status_filter=status_filter,
+        user_rating=user_rating,
+        single_youtube_uploaded=single_youtube_uploaded,
+    )
     if query_terms:
         candidate_limit = max((limit or 500) * 8, 500)
         tracks = _search_tracks(
@@ -476,13 +620,18 @@ def suggest_tracks(
     q: str = Query(default="", max_length=120),
     status_filter: TrackStatus | None = None,
     user_rating: str | None = None,
+    single_youtube_uploaded: bool | None = None,
     limit: int = Query(default=8, ge=1, le=20),
     db: Session = Depends(get_db),
 ) -> list[TrackSuggestionRead]:
     terms = normalize_track_search_terms(q)
     if not terms:
         return []
-    statement = _filtered_track_statement(status_filter=status_filter, user_rating=user_rating)
+    statement = _filtered_track_statement(
+        status_filter=status_filter,
+        user_rating=user_rating,
+        single_youtube_uploaded=single_youtube_uploaded,
+    )
     tracks = _search_tracks(
         db,
         statement,
@@ -515,6 +664,7 @@ def _filtered_track_statement(
     *,
     status_filter: TrackStatus | None,
     user_rating: str | None,
+    single_youtube_uploaded: bool | None = None,
 ):
     statement = select(Track)
     if status_filter:
@@ -522,6 +672,12 @@ def _filtered_track_statement(
     rating_expression = user_rating_filter_expression(user_rating)
     if rating_expression is not None:
         statement = statement.where(rating_expression)
+    if single_youtube_uploaded is True:
+        statement = statement.where(func.json_extract(Track.metadata_json, "$.single_youtube_uploaded") == 1)
+    elif single_youtube_uploaded is False:
+        statement = statement.where(
+            func.coalesce(func.json_extract(Track.metadata_json, "$.single_youtube_uploaded"), 0) == 0
+        )
     return statement
 
 
@@ -638,7 +794,7 @@ def _track_reuse_event_rollup(db: Session) -> dict[str, dict[str, int]]:
     rows = db.execute(
         select(
             TrackReuseEvent.track_id,
-            func.count(TrackReuseEvent.id),
+            func.count(),
             func.coalesce(func.sum(TrackReuseEvent.reused_duration_seconds), 0),
         ).group_by(TrackReuseEvent.track_id)
     ).all()
@@ -650,6 +806,44 @@ def _track_reuse_event_rollup(db: Session) -> dict[str, dict[str, int]]:
         for track_id, count, seconds in rows
         if track_id
     }
+
+
+def _metadata_text(path: str):
+    return cast(func.coalesce(func.json_extract(Track.metadata_json, path), ""), String)
+
+
+def _track_reuse_summary_track_rows(db: Session, track_ids: list[str]):
+    if db.bind is not None and db.bind.dialect.name == "sqlite":
+        statement = text(
+            """
+            SELECT
+                id,
+                title,
+                duration_seconds,
+                audio_path,
+                COALESCE(json_extract(metadata_json, '$.playlist_last_reused_at'), '') AS last_reused_at,
+                COALESCE(
+                    json_extract(metadata_json, '$.playlist_last_reused_in_playlist_id'),
+                    ''
+                ) AS last_reused_in_playlist_id,
+                COALESCE(json_extract(metadata_json, '$.playlist_last_reused_by'), '') AS last_reused_by
+            FROM tracks INDEXED BY idx_tracks_reuse_summary_cover
+            WHERE id IN :track_ids
+            """
+        ).bindparams(bindparam("track_ids", expanding=True))
+        return db.execute(statement, {"track_ids": track_ids}).all()
+
+    return db.execute(
+        select(
+            Track.id,
+            Track.title,
+            Track.duration_seconds,
+            Track.audio_path,
+            _metadata_text("$.playlist_last_reused_at").label("last_reused_at"),
+            _metadata_text("$.playlist_last_reused_in_playlist_id").label("last_reused_in_playlist_id"),
+            _metadata_text("$.playlist_last_reused_by").label("last_reused_by"),
+        ).where(Track.id.in_(track_ids))
+    ).all()
 
 
 def _serialize_track_reuse_event(event: TrackReuseEvent) -> TrackReuseEventRead:
@@ -696,45 +890,161 @@ def list_track_reuse_summary(
     direction: str = Query(default="desc"),
     db: Session = Depends(get_db),
 ) -> list[TrackReuseSummaryRead]:
-    event_rollup = _track_reuse_event_rollup(db)
-    tracks = db.scalars(select(Track)).all()
-    summaries: list[TrackReuseSummaryRead] = []
-    for track in tracks:
-        meta = dict(track.metadata_json or {})
-        event_entry = event_rollup.get(track.id, {})
-        reuse_count = max(_safe_int(meta.get("playlist_reuse_count")), _safe_int(event_entry.get("count")))
-        reused_seconds = max(
-            _safe_int(meta.get("playlist_reused_seconds")),
-            _safe_int(event_entry.get("seconds")),
-        )
-        event_count = _safe_int(event_entry.get("count"))
-        if reused_only and not reuse_count and not event_count:
-            continue
-        summaries.append(
-            TrackReuseSummaryRead(
-                track_id=track.id,
-                title=track.title,
-                duration_seconds=track.duration_seconds,
-                audio_path=track.audio_path,
-                reuse_count=reuse_count,
-                reused_seconds=reused_seconds,
-                event_count=event_count,
-                last_reused_at=str(meta.get("playlist_last_reused_at") or "") or None,
-                last_reused_in_playlist_id=str(meta.get("playlist_last_reused_in_playlist_id") or "") or None,
-                last_reused_by=str(meta.get("playlist_last_reused_by") or "") or None,
-            )
-        )
-
     clean_sort = sort.strip().lower()
     clean_direction = direction.strip().lower()
-    reverse = clean_direction != "asc"
+    cache_key = (limit, bool(reused_only), clean_sort, clean_direction)
+    now = time.monotonic()
+    with _track_reuse_summary_cache_lock:
+        cached = _track_reuse_summary_cache.get(cache_key)
+        if cached and now - cached[0] < TRACK_REUSE_SUMMARY_CACHE_TTL_SECONDS:
+            return cached[1]
+
+    if clean_sort in {"title", "name"} and not reused_only:
+        title_expr = func.lower(Track.title)
+        track_rows = db.execute(
+            select(
+                Track.id,
+                Track.title,
+                Track.duration_seconds,
+                Track.audio_path,
+                _metadata_text("$.playlist_last_reused_at").label("last_reused_at"),
+                _metadata_text("$.playlist_last_reused_in_playlist_id").label("last_reused_in_playlist_id"),
+                _metadata_text("$.playlist_last_reused_by").label("last_reused_by"),
+            )
+            .order_by(title_expr.asc() if clean_direction == "asc" else title_expr.desc())
+            .limit(limit)
+        ).all()
+        event_rollup = {
+            str(track_id): {"count": _safe_int(count), "seconds": _safe_int(seconds)}
+            for track_id, count, seconds in db.execute(
+                select(
+                    TrackReuseEvent.track_id,
+                    func.count(),
+                    func.coalesce(func.sum(TrackReuseEvent.reused_duration_seconds), 0),
+                )
+                .where(TrackReuseEvent.track_id.in_([row.id for row in track_rows]))
+                .group_by(TrackReuseEvent.track_id)
+            ).all()
+        }
+        summaries = [
+            TrackReuseSummaryRead(
+                track_id=row.id,
+                title=row.title,
+                duration_seconds=row.duration_seconds,
+                audio_path=row.audio_path,
+                reuse_count=_safe_int(event_rollup.get(row.id, {}).get("count")),
+                reused_seconds=_safe_int(event_rollup.get(row.id, {}).get("seconds")),
+                event_count=_safe_int(event_rollup.get(row.id, {}).get("count")),
+                last_reused_at=str(row.last_reused_at or "") or None,
+                last_reused_in_playlist_id=str(row.last_reused_in_playlist_id or "") or None,
+                last_reused_by=str(row.last_reused_by or "") or None,
+            )
+            for row in track_rows
+        ]
+        with _track_reuse_summary_cache_lock:
+            _track_reuse_summary_cache[cache_key] = (now, summaries)
+            if len(_track_reuse_summary_cache) > 16:
+                oldest_key = min(_track_reuse_summary_cache, key=lambda key: _track_reuse_summary_cache[key][0])
+                _track_reuse_summary_cache.pop(oldest_key, None)
+        return summaries
+
+    candidate_limit = max(limit * 4, 100)
     if clean_sort in {"title", "name"}:
-        summaries.sort(key=lambda item: item.title.lower(), reverse=reverse)
-    elif clean_sort in {"reused_seconds", "seconds", "duration"}:
-        summaries.sort(key=lambda item: (item.reused_seconds, item.reuse_count, item.title.lower()), reverse=reverse)
+        candidate_limit = 10000
+
+    event_count_expr = func.count()
+    event_seconds_expr = func.coalesce(func.sum(TrackReuseEvent.reused_duration_seconds), 0)
+    if clean_sort in {"reused_seconds", "seconds", "duration"}:
+        event_primary_order = event_seconds_expr.asc() if clean_direction == "asc" else event_seconds_expr.desc()
+        event_secondary_order = event_count_expr.asc() if clean_direction == "asc" else event_count_expr.desc()
     else:
-        summaries.sort(key=lambda item: (item.reuse_count, item.reused_seconds, item.title.lower()), reverse=reverse)
-    return summaries[:limit]
+        event_primary_order = event_count_expr.asc() if clean_direction == "asc" else event_count_expr.desc()
+        event_secondary_order = event_seconds_expr.asc() if clean_direction == "asc" else event_seconds_expr.desc()
+
+    event_rows = db.execute(
+        select(
+            TrackReuseEvent.track_id,
+            event_count_expr.label("event_count"),
+            event_seconds_expr.label("event_seconds"),
+        )
+        .where(TrackReuseEvent.track_id.is_not(None))
+        .group_by(TrackReuseEvent.track_id)
+        .order_by(event_primary_order, event_secondary_order)
+        .limit(candidate_limit)
+    ).all()
+
+    summary_by_id: dict[str, dict[str, object]] = {}
+    for track_id, event_count, event_seconds in event_rows:
+        summary_by_id[str(track_id)] = {
+            "reuse_count": _safe_int(event_count),
+            "reused_seconds": _safe_int(event_seconds),
+            "event_count": _safe_int(event_count),
+        }
+
+    if not reused_only and len(summary_by_id) < limit:
+        existing_ids = set(summary_by_id)
+        fallback_rows = db.execute(
+            select(Track.id)
+            .where(~Track.id.in_(existing_ids) if existing_ids else True)
+            .order_by(Track.created_at.desc())
+            .limit(limit - len(summary_by_id))
+        ).all()
+        for row in fallback_rows:
+            summary_by_id.setdefault(row.id, {"reuse_count": 0, "reused_seconds": 0, "event_count": 0})
+
+    track_ids = list(summary_by_id)
+    if not track_ids:
+        summaries: list[TrackReuseSummaryRead] = []
+    else:
+        track_rows = _track_reuse_summary_track_rows(db, track_ids)
+        summaries = []
+        for row in track_rows:
+            entry = summary_by_id.get(row.id, {})
+            reuse_count = _safe_int(entry.get("reuse_count"))
+            event_count = _safe_int(entry.get("event_count"))
+            if reused_only and not reuse_count and not event_count:
+                continue
+            summaries.append(
+                TrackReuseSummaryRead(
+                    track_id=row.id,
+                    title=row.title,
+                    duration_seconds=row.duration_seconds,
+                    audio_path=row.audio_path,
+                    reuse_count=reuse_count,
+                    reused_seconds=_safe_int(entry.get("reused_seconds")),
+                    event_count=event_count,
+                    last_reused_at=str(row.last_reused_at or "") or None,
+                    last_reused_in_playlist_id=str(row.last_reused_in_playlist_id or "") or None,
+                    last_reused_by=str(row.last_reused_by or "") or None,
+                )
+            )
+
+    ascending = clean_direction == "asc"
+    if clean_sort in {"title", "name"}:
+        summaries.sort(key=lambda item: item.title.lower(), reverse=not ascending)
+    elif clean_sort in {"reused_seconds", "seconds", "duration"}:
+        summaries.sort(
+            key=lambda item: (
+                item.reused_seconds if ascending else -item.reused_seconds,
+                item.reuse_count if ascending else -item.reuse_count,
+                item.title.lower(),
+            )
+        )
+    else:
+        summaries.sort(
+            key=lambda item: (
+                item.reuse_count if ascending else -item.reuse_count,
+                item.reused_seconds if ascending else -item.reused_seconds,
+                item.title.lower(),
+            )
+        )
+    summaries = summaries[:limit]
+    with _track_reuse_summary_cache_lock:
+        _track_reuse_summary_cache[cache_key] = (now, summaries)
+        if len(_track_reuse_summary_cache) > 16:
+            oldest_key = min(_track_reuse_summary_cache, key=lambda key: _track_reuse_summary_cache[key][0])
+            _track_reuse_summary_cache.pop(oldest_key, None)
+    return summaries
 
 
 @router.get("/{track_id}/reuse", response_model=list[TrackReuseEventRead])

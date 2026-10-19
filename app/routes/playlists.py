@@ -69,9 +69,11 @@ from app.utils.local_video_cleanup import (
 )
 from app.utils.render_worker_registry import set_render_worker_nickname
 from app.utils.youtube_localizations import (
+    ensure_youtube_description_request_cta,
     normalize_youtube_language,
     normalize_youtube_localizations,
     sanitize_youtube_copy,
+    single_release_youtube_title,
 )
 
 router = APIRouter(prefix="/playlists", tags=["playlists"])
@@ -217,17 +219,20 @@ def list_playlists(
 def list_workspace_playlists(
     compact: bool = Query(default=False),
     limit: int = Query(default=180, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[PlaylistWorkspaceRead] | JSONResponse:
-    if compact:
-        cached_workspaces = load_cached_compact_playlist_workspaces(limit=limit)
+    if compact and offset == 0:
+        cached_workspaces = load_cached_compact_playlist_workspaces(limit=limit, db=db)
         if cached_workspaces is not None:
-            return JSONResponse(content=cached_workspaces)
+            return JSONResponse(content=cached_workspaces, headers={"Cache-Control": "no-store"})
+    if compact:
         return JSONResponse(
             content=[
                 workspace.model_dump(mode="json")
-                for workspace in list_compact_playlist_workspaces(db, limit=limit)
-            ]
+                for workspace in list_compact_playlist_workspaces(db, limit=limit, offset=offset)
+            ],
+            headers={"Cache-Control": "no-store"},
         )
     return [
         serialize_playlist_workspace(playlist, compact=compact)
@@ -236,11 +241,17 @@ def list_workspace_playlists(
 
 
 @router.get("/workspaces/summary")
-def list_workspace_summary(db: Session = Depends(get_db)) -> dict:
-    cached_summaries = load_cached_workspace_channel_summaries()
+def list_workspace_summary(db: Session = Depends(get_db)) -> JSONResponse:
+    cached_summaries = load_cached_workspace_channel_summaries(db=db)
     if cached_summaries is not None:
-        return {"channels": cached_summaries}
-    return {"channels": list_workspace_channel_summaries(db)}
+        return JSONResponse(
+            content={"channels": cached_summaries},
+            headers={"Cache-Control": "no-store"},
+        )
+    return JSONResponse(
+        content={"channels": list_workspace_channel_summaries(db)},
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.post("/render-workers/{worker_id}/nickname")
@@ -317,6 +328,7 @@ def create_workspace_playlist(
         dreamina_prompt=payload.dreamina_prompt,
         target_youtube_channel_title=payload.target_youtube_channel_title,
         soft_hour_lane=payload.soft_hour_lane,
+        cinematic_pulse_lane=payload.cinematic_pulse_lane,
     )
     return serialize_playlist_workspace(playlist)
 
@@ -597,6 +609,7 @@ def approve_workspace_metadata(
             description=payload.description,
             tags=payload.tags,
             localizations=payload.localizations,
+            title_market_research=payload.title_market_research,
             default_language=payload.default_language,
             note=payload.note,
         )
@@ -643,12 +656,23 @@ def update_uploaded_youtube_metadata(
     if default_copy:
         title = default_copy["title"]
         description = default_copy["description"]
+    if str(meta.get("workspace_mode") or "playlist") == "single_track_video" and playlist.items:
+        ordered_items = sorted(playlist.items, key=lambda item: item.order_index)
+        if ordered_items and ordered_items[0].track is not None:
+            title = single_release_youtube_title(ordered_items[0].track.title)
+            for localized_copy in localizations.values():
+                localized_copy["title"] = title
     if not title or not description:
         raise HTTPException(status_code=400, detail="YouTube title and description are required.")
 
     description = _ensure_description_hashtags(description, tags)
-    for localized_copy in localizations.values():
+    description = ensure_youtube_description_request_cta(description, language=default_language)
+    for language, localized_copy in localizations.items():
         localized_copy["description"] = _ensure_description_hashtags(localized_copy.get("description") or "", tags)
+        localized_copy["description"] = ensure_youtube_description_request_cta(
+            localized_copy["description"],
+            language=language,
+        )
     default_copy = localizations.get(default_language)
     if default_copy:
         title = default_copy["title"]

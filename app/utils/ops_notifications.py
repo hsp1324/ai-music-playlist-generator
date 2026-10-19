@@ -228,8 +228,18 @@ def post_ops_message(
         return {"ok": False, "error": str(exc)}
 
 
-def notify_video_render_queued(db: Session, services, *, playlist: Playlist, job: Job | None) -> dict[str, Any]:
-    if job is None or job.status != JobStatus.queued:
+def notify_video_render_queued(
+    db: Session,
+    services,
+    *,
+    playlist: Playlist,
+    job: Job | None,
+    allow_started: bool = False,
+) -> dict[str, Any]:
+    allowed_statuses = {JobStatus.queued}
+    if allow_started:
+        allowed_statuses.add(JobStatus.running)
+    if job is None or job.status not in allowed_statuses:
         return {"ok": False, "skipped": True, "reason": "video_job_not_queued"}
     result_json = dict(job.result_json or {})
     if result_json.get("ops_video_queued_notification"):

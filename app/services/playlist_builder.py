@@ -1,8 +1,13 @@
 import colorsys
+import hashlib
+import json
 import math
+import os
 import subprocess
+import threading
 import time
 from array import array
+from collections import Counter
 from dataclasses import dataclass
 from io import BytesIO
 from math import ceil
@@ -67,9 +72,18 @@ class PlaylistPlan:
     shortage_seconds: int
 
 
+@dataclass(frozen=True)
+class AudioStreamProfile:
+    codec_name: str
+    sample_rate: int
+    channels: int
+
+
 class FFMpegPlaylistBuilder:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self._renderable_duration_cache: dict[tuple[str, int, int], float] = {}
+        self._renderable_duration_cache_lock = threading.Lock()
 
     def _run_ffmpeg(self, command: list[str]) -> None:
         try:
@@ -82,6 +96,141 @@ class FFMpegPlaylistBuilder:
             else:
                 details = str(exc)
             raise RuntimeError(f"ffmpeg failed: {details}") from exc
+
+    def _ffprobe_binary(self) -> str:
+        candidate = Path(self.settings.ffmpeg_binary).with_name("ffprobe")
+        return str(candidate) if candidate.exists() else "ffprobe"
+
+    def _probe_audio_stream_profile(self, audio_path: Path) -> AudioStreamProfile | None:
+        try:
+            if audio_path.stat().st_size < 1024:
+                return None
+        except OSError:
+            return None
+        try:
+            result = subprocess.run(
+                [
+                    self._ffprobe_binary(),
+                    "-v",
+                    "error",
+                    "-select_streams",
+                    "a:0",
+                    "-show_entries",
+                    "stream=codec_name,sample_rate,channels",
+                    "-of",
+                    "json",
+                    str(audio_path),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            streams = json.loads(result.stdout or "{}").get("streams") or []
+            if not streams:
+                return None
+            stream = streams[0]
+            profile = AudioStreamProfile(
+                codec_name=str(stream.get("codec_name") or "").strip().lower(),
+                sample_rate=int(stream.get("sample_rate") or 0),
+                channels=int(stream.get("channels") or 0),
+            )
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError, json.JSONDecodeError):
+            return None
+        if not profile.codec_name or profile.sample_rate <= 0 or profile.channels <= 0:
+            return None
+        return profile
+
+    def _normalized_audio_cache_path(
+        self,
+        audio_path: Path,
+        target_profile: AudioStreamProfile,
+    ) -> Path:
+        source = audio_path.resolve()
+        stat = source.stat()
+        fingerprint = "\0".join(
+            (
+                str(source),
+                str(stat.st_size),
+                str(stat.st_mtime_ns),
+                target_profile.codec_name,
+                str(target_profile.sample_rate),
+                str(target_profile.channels),
+                "v1",
+            )
+        )
+        digest = hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:24]
+        return self.settings.temp_dir / "audio-normalized" / f"{digest}.mp3"
+
+    def _normalize_audio_source(
+        self,
+        audio_path: Path,
+        target_profile: AudioStreamProfile,
+    ) -> Path:
+        destination = self._normalized_audio_cache_path(audio_path, target_profile)
+        if destination.exists() and destination.stat().st_size > 0:
+            return destination
+
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = destination.with_name(f"{destination.stem}-{os.getpid()}.tmp.mp3")
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-hide_banner",
+            "-nostats",
+            "-i",
+            str(audio_path),
+            "-map",
+            "0:a:0",
+            "-vn",
+            "-map_metadata",
+            "-1",
+            "-c:a",
+            "libmp3lame",
+            "-q:a",
+            "2",
+            "-ar",
+            str(target_profile.sample_rate),
+            "-ac",
+            str(target_profile.channels),
+            str(temporary_path),
+        ]
+        try:
+            self._run_ffmpeg(command)
+            if not temporary_path.exists() or temporary_path.stat().st_size <= 0:
+                raise RuntimeError(f"Normalized audio output is empty: {audio_path}")
+            temporary_path.replace(destination)
+        finally:
+            temporary_path.unlink(missing_ok=True)
+        return destination
+
+    def _stream_copy_audio_paths(self, audio_paths: list[Path]) -> list[Path] | None:
+        profiles = [self._probe_audio_stream_profile(path) for path in audio_paths]
+        if any(profile is None for profile in profiles):
+            return None
+
+        typed_profiles = [profile for profile in profiles if profile is not None]
+        if any(profile.codec_name != "mp3" for profile in typed_profiles):
+            return None
+        if len({profile.channels for profile in typed_profiles}) != 1:
+            return None
+
+        target_profile = Counter(typed_profiles).most_common(1)[0][0]
+        normalized_paths: dict[Path, Path] = {}
+        render_paths: list[Path] = []
+        for audio_path, profile in zip(audio_paths, typed_profiles, strict=True):
+            if profile == target_profile:
+                render_paths.append(audio_path)
+                continue
+            normalized_path = normalized_paths.get(audio_path)
+            if normalized_path is None:
+                try:
+                    normalized_path = self._normalize_audio_source(audio_path, target_profile)
+                except (OSError, RuntimeError):
+                    return None
+                normalized_paths[audio_path] = normalized_path
+            render_paths.append(normalized_path)
+        return render_paths
 
     def _run_ffmpeg_with_progress(
         self,
@@ -266,6 +415,7 @@ class FFMpegPlaylistBuilder:
         *,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
         total_duration_seconds: int | float | None = None,
+        verify_source_duration: bool = True,
     ) -> Path:
         if not tracks:
             raise ValueError("No tracks were supplied for rendering.")
@@ -278,59 +428,97 @@ class FFMpegPlaylistBuilder:
         if missing:
             raise FileNotFoundError(f"Some track files do not exist: {missing}")
 
-        probed_durations: list[float] = []
+        source_durations: list[float] = []
         unreadable: list[str] = []
         for track, audio_path in zip(tracks, audio_paths, strict=True):
-            duration = self.get_renderable_media_duration(audio_path)
+            if audio_path.stat().st_size <= 0:
+                unreadable.append(f"{track.title} ({audio_path})")
+                continue
+            # Background renders have already accepted these local uploads and
+            # carry a persisted duration. Re-decoding every source here can
+            # turn a transient ffmpeg/volume stall into a false
+            # "unreadable audio" failure before concat gets a chance to run.
+            duration = (
+                float(track.duration_seconds or 0)
+                if not verify_source_duration
+                else self.get_renderable_media_duration(audio_path)
+            )
             if duration <= 0:
                 unreadable.append(f"{track.title} ({audio_path})")
             else:
-                probed_durations.append(duration)
+                source_durations.append(duration)
         if unreadable:
             raise ValueError("Playlist contains unreadable audio files: " + "; ".join(unreadable))
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Stream-profile probing has the same failure mode as source-duration
+        # probing. For persisted uploads, optimistically stream-copy first and
+        # validate the single output; if it is short or invalid, the existing
+        # fallback re-encodes it. This avoids 34 individual probes and keeps a
+        # healthy all-MP3 playlist from spending hours under the VM CPU limit.
+        stream_copy_paths = (
+            self._stream_copy_audio_paths(audio_paths)
+            if verify_source_duration
+            else audio_paths
+        )
+        render_paths = stream_copy_paths or audio_paths
+
         with NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as handle:
-            for audio_path in audio_paths:
+            for audio_path in render_paths:
                 escaped = str(audio_path.resolve()).replace("'", "'\\''")
                 handle.write(f"file '{escaped}'\n")
             manifest_path = Path(handle.name)
 
-        command = [
-            self.settings.ffmpeg_binary,
-            "-y",
-            "-hide_banner",
-            "-nostats",
-            "-progress",
-            "pipe:1",
-            "-f",
-            "concat",
-            "-safe",
-            "0",
-            "-i",
-            str(manifest_path),
-            "-vn",
-            "-c:a",
-            "libmp3lame",
-            "-q:a",
-            "2",
-            str(output_path),
-        ]
+        def render_command(*, stream_copy: bool) -> list[str]:
+            codec_args = ["-c:a", "copy"] if stream_copy else ["-c:a", "libmp3lame", "-q:a", "2"]
+            return [
+                self.settings.ffmpeg_binary,
+                "-y",
+                "-hide_banner",
+                "-nostats",
+                "-progress",
+                "pipe:1",
+                "-f",
+                "concat",
+                "-safe",
+                "0",
+                "-i",
+                str(manifest_path),
+                "-vn",
+                *codec_args,
+                str(output_path),
+            ]
+
+        expected_duration = sum(source_durations)
+
+        def rendered_duration_is_valid() -> tuple[bool, float]:
+            actual = self._probe_media_duration(output_path)
+            tolerance_seconds = max(2.0, expected_duration * 0.01)
+            return actual > 0 and actual + tolerance_seconds >= expected_duration, actual
 
         try:
             output_path.unlink(missing_ok=True)
             self._run_ffmpeg_with_progress(
-                command,
+                render_command(stream_copy=stream_copy_paths is not None),
                 output_path=output_path,
-                total_duration_seconds=total_duration_seconds or sum(probed_durations),
+                total_duration_seconds=total_duration_seconds or expected_duration,
                 progress_callback=progress_callback,
                 stage="audio_render",
             )
+            valid_duration, _ = rendered_duration_is_valid()
+            if stream_copy_paths is not None and not valid_duration:
+                output_path.unlink(missing_ok=True)
+                self._run_ffmpeg_with_progress(
+                    render_command(stream_copy=False),
+                    output_path=output_path,
+                    total_duration_seconds=total_duration_seconds or expected_duration,
+                    progress_callback=progress_callback,
+                    stage="audio_render",
+                )
         finally:
             manifest_path.unlink(missing_ok=True)
 
-        expected_duration = sum(probed_durations)
         actual_duration = self._probe_media_duration(output_path)
         if actual_duration <= 0:
             raise RuntimeError(f"Rendered playlist audio is unreadable: {output_path}")
@@ -1036,9 +1224,31 @@ class FFMpegPlaylistBuilder:
             "no": "none",
             "no-spectrum": "none",
             "fast": "none",
+            "club": "club-floor-cyan",
+            "club-bars": "club-floor-cyan",
+            "club-neon": "club-floor-cyan",
+            "club-mirror": "club-floor-mirror",
+            "club-radial": "club-floor-white",
+            "crate-notes": "club-crate-notes",
+            "club-crate": "club-crate-notes",
+            "neon": "club-floor-cyan",
+            "neon-bars": "club-floor-cyan",
+            "mirror-fullscreen": "club-floor-mirror",
+            "radial-fullscreen": "club-floor-white",
         }
         normalized = aliases.get(normalized, normalized)
-        if normalized not in {"bars", "mirror-bars", "calm-bars", "none"}:
+        if normalized not in {
+            "bars",
+            "mirror-bars",
+            "calm-bars",
+            "club-floor-white",
+            "club-floor-cyan",
+            "club-floor-dual",
+            "club-floor-amber",
+            "club-floor-mirror",
+            "club-crate-notes",
+            "none",
+        }:
             return "bars"
         return normalized
 
@@ -1060,6 +1270,28 @@ class FFMpegPlaylistBuilder:
 
         output_path.unlink(missing_ok=True)
         frame_size = self._render_frame_size(render_resolution)
+        if style == "club-crate-notes":
+            self._apply_club_crate_notes_overlay(
+                base_video_path,
+                audio_path,
+                output_path,
+                frame_size=frame_size,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
+            return
+        if style.startswith("club-floor-"):
+            self._apply_club_spectrum_overlay(
+                base_video_path,
+                audio_path,
+                output_path,
+                style=style,
+                frame_size=frame_size,
+                total_duration_seconds=total_duration_seconds,
+                progress_callback=progress_callback,
+            )
+            return
+
         visual_frame = self._normalize_preview_frame(self._load_visual_source_frame(visual_source_path), frame_size)
         primary, accent = self._extract_spectrum_palette(visual_frame)
         overlay_size = self._spectrum_overlay_size(style)
@@ -1142,6 +1374,223 @@ class FFMpegPlaylistBuilder:
             )
         finally:
             overlay_path.unlink(missing_ok=True)
+
+    def _apply_club_spectrum_overlay(
+        self,
+        base_video_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        *,
+        style: str,
+        frame_size: tuple[int, int],
+        total_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None,
+    ) -> None:
+        """Render a clean full-width Club Bloom floor visualizer."""
+        width, height = frame_size
+        visualizer_width = max(width // 2, 320)
+        floor_height = max(int(round(height * 0.24)), 120)
+        visualizer_height = max(floor_height // 2, 60)
+        base = (
+            f"[0:v]fps={SPECTRUM_OVERLAY_FPS},scale={width}:{height}:"
+            "force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},eq=brightness=-0.03:saturation=1.12,"
+            f"drawbox=x=0:y=ih-{floor_height}:w=iw:h={floor_height}:"
+            "color=black@0.14:t=fill,"
+            "setpts=PTS-STARTPTS[base]"
+        )
+        audio_input = "[1:a]aformat=channel_layouts=stereo,pan=mono|c0=0.5*c0+0.5*c1,"
+        if style == "club-floor-mirror":
+            overlay_alpha = 0.68
+            half_height = max(visualizer_height // 2, 2)
+            visualizer = (
+                audio_input
+                +
+                f"showfreqs=s={visualizer_width}x{half_height}:mode=bar:ascale=cbrt:fscale=log:"
+                "colors=white:cmode=combined:win_size=2048:averaging=4,"
+                f"fps={SPECTRUM_OVERLAY_FPS},format=gbrp,split=2[top_src][bottom_src];"
+                "[top_src]colorchannelmixer=rr=0[top];"
+                "[bottom_src]vflip[bottom];[top][bottom]vstack=inputs=2[colored]"
+            )
+        elif style == "club-floor-dual":
+            overlay_alpha = 0.68
+            half_width = visualizer_width // 2
+            visualizer = (
+                audio_input
+                +
+                f"showfreqs=s={visualizer_width}x{visualizer_height}:mode=bar:ascale=cbrt:fscale=log:"
+                "colors=white:cmode=combined:win_size=2048:averaging=4,"
+                f"fps={SPECTRUM_OVERLAY_FPS},format=gbrp,split=2[left_src][right_src];"
+                f"[left_src]crop={half_width}:{visualizer_height}:0:0,"
+                "colorchannelmixer=rr=0[left];"
+                f"[right_src]crop={visualizer_width - half_width}:{visualizer_height}:{half_width}:0,"
+                "colorchannelmixer=gg=0[right];[left][right]hstack=inputs=2[colored]"
+            )
+        else:
+            palette = {
+                "club-floor-white": ("0xF2F8FF", 0.66),
+                "club-floor-amber": ("0xFFB84D", 0.70),
+            }
+            color, overlay_alpha = palette.get(style, ("0x00DDF2", 0.72))
+            visualizer = (
+                audio_input
+                +
+                f"showfreqs=s={visualizer_width}x{visualizer_height}:mode=bar:"
+                f"ascale=cbrt:fscale=log:colors={color}:cmode=combined:"
+                f"win_size=2048:averaging=4,fps={SPECTRUM_OVERLAY_FPS},format=gbrp[colored]"
+            )
+        filter_complex = (
+            f"{base};{visualizer};"
+            "[colored]drawgrid=w=8:h=9999:t=1:c=black@1,"
+            "split=2[sharp][glow_src];[glow_src]gblur=sigma=2.4:steps=1[glow];"
+            "[glow][sharp]blend=all_mode=screen:all_opacity=0.34[spec_low];"
+            f"[spec_low]scale={width}:{floor_height}:flags=bilinear,format=rgba,"
+            f"colorkey=black:0.06:0.08,colorchannelmixer=aa={overlay_alpha:.2f}[spec];"
+            f"[base][spec]overlay=0:{height - floor_height}:format=auto,format=yuv420p[v]"
+        )
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-hide_banner",
+            "-nostats",
+            "-progress",
+            "pipe:1",
+            "-i",
+            str(base_video_path),
+            "-i",
+            str(audio_path),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[v]",
+            "-map",
+            "0:a:0",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            self._x264_crf_for_frame_size(frame_size),
+            "-c:a",
+            "copy",
+            "-shortest",
+            "-movflags",
+            "+faststart",
+            str(output_path),
+        ]
+        self._run_ffmpeg_with_progress(
+            command,
+            output_path=output_path,
+            total_duration_seconds=total_duration_seconds,
+            progress_callback=progress_callback,
+            stage="video_spectrum_overlay",
+        )
+
+    def _apply_club_crate_notes_overlay(
+        self,
+        base_video_path: Path,
+        audio_path: Path,
+        output_path: Path,
+        *,
+        frame_size: tuple[int, int],
+        total_duration_seconds: int | float | None,
+        progress_callback: Callable[[dict[str, Any]], None] | None,
+    ) -> None:
+        """Render the restrained monochrome crate-notes layout from Club Bloom sample 04."""
+        width, height = frame_size
+        sx = width / 1280
+        sy = height / 720
+        panel_x = round(45 * sx)
+        panel_y = round(45 * sy)
+        panel_width = round(292 * sx)
+        panel_height = round(630 * sy)
+        rule_x = round(71 * sx)
+        text_x = round(92 * sx)
+        visualizer_x = round(94 * sx)
+        visualizer_y = round(385 * sy)
+        visualizer_width = max(round(205 * sx), 120)
+        visualizer_height = max(round(210 * sy), 100)
+        font_regular = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        font_bold = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        font_serif = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+
+        def drawtext(text: str, y: int, size: int, color: str, *, font: str = font_regular) -> str:
+            return (
+                f"drawtext=fontfile='{font}':text='{text}':x={text_x}:y={round(y * sy)}:"
+                f"fontsize={max(round(size * sy), 10)}:fontcolor={color}:borderw=0"
+            )
+
+        details = ",".join(
+            [
+                f"drawbox=x={panel_x}:y={panel_y}:w={panel_width}:h={panel_height}:color=0x090909@0.44:t=fill",
+                f"drawbox=x={rule_x}:y={round(69 * sy)}:w={max(round(sx), 1)}:h={round(582 * sy)}:color=white@0.32:t=fill",
+                drawtext("ARCHIVE / SELECTED CUTS", 70, 12, "white@0.72"),
+                drawtext("33", 104, 72, "0xE7533F", font=font_serif),
+                drawtext("REVOLUTIONS / MIN", 180, 10, "white@0.56"),
+                drawtext("SIDE A", 232, 25, "white", font=font_bold),
+                drawtext("AFTER HOURS", 260, 21, "white", font=font_bold),
+                drawtext("VINYL / BREAKS", 309, 10, "white@0.62"),
+                drawtext("SOUL / RHYTHM", 327, 10, "white@0.62"),
+                drawtext("VISUAL NOTE 04", 621, 10, "0xE7533F"),
+            ]
+        )
+        base = (
+            f"[0:v]fps={SPECTRUM_OVERLAY_FPS},scale={width}:{height}:"
+            "force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},hue=s=0.32,"
+            f"eq=brightness=-0.025:contrast=1.16:gamma=1.01,{details},"
+            "setpts=PTS-STARTPTS[base]"
+        )
+        visualizer = (
+            "[1:a]aformat=channel_layouts=stereo,pan=mono|c0=0.5*c0+0.5*c1,"
+            f"showfreqs=s={visualizer_width}x{visualizer_height}:mode=line:"
+            "ascale=cbrt:fscale=log:win_size=2048:averaging=5:"
+            "colors=0xF4F1EA|0xE7533F,"
+            f"fps={SPECTRUM_OVERLAY_FPS},format=rgba,colorkey=black:0.04:0.07,"
+            "colorchannelmixer=aa=0.76[spec]"
+        )
+        filter_complex = (
+            f"{base};{visualizer};"
+            f"[base][spec]overlay=x={visualizer_x}:y={visualizer_y}:"
+            "format=auto:shortest=1,format=yuv420p[v]"
+        )
+        command = [
+            self.settings.ffmpeg_binary,
+            "-y",
+            "-hide_banner",
+            "-nostats",
+            "-progress",
+            "pipe:1",
+            "-i",
+            str(base_video_path),
+            "-i",
+            str(audio_path),
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[v]",
+            "-map",
+            "0:a:0",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            self._x264_crf_for_frame_size(frame_size),
+            "-c:a",
+            "copy",
+            "-shortest",
+            "-movflags",
+            "+faststart",
+            str(output_path),
+        ]
+        self._run_ffmpeg_with_progress(
+            command,
+            output_path=output_path,
+            total_duration_seconds=total_duration_seconds,
+            progress_callback=progress_callback,
+            stage="video_spectrum_overlay",
+        )
 
     def _build_spectrum_overlay_video(
         self,
@@ -1849,6 +2298,11 @@ class FFMpegPlaylistBuilder:
         return list_path
 
     def _probe_media_duration(self, media_path: Path) -> float:
+        try:
+            if media_path.stat().st_size < 1024:
+                return 0.0
+        except OSError:
+            return 0.0
         ffprobe_binary = str(Path(self.settings.ffmpeg_binary).with_name("ffprobe"))
         if not Path(ffprobe_binary).exists():
             ffprobe_binary = "ffprobe"
@@ -1867,17 +2321,31 @@ class FFMpegPlaylistBuilder:
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=15,
             )
             return max(float(result.stdout.strip()), 0.0)
-        except (OSError, subprocess.CalledProcessError, ValueError):
+        except (OSError, subprocess.SubprocessError, ValueError):
             return 0.0
 
     def get_renderable_media_duration(self, media_path: Path) -> float:
         """Return the duration ffmpeg will use while rendering a source file."""
+        try:
+            stat = media_path.stat()
+            cache_key = (str(media_path.resolve()), int(stat.st_size), int(stat.st_mtime_ns))
+        except OSError:
+            cache_key = (str(media_path.resolve()), -1, -1)
+        with self._renderable_duration_cache_lock:
+            cached = self._renderable_duration_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
         decoded_duration = self._decode_media_duration(media_path)
-        if decoded_duration > 0:
-            return decoded_duration
-        return self._probe_media_duration(media_path)
+        duration = decoded_duration if decoded_duration > 0 else self._probe_media_duration(media_path)
+        with self._renderable_duration_cache_lock:
+            if len(self._renderable_duration_cache) >= 256:
+                self._renderable_duration_cache.pop(next(iter(self._renderable_duration_cache)))
+            self._renderable_duration_cache[cache_key] = duration
+        return duration
 
     def _decode_media_duration(self, media_path: Path) -> float:
         """Return decoded duration when container metadata is incomplete or inaccurate.
@@ -1889,6 +2357,8 @@ class FFMpegPlaylistBuilder:
         duration as the audio renderer.
         """
         try:
+            if media_path.stat().st_size < 1024:
+                return 0.0
             result = subprocess.run(
                 [
                     self.settings.ffmpeg_binary,
@@ -1906,8 +2376,9 @@ class FFMpegPlaylistBuilder:
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=180,
             )
-        except (OSError, subprocess.CalledProcessError):
+        except (OSError, subprocess.SubprocessError):
             return 0.0
 
         decoded_microseconds = 0.0

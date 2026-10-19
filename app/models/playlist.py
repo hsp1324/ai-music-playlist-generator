@@ -23,12 +23,16 @@ class Playlist(Base):
     output_audio_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     output_video_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     youtube_video_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    youtube_comment_request_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, unique=True, index=True
+    )
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=utcnow,
         onupdate=utcnow,
+        index=True,
     )
 
     items = relationship("PlaylistItem", back_populates="playlist", cascade="all, delete-orphan")

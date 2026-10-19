@@ -4,7 +4,7 @@ Use this after the selected channel is `Solwave Radio`. This document decides th
 
 ## Channel Promise
 
-Solwave Radio is a Spanish/Latin vocal music channel: Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, and verano latino.
+Solwave Radio is a Spanish/Latin vocal music channel: Latin pop, Spanish pop, urbano latino, reggaeton pop, bachata pop, salsa pop, cumbia pop, tropical dance-pop, piano-only Spanish vocal pop, acoustic-guitar-only Spanish vocal pop, and fresh Latin indie-acoustic pop.
 
 The audience should immediately understand: Spanish-language pop for a specific Latin mood, scene, or use case.
 
@@ -38,11 +38,16 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Cumbia pop: warm groove, friends, outdoor party, summer movement.
 - Latin R&B / Spanish R&B: smooth late-night vocals, romance, heartbreak, slow groove.
 - Latin soul / neo-soul pop: mature vocals, warm chords, romance, relaxed rhythm.
+- Piano-only Spanish vocal pop: one acoustic/upright piano beneath the vocals, intimate or lightly playful rather than always a slow ballad.
+- Acoustic-guitar-only Spanish vocal pop: one nylon-string or steel-string acoustic guitar beneath the vocals, fingerpicked or lightly strummed.
+- Fresh Latin indie-acoustic pop: bright acoustic rhythm, clear vocals, conversational Spanish storytelling, concise hooks, and a breezy independent mood; very light percussion may appear.
 
 ## Music Direction
 
 - Original Spanish lyrics by default.
-- One release must stay in one clear genre lane such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul. Do not make one playlist a vague mixed Latin sampler unless the human explicitly asks.
+- One release must stay in one clear genre lane such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, Latin soul, piano-only Spanish vocal pop, acoustic-guitar-only Spanish vocal pop, or fresh Latin indie-acoustic pop. Do not make one playlist a vague mixed Latin sampler unless the human explicitly asks.
+- For piano-only releases, exclude drums, percussion, bass, guitar, strings, orchestra, synths, pads, claps, snaps, and beat drops. For acoustic-guitar-only releases, exclude drums, percussion, bass, piano, electric guitar, strings, orchestra, synths, pads, stomp, and handclaps. Keep the accompaniment truly singular.
+- Use the fresh indie-acoustic traits without naming or imitating any real singer, songwriter, song, melody, vocal identity, or lyric style in Suno fields.
 - Put the selected genre lane in the YouTube title and metadata in natural Spanish and localized equivalents. The title should make both the genre and the listening reason obvious.
 - Every track needs a distinct lyric concept, chorus hook, title, and Suno style/settings.
 - Rhythm should be clear and playlist-friendly.
@@ -50,8 +55,9 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - Write each song like a real standalone Spanish/Latin pop track: natural Spanish phrasing, catchy chorus, believable romance, desire, confidence, freedom, night-out, heartbreak, summer, or dance-floor emotion. Avoid over-literal lyrics that repeat the YouTube title/use case.
 - Match lyrics to the melody, rhythm, vocal tone, and hook first. Song quality is the first priority. A song can fit a drive/fiesta/workout playlist because of its groove and energy while the lyrics tell an independent Latin pop story unrelated to the playlist title.
 - Titles should feel curated and editorial, not raw workspace names.
-- Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each Latin/Spanish pop prompt/lyrics file as a full song meant to naturally land around 4 minutes or longer: intro, first verse, pre-chorus/build when useful, chorus, second verse, chorus return, bridge/rap break or final chorus lift, and a resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
+- Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each Latin/Spanish pop prompt/lyrics file as a full song meant to naturally land around 4 minutes or longer. Use a distinct intro on only about one out of every five vocal tracks; start the rest directly with a first verse, hook, chorus, rap verse, or brief vocal pickup. Continue with pre-chorus/build when useful, chorus returns, second verse, bridge/rap break or final chorus lift, and a resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
 - Do not make lyricless, BGM-only, hum-only, or instrumental Latin/Spanish pop unless the human explicitly requests it.
+- In no-intro tracks, do not substitute a few sung setup lines, humming, spoken count-ins, or an unlabelled piano/guitar lead-in before the real verse. Start the actual first section immediately.
 
 ## Visual Direction
 
@@ -68,6 +74,9 @@ Also follow [../openclaw-channel-genre-taxonomy.md](../openclaw-channel-genre-ta
 - `[playlist] Reggaeton Suave de Noche | Latin Pop para Playa, Drive y Fiesta`
 - `[playlist] Bachata Pop para Lluvia Tropical | Romance, Noche y Ventanas Abiertas`
 - `[playlist] Latin R&B de Noche | Romance, Drive y Buenas Vibras`
+- `[playlist] Indie Acústico para Empezar Ligero | Guitarras Frescas y Días Buenos`
+- `[playlist] Solo Guitarra y Voz | Pop Acústico para una Tarde Tranquila`
+- `[playlist] Piano y Voz de Noche | Canciones Íntimas en Español`
 
 ## Bad Directions
 

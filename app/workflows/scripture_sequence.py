@@ -95,6 +95,7 @@ SCRIPTURE_BLOCKS = {
         {"next_start": "Genesis 15:1", "passage_range": "Genesis 15:1-21", "next_start_after_completion": "Genesis 16:1"},
         {"next_start": "Genesis 16:1", "passage_range": "Genesis 16:1-16", "next_start_after_completion": "Genesis 17:1"},
         {"next_start": "Genesis 17:1", "passage_range": "Genesis 17:1-27", "next_start_after_completion": "Genesis 18:1"},
+        {"next_start": "Genesis 18:1", "passage_range": "Genesis 18:1-15", "next_start_after_completion": "Genesis 18:16"},
     ],
     "the_new_verse": [
         {"next_start": "Matthew 1:1", "passage_range": "Matthew 1:1-17", "next_start_after_completion": "Matthew 1:18"},
@@ -137,6 +138,9 @@ SCRIPTURE_BLOCKS = {
         {"next_start": "Matthew 9:35", "passage_range": "Matthew 9:35-38", "next_start_after_completion": "Matthew 10:1"},
         {"next_start": "Matthew 10:1", "passage_range": "Matthew 10:1-15", "next_start_after_completion": "Matthew 10:16"},
         {"next_start": "Matthew 10:16", "passage_range": "Matthew 10:16-25", "next_start_after_completion": "Matthew 10:26"},
+        {"next_start": "Matthew 10:26", "passage_range": "Matthew 10:26-33", "next_start_after_completion": "Matthew 10:34"},
+        {"next_start": "Matthew 10:34", "passage_range": "Matthew 10:34-39", "next_start_after_completion": "Matthew 10:40"},
+        {"next_start": "Matthew 10:40", "passage_range": "Matthew 10:40-42", "next_start_after_completion": "Matthew 11:1"},
     ],
 }
 
