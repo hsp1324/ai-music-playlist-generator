@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: Soft Hour Radio
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `A Quiet Place to Focus` or `Piano for a Slow Morning`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `Soft Hour Radio`, or when the human explicitly says to upload to `Soft Hour Radio`.
 
 ## Routing Contract
@@ -27,14 +32,14 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 - The cover is the playback visual and first-frame reference for Gemini when a moving clip is needed.
 - Match the selected lane. `classic_piano` must be photorealistic, high-resolution, clean, and calm. `anime_game_ost` must be a bright, premium original anime/game-OST illustration with a readable focal scene, strong depth, and clean small-thumbnail composition.
 - Do not put `Soft Hour Radio`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- If text is useful, use only a short integrated phrase that still signals piano. `classic_piano` examples: `SOLO PIANO`, `CAFE PIANO`, `STUDY PIANO`, `SLEEP PIANO`, or `RAINY PIANO`. `anime_game_ost` examples: `ANIME PIANO OST`, `GAME PIANO OST`, `FANTASY PIANO`, or `HEALING GAME OST`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `A Quiet Place to Focus` or `Piano for a Slow Morning`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, or unrelated words to the cover.
 
 ## YouTube Thumbnail
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
-- Preserve the exact selected-lane scene, rendering style, subject placement, lighting, palette, props, and camera angle from the cover. Never turn an `anime_game_ost` cover into a photo or a `classic_piano` cover into an illustration.
-- Add short readable use-case/mood text that names piano. Use the lane-specific cover phrases above; do not call an original playlist an official soundtrack from a real game or anime.
+- Preserve the same photorealistic scene, subject placement, lighting, palette, props, and camera angle from the cover.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `A Quiet Place to Focus` or `Piano for a Slow Morning`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Make the text large enough to read on a phone thumbnail and pair it with a visual cue that proves the promise. Do not let the thumbnail be only a beautiful room plus small decorative words.
 - Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `SOFT HOUR RADIO`, the channel name, or a channel logo.

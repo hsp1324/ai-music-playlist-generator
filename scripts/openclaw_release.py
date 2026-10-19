@@ -3738,6 +3738,32 @@ def delete_loop_video(client: httpx.Client, args: argparse.Namespace) -> dict[st
     }
 
 
+def archive_release(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
+    release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
+    release = request_json(
+        client,
+        "POST",
+        f"/playlists/{release['id']}/archive",
+        json={
+            "actor": args.actor,
+            "archived": True,
+            "revive_rejected": False,
+            "reason": args.reason,
+        },
+    )
+    return {
+        "ok": True,
+        "action": "archive-release",
+        "release": {
+            "id": release["id"],
+            "title": release["title"],
+            "workflow_state": release["workflow_state"],
+            "archived": bool(release.get("hidden")),
+        },
+        "reason": args.reason,
+    }
+
+
 def render_audio(client: httpx.Client, args: argparse.Namespace) -> dict[str, Any]:
     release = resolve_release(client, release_id=args.release_id, release_title=args.release_title)
     release = request_json(
@@ -3894,6 +3920,7 @@ def metadata_context(client: httpx.Client, args: argparse.Namespace) -> dict[str
             "For Solwave Radio releases, write Spanish default metadata and name one clear release-level genre lane when accurate, such as Pop Latino, reggaeton pop, urbano latino, bachata pop, salsa pop, cumbia pop, Latin R&B, Spanish R&B, or Latin soul, instead of generic Latin pop wording. "
             "For Soft Hour Radio releases, write Korean default metadata that clearly signals piano/solo piano and a real listening use case. Use natural clickable wording such as 조용히 집중하고 싶을 때 듣는 피아노 BGM, 공부와 작업을 위한 솔로 피아노, 잠들기 전 틀어놓는 잔잔한 피아노, 비 오는 밤 책 읽을 때 좋은 피아노 연주곡, or equivalent localized transcreations. Do not describe Soft Hour as lofi beats, guitar, jazz trio, Rhodes, strings, pads, or generic mixed-instrument BGM unless the human explicitly changed the channel direction. "
             "For Storylight OST BGM releases, write English default metadata and position it as no-vocal playful Japanese arcade-game, fantasy-game, anime-game, and anime-OST-style music for gaming, reading, light focus, and fun background listening. "
+            "Across every channel and localization, never put Garage, UK Garage, UKG, 개러지, or a translated equivalent in a public title, thumbnail phrase, cover text, or first-frame text. Garage may remain in private style metadata, but public packaging must use a broader familiar label such as Dance Music, Club Mix, Bass Music, EDM, or another truthful mainstream parent genre. "
             "For Cinematic Pulse releases, write English default metadata and position it as no-vocal cinematic orchestra, movie OST, film score, trailer, final battle scene, orchestral battle, emotional film score, mystery-tension, dark fantasy, sci-fi, heroic, premium game orchestra, anime action-RPG OST, cinematic game score, gentle game orchestra, sweet fantasy game score, or lyrical game-focus scene music. Do not treat the channel as only huge epic battle music. Do not use juvenile game-menu title wording such as Boss BGM, Final Boss Music, Final Boss Focus Music, 보스, 보스전, or bare BGM. Rotate among varied cinematic and game-score title lanes such as final battle, dark fantasy, heroic trailer, emotional score, sci-fi action, mystery tension, grand journey, orchestral battle, writing music, movie OST focus, gentle game orchestra, lyrical fantasy RPG score, bittersweet anime action-RPG OST, and soft/sweet game orchestra; examples are style references, not fixed templates to repeat. For Club Bloom releases, write English default metadata and position it as no-vocal instrumental club music in one selected style lane, such as deep house, tech house, melodic techno, trance, bass house, UK garage, liquid DnB, tropical house, Afro house, synthwave club, workout EDM, night drive, gaming, party warmup, or club listening. Club Bloom titles must put the exact genre, subgenre, or genre fusion immediately after [playlist] using mainstream mix language such as Progressive Trance x EDM Mix, Tech House Workout Mix, Hype Trap x EDM Mix, Melodic Techno Night Drive, Bass House Club Mix, or Festival EDM Mix; put only one or two public use cases after the separator and avoid awkward lists like Progressive Trance for Night Roads, Gaming Focus and Club Drive. "
             "For BibliaCanto scripture releases, write English default metadata for either Old Testament scripture-inspired music from Genesis onward or New Testament scripture-inspired music from Matthew onward. New Testament scripture releases now upload to BibliaCanto too, not 불송. Include the selected passage range in the main title, every localized title, and the description. Include whether it is Old Testament or New Testament. Include the selected release-level music lane in the title/description and keep the whole release in one coherent modern lane, rotating across uploads; lanes can include scripture hip-hop, Bible R&B, K-pop-inspired scripture pop, scripture rap-pop, trap-soul scripture songs, boom-bap Bible rap, alt-R&B scripture songs, neo-soul scripture songs, Afropop/Amapiano-pop scripture songs, dark street-pop scripture, or synth-pop scripture songs. Never position BibliaCanto as Gospel music, worship, holy worship, church choir, hymns, praise band, CCM, congregational music, or prayer-ballad worship. "
             "For 불송 releases, the Buddhist scripture teaching is mandatory semantic content, not optional mood inspiration. Every song should have an internally verified source-to-lyric mapping and preserve the teaching in ordinary Korean actions, choices, consequences, and emotion. Avoiding words such as 불교, 불경, 법구경, 금강경, 반야심경, 부처, 자비, 번뇌, 업, 무상, 수행, Dharma, or Buddhist is a lexical rule only; do not flatten the result into generic comfort or breakup lyrics. Public metadata remains mainstream and song-first unless the human requests source-explicit packaging. Already-uploaded/source-explicit videos belong in 불송; new mainstream videos belong in 노래. Avoid trot, ppongjjak, old Korean cabaret-pop, trot vocal ornaments, and accordion/brass trot cliches unless explicitly requested. "
@@ -4462,6 +4489,16 @@ def build_parser() -> argparse.ArgumentParser:
     delete_loop_video_parser.add_argument("--release-title", default="", help="Existing release title.")
     delete_loop_video_parser.add_argument("--actor", default="openclaw", help="Actor name recorded in release history.")
     delete_loop_video_parser.set_defaults(func=delete_loop_video)
+
+    archive_release_parser = subparsers.add_parser(
+        "archive-release",
+        help="Archive an unstarted or unrecoverable release so it no longer occupies the active backlog.",
+    )
+    archive_release_parser.add_argument("--release-id", default="", help="Existing release id.")
+    archive_release_parser.add_argument("--release-title", default="", help="Existing release title.")
+    archive_release_parser.add_argument("--reason", required=True, help="Concise reason retained in archive history.")
+    archive_release_parser.add_argument("--actor", default="openclaw:self-heal", help="Actor name recorded in release history.")
+    archive_release_parser.set_defaults(func=archive_release)
 
     render_audio_parser = subparsers.add_parser("render-audio", help="Render playlist audio for an existing release.")
     render_audio_parser.add_argument("--release-id", default="", help="Existing release id.")

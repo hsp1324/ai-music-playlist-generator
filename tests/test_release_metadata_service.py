@@ -14,6 +14,7 @@ from app.utils.youtube_localizations import (
     ensure_playlist_title_prefix,
     normalize_youtube_language,
     normalize_youtube_localizations,
+    sanitize_public_youtube_title,
     sanitize_youtube_copy,
     single_release_youtube_title,
 )
@@ -219,6 +220,25 @@ def test_generated_single_metadata_forces_fixed_title_in_every_localization() ->
     assert {copy["title"] for copy in meta["youtube_localizations"].values()} == {
         "비교는 여기 두고 | AI 음원 싱글곡"
     }
+
+
+def test_public_titles_replace_garage_with_mainstream_genre_labels() -> None:
+    assert sanitize_public_youtube_title("UK Garage Night Drive Mix") == "Dance Music Night Drive Mix"
+    assert ensure_playlist_title_prefix("개러지 클럽 믹스", is_playlist=True) == (
+        "[playlist] 댄스 음악 클럽 믹스"
+    )
+    assert ensure_playlist_title_prefix("UKG Bass Session", is_playlist=False) == "Dance Music Bass Session"
+
+    localizations = normalize_youtube_localizations(
+        {
+            "en": {"title": "[playlist] UK Garage Mix", "description": "English description"},
+            "ja": {"title": "[playlist] UKガラージ Mix", "description": "日本語の説明"},
+            "zh-CN": {"title": "[playlist] UK车库音乐", "description": "中文说明"},
+        }
+    )
+    assert localizations["en"]["title"] == "[playlist] Dance Music Mix"
+    assert localizations["ja"]["title"] == "[playlist] ダンスミュージック Mix"
+    assert localizations["zh-CN"]["title"] == "[playlist] 流行舞曲"
 
 
 def test_openclaw_metadata_context_timeline_uses_final_order() -> None:

@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: sundaze
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `Windows Down, Mood Up` or `Songs for a Slow Sunday`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `sundaze`, or when the human explicitly says to upload to `sundaze`.
 
 ## Routing Contract
@@ -28,7 +33,7 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 - Create one final photorealistic 16:9 cover first, preferably 1920x1080 or higher.
 - The cover is the playback visual for the still-image render.
 - Do not put `sundaze`, the channel name, a channel logo, or a brand line on the cover/first-frame.
-- By default, keep the cover clean and text-free. If text is useful for the release concept, use only one small integrated upper-left English-pop lane phrase such as `POP R&B`, `DANCE POP`, `SYNTH POP`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, `SUMMER POP`, or `NIGHT DRIVE`.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `Windows Down, Mood Up` or `Songs for a Slow Sunday`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Leave clean lower-left and lower-right space when possible, because the app places lyric subtitles near the lower-left and the spectrum overlay near the lower-right in the final render.
 - Do not add title sentences, duration text, lyrics, subtitles, UI, logos, spectrum bars, waveform graphics, or unrelated words to the cover.
 
@@ -36,8 +41,10 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 
 - Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
-- Keep the same photorealistic casual lifestyle image package. Add one short readable pop click phrase matched to the playlist concept, preferably integrated in upper-left negative space, for example `POP HITS`, `SUMMER POP`, `NIGHT DRIVE`, `DANCE POP`, `POP R&B`, `COUNTRY POP`, `AMERICANA POP`, `INDIE POP`, `POP ROCK`, `AFRO POP`, `AMAPIANO POP`, `FEEL GOOD POP`, or `HEARTBREAK POP`.
+- Preserve the same candid lifestyle photo package. Use an optional English listener hook such as `Windows Down, Mood Up` or `Songs for a Slow Sunday`, or keep it text-free.
 - The thumbnail may slightly improve contrast/readability, but it should still feel like a natural friend-taken photo, not a polished campaign key visual.
+- Use restrained editorial typography for any short listener hook; preserve the photograph and leave the main subject clear. Do not impose a generic genre-label template.
+- Use only a low-opacity blurred shadow with a 0-2px offset at 1080p. Reject hard duplicate-letter shadows, thick outlines, extruded/3D type, or shadows that visibly read as a second copy of the text.
 - Text should feel integrated into the photo, not like a pasted sticker, badge, button, or hard box. The text background must stay transparent: letters sit directly on the photo, with readability from font weight, color, subtle shadow, thin outline, or local contrast only. Do not add black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text. Keep the main subject visually important and do not push the subject into an awkward crop.
 - Do not add `SUNDAZE`, the channel name, or a channel logo.
 - Keep all thumbnail text inside safe margins with breathing room. Reject/regenerate if text is clipped, cramped inside a shape, too close to the edge, pasted over the art, separated from the scene, or placed on any filled/black/semi-transparent background.
@@ -86,10 +93,10 @@ No new text, subtitles, logos, UI, channel branding, title sentences, lyrics, wa
 - Localized YouTube titles may be natural adaptations in each language instead of exact English copies. If a literal translation is awkward or less clickable, rewrite the localized title while keeping the English-pop identity and actual listening use case truthful.
 - In every localized description, keep timestamped tracklist song titles in English exactly as the English description. Translate only the surrounding description prose, recommended use-case line, and hashtag line.
 - Playlist titles must start with `[playlist]` and should feel like curated editorial playlists, not raw workspace names. Do not write short generic titles such as `Golden Hour Drive Pop`, `English Pop`, or `American Pop` by themselves.
-- Use an `Essential`-style playlist title shape with the selected genre lane near the front: a vivid situation or emotion + Pop R&B / pop hip-hop / dance-pop / synth-pop / pop-rock / country pop / Americana pop / indie pop / bedroom pop / alt-pop / piano-and-voice / acoustic-guitar-only / fresh indie acoustic / singer-songwriter pop / folk-pop / soft rock / pop-punk / Y2K pop / disco-pop / funk-pop / Afropop / Amapiano-pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
-- Keep the whole release in one lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, piano-only vocal pop, acoustic-guitar-only vocal pop, fresh indie-acoustic pop, singer-songwriter pop, folk-pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop, and name that lane in the title/description when accurate.
-- Generate the entire sundaze vocal playlist from new songs through the full target duration, normally roughly 60 minutes. Do not attach or auto-reuse existing tracks. Keep every new song inside the selected detailed lane.
-- The full newly generated tracklist must be genre-compatible with the title. Do not leave `pop hip-hop` / `rap-pop` in the title, localized titles, description, tags, cover text, or thumbnail text unless most tracks actually carry that lane in their stored style/prompt.
+- Use an `Essential`-style playlist title shape with the selected genre lane near the front: a vivid situation or emotion + Pop R&B / pop hip-hop / dance-pop / synth-pop / pop-rock / country pop / Americana pop / indie pop / bedroom pop / alt-pop / acoustic pop / singer-songwriter pop / folk-pop / soft rock / pop-punk / Y2K pop / disco-pop / funk-pop / Afropop / Amapiano-pop identity + a listening use case. The title should make the click promise obvious before the viewer opens the video.
+- Keep the whole release in one lane such as Pop R&B, pop hip-hop, dance-pop, synth-pop, pop-rock, country pop, Americana pop, indie pop, bedroom pop, alt-pop, acoustic pop, singer-songwriter pop, folk-pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, or Amapiano-pop, and name that lane in the title/description when accurate.
+- Backfill/reuse must match the detailed lane, not just broad English pop. For example, country-pop releases need country-pop backfill, Pop R&B releases need R&B/neo-soul backfill, Afropop/Amapiano releases need Afro/Amapiano backfill, and indie/bedroom/alt-pop releases need that family. If the matching pool is exhausted, generate more same-lane Suno songs under [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md); never fill the hour with unrelated dance-pop, pop-rock, country-pop, or generic feel-good pop.
+- Reused tracks must be genre-compatible with the title. If the back-half reuse pool is mostly broader feel-good pop, park-walk pop, pop-rock, indie-pop, or road-trip pop, title the release as that broader lane. Do not leave `pop hip-hop` / `rap-pop` in the title, localized titles, description, tags, cover text, or thumbnail text unless most tracks actually carry that lane in their stored style/prompt.
 - Make the title broad and public-facing first. The cover/video scene can be specific, but do not let a narrow scene name become the main hook unless it is the strongest searchable phrase.
 - Match listening use cases to the actual energy. For energetic rooftop, club, dance-pop, bass-heavy, or workout-feeling releases, prefer getting ready, workout, running, party warmup, driving, nightlife, and confidence. Avoid `focus`, `study`, or `quiet work` unless the rendered audio is genuinely calm enough for those uses.
 - Strong examples:

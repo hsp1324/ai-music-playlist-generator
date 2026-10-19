@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Club Bloom
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free nightlife image, or `Keep the Night Moving` when a hook is useful. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Club Bloom`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/club-bloom.md` afterward for cover, thumbnail, and still-image render rules.
 
 ## Channel Promise
@@ -30,7 +35,7 @@ From `scripts/openclaw-release list-releases`, inspect recent `Club Bloom` relea
 - The same lane, including modern house/techno/festival lanes and retro boom-bap/jazz-hop/trip-hop/rare-groove/disco crate lanes.
 - The same venue/performance setting, such as beach-club adult female DJ/BJ deck, rooftop skyline adult female DJ set, packed nightclub booth, concert/festival main stage, warehouse rave, pool-party deck, open-air desert/mountain stage, yacht/harbor party, cyber club, gym event stage, highway/night-drive visual, or DJ booth.
 - The same energy curve, such as warmup, peak-time, late-night, workout sprint, or chill-house.
-- The same thumbnail phrase, such as `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, or `WORKOUT EDM`.
+- Repeating the same thumbnail hook or feeling; check recent copy under [the new copy policy](../openclaw-thumbnail-copy-policy.md).
 - The same visual scene if used recently.
 
 If recent releases are dominated by generic neon club, workout, or night-drive EDM, prioritize a musically credible retro record-bar, vinyl-room, listening-booth, late-night practice-room, or crate-digging concept next. If recent releases are mostly subdued retro selections, return to a modern dance floor lane.
@@ -51,7 +56,7 @@ Good style lanes:
 - Big-room / festival EDM: big kicks, simple anthem leads, laser-stage energy, no crowd-chant vocals.
 - Bass house: aggressive bass movement, punchy drums, darker club attitude.
 - Electro house: sharp synth riffs, high-energy drops, retro-futuristic club feel.
-- Garage / UK garage: shuffling rhythm, bouncy bass, late-night city movement, no vocal samples.
+- Garage / UK garage may remain a private production style: shuffling rhythm, bouncy bass, late-night movement, and no vocal samples. Never surface Garage, UK Garage, UKG, or a localized equivalent in the public title or artwork text; package it as Dance Music, Bass Music, EDM, or Club Mix and pair it with a more recognizable compatible lane.
 - Drum and bass / liquid DnB: fast breakbeats, rolling bass, liquid pads for running/gaming energy.
 - Tropical house / beach club: warm percussion, sunset deck mood, light dance rhythm, no vocal hooks.
 - Afro house: organic percussion, deep groove, hypnotic club pulse, no chant/vocal phrases.
@@ -85,7 +90,7 @@ Good style lanes:
 - Retro lanes should prefer a contemporary editorial record bar, vinyl room, record shop listening booth, after-work practice room, compact DJ setup, cassette/tape deck detail, turntable and mixer, or understated 1990s/2000s city mood. Keep the result modern and emotionally credible, not a costume-party recreation or distressed retro poster.
 - Human figures are expected by default when the concept allows it. Use a stylish adult woman DJ/BJ with bold revealing club fashion, confident poses, glossy nightlife styling, and sexy high-energy club presence. Vary the subject, setting, camera, composition, crowd presence, outfit palette, venue type, and action so each release feels fresh.
 - Keep adult nightlife imagery bold and revealing but YouTube-safe. Use daring club outfits, crop tops, metallic mini dresses, sheer outer layers, bikini-style festival tops, bodycon silhouettes, and dramatic stage lighting, but avoid full nudity, visible genitals, exposed nipples, sexual acts, minors, fetish framing, protected brands, or anything that looks unsafe or policy-risky.
-- Thumbnail text should be direct and clickable: `EDM MIX`, `HOUSE MUSIC`, `NIGHT DRIVE`, `WORKOUT EDM`, `CLUB HITS`, `FESTIVAL EDM`, or `DANCE MIX`. The text is the hook; the image should sell the DJ/performance venue.
+- New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): a text-free nightlife image, or `Keep the Night Moving` when a hook is useful. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 
 ## Good Fresh Concept Shapes
 

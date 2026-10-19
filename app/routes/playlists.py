@@ -364,6 +364,7 @@ def archive_workspace_playlist(
             actor=payload.actor,
             archived=payload.archived,
             revive_rejected=payload.revive_rejected,
+            reason=payload.reason,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

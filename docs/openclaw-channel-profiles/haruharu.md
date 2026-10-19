@@ -1,5 +1,10 @@
 # OpenClaw Channel Profile: HaruHaru
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free image; put a hook such as `괜히 설레는 오늘` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `HaruHaru`, or when the human explicitly says to upload to `HaruHaru`.
 
 ## Routing Contract
@@ -7,7 +12,7 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 - This profile is for Korean-language vocal releases: K-pop hip-hop, rap-pop, K-pop trap, boom bap-influenced Korean pop, Korean R&B, neo-soul pop, dark street-pop, piano-only vocal pop, acoustic-guitar-only vocal pop, fresh K-indie acoustic, and related current Korean vocal lanes.
 - Music defaults to original Korean vocal songs with lyrics.
 - For lyrics only, do not use `홍대`, `Hongdae`, `커튼`, `curtain`, `네오`, `neo`, `네온`, `네온사인`, `neon`, `neon sign`, or `neon signs`, including compounds, translations, alternate spacing, or casing. Do not replace them with close scene-setting variants. Avoid turning incidental neighborhoods, room decor, signage, or props into repeated lyric hooks; prefer natural emotional detail and song-specific imagery. Scan and rewrite the lyric before upload if any banned term remains. This does not restrict relevant visual or metadata planning.
-- Do not choose city-pop as the default new HaruHaru direction unless the human explicitly asks for that exact lane. Every HaruHaru vocal playlist must be generated entirely from new songs and stay in one coherent lane; do not attach or auto-reuse old tracks.
+- Do not choose city-pop as the default new HaruHaru direction unless the human explicitly asks for that exact lane or an existing in-progress release is already clearly city-pop. If a HaruHaru release is city-pop, keep reused/backfill tracks city-pop-related; if it is not city-pop, do not mix city-pop tracks into it.
 - Do not route J-pop/Japanese pop here; use `Tokyo Daydream Radio`.
 - Do not route English/American pop here; use `sundaze`.
 - Do not route Latin/Spanish pop here; use `Solwave Radio`.
@@ -97,9 +102,9 @@ scripts/openclaw-release render-video \
   - Mood identity first: `[playlist] 차갑게 예쁜 밤공기 | 도도하게 걷는 Korean R&B`
   - Searchable lane first when the genre is the strongest hook: `[playlist] K-POP Trap Night Mix | 러닝과 외출 준비를 위한 K-랩`
 - Keep the title truthful to the audio lane. If the release is boom bap, say boom bap/붐뱁; if it is trap, say trap/트랩; if it is Korean R&B or neo-soul, say R&B/neo-soul. Do not label a mixed or weakly matching release as a sharper lane only for clicks.
-- Keep the whole all-new release in one lane such as K-pop hip-hop, rap-pop, K-pop trap, boom bap K-pop, Korean R&B, neo-soul pop, dark street-pop, piano-only vocal pop, acoustic-guitar-only vocal pop, or fresh K-indie acoustic, and name that lane naturally in the title/description when accurate. Avoid city-pop and generic idol dance-pop planning unless the human explicitly asks.
-- Generate new HaruHaru songs through the full target duration, normally roughly 60 minutes. Do not use backfill/reuse, even when an old track matches the lane.
-- If you intentionally arrange tracks by genre confidence, keep the strongest new same-lane tracks first. Do not pass `--randomize-order` unless pair adjacency makes shuffling useful.
+- Keep the whole release in one lane such as K-pop hip-hop, rap-pop, K-pop trap, boom bap K-pop, Korean R&B, neo-soul pop, or dark street-pop, and name that lane in the title/description when accurate. Avoid new city-pop and generic idol dance-pop planning unless the human explicitly asks; if a release is explicitly city-pop, do not backfill it with unrelated hip-hop/R&B/ballad tracks.
+- Backfill/reuse must match the detailed lane, not only the broad `K-pop` channel identity. For example, a boom-bap release should use boom-bap/rap-pop backfill, a trap release should use trap backfill, and an R&B/neo-soul release should use R&B/neo-soul backfill. If matching material is scarce, follow [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md): generate additional same-lane Suno tracks until the new playlist reaches one hour; never fill with unrelated K-pop, dance-pop, synth-pop, pop-rock, or ballad tracks.
+- If you intentionally arrange tracks by genre confidence, keep strongest same-lane tracks first and any weaker/manual fallback tracks last. Do not pass `--randomize-order` for that release; if randomization is unavoidable, the app preserves reused back-half tracks after the fresh lead block.
 - Do not use the visual scene as the main title hook unless it is broadly clickable. The title hook should usually be a human phrase around dating, crush, confidence, getting ready, night out, glow-up, breakup recovery, walking, driving, or weekend energy. The thumbnail should then make that hook feel visually true through the setting, outfit, pose, and mood.
 - Keep the hook tasteful. Do not imply explicit/sexual content, real-person humiliation, dangerous behavior, or a false premise that the tracks and thumbnail do not support.
 - Every track should have original Korean lyrics and a distinct hook concept unless the human explicitly requested instrumental/no-vocal.

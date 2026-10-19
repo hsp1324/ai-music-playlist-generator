@@ -1,10 +1,15 @@
 # OpenClaw Channel Concept Planner: Custom Channel
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: one audience-native feeling or listening-situation hook, or a strong text-free image. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this when `scripts/openclaw-release channel-profile` returns `custom-channel`, or when `/youtube/status` shows a connected YouTube channel that does not yet have a dedicated concept planner.
 
 ## Goal
 
-Infer the channel identity from the connected channel title, the human request, and the channel's existing uploads. Then choose a fresh playlist concept that fits that inferred identity without copying recent releases. If the release contains sung lyrics, generate the full target duration as new audio and do not reuse old tracks. If it is instrumental/no-vocal, generate roughly 10 minutes of new audio before app-side same-channel, lyricless, similar-genre reuse toward one hour.
+Infer the channel identity from the connected channel title, the human request, and the channel's existing uploads. Then choose a fresh playlist concept that fits that inferred identity without copying recent releases. Follow [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md): every new automatic playlist needs at least one hour of same-lane approved audio; reuse is optional and insufficient reuse requires additional Suno generation, not a short render.
 
 ## Required Checks
 

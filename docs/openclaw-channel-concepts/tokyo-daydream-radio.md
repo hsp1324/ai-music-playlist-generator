@@ -1,6 +1,19 @@
 # OpenClaw Channel Concept Planner: Tokyo Daydream Radio
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: `帰り道が好きになる` or `晴れた日に聴きたい`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Tokyo Daydream Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/tokyo-daydream-radio.md` afterward for cover, thumbnail, and either short loop-video or still-image render production rules.
+
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new Tokyo Daydream vocal release uses exactly one of themed
+large-scale orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal.
+The legacy J-pop/rap/R&B lanes below guide Japanese lyrics, delivery, discovery
+packaging, and catalog labels only; they cannot add beat-led or full-band
+accompaniment.
 
 ## Channel Promise
 
@@ -55,8 +68,8 @@ Use one lane, then vary substyle and lyric premise:
 - Match lyrics to the melody, beat, vocal tone, and hook first. Song quality is the first priority. A song can fit a walk/drive/night playlist because of its rhythm and atmosphere while the lyrics tell an independent pop story unrelated to the playlist title.
 - Do not put duration caps or lower-bound duration phrases such as `less than 4 minutes`, `under 4 minutes`, `at least 2 minutes`, `minimum 2 minutes`, or `2 minutes or longer` into Suno fields unless the human explicitly asks for that wording. Build each J-pop/J-rap/Japanese R&B prompt/lyrics file as a full song meant to naturally land around 4 minutes or longer. Use a distinct intro on only about one out of every five vocal tracks; start the rest directly with a first verse, hook, chorus, rap verse, or brief vocal pickup. Continue with pre-chorus/build when useful, chorus returns, second verse, bridge/rap break or final chorus lift, and a resolved ending. Tracks shorter than 4:00 are still valid uploads when they fit. Tracks from 1:00 to 1:59 should be uploaded/used and recorded for later analysis; only stop and report tracks under 1:00 unless the channel-specific workflow says otherwise. Complete 5+ minute tracks are allowed.
 - Do not make lyricless, BGM-only, hum-only, or instrumental tracks unless the human explicitly requested it.
-- Japanese rap, Japanese hip-hop, and Japanese R&B are allowed Tokyo Daydream lanes. Keep each release in one coherent lane and generate every vocal track new for that release.
-- Do not use backfill/reuse for Tokyo Daydream vocal playlists. Generate new Japanese vocal songs through the full target duration, normally roughly 60 minutes.
+- Japanese rap, Japanese hip-hop, and Japanese R&B are allowed Tokyo Daydream lanes. Keep those releases in one coherent lane; do not mix city-pop or anime-pop backfill into a hip-hop/R&B release unless the track genuinely fits the same groove and vocal style.
+- Backfill/reuse must match the detailed Tokyo lane, not just broad J-pop. For example, Japanese R&B releases need R&B/neo-soul backfill, J-rap/Japanese hip-hop releases need hip-hop/rap/boom-bap/trap backfill, city-pop releases need city-pop backfill, anime-pop releases need anime-pop backfill, and pop-rock releases need pop-rock backfill. If the matching pool is exhausted, generate more same-lane Suno songs under [openclaw-one-hour-new-audio-policy.md](../openclaw-one-hour-new-audio-policy.md); never fill the hour with unrelated J-pop.
 - Do not over-emphasize `Japanese language` in titles. Use `J-POP`, the actual Japan scene, mood, and listening use case instead.
 - Do not put `Tokyo` / `도쿄` in every title. Use it only when the chosen concept is specifically Tokyo, Shibuya, Shinjuku, Tokyo commute, Tokyo skyline, or a clearly Tokyo-coded scene. For generic J-pop, beach, forest, festival, school, karaoke, or Japan lifestyle concepts, omit Tokyo from the title.
 - Do not default every Tokyo title to `walk` / `산책`. Use walking only for street, commute, crosswalk, beach, forest, or similar movement concepts. For arcade/game-center/friends/night-out concepts, use arcade, gaming, friends, night out, driving, getting ready, weekend energy, or party warmup instead.
@@ -65,7 +78,7 @@ Use one lane, then vary substyle and lyric premise:
 
 - Animated moving-video releases use the legacy Tokyo signature: exactly three people walking toward the viewer in a front-view composition. The setting should match the selected concept, not a generic Tokyo scene. For moving clips, keep the camera moving backward at the same pace as the people so the subjects stay the same size; let the side/background motion carry the loop instead of zooming into the people.
 - Photorealistic still-image releases should feel like a friend-taken Japanese Instagram/smartphone photo: stylish adult Japanese streetwear, Shibuya/Shimokitazawa/Koenji/Harajuku/Tokyo nightlife, record-shop, small bar, rooftop, club-side alley, station-exit, or late-night convenience-store street mood. Use still-image render only; no loop video.
-- Thumbnail text can use large `J-POP`, `CITY POP`, `ANIME POP`, `J-RAP`, `TOKYO R&B`, `J-HIP-HOP`, or a short scene/style phrase, but never `TOKYO DAYDREAM RADIO` or any channel-name brand label.
+- Thumbnail wording follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): one natural audience-language feeling or listening-situation hook, or text-free; no standalone genre-tag headline.
 
 ## Good Fresh Concept Shapes
 

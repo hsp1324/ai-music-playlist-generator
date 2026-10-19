@@ -1,6 +1,19 @@
 # OpenClaw Channel Concept Planner: 불송
 
+## Prospective policy update — 2026-10-02
+
+Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
+
+New copy direction for this channel: a text-free mainstream music image; put a hook such as `잡고 있던 걸 놓는 밤` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `불송`. `불송` is a Korean vocal channel internally inspired by Buddhist sources/themes, but new releases should sound and read like accessible mainstream songs.
+
+Mandatory vocal arrangement override: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
+first. Every new 불송 vocal release uses exactly one of themed large-scale
+orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
+rap/R&B/electronic lanes below guide Korean lyrics, delivery, discovery
+packaging, and catalog labels only; they cannot add beat-led or full-band
+accompaniment. The old mixed-lane reuse exception no longer applies.
 
 ## Channel Promise
 
@@ -16,8 +29,8 @@ The audience should immediately feel: bold modern Korean songs with emotional de
 - Make the Korean title sound like a current playlist recommendation, not a translated catalog label. Lead with a short conversational emotion or situation hook, then use a familiar listening phrase or broad genre after `|`. Do not put `한글 자막`, `한국어`, `Korean`, `Korean vocal`, `UK Garage`, `Korean UK Garage`, `2-step`, or similarly technical production/language labels in the Korean title unless the human explicitly asks. Keep narrow genre details in the description and tags when they are truthful. Prefer shapes such as `[playlist] 이제 진짜 안 돌아봐 | 새벽 귀가길 감성 R&B` or `[playlist] 오늘은 아무 말도 하기 싫어 | 혼자 걷는 밤에 듣는 노래`.
 - Do not lead titles, thumbnail text, descriptions, or tags with obscure coined labels such as `다르마팝`, and do not overuse generic `meditation music`, `prayer`, `worship`, or devotional wording unless that is truthfully the finished asset's lane.
 - The first track and first 10-20 seconds matter. Put the strongest same-lane hook, rap entry, vocal tone, or most immediately clickable song first. Avoid long slow instrumental intros on playlist lead tracks.
-- Strong standout tracks should be considered for standalone singles, but do not reuse them in later vocal playlists.
-- For playlist releases, generate the full target duration, normally roughly 60 minutes, as new high-confidence Korean vocal audio. Do not attach existing 불송 tracks or use app-side backfill.
+- Strong standout tracks should be considered for standalone singles and also reused as lead/funnel tracks in later same-lane playlists when appropriate.
+- For playlist releases, use existing approved 불송 tracks that fit the same mainstream vocal family first, liked tracks first, then create enough additional same-family, same-theme Korean vocal Suno tracks to meet the one-hour policy. Rap, hip-hop, R&B, soul, and quiet piano vocal ballads may be mixed when the emotional mood works. Keep reused tracks after the fresh lead block. Do not add unrelated jazz, trot, guitar-folk/acoustic, cinematic, instrumental BGM, or generic meditation tracks just to hit one hour.
 
 ## Overnight Privacy Rule
 
@@ -78,7 +91,9 @@ Do this immediately before finalizing every 불송 YouTube title. A remembered t
 - Dark R&B: close vocal, low light, sparse drums, intimate hook, letting-go imagery without religious vocabulary.
 - Trip-hop: downtempo drums, smoky bass, abstract texture, reflective spoken rap or sung hook.
 - Glitch-hop: chopped percussion, digital fragments, clear vocal center, lyrics about change, illusion, or emotional release in ordinary language.
-- Drum and bass or UK garage: faster rhythmic energy, clean Korean vocal/rap, reflective rather than rave-only.
+- Faster modern vocal energy may inform delivery privately, but do not select
+  garage as a new release concept or public label. Stay inside the global
+  orchestral-vocal, piano-only-vocal, or acoustic-guitar-only-vocal family.
 - Hyperpop/art-pop: bright synthetic hooks, fragmented self-image themes, polished but not novelty comedy.
 - Psychedelic soul / new-age electronica: surreal inner-world imagery, warm soul vocal or spoken rap, modern electronic texture.
 - Avant-jazz rap: unusual chords, live-feeling drums, poetic Korean rap, but not old cabaret, trot, or lounge parody.

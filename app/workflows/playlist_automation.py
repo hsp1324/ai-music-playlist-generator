@@ -44,6 +44,12 @@ from app.utils.short_track_observations import (
     record_playlist_short_track_observation,
 )
 from app.utils.track_search import sync_track_search_document
+from app.utils.vocal_arrangement_policy import (
+    MIXED_VOCAL_ARRANGEMENT,
+    ORCHESTRAL_VOCAL,
+    infer_orchestral_theme,
+    infer_vocal_arrangement_family,
+)
 from app.utils.youtube_localizations import (
     DEFAULT_YOUTUBE_LANGUAGE,
     ensure_youtube_description_request_cta,
@@ -2213,6 +2219,7 @@ def set_playlist_workspace_archive_state(
     actor: str,
     archived: bool,
     revive_rejected: bool = True,
+    reason: str = "",
 ) -> Playlist:
     playlist = _load_playlist_with_tracks(db, playlist_id)
     if not playlist:
@@ -2224,6 +2231,7 @@ def set_playlist_workspace_archive_state(
         {
             "actor": actor,
             "archived": archived,
+            "reason": str(reason or "").strip(),
             "decided_at": _utcnow().isoformat(),
         }
     )
@@ -2240,6 +2248,7 @@ def set_playlist_workspace_archive_state(
         meta["archived_at"] = now.isoformat()
         meta["purge_after"] = purge_after.isoformat()
         meta["archived_by"] = actor
+        meta["archive_reason"] = str(reason or "").strip()
         meta["archive_retention_days"] = ARCHIVE_RETENTION_DAYS
         meta["workflow_state"] = "archived"
         if previous_workflow_state in FAILED_WORKFLOW_STATES or playlist.status == PlaylistStatus.failed:
@@ -2250,6 +2259,7 @@ def set_playlist_workspace_archive_state(
         meta.pop("archived_at", None)
         meta.pop("purge_after", None)
         meta.pop("archived_by", None)
+        meta.pop("archive_reason", None)
         meta.pop("archive_retention_days", None)
         previous_workflow_state = meta.pop("pre_archive_workflow_state", None)
         previous_status = meta.pop("pre_archive_status", None)
@@ -2403,6 +2413,85 @@ def _reuse_genre_tokens_for_playlist(playlist: Playlist) -> set[str]:
     for track in _playlist_tracks(playlist):
         tokens.update(cached_track_genre_tokens(track))
     return tokens
+
+
+def _track_vocal_arrangement_values(track: Track) -> list[object]:
+    meta = track.metadata_json or {}
+    return [
+        meta.get("vocal_arrangement_family"),
+        meta.get("orchestral_theme"),
+        track.title,
+        track.prompt,
+        meta.get("style"),
+        meta.get("genre"),
+        meta.get("suno_style"),
+        meta.get("music_style"),
+        meta.get("tags"),
+    ]
+
+
+def _playlist_vocal_arrangement_values(playlist: Playlist) -> list[object]:
+    meta = _playlist_meta(playlist)
+    values: list[object] = [
+        meta.get("vocal_arrangement_family"),
+        meta.get("orchestral_theme"),
+        playlist.title,
+        meta.get("description"),
+        meta.get("youtube_title"),
+        meta.get("channel_style_lane"),
+    ]
+    for track in _playlist_tracks(playlist):
+        values.extend(_track_vocal_arrangement_values(track))
+    return values
+
+
+def _playlist_orchestral_theme_values(playlist: Playlist) -> list[object]:
+    meta = _playlist_meta(playlist)
+    values: list[object] = [meta.get("orchestral_theme")]
+    for track in _playlist_tracks(playlist):
+        track_meta = track.metadata_json or {}
+        values.extend(
+            [
+                track_meta.get("orchestral_theme"),
+                track_meta.get("style"),
+                track_meta.get("suno_style"),
+                track_meta.get("music_style"),
+            ]
+        )
+    return values
+
+
+def _reuse_candidate_matches_vocal_arrangement_policy(
+    *,
+    target_playlist: Playlist,
+    track: Track,
+) -> bool:
+    target_values = _playlist_vocal_arrangement_values(target_playlist)
+    target_family = infer_vocal_arrangement_family(target_values)
+    if target_family is None:
+        return True
+    if target_family == MIXED_VOCAL_ARRANGEMENT:
+        return False
+
+    track_meta = track.metadata_json or {}
+    if not lyric_lines_from_text(str(track_meta.get("lyrics") or "")):
+        return False
+    track_values = _track_vocal_arrangement_values(track)
+    if infer_vocal_arrangement_family(track_values) != target_family:
+        return False
+    if target_family != ORCHESTRAL_VOCAL:
+        return True
+
+    target_theme = infer_orchestral_theme(_playlist_orchestral_theme_values(target_playlist))
+    track_theme = infer_orchestral_theme(
+        [
+            track_meta.get("orchestral_theme"),
+            track_meta.get("style"),
+            track_meta.get("suno_style"),
+            track_meta.get("music_style"),
+        ]
+    )
+    return bool(target_theme and track_theme == target_theme)
 
 
 def _track_has_local_audio(track: Track | None) -> bool:
@@ -2571,6 +2660,11 @@ def _reuse_candidate_is_similar(
     track: Track,
 ) -> bool:
     if not _reuse_channel_identity_matches(target_playlist, source_playlist):
+        return False
+    if not _reuse_candidate_matches_vocal_arrangement_policy(
+        target_playlist=target_playlist,
+        track=track,
+    ):
         return False
 
     source_track_tokens = set(cached_track_genre_tokens(track))

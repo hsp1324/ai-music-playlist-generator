@@ -86,6 +86,7 @@ class PlaylistArchiveRequest(BaseModel):
     actor: str = "web-ui"
     archived: bool = True
     revive_rejected: bool = True
+    reason: str = ""
 
 
 class PlaylistTrackReorderRequest(BaseModel):

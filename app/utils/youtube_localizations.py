@@ -126,6 +126,14 @@ def ensure_youtube_description_request_cta(
     description = "\n".join(lines).strip()
     return f"{description}\n\n{cta}" if description else cta
 
+PUBLIC_TITLE_GARAGE_REPLACEMENTS = (
+    (r"(?:UK\s*)?(?:개러지|거라지)", "댄스 음악"),
+    (r"(?:UK\s*)?(?:ガラージ|ガレージ)", "ダンスミュージック"),
+    (r"(?:UK\s*)?(?:车库音乐|車庫音樂)", "流行舞曲"),
+    (r"\b(?:UK\s*)?garage\b", "Dance Music"),
+    (r"\bUKG\b", "Dance Music"),
+)
+
 
 def sanitize_youtube_copy(value: Any) -> str:
     text = str(value or "")
@@ -152,8 +160,28 @@ def sanitize_youtube_copy(value: Any) -> str:
     return text
 
 
+def sanitize_public_youtube_title(value: Any) -> str:
+    """Keep niche garage labels out of public titles without changing style metadata."""
+
+    title = sanitize_youtube_copy(value)
+    for pattern, replacement in PUBLIC_TITLE_GARAGE_REPLACEMENTS:
+        title = re.sub(pattern, replacement, title, flags=re.IGNORECASE)
+    title = re.sub(
+        r"\bDance Music(?:\s+Dance Music)+\b",
+        "Dance Music",
+        title,
+        flags=re.IGNORECASE,
+    )
+    return re.sub(r"\s+", " ", title).strip()
+
+
 def normalize_playlist_title_body(value: Any) -> str:
-    title = re.sub(r"^\s*\[playlist\]\s*", "", sanitize_youtube_copy(value).strip(), flags=re.IGNORECASE)
+    title = re.sub(
+        r"^\s*\[playlist\]\s*",
+        "",
+        sanitize_public_youtube_title(value),
+        flags=re.IGNORECASE,
+    )
     replacements = (
         (r"듣기\s*좋은\s*플레이\s*리스트", "듣기 좋은 음악"),
         (r"듣는\s*플레이\s*리스트", "듣기 좋은 음악"),
@@ -174,7 +202,7 @@ def normalize_playlist_title_body(value: Any) -> str:
 
 
 def ensure_playlist_title_prefix(value: Any, *, is_playlist: bool) -> str:
-    title = sanitize_youtube_copy(value).strip()
+    title = sanitize_public_youtube_title(value)
     if not is_playlist:
         return title[:100]
     title = normalize_playlist_title_body(title)
@@ -234,7 +262,7 @@ def normalize_youtube_localizations(
             language = normalize_youtube_language(raw_language, fallback="")
             if language not in SUPPORTED_YOUTUBE_LANGUAGES or not isinstance(raw_payload, dict):
                 continue
-            title = sanitize_youtube_copy(raw_payload.get("title")).strip()
+            title = sanitize_public_youtube_title(raw_payload.get("title"))
             description = sanitize_youtube_copy(raw_payload.get("description")).strip()
             if title and description:
                 result[language] = {
@@ -242,7 +270,7 @@ def normalize_youtube_localizations(
                     "description": description,
                 }
 
-    fallback_title = sanitize_youtube_copy(default_title).strip()
+    fallback_title = sanitize_public_youtube_title(default_title)
     fallback_description = sanitize_youtube_copy(default_description).strip()
     if fallback_title and fallback_description and default_language not in result:
         result[default_language] = {
