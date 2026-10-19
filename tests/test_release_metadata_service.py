@@ -129,18 +129,41 @@ def test_turkish_youtube_language_is_supported() -> None:
     assert localizations["tr"]["title"] == "Turkce Baslik"
 
 
-def test_youtube_description_request_cta_is_localized_idempotent_and_last() -> None:
+def test_youtube_description_request_cta_preserves_final_hashtags() -> None:
     description = "Music for a late-night drive.\n\n#NightDrive #Playlist"
 
     english = ensure_youtube_description_request_cta(description, language="en")
-    assert english.endswith(YOUTUBE_DESCRIPTION_REQUEST_CTA["en"])
+    assert english.endswith("#NightDrive #Playlist")
+    assert english.index(YOUTUBE_DESCRIPTION_REQUEST_CTA["en"]) < english.index("#NightDrive")
     assert english.count(YOUTUBE_DESCRIPTION_REQUEST_CTA["en"]) == 1
     assert ensure_youtube_description_request_cta(english, language="en") == english
 
     korean = ensure_youtube_description_request_cta(english, language="ko")
-    assert korean.endswith(YOUTUBE_DESCRIPTION_REQUEST_CTA["ko"])
+    assert korean.endswith("#NightDrive #Playlist")
+    assert korean.index(YOUTUBE_DESCRIPTION_REQUEST_CTA["ko"]) < korean.index("#NightDrive")
     assert YOUTUBE_DESCRIPTION_REQUEST_CTA["en"] not in korean
     assert "#NightDrive #Playlist" in korean
+
+
+def test_youtube_description_request_cta_repairs_legacy_saved_copy_in_all_languages() -> None:
+    chapters = "00:00:00 First Song\n00:03:42 Second Song"
+    hashtags = "#Music #NightDrive #댄스 #音楽 #Música #Workout"
+    legacy = f"Listen tonight.\n\n{chapters}\n\n{hashtags}\n\n{YOUTUBE_DESCRIPTION_REQUEST_CTA['en']}"
+    for language in SUPPORTED_YOUTUBE_LANGUAGES:
+        repaired = ensure_youtube_description_request_cta(legacy, language=language)
+        assert repaired.endswith(hashtags)
+        assert chapters in repaired
+        assert repaired.count(YOUTUBE_DESCRIPTION_REQUEST_CTA[language]) == 1
+        assert ensure_youtube_description_request_cta(repaired, language=language) == repaired
+        assert all(cta not in repaired for key, cta in YOUTUBE_DESCRIPTION_REQUEST_CTA.items() if key != language)
+
+
+def test_youtube_description_request_cta_without_hashtag_footer() -> None:
+    for description in ("A song without hashtags.", "Music with an inline #tag is still prose."):
+        result = ensure_youtube_description_request_cta(description, language="en")
+        assert result == f"{description}\n\n{YOUTUBE_DESCRIPTION_REQUEST_CTA['en']}"
+    assert ensure_youtube_description_request_cta("", language="en") == ""
+    assert ensure_youtube_description_request_cta("#Music #Drive", language="en") == f"{YOUTUBE_DESCRIPTION_REQUEST_CTA['en']}\n\n#Music #Drive"
 
 
 def test_korean_youtube_copy_avoids_instrumental_transliteration() -> None:
