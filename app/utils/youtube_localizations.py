@@ -115,7 +115,7 @@ def ensure_youtube_description_request_cta(
     *,
     language: str = DEFAULT_YOUTUBE_LANGUAGE,
 ) -> str:
-    """Keep one localized listener-request call to action as the final paragraph."""
+    """Keep one localized request CTA before a final public hashtag line."""
     description = sanitize_youtube_copy(value).strip()
     if not description:
         return description
@@ -124,6 +124,12 @@ def ensure_youtube_description_request_cta(
     known_ctas = set(YOUTUBE_DESCRIPTION_REQUEST_CTA.values())
     lines = [line for line in description.splitlines() if line.strip() not in known_ctas]
     description = "\n".join(lines).strip()
+    if description:
+        body, separator, last_line = description.rpartition("\n")
+        if re.fullmatch(r"(?:#[^\s#]+\s*)+", last_line.strip()):
+            body = body.strip() if separator else ""
+            paragraphs = [part for part in (body, cta, last_line.strip()) if part]
+            return "\n\n".join(paragraphs)
     return f"{description}\n\n{cta}" if description else cta
 
 PUBLIC_TITLE_GARAGE_REPLACEMENTS = (
