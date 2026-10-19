@@ -766,6 +766,10 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             "last_youtube_scheduled_public_local_date": None,
             "youtube_scheduled_public_local_dates": [],
             "releases": [],
+            "schedule_weekday": "Wednesday",
+            "schedule_local_time": "07:00",
+            "schedule_timezone": "Asia/Seoul",
+            "schedule_interval_days": 7,
         }
         for title in channel_titles
     }
@@ -781,7 +785,10 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
                 "releases": [],
                 "target": target,
                 "maximum": maximum,
-                "schedule_local_time": "07:00" if lane == CINEMATIC_PULSE_ORCHESTRA_LANE else "19:00",
+                "schedule_local_time": "07:00",
+                "schedule_weekday": "Wednesday",
+                "schedule_interval_days": 14,
+                "schedule_anchor_date": "2026-10-21" if lane == CINEMATIC_PULSE_ORCHESTRA_LANE else "2026-10-28",
             }
             for lane in (*CINEMATIC_PULSE_REQUIRED_LANES, "unclassified")
         }

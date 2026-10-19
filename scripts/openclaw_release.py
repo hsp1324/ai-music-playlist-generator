@@ -4211,7 +4211,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--cinematic-pulse-lane",
         choices=["orchestra", "cute_game"],
         default="",
-        help="Required lane for Cinematic Pulse: orchestra publishes at 07:00 KST and cute_game at 19:00 KST.",
+        help="Required lane for Cinematic Pulse: orchestra/cute_game alternate Wednesdays at 07:00 KST; orchestra anchor 2026-10-21, cute_game anchor 2026-10-28.",
     )
     create_parser.set_defaults(func=create_release)
 

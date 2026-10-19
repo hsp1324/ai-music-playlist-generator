@@ -285,6 +285,7 @@ def build_next_playlist_request_message(
         "다음 playlist 제작해줘.",
         "reason: publish_completed",
         "앱 API로 backlog/status와 lock 상태를 확인하고 docs/openclaw-backlog-queue.md 기준으로 진행해줘.",
+        "공개 예약은 모든 채널 매주 수요일 07:00 Asia/Seoul 1회이며 서버 계산을 따라야 해. Cinematic Pulse는 2026-10-21 orchestra, 2026-10-28 cute_game부터 격주 교대해. docs/openclaw-weekly-publishing.md를 읽어줘.",
         "완료/중단 보고: release id, YouTube video id, blocker",
     ]
     return _with_trigger_prefix("\n".join(lines), trigger_prefix)
@@ -343,6 +344,7 @@ def build_backlog_queue_request_message(
         f"reason: {reason}",
         f"target/max: {target_per_channel}/{max_per_channel}",
         "앱 API로 backlog/status와 lock 상태를 확인하고 docs/openclaw-backlog-queue.md 기준으로 진행해줘.",
+        "공개 예약은 모든 채널 매주 수요일 07:00 Asia/Seoul 1회이며 서버 계산을 따라야 해. Cinematic Pulse는 2026-10-21 orchestra, 2026-10-28 cute_game부터 격주 교대해. docs/openclaw-weekly-publishing.md를 읽어줘.",
         "완료/중단 보고: release id, YouTube video id, blocker",
     ]
     return _with_trigger_prefix("\n".join(lines), trigger_prefix)

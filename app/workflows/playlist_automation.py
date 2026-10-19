@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session, selectinload
 
+from app.utils.youtube_schedule_policy import is_weekly_slot, next_weekly_slot
 from app.config import get_settings
 from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
@@ -100,11 +101,11 @@ CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE = "Cinematic Pulse"
 SCRIPTURE_OLD_TESTAMENT_PLAYLIST_TITLE = "Old Testament Songs"
 SCRIPTURE_NEW_TESTAMENT_PLAYLIST_TITLE = "New Testament Songs"
 SCRIPTURE_OLD_TESTAMENT_SCHEDULE = (7, 0)
-SCRIPTURE_NEW_TESTAMENT_SCHEDULE = (16, 0)
+SCRIPTURE_NEW_TESTAMENT_SCHEDULE = (7, 0)
 BUDDHIST_SCRIPTURE_SCHEDULE = (7, 0)
-BUDDHIST_SCRIPTURE_SCHEDULE_INTERVAL_DAYS = 1
+BUDDHIST_SCRIPTURE_SCHEDULE_INTERVAL_DAYS = 7
 CINEMATIC_PULSE_ORCHESTRA_SCHEDULE = (7, 0)
-CINEMATIC_PULSE_CUTE_GAME_SCHEDULE = (19, 0)
+CINEMATIC_PULSE_CUTE_GAME_SCHEDULE = (7, 0)
 NEW_TESTAMENT_BOOKS = {
     "matthew",
     "mark",
@@ -372,58 +373,16 @@ def scripture_youtube_playlist_titles(meta: dict, *, title: str = "") -> list[st
 
 def youtube_schedule_options_for_playlist(playlist: Playlist) -> dict:
     meta = _playlist_meta(playlist)
-    channel_titles = {
-        _canonical_youtube_channel_title(meta.get("target_youtube_channel_title")),
-        _canonical_youtube_channel_title(meta.get("youtube_channel_title")),
+    lane = infer_cinematic_pulse_lane(meta, title=playlist.title) if is_cinematic_pulse_release(meta) else None
+    if is_cinematic_pulse_release(meta) and lane not in {CINEMATIC_PULSE_ORCHESTRA_LANE, CINEMATIC_PULSE_CUTE_GAME_LANE}:
+        raise ValueError("Cinematic Pulse needs an orchestra or cute_game lane before scheduling.")
+    return {
+        "schedule_hour": 7,
+        "schedule_minute": 0,
+        "schedule_interval_days": 14 if lane else 7,
+        "schedule_scope": "date",
+        "schedule_label": f"cinematic_{lane}" if lane else "weekly_wednesday",
     }
-    if NEW_VERSE_YOUTUBE_CHANNEL_TITLE in channel_titles:
-        hour, minute = BUDDHIST_SCRIPTURE_SCHEDULE
-        return {
-            "schedule_hour": hour,
-            "schedule_minute": minute,
-            "schedule_interval_days": BUDDHIST_SCRIPTURE_SCHEDULE_INTERVAL_DAYS,
-            "schedule_scope": "date",
-            "schedule_label": "buddhist_scripture",
-        }
-    if CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE in channel_titles:
-        lane = infer_cinematic_pulse_lane(meta, title=playlist.title)
-        if lane == CINEMATIC_PULSE_ORCHESTRA_LANE:
-            hour, minute = CINEMATIC_PULSE_ORCHESTRA_SCHEDULE
-            return {
-                "schedule_hour": hour,
-                "schedule_minute": minute,
-                "schedule_scope": "slot",
-                "schedule_label": "cinematic_orchestra",
-            }
-        if lane == CINEMATIC_PULSE_CUTE_GAME_LANE:
-            hour, minute = CINEMATIC_PULSE_CUTE_GAME_SCHEDULE
-            return {
-                "schedule_hour": hour,
-                "schedule_minute": minute,
-                "schedule_scope": "slot",
-                "schedule_label": "cinematic_cute_game",
-            }
-        return {}
-    if not _scripture_upload_channel_selected(meta):
-        return {}
-    branch = scripture_branch_from_metadata(meta, title=playlist.title)
-    if branch == "old_testament":
-        hour, minute = SCRIPTURE_OLD_TESTAMENT_SCHEDULE
-        return {
-            "schedule_hour": hour,
-            "schedule_minute": minute,
-            "schedule_scope": "slot",
-            "schedule_label": "old_testament",
-        }
-    if branch == "new_testament":
-        hour, minute = SCRIPTURE_NEW_TESTAMENT_SCHEDULE
-        return {
-            "schedule_hour": hour,
-            "schedule_minute": minute,
-            "schedule_scope": "slot",
-            "schedule_label": "new_testament",
-        }
-    return {}
 
 
 def _resolve_youtube_channel_title(services: ServiceRegistry, channel_id: str | None) -> str | None:
@@ -886,10 +845,11 @@ def next_youtube_scheduled_publish_at(
     schedule_minute: int | None = None,
     schedule_scope: str = "date",
     schedule_interval_days: int | None = None,
+    schedule_label: str | None = None,
+    exclude_playlist_id: str | None = None,
 ) -> datetime | None:
     if not services.settings.youtube_schedule_public_enabled:
         return None
-
     if not str(youtube_channel_id or "").strip() and not str(youtube_channel_title or "").strip():
         try:
             youtube_status = services.youtube.get_status()
@@ -897,49 +857,32 @@ def next_youtube_scheduled_publish_at(
             youtube_channel_title = youtube_status.get("selected_channel_title")
         except Exception:  # noqa: BLE001
             pass
-
-    schedule_tz = _youtube_schedule_timezone(services)
-    hour = min(max(int(services.settings.youtube_schedule_hour if schedule_hour is None else schedule_hour), 0), 23)
-    minute = min(max(int(services.settings.youtube_schedule_minute if schedule_minute is None else schedule_minute), 0), 59)
-    lead_minutes = max(int(services.settings.youtube_schedule_min_lead_minutes), 0)
-    interval_days = max(int(schedule_interval_days or 1), 1)
     now_utc = _parse_metadata_datetime(now) or _utcnow()
-    now_local = now_utc.astimezone(schedule_tz)
-    candidate = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    if candidate <= now_local + timedelta(minutes=lead_minutes):
-        candidate += timedelta(days=1)
-
-    use_slot_scope = str(schedule_scope or "").strip().lower() == "slot"
-    occupied_local_dates = set()
-    occupied_local_slots = set()
+    from app.utils.youtube_schedule_policy import PUBLISH_TIMEZONE
+    occupied_dates = set()
     for playlist in db.scalars(select(Playlist)).all():
-        if not _playlist_matches_youtube_channel(
-            playlist,
-            services,
-            youtube_channel_id=youtube_channel_id,
+        if playlist.id == exclude_playlist_id or not _playlist_matches_youtube_channel(
+            playlist, services, youtube_channel_id=youtube_channel_id,
             youtube_channel_title=youtube_channel_title,
         ):
             continue
         meta = _playlist_meta(playlist)
-        for scheduled_at in _scheduled_publish_values_from_meta(meta):
-            if scheduled_at >= now_utc - timedelta(days=1):
-                scheduled_local = scheduled_at.astimezone(schedule_tz)
-                occupied_local_dates.add(scheduled_local.date())
-                occupied_local_slots.add(
-                    (scheduled_local.date(), scheduled_local.hour, scheduled_local.minute)
-                )
-
-    def occupied(value: datetime) -> bool:
-        if interval_days > 1:
-            value_date = value.date()
-            if any(abs((value_date - occupied_date).days) < interval_days for occupied_date in occupied_local_dates):
-                return True
-        if use_slot_scope:
-            return (value.date(), value.hour, value.minute) in occupied_local_slots
-        return value.date() in occupied_local_dates
-
-    while occupied(candidate):
-        candidate += timedelta(days=1)
+        # A channel has one slot per week, shared by all of its content lanes.
+        values = _scheduled_publish_values_from_meta(meta)
+        for key in ("youtube_public_at", "youtube_published_at"):
+            value = _parse_metadata_datetime(meta.get(key))
+            if value and is_weekly_slot(value):
+                values.append(value)
+        for value in values:
+            local = value.astimezone(PUBLISH_TIMEZONE)
+            if value >= now_utc - timedelta(days=7):
+                week_wednesday = local.date() + timedelta(days=2-local.weekday())
+                occupied_dates.add(week_wednesday)
+    lane = {"cinematic_orchestra": "orchestra", "cinematic_cute_game": "cute_game"}.get(schedule_label)
+    candidate = next_weekly_slot(
+        now_utc, lead_minutes=int(services.settings.youtube_schedule_min_lead_minutes),
+        lane=lane, occupied_dates=occupied_dates,
+    )
     return candidate.astimezone(timezone.utc)
 
 
@@ -961,10 +904,9 @@ def youtube_schedule_metadata(
         "youtube_scheduled_publish_at": scheduled_utc.isoformat(),
         "youtube_schedule_local_time": scheduled_local.isoformat(),
         "youtube_schedule_timezone": str(services.settings.youtube_schedule_timezone or "Asia/Seoul"),
-        "youtube_schedule_hour": int(services.settings.youtube_schedule_hour if schedule_hour is None else schedule_hour),
-        "youtube_schedule_minute": int(
-            services.settings.youtube_schedule_minute if schedule_minute is None else schedule_minute
-        ),
+        "youtube_schedule_hour": 7,
+        "youtube_schedule_minute": 0,
+        "youtube_schedule_weekday": "Wednesday",
     }
     if schedule_interval_days:
         metadata["youtube_schedule_interval_days"] = max(int(schedule_interval_days), 1)

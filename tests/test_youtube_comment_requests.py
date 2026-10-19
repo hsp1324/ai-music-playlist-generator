@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from app.utils.youtube_schedule_policy import next_weekly_slot
 from app.config import Settings
 from app.db import SessionLocal, init_db
 from app.models.enums import TrackStatus
@@ -174,10 +175,10 @@ def test_complete_records_release_provenance_and_attribution(tmp_path):
         )
 
 
-def test_prioritize_request_shifts_normal_club_bloom_releases_one_day(tmp_path):
+def test_prioritize_request_shifts_normal_club_bloom_releases_one_week(tmp_path):
     init_db()
     services = build_services(tmp_path)
-    first_slot = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=3)
+    first_slot = next_weekly_slot(datetime.now(timezone.utc)).astimezone(timezone.utc)
 
     with SessionLocal() as db:
         request = YouTubeCommentRequest(
@@ -221,7 +222,7 @@ def test_prioritize_request_shifts_normal_club_bloom_releases_one_day(tmp_path):
             metadata_json={
                 "target_youtube_channel_title": "Club Bloom",
                 "youtube_channel_id": "club-channel",
-                "youtube_scheduled_publish_at": (first_slot + timedelta(days=1)).isoformat(),
+                "youtube_scheduled_publish_at": (first_slot + timedelta(days=7)).isoformat(),
             },
         )
         locked = Playlist(
@@ -232,7 +233,7 @@ def test_prioritize_request_shifts_normal_club_bloom_releases_one_day(tmp_path):
                 "target_youtube_channel_title": "Club Bloom",
                 "youtube_channel_id": "club-channel",
                 "youtube_schedule_locked": True,
-                "youtube_scheduled_publish_at": (first_slot + timedelta(days=10)).isoformat(),
+                "youtube_scheduled_publish_at": (first_slot + timedelta(days=21)).isoformat(),
             },
         )
         other_channel = Playlist(
@@ -260,9 +261,9 @@ def test_prioritize_request_shifts_normal_club_bloom_releases_one_day(tmp_path):
 
         assert result["scheduled_publish_at"] == first_slot.isoformat()
         assert target.metadata_json["youtube_scheduled_publish_at"] == first_slot.isoformat()
-        assert normal_one.metadata_json["youtube_scheduled_publish_at"] == (first_slot + timedelta(days=1)).isoformat()
-        assert normal_two.metadata_json["youtube_scheduled_publish_at"] == (first_slot + timedelta(days=2)).isoformat()
-        assert locked.metadata_json["youtube_scheduled_publish_at"] == (first_slot + timedelta(days=10)).isoformat()
+        assert normal_one.metadata_json["youtube_scheduled_publish_at"] == (first_slot + timedelta(days=7)).isoformat()
+        assert normal_two.metadata_json["youtube_scheduled_publish_at"] == (first_slot + timedelta(days=14)).isoformat()
+        assert locked.metadata_json["youtube_scheduled_publish_at"] == (first_slot + timedelta(days=21)).isoformat()
         assert other_channel.metadata_json["youtube_scheduled_publish_at"] == first_slot.isoformat()
         assert result["skipped"][0]["reason"] == "schedule_locked"
         assert [update["video_id"] for update in services.youtube.schedule_updates] == [
@@ -447,7 +448,7 @@ def test_comment_payload_never_exposes_raw_text_or_prompt_instructions(tmp_path)
 def test_schedule_partial_failure_resumes_persisted_plan(tmp_path):
     init_db()
     services = build_services(tmp_path)
-    first_slot = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(days=3)
+    first_slot = next_weekly_slot(datetime.now(timezone.utc)).astimezone(timezone.utc)
 
     with SessionLocal() as db:
         request = YouTubeCommentRequest(

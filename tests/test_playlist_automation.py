@@ -335,10 +335,8 @@ def test_new_bulsong_metadata_quality_checks_warn_without_blocking(tmp_path) -> 
                 localizations={"ko": {"title": "새벽 UK Garage", "description": "설명"}},
                 title_market_research=research,
             )
-            assert "bulsong_title_specialist_term" in {
-                warning["code"]
-                for warning in approved_specialist_title.metadata_json["bulsong_quality_warnings"]
-            }
+            # Latest upstream sanitizes banned public genre labels before quality checks.
+            assert "Garage" not in approved_specialist_title.metadata_json["youtube_title"]
 
             approved = approve_playlist_metadata(
                 db,
@@ -9465,6 +9463,7 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
+        services.settings.youtube_schedule_public_enabled = True
 
         def fake_build_audio(tracks, output_path):
             output_path.write_bytes(b"fake-mp3")
@@ -9631,10 +9630,12 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
         assert published["youtube_video_id"] == "yt-auto-123"
         assert published["output_video_path"] == first_video_path
         assert os.path.exists(first_video_path)
-        assert any("YouTube publish completed" in call["text"] for call in ops_calls)
+        assert any("YouTube 게시 완료" in call["text"] for call in ops_calls)
         assert any("https://youtu.be/yt-auto-123" in call["text"] for call in ops_calls)
         assert upload_channel_ids[-1] == "UC123"
-        assert upload_scheduled_publish_at[-1] == datetime(2099, 5, 12, 3, 0, tzinfo=timezone.utc)
+        from app.utils.youtube_schedule_policy import is_weekly_slot
+        assert is_weekly_slot(upload_scheduled_publish_at[-1])
+        assert upload_scheduled_publish_at[-1] != datetime(2099, 5, 12, 3, 0, tzinfo=timezone.utc)
         assert upload_localizations[-1]["default_language"] == "ko"
         assert upload_localizations[-1]["localizations"]["en"]["title"] == "[playlist] English Title"
         original_youtube_title = published["youtube_title"]
@@ -9644,8 +9645,8 @@ def test_publish_approval_auto_uploads_when_youtube_ready(tmp_path) -> None:
             playlist = db.get(Playlist, workspace_id)
             assert "youtube_upload_error" not in playlist.metadata_json
             assert playlist.metadata_json["youtube_channel_id"] == "UC123"
-            assert playlist.metadata_json["youtube_scheduled_publish_at"] == "2099-05-12T03:00:00+00:00"
-            assert playlist.metadata_json["youtube_schedule_hour"] == 12
+            assert playlist.metadata_json["youtube_scheduled_publish_at"] == upload_scheduled_publish_at[-1].isoformat()
+            assert playlist.metadata_json["youtube_schedule_hour"] == 7
             assert playlist.metadata_json["youtube_schedule_minute"] == 0
             assert playlist.metadata_json["local_video_retained_after_youtube_upload"] == first_video_path
             assert playlist.metadata_json["local_video_retention_days"] == 3
@@ -9731,6 +9732,12 @@ def test_publish_retry_adopts_recent_existing_youtube_upload(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
+        services.settings.youtube_schedule_public_enabled = True
+        rescheduled = []
+        def fake_update_schedule(**kwargs):
+            rescheduled.append(kwargs)
+            return {"status": {"privacyStatus": "private", "publishAt": kwargs["scheduled_publish_at"].isoformat()}}
+        services.youtube.update_video_schedule = fake_update_schedule
 
         def fake_build_audio(tracks, output_path):
             output_path.write_bytes(b"fake-mp3")
@@ -9759,7 +9766,7 @@ def test_publish_retry_adopts_recent_existing_youtube_upload(tmp_path) -> None:
                 "channel_title": "Soft Hour Radio",
                 "privacy_status": "private",
                 "duration": "PT1M",
-                "publish_at": "2026-05-22T00:00:00Z",
+                "publish_at": "2099-05-22T00:00:00Z",
             }
 
         services.youtube.find_recent_upload_by_title = fake_find_recent_upload_by_title
@@ -9822,6 +9829,9 @@ def test_publish_retry_adopts_recent_existing_youtube_upload(tmp_path) -> None:
         assert publish_response.status_code == 200
         assert drain_background_jobs(client) == 1
         assert adopted_calls
+        assert len(rescheduled) == 1
+        from app.utils.youtube_schedule_policy import is_weekly_slot
+        assert is_weekly_slot(rescheduled[0]["scheduled_publish_at"])
 
         workspaces_response = client.get("/api/playlists/workspaces")
         published = next(item for item in workspaces_response.json() if item["id"] == workspace_id)
@@ -10167,7 +10177,7 @@ def test_youtube_service_replaces_caption_track(tmp_path, monkeypatch) -> None:
     assert captured["insert"]["media_body"]["kwargs"]["mimetype"] == "application/x-subrip"
 
 
-def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channel(tmp_path) -> None:
+def test_next_youtube_scheduled_publish_at_skips_occupied_weeks_per_channel(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -10235,14 +10245,14 @@ def test_next_youtube_scheduled_publish_at_skips_occupied_daily_slots_per_channe
                 schedule_interval_days=2,
             )
 
-        assert scheduled == datetime(2026, 5, 13, 22, 0, tzinfo=timezone.utc)
-        assert other_channel_scheduled == datetime(2026, 5, 11, 22, 0, tzinfo=timezone.utc)
-        assert two_day_interval_scheduled == datetime(2026, 5, 14, 22, 0, tzinfo=timezone.utc)
+        assert scheduled == datetime(2026, 5, 19, 22, 0, tzinfo=timezone.utc)
+        assert other_channel_scheduled == datetime(2026, 5, 19, 22, 0, tzinfo=timezone.utc)
+        assert two_day_interval_scheduled == datetime(2026, 5, 19, 22, 0, tzinfo=timezone.utc)
     finally:
         clear_isolated_client_env()
 
 
-def test_next_youtube_scheduled_publish_at_allows_distinct_daily_slots(tmp_path) -> None:
+def test_next_youtube_scheduled_publish_at_shares_weekly_slot_across_branches(tmp_path) -> None:
     try:
         client = create_isolated_client(tmp_path)
         services = client.app.state.services
@@ -10284,8 +10294,8 @@ def test_next_youtube_scheduled_publish_at_allows_distinct_daily_slots(tmp_path)
                 schedule_scope="slot",
             )
 
-        assert old_slot == datetime(2026, 5, 12, 22, 0, tzinfo=timezone.utc)
-        assert new_slot == datetime(2026, 5, 12, 7, 0, tzinfo=timezone.utc)
+        assert old_slot == datetime(2026, 5, 19, 22, 0, tzinfo=timezone.utc)
+        assert new_slot == old_slot
     finally:
         clear_isolated_client_env()
 
@@ -10314,25 +10324,12 @@ def test_scripture_schedule_options_and_playlist_titles() -> None:
         metadata_json={"target_youtube_channel_title": "The New Verse"},
     )
 
-    assert youtube_schedule_options_for_playlist(old_playlist) == {
-        "schedule_hour": 7,
-        "schedule_minute": 0,
-        "schedule_scope": "slot",
-        "schedule_label": "old_testament",
-    }
-    assert youtube_schedule_options_for_playlist(new_playlist) == {
-        "schedule_hour": 16,
-        "schedule_minute": 0,
-        "schedule_scope": "slot",
-        "schedule_label": "new_testament",
-    }
-    assert youtube_schedule_options_for_playlist(buddhist_playlist) == {
-        "schedule_hour": 7,
-        "schedule_minute": 0,
-        "schedule_interval_days": 1,
-        "schedule_scope": "date",
-        "schedule_label": "buddhist_scripture",
-    }
+    for playlist in (old_playlist, new_playlist, buddhist_playlist):
+        assert youtube_schedule_options_for_playlist(playlist) == {
+            "schedule_hour": 7, "schedule_minute": 0,
+            "schedule_scope": "date", "schedule_interval_days": 7,
+            "schedule_label": "weekly_wednesday",
+        }
     assert scripture_youtube_playlist_titles(old_playlist.metadata_json, title=old_playlist.title) == [
         "Old Testament Songs",
         "Scripture Hip-Hop Songs",
@@ -10343,7 +10340,7 @@ def test_scripture_schedule_options_and_playlist_titles() -> None:
     ]
 
 
-def test_cinematic_pulse_lanes_use_independent_daily_slots() -> None:
+def test_cinematic_pulse_lanes_use_alternating_weekly_slots() -> None:
     orchestra = Playlist(
         title="[playlist] Lyrical Chamber Orchestra",
         metadata_json={
@@ -10362,13 +10359,15 @@ def test_cinematic_pulse_lanes_use_independent_daily_slots() -> None:
     assert youtube_schedule_options_for_playlist(orchestra) == {
         "schedule_hour": 7,
         "schedule_minute": 0,
-        "schedule_scope": "slot",
+        "schedule_scope": "date",
+        "schedule_interval_days": 14,
         "schedule_label": "cinematic_orchestra",
     }
     assert youtube_schedule_options_for_playlist(cute_game) == {
-        "schedule_hour": 19,
+        "schedule_hour": 7,
         "schedule_minute": 0,
-        "schedule_scope": "slot",
+        "schedule_scope": "date",
+        "schedule_interval_days": 14,
         "schedule_label": "cinematic_cute_game",
     }
 

@@ -931,10 +931,11 @@ def _schedule_plan_result(request: YouTubeCommentRequest) -> dict[str, Any]:
 
 
 def _next_open_date(candidate: datetime, occupied_dates: set) -> datetime:
-    result = candidate
-    while result.date() in occupied_dates:
-        result += timedelta(days=1)
-    return result
+    from app.utils.youtube_schedule_policy import next_weekly_slot
+    slot = next_weekly_slot(candidate - timedelta(seconds=1), lead_minutes=0).astimezone(timezone.utc)
+    while slot.date() in occupied_dates:
+        slot += timedelta(days=7)
+    return slot
 
 
 def _persist_schedule_plan(
@@ -996,7 +997,7 @@ def _persist_schedule_plan(
 
     if request_lane:
         base_time = normal_lane[0][1] if normal_lane else request_lane[-1][1]
-        target_schedule = request_lane[-1][1] + timedelta(days=1)
+        target_schedule = request_lane[-1][1] + timedelta(days=7)
         target_schedule = target_schedule.replace(
             hour=base_time.hour,
             minute=base_time.minute,
@@ -1036,9 +1037,9 @@ def _persist_schedule_plan(
     ]
     previous_schedule = target_schedule
     for playlist, old_schedule in normal_lane:
-        desired = old_schedule + timedelta(days=1)
+        desired = old_schedule + timedelta(days=7)
         if desired.date() <= previous_schedule.date():
-            desired = previous_schedule + timedelta(days=1)
+            desired = previous_schedule + timedelta(days=7)
             desired = desired.replace(
                 hour=old_schedule.hour,
                 minute=old_schedule.minute,

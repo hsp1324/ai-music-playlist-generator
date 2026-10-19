@@ -1755,12 +1755,10 @@ class BackgroundJobWorker:
 
                     thumbnail_path = str(meta.get("youtube_thumbnail_path") or "").strip() or cover_image_path
                     schedule_options = youtube_schedule_options_for_playlist(playlist)
-                    explicit_scheduled_publish_at = self._metadata_scheduled_publish_at(meta)
                     scheduled_publish_at = (
                         None
                         if schedule_options.get("schedule_disabled")
-                        else explicit_scheduled_publish_at
-                        or next_youtube_scheduled_publish_at(
+                        else next_youtube_scheduled_publish_at(
                             db,
                             self.services,
                             youtube_channel_id=youtube_channel_id,
@@ -1769,6 +1767,8 @@ class BackgroundJobWorker:
                             schedule_minute=schedule_options.get("schedule_minute"),
                             schedule_scope=str(schedule_options.get("schedule_scope") or "date"),
                             schedule_interval_days=schedule_options.get("schedule_interval_days"),
+                            schedule_label=schedule_options.get("schedule_label"),
+                            exclude_playlist_id=playlist.id,
                         )
                     )
                     result = self._adopt_recent_existing_youtube_upload(
@@ -1800,17 +1800,33 @@ class BackgroundJobWorker:
                         )
                     )
                     if adopted_scheduled_at is not None:
-                        scheduled_publish_at = adopted_scheduled_at
+                        # Interrupted uploads may still carry the former daily calendar.
+                        from app.utils.youtube_schedule_policy import is_weekly_slot
+
+                        lane = {"cinematic_orchestra": "orchestra", "cinematic_cute_game": "cute_game"}.get(
+                            schedule_options.get("schedule_label")
+                        )
+                        if (
+                            result.response.get("adopted_existing_upload")
+                            and scheduled_publish_at is not None
+                            and adopted_scheduled_at > _utcnow()
+                            and not is_weekly_slot(adopted_scheduled_at, lane=lane)
+                        ):
+                            updated_schedule = self.services.youtube.update_video_schedule(
+                                video_id=result.video_id,
+                                scheduled_publish_at=scheduled_publish_at,
+                                youtube_channel_id=youtube_channel_id,
+                            )
+                            result.response["status"] = updated_schedule["status"]
+                            result.response["scheduled_publish_at"] = scheduled_publish_at.isoformat()
+                        else:
+                            scheduled_publish_at = adopted_scheduled_at
                     meta.update(
                         youtube_schedule_metadata(
                             self.services,
                             scheduled_publish_at,
-                            schedule_hour=schedule_options.get("schedule_hour")
-                            if explicit_scheduled_publish_at is None
-                            else meta.get("youtube_schedule_hour"),
-                            schedule_minute=schedule_options.get("schedule_minute")
-                            if explicit_scheduled_publish_at is None
-                            else meta.get("youtube_schedule_minute"),
+                            schedule_hour=schedule_options.get("schedule_hour"),
+                            schedule_minute=schedule_options.get("schedule_minute"),
                             schedule_interval_days=schedule_options.get("schedule_interval_days"),
                             schedule_label=schedule_options.get("schedule_label"),
                         )

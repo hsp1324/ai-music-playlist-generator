@@ -1,5 +1,10 @@
 # OpenClaw Channel Genre Taxonomy
 
+## Publishing schedule — effective 2026-10-19
+
+Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.
+Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_game on 2026-10-28, orchestra on 2026-11-04, alternating every week thereafter. Each lane therefore publishes every 14 days, always at 07:00. Set the exact lane; do not schedule two videos on the same Wednesday. Do not manually reintroduce daily timestamps. Follow `docs/openclaw-weekly-publishing.md`.
+
 Use this taxonomy when planning every playlist release. Each release chooses one detailed video style lane, keeps all tracks close to that lane, and is assigned to one broader YouTube playlist bucket.
 
 Do not make one release a sampler of unrelated styles. Slight variation inside the lane is fine, but the release must preserve one coherent arrangement and mood.

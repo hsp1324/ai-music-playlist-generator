@@ -1,5 +1,10 @@
 # OpenClaw Channel Concept Planner: Cinematic Pulse
 
+## Publishing schedule — effective 2026-10-19
+
+Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.
+Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_game on 2026-10-28, orchestra on 2026-11-04, alternating every week thereafter. Each lane therefore publishes every 14 days, always at 07:00. Set the exact lane; do not schedule two videos on the same Wednesday. Do not manually reintroduce daily timestamps. Follow `docs/openclaw-weekly-publishing.md`.
+
 ## Prospective policy update — 2026-10-02
 
 Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno v6 generation/reuse](../openclaw-suno-v6-policy.md) before new work. Preserve existing songs, images, releases, jobs, and approved briefs; continue them unchanged. For new releases, bare genre labels are not primary image hooks; new songs use verified standard v6, reuse is v6-only except human-Good legacy tracks at the tail, and global shuffle must not defeat that order. Existing text-free defaults and routing exclusions remain in force.
@@ -13,8 +18,8 @@ Cinematic Pulse is a no-vocal orchestral and game-music channel. Orchestra does 
 
 Cinematic Pulse has two separate public lanes:
 
-- **`orchestra` lane, daily 07:00 Asia/Seoul:** orchestral music in its full range: chamber orchestra, lyrical strings, woodwind-led pieces, piano-and-orchestra or orchestra without piano, neoclassical, romantic, impressionistic, pastoral, gentle family-animation scoring, travel, light comedy, mystery, emotional film score, premium game orchestra, heroic, sci-fi, dark fantasy, and epic battle when appropriate.
-- **`cute_game` lane, daily 19:00 Asia/Seoul:** playful no-vocal Japanese-style game/anime OST, cute arcade/fantasy-game BGM, item-shop BGM, amusement/theme-park BGM, and other approved former Storylight-style cues now uploaded to Cinematic Pulse because `Storylight OST` is manual-only.
+- **`orchestra` lane, alternating Wednesdays 07:00 Asia/Seoul (anchor 2026-10-21):** orchestral music in its full range: chamber orchestra, lyrical strings, woodwind-led pieces, piano-and-orchestra or orchestra without piano, neoclassical, romantic, impressionistic, pastoral, gentle family-animation scoring, travel, light comedy, mystery, emotional film score, premium game orchestra, heroic, sci-fi, dark fantasy, and epic battle when appropriate.
+- **`cute_game` lane, alternating Wednesdays 07:00 Asia/Seoul (anchor 2026-10-28):** playful no-vocal Japanese-style game/anime OST, cute arcade/fantasy-game BGM, item-shop BGM, amusement/theme-park BGM, and other approved former Storylight-style cues now uploaded to Cinematic Pulse because `Storylight OST` is manual-only.
 
 These are independent daily production and backlog lanes. Maintain and publish one `orchestra` release every morning and one `cute_game` release every evening. A large cute-game backlog or many scheduled cute-game videos never count as orchestra inventory and must never postpone the morning orchestra release. Create Cinematic Pulse workspaces with `--cinematic-pulse-lane orchestra` or `--cinematic-pulse-lane cute_game`; unclassified work does not satisfy either lane.
 
