@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: a text-free nightlife image, or `Keep the Night Moving` when a hook is useful. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `Club Bloom`, or when the human explicitly says to upload to `Club Bloom`.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - Explicit channel request wins.
@@ -44,19 +48,19 @@ Use this profile only after channel selection returns `Club Bloom`, or when the 
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
+- Use the exact approved cover image file as the thumbnail; do not create or edit a separate thumbnail image.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Club Bloom thumbnails should normally be text-free, like HaruHaru, when the candid club photo is strong enough to click on its own.
 - Optional click text conveys energy or a listening situation, such as `Keep the Night Moving` or `One More Lap`. Do not use standalone club-genre tags; existing public naming exclusions such as `GARAGE`, `UK GARAGE`, and `UKG` remain in force.
 - Keep any thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `CLUB BLOOM`, the channel name, or a channel logo.
 - Do not add duration badges such as `1 HOUR`, `60 MIN`, clocks, or timers unless the human explicitly asks.
-- The thumbnail should be bolder than the cover through crop, contrast, subject clarity, and club energy, not through a detached graphic layout. Keep it photorealistic, candid, Instagram-like, and YouTube-safe.
+- Make the single shared cover/thumbnail bold and clear at small size through its original composition, subject clarity, contrast, and club energy. Keep it photorealistic, candid, Instagram-like, and YouTube-safe.
 
 ## Render Visual
 
 - Do not create or upload a Gemini, Dreamina, or Seedance loop video for normal Club Bloom releases.
-- Upload the final cover and separate YouTube thumbnail, approve the cover, then queue final render as a still image:
+- Upload the same final cover file as both the cover and YouTube thumbnail, approve it, then queue final render as a still image:
   `scripts/openclaw-release render-video --release-id RELEASE_ID --allow-still-image-video --video-render-source-mode still_image --video-render-resolution 1080p --video-spectrum-overlay-style club-floor-cyan`
 - Do not pass `--loop-video`, `--loop-video-provider`, or browser-generated provider clips unless the human explicitly asks for motion on a specific release.
 - Do not add subtitles, lyrics, title text, duration text, UI, logos, full nudity, exposed nipples, visible genitals, sexual acts, unsafe minors, protected brands, or real club footage to the generated images.

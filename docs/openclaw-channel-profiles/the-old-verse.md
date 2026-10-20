@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: a passage-specific theme such as `Light After the Darkness`, with the exact verified passage range as smaller supporting text. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `BibliaCanto`, or when the human explicitly says to upload scripture music to `BibliaCanto`.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - Explicit channel request wins.
@@ -38,7 +42,7 @@ Use this profile only after channel selection returns `BibliaCanto`, or when the
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative, so the thumbnail keeps the same passage-based scene instead of becoming a generic Bible poster.
+- Use the exact approved cover image file as the thumbnail so the same passage-based scene appears in playback and on YouTube.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Put the exact selected passage range from the public title on the thumbnail, such as `Genesis 1:1-5` or `Matthew 1:18-25`, unless the human explicitly asks for no passage text. Add short readable click text that connects to that passage, book, theme, and modern hip-hop/R&B/K-pop-style listening lane.
 - Make the passage/theme/style package readable on a phone. Examples of stronger combinations: `Genesis 13 Abram & Lot / Bible Rap`, `Matthew 8 Healing / Bible R&B`, `Narrow Gate / Scripture Rap`, or `Creation Hip-Hop`. Avoid leaving the thumbnail as only `OLD TESTAMENT`, `NEW TESTAMENT`, `BIBLE MUSIC`, or a vague landscape.

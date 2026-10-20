@@ -7,6 +7,10 @@ Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_ga
 
 Standing human direction, 2026-10-02 (Asia/Seoul). Read before planning any new image package on **every channel**, including custom/manual channels when requested.
 
+## One image for playback and thumbnail — effective 2026-10-20
+
+Create one approved cover image and use the exact same image file for playback and the YouTube thumbnail. Do not create, crop, reframe, recolor, or add text to a separate thumbnail version. Design and approve any permitted text as part of the single cover image. This rule applies to all channels and overrides older instructions that allowed a thumbnail-only hook or crop. Existing releases and published assets stay unchanged.
+
 ## Apply prospectively; preserve existing work
 
 - Do not delete, replace, regenerate, reopen, or repackage songs, images, releases, renders, or published videos already made/planned before this direction. Continue those releases with their existing approved assets and brief.
@@ -23,7 +27,7 @@ For example, replace bare `GAME OST` with `기분 좋은 게임 OST 모음`, `�
 - One idea: a concrete feeling, situation, or benefit. Write naturally, not as an all-caps keyword stack or a fictional track title nobody recognizes.
 - Prefer roughly 2–6 Korean words or 3–7 English words and no more than two short lines; these are composition heuristics, not rigid character limits. Native Japanese/Spanish phrasing should read naturally at phone size.
 - Text is optional. A compelling text-free image is valid, especially for existing text-free channel identities. Do not put new lettering onto every channel just to show this policy was applied.
-- A playback cover may remain clean while its same-scene thumbnail carries the hook. If the cover/first frame has text, keep it stable in any provider clip; do not add new text during motion.
+- Any optional hook must be part of the single cover image because that same image is used for playback and thumbnail. If it appears in a provider clip, keep it stable; do not add new text during motion.
 - Keep lettering directly on the artwork with transparent background, safe margins, and readable local contrast. Existing no-box/no-badge/no-channel-brand/no-duration/no-waveform rules remain in force. Do not force every hook into the same upper-left label template.
 - Match language to the channel's established audience. The user's Korean game-music example is welcome on Korean-facing game releases; do not translate all channels into Korean. Do not copy competitors' brands, artwork, protected characters, or franchises.
 - Check at least the latest five channel packages when available. Vary the **listener promise**, not just one adjective; do not stamp “기분 좋은” or “Night Drive” on everything.
@@ -48,14 +52,14 @@ Examples are options, not slogans to repeat or permission to change the music la
 | Custom / newly connected channel | Infer audience language and music promise from its actual history | One native-language feeling/use-case hook, or text-free |
 | MusicSun | Apply when the human requests new work; do not enable automatic rotation | Infer from that requested release, not another channel's slogan |
 
-BibliaCanto thumbnails retain the required exact passage range unless the human explicitly requests no passage text; a text-free cover does not waive that thumbnail requirement. BibliaCanto's passage accuracy, HaruHaru/불송/Club Bloom text-free defaults, lane separation, connected-channel routing, and manual-only exclusions are not relaxed by these examples.
+BibliaCanto's required exact passage range, when applicable, must appear on the single shared cover/thumbnail image unless the human explicitly requests no passage text. BibliaCanto's passage accuracy, HaruHaru/불송/Club Bloom text-free defaults, lane separation, connected-channel routing, and manual-only exclusions are not relaxed by these examples.
 
 ## New planning and review contract
 
 Record in the production plan (these are planning fields, not newly added API flags):
 
 - `listener_promise`: one sentence the actual music fulfils.
-- `copy_language`, `cover_text`, `thumbnail_text` (empty string explicitly means text-free).
+- `copy_language`, `cover_text`, `thumbnail_text` (the two text values must match because they describe one shared image; an empty string explicitly means text-free).
 - Two candidate hooks, the selected hook, and why it is more inviting than a bare genre label; for text-free packages, explain the image's emotion instead.
 - `recent_copy_checked`: avoid repeating the last five hooks/scenes when available.
 

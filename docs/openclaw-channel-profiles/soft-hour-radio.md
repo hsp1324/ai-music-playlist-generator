@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: `A Quiet Place to Focus` or `Piano for a Slow Morning`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `Soft Hour Radio`, or when the human explicitly says to upload to `Soft Hour Radio`.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - Explicit channel request wins. If the human says `Soft Hour Radio에 올려줘`, this profile is mandatory even if the music mentions Japan, J-pop, city-pop, or anime influence.
@@ -42,7 +46,7 @@ Use this profile only after channel selection returns `Soft Hour Radio`, or when
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
+- Use the exact approved cover image file as the thumbnail; do not create or edit a separate thumbnail image.
 - Preserve the same photorealistic scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `A Quiet Place to Focus` or `Piano for a Slow Morning`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Make the text large enough to read on a phone thumbnail and pair it with a visual cue that proves the promise. Do not let the thumbnail be only a beautiful room plus small decorative words.

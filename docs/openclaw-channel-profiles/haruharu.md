@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: a text-free image; put a hook such as `괜히 설레는 오늘` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `HaruHaru`, or when the human explicitly says to upload to `HaruHaru`.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - This profile is for Korean-language vocal releases: K-pop hip-hop, rap-pop, K-pop trap, boom bap-influenced Korean pop, Korean R&B, neo-soul pop, dark street-pop, piano-only vocal pop, acoustic-guitar-only vocal pop, fresh K-indie acoustic, and related current Korean vocal lanes.
@@ -57,10 +61,9 @@ Use this profile only after channel selection returns `HaruHaru`, or when the hu
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
 - Preserve the same hero subject, action, relative placement, lighting, palette, major props, and camera angle from the cover.
 - By default, do not add thumbnail text. The artwork itself must provide the click reason instead of relying on a label to rescue a weak concept.
-- The thumbnail may crop and grade the approved cover for stronger small-size recognition, but it must not become a new scene or unrelated portrait. Preserve the chosen photographic, illustrated, animated, graphic, object-led, or surreal visual language.
+- Use the approved cover unchanged as the thumbnail. Compose that one image for clear recognition at both playback and small thumbnail sizes, while preserving the chosen visual language.
 - Inspect the thumbnail at a small mobile-like size before approval. Reject it when the focal idea disappears, faces or hands are malformed, the frame feels cluttered, the emotional read contradicts the audio, or it looks interchangeable with recent HaruHaru uploads.
 - If the human explicitly requests text later, keep it very small and integrated with a transparent background; never add the channel name or a logo. Do not put text inside black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape.
 - Do not add `HARUHARU`, the channel name, or a channel logo.

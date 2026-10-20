@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: `Windows Down, Mood Up` or `Songs for a Slow Sunday`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `sundaze`, or when the human explicitly says to upload to `sundaze`.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - This profile is for English/American pop playlist releases: English-language pop, American pop, US/UK pop, western pop, mainstream vocal pop, dance-pop, synth-pop, pop-rock, Pop R&B, pop hip-hop, indie pop, bedroom pop, alt-pop, acoustic pop, singer-songwriter pop, folk-pop, country pop, Americana pop, soft rock, adult-contemporary pop, pop-punk, Y2K/recession pop, disco/funk pop, Afrobeats, Afropop, and Amapiano-pop.
@@ -44,7 +48,7 @@ Use this profile only after channel selection returns `sundaze`, or when the hum
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
+- Use the exact approved cover image file as the thumbnail; do not create or edit a separate thumbnail image.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - Preserve the same candid lifestyle photo package. Use an optional English listener hook such as `Windows Down, Mood Up` or `Songs for a Slow Sunday`, or keep it text-free.
 - The thumbnail may slightly improve contrast/readability, but it should still feel like a natural friend-taken photo, not a polished campaign key visual.

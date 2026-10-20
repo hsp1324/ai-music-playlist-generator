@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: `帰り道が好きになる` or `晴れた日に聴きたい`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only after channel selection returns `Tokyo Daydream Radio`, or when the human explicitly says to upload to `Tokyo Daydream Radio`.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - This profile is for mainstream J-pop/Japanese pop and Japan-themed vocal pop releases: J-pop, city-pop, dance-pop, synth-pop, pop-rock, emotional pop ballads, summer pop, night-drive pop, anime-pop, Japanese rap, Japanese hip-hop, Japanese R&B, Japanese neo-soul, and similar releases.
@@ -44,8 +48,8 @@ Use this profile only after channel selection returns `Tokyo Daydream Radio`, or
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
-- Preserve the same subject placement, clothing colors, lighting, palette, background landmarks, and camera angle from the cover. For animated moving-video releases, preserve the same three people. For photorealistic still-image releases, preserve the same candid photo subject and street/lifestyle scene.
+- Use the exact approved cover image file as the thumbnail; do not create or edit a separate thumbnail image.
+- Use the exact same approved cover file as the thumbnail. For animated moving-video releases, preserve its three people in the video. For photorealistic still-image releases, preserve its candid subject and street/lifestyle scene.
 - New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `帰り道が好きになる` or `晴れた日に聴きたい`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.
 - Do not add `TOKYO DAYDREAM RADIO`, the channel name, or a channel logo.

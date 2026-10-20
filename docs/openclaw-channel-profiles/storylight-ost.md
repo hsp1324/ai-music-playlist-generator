@@ -12,6 +12,10 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this profile only when a former Storylight-style playful game/anime/theme-park BGM release is being uploaded to `Cinematic Pulse`, or when a human explicitly asks to inspect the legacy `Storylight OST` visual style. Do not publish new automation output to `Storylight OST`; the human manages that channel personally.
 
+## Global image rule — effective 2026-10-20
+
+For every new release, use one approved cover image file for playback and the YouTube thumbnail. Do not create or edit a separate thumbnail, including any crop, reframe, grade, or thumbnail-only lettering. Any permitted words must be part of the single cover image. Compose the image to read well at full size and at thumbnail size. Keep existing releases and published assets unchanged. Follow the natural-image quality standards in [the shared visual asset policy](../openclaw-visual-assets.md); this rule overrides older instructions below if they conflict.
+
 ## Routing Contract
 
 - Explicit channel request wins, except that `Storylight OST` itself is manual-only unless the human explicitly says to publish there in the current request.
@@ -38,7 +42,7 @@ Use this profile only when a former Storylight-style playful game/anime/theme-pa
 
 ## YouTube Thumbnail
 
-- Create the thumbnail from the final cover as an image-to-image edit/reference derivative.
+- Use the exact approved cover image file as the thumbnail; do not create or edit a separate thumbnail image.
 - Preserve the same scene, subject placement, lighting, palette, props, and camera angle from the cover.
 - New image copy follows [the audience-first policy](../openclaw-thumbnail-copy-policy.md): `기분 좋은 게임 OST 모음` or `A Cozy Little Quest`. Prefer one natural listener promise over a standalone genre label; text-free remains valid. Keep letters integrated directly on the artwork with no filled background.
 - Keep thumbnail text directly on the image with a transparent background. Use font weight, color, subtle shadow, thin outline, or local contrast for readability; do not use black boxes, semi-transparent dark panels, white or colored rectangles, gradient scrims, stickers, badges, pills, capsules, or any filled label shape behind text.

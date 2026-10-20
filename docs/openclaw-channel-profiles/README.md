@@ -37,11 +37,18 @@ For any new or pre-render resumed Playlist Release, [openclaw-one-hour-new-audio
 
 ## Global Visual Rules
 
+### Natural image quality and one shared cover/thumbnail
+
+- For every new release, create one approved cover image and use that exact same file for playback and the YouTube thumbnail. Do not generate a separate thumbnail, crop or reframe it, grade it differently, or add thumbnail-only text or graphics. Compose the source image so its focal point and any permitted lettering remain clear at small thumbnail size. If it needs improvement, revise the one source image before approval.
+- This rule applies across all channels and overrides older profile instructions for separate thumbnail variants. Keep existing releases and published assets as they are.
+- Make new artwork feel specific to its song and setting, with believable light, materials, anatomy, perspective, and a clear focal idea. Use natural asymmetry and varied compositions where they fit. Avoid generic centered portraits, waxy or overly perfect faces, excessive sharpening or bloom, decorative clutter, impossible details, random text, and stock-like scenes that could belong to any release. Do not add fake film grain or camera flaws as a shortcut. Preserve each profile's intended medium; illustrated and stylized art should still look intentional and coherent rather than generically polished.
+- Inspect the candidate at full size and at thumbnail size. Regenerate if faces, hands, reflections, lettering, object geometry, or lighting look synthetic or inconsistent.
+
 - Do not put the YouTube channel name, channel logo, or channel-brand line on covers, thumbnails, first-frame images, or loop videos.
 - Follow [the audience-first image copy policy](../openclaw-thumbnail-copy-policy.md) for this channel: text-free where established, otherwise one natural mood/situation hook in the audience language, not a bare genre label. Preserve verified passage support for BibliaCanto.
 - Text must be integrated into the artwork with safe margins and a transparent background. Letters should sit directly on the image; use only typography choices such as font weight, color, subtle shadow, thin outline, or local contrast for readability. Do not use hard black boxes, semi-transparent black panels, white or colored rectangles, gradient scrims, detached badges, pills, capsules, stickers, UI tags, logos, or watermark-like marks behind text. Reject/regenerate thumbnails when the text is placed inside any filled background shape.
-- The thumbnail should usually be created from the final cover as a reference/edit derivative. Keep the same scene and add only the short click text needed for YouTube.
-- The loop video should start from the cover/first-frame image, not from a busy text thumbnail, unless the profile explicitly says the first-frame and thumbnail are the same.
+- Use the exact approved cover file for the thumbnail and as the loop-video first frame. Never create a separate thumbnail edit. If text is permitted, decide it while creating the single cover so playback and thumbnail use the same image.
+- The loop video should start from that same cover/first-frame image.
 - Use Gemini only for moving provider clips. Do not use Dreamina, Seedance, or CapCut for new OpenClaw automation. If Gemini is unavailable, on cooldown, blocked after safe retries, or cannot create a usable MP4 within the wait window, use the approved still-image fallback instead of switching providers. HaruHaru, sundaze, Solwave Radio, and Club Bloom do not use provider clips by default; render them from the still cover image. 불송 is a standing still-image channel and should not use provider clips in normal automation.
 - For Gemini, do not ask for a duration. Upload the generated MP4 as-is after inspection.
 - Do not use `playlist`, `music visual`, `visualizer shot`, `seamless loop`, `repeat`, `cyclic`, or conceptual scripture framework words in video prompts when they can be replaced with visible scene details.
