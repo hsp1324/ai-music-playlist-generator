@@ -5,6 +5,8 @@
 Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.
 Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_game on 2026-10-28, orchestra on 2026-11-04, alternating every week thereafter. Each lane therefore publishes every 14 days, always at 07:00. Set the exact lane; do not schedule two videos on the same Wednesday. Do not manually reintroduce daily timestamps. Follow `docs/openclaw-weekly-publishing.md`.
 
+For known missing current-batch songs, use [Suno Studio acquisition](openclaw-suno-studio-download.md) and verify the complete file before app ingestion. Historical Library recovery was cancelled; do not enumerate old songs or treat pending historical records as blockers. The server owns public scheduling.
+
 Use this when OpenClaw has generated an audio file and needs to hand it to the AI Music web app.
 
 For higher-level OpenClaw skill instructions, including "make one single", "build every new Playlist Release to at least one hour with same-lane Suno generation when reuse is insufficient", and "write YouTube metadata", see [openclaw-skills.md](openclaw-skills.md) and [openclaw-one-hour-new-audio-policy.md](openclaw-one-hour-new-audio-policy.md).

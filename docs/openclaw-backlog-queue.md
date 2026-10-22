@@ -5,6 +5,10 @@
 Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.
 Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_game on 2026-10-28, orchestra on 2026-11-04, alternating every week thereafter. Each lane therefore publishes every 14 days, always at 07:00. Set the exact lane; do not schedule two videos on the same Wednesday. Do not manually reintroduce daily timestamps. Follow `docs/openclaw-weekly-publishing.md`.
 
+## Latest human update — 2026-10-22: historical recovery cancelled
+
+The human cancelled the broad historical Suno Library inventory after confirming Studio already worked. The durable recovery ledger is `phase=cancelled`, `action=fresh_production`; do not browse old Library pages, read its pending inventory, or block production on those records. Use [Suno Studio acquisition](openclaw-suno-studio-download.md) only for known missing IDs from the current production batch. Prioritize finishing the already audio-full HaruHaru releases and the separately rendered supplemental HaruHaru release recorded in the active producer instructions; inspect app state first and do not duplicate assets, render jobs, or uploads. The server owns publication scheduling.
+
 ## Latest human update — 2026-10-16: audio is pre-approved
 
 Read [standing audio pre-approval](openclaw-audio-preapproval-policy.md). Do not request individual music approval or require human/model listening QC. Accept complete generated files under the human's standing approval; normal playlist uploads use the quiet auto-approval default, never `--pending-review`. Keep real-file integrity, standard-v6 provenance, existing work, Good-rating distinctions, duration, visual, lock and app-managed publishing rules. This overrides older auditory-QC/approval-gate instructions, not CAPTCHA/authentication or technical render constraints.

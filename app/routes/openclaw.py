@@ -301,6 +301,12 @@ def openclaw_status(
         "ok": True,
         "runtime": read_runtime_state(services.settings.storage_root),
         "lock": get_openclaw_lock_status(services.settings.storage_root),
+        # Deliberately allowlisted live values, not source defaults or a settings dump.
+        # Producers need these before rendering to prevent unfiltered catalog backfill.
+        "production_policy": {
+            "playlist_reuse_back_half_enabled": services.settings.playlist_reuse_back_half_enabled,
+            "playlist_reuse_back_half_target_seconds": services.settings.playlist_reuse_back_half_target_seconds,
+        },
     }
 
 

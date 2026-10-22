@@ -7,6 +7,18 @@ Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_ga
 
 Standing human direction, 2026-10-02 (Asia/Seoul). Applies to **all new song generation**, playlists, singles, comment requests, and channel lanes. Read before Suno Create, catalog reuse, order selection, or new-playlist render.
 
+## Latest acquisition priority — 2026-10-22
+
+Follow [the Studio download guide](openclaw-suno-studio-download.md) for known missing current-batch songs. The human cancelled broad historical Library recovery after confirming the Studio route already worked; do not scan old pages or use the pending historical inventory as a production gate. Continue normal v6 work and finish existing ready releases before generating replacements. Exported files retain their original generation identity; Studio export is not new generation. New playlists remain v6-only.
+
+Keep the cancelled recovery ledger as audit evidence; do not reset it or repeat a historical missing-download search. Acquire each new batch by its known source IDs through Studio. Keep existing work, standing pre-approval, app locks and server-managed publish scheduling.
+
+## Latest clarification — 2026-10-20 17:06 KST: new playlists are v6-only
+
+Sunpyo Hong clarified that playlists made from now onward must contain only standard Suno v6 music, not a mixture with v5.5. Every track in a newly constituted release must have verified standard-v6 provenance. This supersedes the former human-Good legacy-tail exception in older instructions: even a liked/Good v5.5, v5, other legacy or unknown-model track is ineligible for a new release. Compatible verified-v6 reuse remains allowed; it is reuse, not a claim of fresh generation.
+
+Preserve already-started releases and the separately authorized 31-rendered-video publishing batch; do not delete, replace, rerender or relabel their attached legacy audio. Report these existing-work uploads separately from new v6-only playlist production. Keep the all-v6 check through assembly, automatic backfill, rendered timeline and publishing, not merely the opener.
+
 ## Preserve the work already made
 
 - Existing songs, images, releases, approved track lists, in-flight jobs, schedules, and published videos remain intact. Continue already-started releases; do not delete, regenerate, detach, reorder, or relabel their existing tracks just to migrate models.
@@ -26,6 +38,8 @@ Standing human direction, 2026-10-02 (Asia/Seoul). Applies to **all new song gen
 
 ## Official file acquisition when normal downloads are exhausted
 
+The authoritative operational steps, actual `… → Edit → Open in Studio` UI flow, original/derived-ID distinction, file checks and one-time completion gate are in [the Studio acquisition guide](openclaw-suno-studio-download.md). The historical diagnostic below is evidence of a previous successful download, not proof that the current recovery batch is complete.
+
 Generation credits and song-download allowances are separate. `Downloads Remaining = 0` is not proof that standard v6 generation or every official export route is unavailable. [Suno's download allowance guide](https://help.suno.com/en/articles/13926209) explicitly excludes Suno Studio workflows from the normal limits; [Studio export instructions](https://help.suno.com/en/articles/13925249) document the official export controls. Verify the current plan and Studio access in the signed-in UI; do not buy downloads, enable paid modes, or change subscriptions automatically.
 
 When Studio is available, use the existing song's **single-track full mix**, not a paid stem split, and preserve the source unchanged. Use Studio's official clip `Download .WAV`, or `Export > Full Song` and the resulting song's official Download menu. Saving to the library or seeing “unlocked” is not a completed local download. Verify an actual complete local file, duration, and successful full audio decode before uploading it to the app. Record both the original standard-v6 generation proof and the derived Studio export ID; Studio export is not a new song generation and cannot turn legacy/unknown material into v6.
@@ -39,15 +53,15 @@ Apply model eligibility **in addition to**, not instead of, same-channel/lane, r
 | Candidate | New-release reuse | Position |
 | --- | --- | --- |
 | Verified standard Suno v6 track, otherwise compatible | Allowed | v6 main block; strongest title-relevant v6 opener |
-| v5.5/v5/other legacy track with explicit human **Good** | Exception allowed if otherwise compatible | Tail only, after **all** v6 tracks; never the opening block |
+| v5.5/v5/other legacy track with explicit human **Good** | Not allowed in a new release under the 2026-10-20 clarification | Preserve catalog/rating; do not attach |
 | Legacy track without human Good | Not allowed | Do not attach |
 | Unknown model without human Good | Not allowed; missing provenance is not v6 | Do not attach or relabel based on date/title/sound |
-| Unknown/legacy model with human Good | Treat conservatively as the legacy exception | Tail only |
+| Unknown/legacy model with human Good | Not allowed; Good does not establish standard-v6 provenance | Do not attach |
 | v6-mini / v6-wild | Not established as standard v6 eligibility by this request | Do not generate/reuse automatically under this policy |
 
-Good means the app's explicit human rating `user_rating="like"`; `status="approved"`, a high model score, or the agent's opinion is **not** Good. Inspect the actual rating and provenance before `reuse-track`. A private model marker is trustworthy only with the corresponding recorded generation evidence. Keep unknown entries unknown. The Good exception is for playlist tails, not permission to make a new standalone single entirely from an old-model song.
+Good means the app's explicit human rating `user_rating="like"`; `status="approved"`, a high model score, or the agent's opinion is **not** Good. Preserve ratings, but Good no longer grants a legacy-model exception for newly constituted releases. Inspect provenance before `reuse-track`. A private model marker is trustworthy only with the corresponding recorded generation evidence. Keep unknown entries unknown.
 
-Start new releases with newly generated v6 songs. Reuse compatible verified v6 material as the v6 pool grows; do not operate an old-catalog reuse-only lane or change genres just because v6 stock is initially sparse. No arbitrary legacy reuse percentage is introduced by this request; any existing stricter channel/comment-request freshness limit still applies.
+Start new releases with newly generated v6 songs. Reuse compatible verified v6 material as the v6 pool grows; do not operate an old-catalog reuse-only lane or change genres just because v6 stock is initially sparse. Legacy audio is excluded entirely from newly constituted releases under the 2026-10-20 clarification; existing stricter channel/comment-request freshness limits still apply to eligible v6 reuse.
 
 ## One-hour assembly and explicit ordering
 
@@ -55,10 +69,10 @@ For each new automatic Playlist Release:
 
 1. Plan a 3600-second target (`create-release --workspace-mode playlist --target-seconds 3600`) and build a genuine v6 lead/main block. Preserve channel-specific no-reuse rules such as BibliaCanto's same-passage new material.
 2. Search/inspect candidates before attaching them. Catalog search is discovery, not a model eligibility check. Generate additional v6 songs whenever allowed compatible material is insufficient.
-3. Check the active server back-half target (`playlist_reuse_back_half_target_seconds`, source default 3600). The no-backfill threshold is `max(3600, workspace target, active server back-half target)`; if it is configured higher, assemble that full eligible duration too. Do not assume a source default proves the deployed setting. If the target cannot be established, pause new-render submission rather than risk unfiltered fill. Attach only verified v6 songs and optional explicit-Good legacy tail tracks. Reach at least **3600 seconds of approved, renderable, policy-eligible audio before render**. Do not let server-side automatic back-half reuse select from the unfiltered old catalog to make up a shortfall.
-4. Inspect the full workspace track list and provenance. Explicitly order `all v6 tracks -> optional Good legacy tail`, with a title-relevant v6 opener. The existing app endpoint `POST /playlists/{playlist_id}/tracks/reorder` accepts `track_ids`; use the established authenticated local API flow, not a guessed CLI flag.
+3. Check the active server back-half target (`playlist_reuse_back_half_target_seconds`, source default 3600). The no-backfill threshold is `max(3600, workspace target, active server back-half target)`; if it is configured higher, assemble that full eligible duration too. Do not assume a source default proves the deployed setting. If the target cannot be established, pause new-render submission rather than risk unfiltered fill. Attach only verified standard-v6 songs, without a legacy/Good-tail exception. Reach at least **3600 seconds of approved, renderable, policy-eligible audio before render**. Do not let server-side automatic back-half reuse select from the unfiltered old catalog to make up a shortfall.
+4. Inspect the full workspace track list and provenance. Explicitly order only verified standard-v6 tracks, with a title-relevant v6 opener. The existing app endpoint `POST /playlists/{playlist_id}/tracks/reorder` accepts `track_ids`; use the established authenticated local API flow, not a guessed CLI flag.
 5. Separate adjacent generated pairs within the v6 block by deliberate ordering if necessary. **Omit global `--randomize-order`** for these new releases: it can mix legacy songs into the front, and channel-specific reused-back-half behavior is not a model-version guarantee.
 6. Re-read the workspace after ordering, then queue render once. Filling the approved total before render is important because the existing server automatically tries to backfill a short base block from old tracks. Do not call render on a short new workspace and hope it selects only v6.
-7. Verify the rendered track/timestamp manifest still begins with v6 and places every legacy exception after the v6 block. If ordering or model eligibility cannot be verified, preserve assets and pause that new release; do not publish an unverified mixture.
+7. Verify every source in the rendered track/timestamp manifest remains verified standard v6. If any legacy/unknown source or unverified automatic backfill appears, preserve assets and pause that new release; do not publish an unverified mixture.
 
 This is an operator/automation procedure using existing APIs, **not a claim that the backend has acquired a new model filter**. No destructive catalog migration, retrospective rerender, or metadata bulk replacement is authorized. Existing pre-direction releases continue under their existing approved plan; later new releases follow this policy.
