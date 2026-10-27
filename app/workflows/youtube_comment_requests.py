@@ -931,8 +931,8 @@ def _schedule_plan_result(request: YouTubeCommentRequest) -> dict[str, Any]:
 
 
 def _next_open_date(candidate: datetime, occupied_dates: set) -> datetime:
-    from app.utils.youtube_schedule_policy import next_weekly_slot
-    slot = next_weekly_slot(candidate - timedelta(seconds=1), lead_minutes=0).astimezone(timezone.utc)
+    from app.utils.youtube_schedule_policy import next_weekly_slot, weekday_for_channel
+    slot = next_weekly_slot(candidate - timedelta(seconds=1), lead_minutes=0, weekday=weekday_for_channel("Club Bloom")).astimezone(timezone.utc)
     while slot.date() in occupied_dates:
         slot += timedelta(days=7)
     return slot

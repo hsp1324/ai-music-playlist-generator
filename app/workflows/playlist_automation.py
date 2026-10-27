@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session, selectinload
 
-from app.utils.youtube_schedule_policy import is_weekly_slot, next_weekly_slot
+from app.utils.youtube_schedule_policy import is_weekly_slot, next_weekly_slot, weekday_for_channel
 from app.config import get_settings
 from app.models.enums import JobStatus, JobType, PlaylistStatus, TrackStatus
 from app.models.job import Job
@@ -381,7 +381,7 @@ def youtube_schedule_options_for_playlist(playlist: Playlist) -> dict:
         "schedule_minute": 0,
         "schedule_interval_days": 14 if lane else 7,
         "schedule_scope": "date",
-        "schedule_label": f"cinematic_{lane}" if lane else "weekly_wednesday",
+        "schedule_label": f"cinematic_{lane}" if lane else "weekly_channel",
     }
 
 
@@ -857,6 +857,7 @@ def next_youtube_scheduled_publish_at(
             youtube_channel_title = youtube_status.get("selected_channel_title")
         except Exception:  # noqa: BLE001
             pass
+    weekday = weekday_for_channel(youtube_channel_title, youtube_channel_id)
     now_utc = _parse_metadata_datetime(now) or _utcnow()
     from app.utils.youtube_schedule_policy import PUBLISH_TIMEZONE
     occupied_dates = set()
@@ -871,17 +872,17 @@ def next_youtube_scheduled_publish_at(
         values = _scheduled_publish_values_from_meta(meta)
         for key in ("youtube_public_at", "youtube_published_at"):
             value = _parse_metadata_datetime(meta.get(key))
-            if value and is_weekly_slot(value):
+            if value and is_weekly_slot(value, weekday=weekday):
                 values.append(value)
         for value in values:
             local = value.astimezone(PUBLISH_TIMEZONE)
             if value >= now_utc - timedelta(days=7):
-                week_wednesday = local.date() + timedelta(days=2-local.weekday())
-                occupied_dates.add(week_wednesday)
+                week_slot = local.date() + timedelta(days=weekday-local.weekday())
+                occupied_dates.add(week_slot)
     lane = {"cinematic_orchestra": "orchestra", "cinematic_cute_game": "cute_game"}.get(schedule_label)
     candidate = next_weekly_slot(
         now_utc, lead_minutes=int(services.settings.youtube_schedule_min_lead_minutes),
-        lane=lane, occupied_dates=occupied_dates,
+        lane=lane, occupied_dates=occupied_dates, weekday=weekday,
     )
     return candidate.astimezone(timezone.utc)
 
@@ -906,7 +907,7 @@ def youtube_schedule_metadata(
         "youtube_schedule_timezone": str(services.settings.youtube_schedule_timezone or "Asia/Seoul"),
         "youtube_schedule_hour": 7,
         "youtube_schedule_minute": 0,
-        "youtube_schedule_weekday": "Wednesday",
+        "youtube_schedule_weekday": scheduled_local.strftime("%A"),
     }
     if schedule_interval_days:
         metadata["youtube_schedule_interval_days"] = max(int(schedule_interval_days), 1)

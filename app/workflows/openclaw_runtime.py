@@ -29,7 +29,7 @@ CINEMATIC_PULSE_REQUIRED_LANES = (
     CINEMATIC_PULSE_CUTE_GAME_LANE,
 )
 
-MANUAL_ONLY_CHANNEL_TITLES = {"MusicSun"}
+MANUAL_ONLY_CHANNEL_TITLES = {"MusicSun", "Storylight OST"}
 RETIRED_CHANNEL_TITLES = {"Signal Room Radio", "Signal Desk Radio", "Midnight Cue Radio", "AI썰전", "AnimeMix"}
 YOUTUBE_CHANNEL_TITLE_ALIASES = {
     "the old verse": "BibliaCanto",
@@ -753,6 +753,9 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
     active_lock = dict(lock_status.get("lock") or {}) if lock_status.get("active") else {}
     lock_release_id = str(active_lock.get("release_id") or "").strip()
     lock_channel_title = str(active_lock.get("channel_title") or "").strip()
+    from app.utils.youtube_schedule_policy import weekday_for_channel
+    from calendar import day_name
+
     channels = {
         title: {
             "count": 0,
@@ -766,7 +769,7 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
             "last_youtube_scheduled_public_local_date": None,
             "youtube_scheduled_public_local_dates": [],
             "releases": [],
-            "schedule_weekday": "Wednesday",
+            "schedule_weekday": day_name[weekday_for_channel(title)],
             "schedule_local_time": "07:00",
             "schedule_timezone": "Asia/Seoul",
             "schedule_interval_days": 7,
@@ -786,9 +789,9 @@ def build_openclaw_backlog_summary(db: Session, services) -> dict[str, Any]:
                 "target": target,
                 "maximum": maximum,
                 "schedule_local_time": "07:00",
-                "schedule_weekday": "Wednesday",
+                "schedule_weekday": day_name[weekday_for_channel(CINEMATIC_PULSE_YOUTUBE_CHANNEL_TITLE)],
                 "schedule_interval_days": 14,
-                "schedule_anchor_date": "2026-10-21" if lane == CINEMATIC_PULSE_ORCHESTRA_LANE else "2026-10-28",
+                "schedule_anchor_date": "2026-10-24" if lane == CINEMATIC_PULSE_ORCHESTRA_LANE else "2026-10-31",
             }
             for lane in (*CINEMATIC_PULSE_REQUIRED_LANES, "unclassified")
         }

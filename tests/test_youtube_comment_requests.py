@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.utils.youtube_schedule_policy import next_weekly_slot
+from app.utils.youtube_schedule_policy import next_weekly_slot, weekday_for_channel
 from app.config import Settings
 from app.db import SessionLocal, init_db
 from app.models.enums import TrackStatus
@@ -178,7 +178,7 @@ def test_complete_records_release_provenance_and_attribution(tmp_path):
 def test_prioritize_request_shifts_normal_club_bloom_releases_one_week(tmp_path):
     init_db()
     services = build_services(tmp_path)
-    first_slot = next_weekly_slot(datetime.now(timezone.utc)).astimezone(timezone.utc)
+    first_slot = next_weekly_slot(datetime.now(timezone.utc), weekday=weekday_for_channel("Club Bloom")).astimezone(timezone.utc)
 
     with SessionLocal() as db:
         request = YouTubeCommentRequest(
@@ -448,7 +448,7 @@ def test_comment_payload_never_exposes_raw_text_or_prompt_instructions(tmp_path)
 def test_schedule_partial_failure_resumes_persisted_plan(tmp_path):
     init_db()
     services = build_services(tmp_path)
-    first_slot = next_weekly_slot(datetime.now(timezone.utc)).astimezone(timezone.utc)
+    first_slot = next_weekly_slot(datetime.now(timezone.utc), weekday=weekday_for_channel("Club Bloom")).astimezone(timezone.utc)
 
     with SessionLocal() as db:
         request = YouTubeCommentRequest(

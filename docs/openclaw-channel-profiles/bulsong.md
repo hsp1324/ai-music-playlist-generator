@@ -2,8 +2,8 @@
 
 ## Publishing schedule — effective 2026-10-19
 
-Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.
-Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_game on 2026-10-28, orchestra on 2026-11-04, alternating every week thereafter. Each lane therefore publishes every 14 days, always at 07:00. Set the exact lane; do not schedule two videos on the same Wednesday. Do not manually reintroduce daily timestamps. Follow `docs/openclaw-weekly-publishing.md`.
+Each automated channel publishes at most once weekly at 07:00 Asia/Seoul on its assigned day: Monday HaruHaru and 불송; Tuesday Solwave Radio and BibliaCanto; Wednesday Tokyo Daydream Radio; Thursday Soft Hour Radio; Friday sundaze; Saturday Cinematic Pulse; Sunday Club Bloom. Storylight OST and MusicSun remain manual-only. The app calculates the slot; do not override it with a manual timestamp.
+Cinematic Pulse shares one Saturday slot, alternating orchestra and cute_game each week. The orchestra parity anchor is 2026-10-24, and cute_game is 2026-10-31. Each lane publishes every 14 days at 07:00. Set the exact lane and follow `docs/openclaw-weekly-publishing.md`.
 
 ## Prospective policy update — 2026-10-02
 
@@ -21,7 +21,7 @@ For every new release, use one approved cover image file for playback and the Yo
 - This profile is for Korean vocal releases internally inspired by Buddhist sources/themes, but the public song should feel like broadly accessible modern Korean music, not a Buddhist-content package. The source/theme stays only in planning and app metadata as raw inspiration for better lyrics. New sung lyrics, public titles, descriptions, tags, covers, thumbnails, and still images should avoid Buddhist vocabulary and Buddhist-looking visual cues unless the human explicitly asks for a source-explicit legacy package. Music and artwork should vary aggressively from release to release. Hip-hop/rap remains an important high-performing lane, but OpenClaw may also choose R&B, piano-only vocal pop, acoustic-guitar-only vocal pop, fresh Korean indie-acoustic pop, trip-hop, glitch-hop, drum and bass, hyperpop, art-pop, psychedelic soul, avant-jazz rap, dark pop, new-age electronica, cinematic trap, spoken-word rap, or other coherent modern lanes when they fit the emotional theme and do not sound like old devotional music.
 - Do not route Bible, Gospel, Old Testament, or New Testament worship here. Those now upload to `BibliaCanto`.
 - Do not route normal Korean pop/hip-hop here unless the lyric plan is internally based on a Buddhist source/theme. The finished lyrics should translate that source into ordinary emotional language. Normal Korean pop and hip-hop with no internal Buddhist source/theme belong on `HaruHaru`.
-- Publish through the app on the `불송` channel. The app schedules 불송 releases as public every Wednesday at 07:00 Asia/Seoul. Do not force private visibility unless the human explicitly pauses public scheduling.
+- Publish through the app on the `불송` channel. The app schedules 불송 releases as public every Monday at 07:00 Asia/Seoul. Do not force private visibility unless the human explicitly pauses public scheduling.
 
 ## Music And Suno Style
 
@@ -111,5 +111,5 @@ For every new release, use one approved cover image file for playback and the Yo
 - Do not relabel an already-rendered 불송 video as a different lane just because the current plan favors another style. If the finished video artwork/text and audio already point to Dharma pop / 다르마팝 / acoustic Dharma songs / 다르마송 / hip-hop / R&B / trip-hop, keep metadata truthful to that finished asset.
 - If choosing a cute/gentle animation visual direction, choose a compatible music lane and make that lane clear in the title/description. The visual style and music style must feel like one package.
 - Provide localized metadata for all configured languages, but keep Korean as the default top-level title/description.
-- Uploads should be app-scheduled public every Wednesday at 07:00 Asia/Seoul unless the human explicitly pauses 불송 public scheduling.
+- Uploads should be app-scheduled public every Monday at 07:00 Asia/Seoul unless the human explicitly pauses 불송 public scheduling.
 - YouTube playlist assignment: already uploaded/source-explicit 불송 videos with Buddhist vocabulary in the public title should be placed in the YouTube playlist `불송`. New mainstream 불송 uploads should be placed in the YouTube playlist `노래`.

@@ -61,3 +61,38 @@ def test_legacy_monday_publication_does_not_consume_first_new_wednesday():
         def scalars(self,*args): return SimpleNamespace(all=lambda:[past])
     services=SimpleNamespace(settings=SimpleNamespace(youtube_schedule_public_enabled=True,youtube_schedule_min_lead_minutes=30))
     assert next_youtube_scheduled_publish_at(DB(),services,youtube_channel_id='A',now=NOW) == datetime(2026,10,20,22,tzinfo=timezone.utc)
+
+
+def test_channels_are_distributed_and_storylight_is_manual_only():
+    from app.utils.youtube_schedule_policy import weekday_for_channel
+    from app.workflows.openclaw_runtime import MANUAL_ONLY_CHANNEL_TITLES
+    assert {name: weekday_for_channel(name) for name in (
+        'HaruHaru', '불송', 'Solwave Radio', 'BibliaCanto',
+        'Tokyo Daydream Radio', 'Soft Hour Radio', 'sundaze',
+        'Cinematic Pulse', 'Club Bloom',
+    )} == {
+        'HaruHaru': 0, '불송': 0, 'Solwave Radio': 1, 'BibliaCanto': 1,
+        'Tokyo Daydream Radio': 2, 'Soft Hour Radio': 3, 'sundaze': 4,
+        'Cinematic Pulse': 5, 'Club Bloom': 6,
+    }
+    assert weekday_for_channel(None, 'UCUpTHfTl_tgHS1rFtSQU7CA') == 2
+    assert weekday_for_channel(None, 'UCc79xOcZwpomZHTb8FaQ1UQ') == 6
+    assert {'Storylight OST', 'MusicSun'} <= MANUAL_ONLY_CHANNEL_TITLES
+
+
+def test_saturday_cinematic_parity_and_occupied_slots():
+    assert next_weekly_slot(NOW, weekday=5, lane='orchestra') == datetime(2026, 10, 24, 7, tzinfo=KST)
+    assert next_weekly_slot(NOW, weekday=5, lane='cute_game') == datetime(2026, 10, 31, 7, tzinfo=KST)
+    assert next_weekly_slot(NOW, weekday=5, lane='orchestra', occupied_dates={datetime(2026,10,24).date()}) == datetime(2026,11,7,7,tzinfo=KST)
+    assert not is_weekly_slot(datetime(2026,10,31,7,tzinfo=KST), weekday=5, lane='orchestra')
+
+
+def test_channel_schedule_and_metadata_weekday():
+    from app.workflows.playlist_automation import youtube_schedule_metadata
+    class DB:
+        def scalars(self,*args): return SimpleNamespace(all=lambda: [])
+    settings = SimpleNamespace(youtube_schedule_public_enabled=True, youtube_schedule_min_lead_minutes=30, youtube_schedule_timezone='Asia/Seoul')
+    services = SimpleNamespace(settings=settings)
+    slot = next_youtube_scheduled_publish_at(DB(), services, youtube_channel_title='Soft Hour Radio', now=NOW)
+    assert slot == datetime(2026,10,21,22,tzinfo=timezone.utc)
+    assert youtube_schedule_metadata(services, slot)['youtube_schedule_weekday'] == 'Thursday'

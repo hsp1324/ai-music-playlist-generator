@@ -10294,7 +10294,7 @@ def test_next_youtube_scheduled_publish_at_shares_weekly_slot_across_branches(tm
                 schedule_scope="slot",
             )
 
-        assert old_slot == datetime(2026, 5, 19, 22, 0, tzinfo=timezone.utc)
+        assert old_slot == datetime(2026, 5, 18, 22, 0, tzinfo=timezone.utc)
         assert new_slot == old_slot
     finally:
         clear_isolated_client_env()
@@ -10328,7 +10328,7 @@ def test_scripture_schedule_options_and_playlist_titles() -> None:
         assert youtube_schedule_options_for_playlist(playlist) == {
             "schedule_hour": 7, "schedule_minute": 0,
             "schedule_scope": "date", "schedule_interval_days": 7,
-            "schedule_label": "weekly_wednesday",
+            "schedule_label": "weekly_channel",
         }
     assert scripture_youtube_playlist_titles(old_playlist.metadata_json, title=old_playlist.title) == [
         "Old Testament Songs",
