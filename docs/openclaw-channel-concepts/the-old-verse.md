@@ -12,13 +12,13 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: a passage-specific theme such as `Light After the Darkness`, with the exact verified passage range as smaller supporting text. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected upload channel is `BibliaCanto`. This document decides the next scripture playlist concept for either the Old Testament branch or the New Testament branch. Use `../openclaw-channel-profiles/the-old-verse.md` afterward for cover, thumbnail, and short loop-video production rules.
 
-Mandatory vocal arrangement override: read
-[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
-first. Every new BibliaCanto vocal release uses exactly one of themed
-large-scale orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal.
-The legacy scripture hip-hop/R&B/K-pop lanes below guide English lyric delivery,
-discovery packaging, and catalog labels only; they cannot add beat-led or
-full-band accompaniment. Do not turn orchestral work into gospel or worship.
+Current vocal direction — 2026-10-27: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md).
+Rotate the channel's actual genres and plan singing, singing rap, rap verses
+with sung hooks, occasional rap bridges, and appropriate rap-led/rap-only
+songs. Include singing rap in a new vocal playlist without forcing rap into
+every track. Modern beats/bands are allowed; the old three-family restriction
+is retired. Keep one coherent groove/emotional arc, language and source rules.
 
 ## Channel Promise
 

@@ -1,5 +1,13 @@
 # Project Status
 
+## Vocal production direction — 2026-10-27
+
+The [vocal policy](openclaw-vocal-arrangement-policy.md) now permits diverse
+actual genres and planned singing/rap combinations on lyric channels. It
+supersedes older three-family/orchestral-plurality notes below. Singing rap is
+included in normal new vocal playlists, and some piano songs can have rap
+bridges; not every song requires rap. Existing assets remain usable.
+
 Last updated: 2026-07-15
 
 ## Goal

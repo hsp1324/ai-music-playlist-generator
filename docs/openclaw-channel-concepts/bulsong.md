@@ -12,13 +12,13 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: a text-free mainstream music image; put a hook such as `잡고 있던 걸 놓는 밤` in the title. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `불송`. `불송` is a Korean vocal channel internally inspired by Buddhist sources/themes, but new releases should sound and read like accessible mainstream songs.
 
-Mandatory vocal arrangement override: read
-[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
-first. Every new 불송 vocal release uses exactly one of themed large-scale
-orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
-rap/R&B/electronic lanes below guide Korean lyrics, delivery, discovery
-packaging, and catalog labels only; they cannot add beat-led or full-band
-accompaniment. The old mixed-lane reuse exception no longer applies.
+Current vocal direction — 2026-10-27: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md).
+Rotate the channel's actual genres and plan singing, singing rap, rap verses
+with sung hooks, occasional rap bridges, and appropriate rap-led/rap-only
+songs. Include singing rap in a new vocal playlist without forcing rap into
+every track. Modern beats/bands are allowed; the old three-family restriction
+is retired. Keep one coherent groove/emotional arc, language and source rules.
 
 ## Channel Promise
 
@@ -97,8 +97,8 @@ Do this immediately before finalizing every 불송 YouTube title. A remembered t
 - Trip-hop: downtempo drums, smoky bass, abstract texture, reflective spoken rap or sung hook.
 - Glitch-hop: chopped percussion, digital fragments, clear vocal center, lyrics about change, illusion, or emotional release in ordinary language.
 - Faster modern vocal energy may inform delivery privately, but do not select
-  garage as a new release concept or public label. Stay inside the global
-  orchestral-vocal, piano-only-vocal, or acoustic-guitar-only-vocal family.
+  garage as a new release concept or public label. Choose another compatible
+  modern genre and vary singing, singing rap and rap/sung section patterns.
 - Hyperpop/art-pop: bright synthetic hooks, fragmented self-image themes, polished but not novelty comedy.
 - Psychedelic soul / new-age electronica: surreal inner-world imagery, warm soul vocal or spoken rap, modern electronic texture.
 - Avant-jazz rap: unusual chords, live-feeling drums, poetic Korean rap, but not old cabaret, trot, or lounge parody.

@@ -12,13 +12,13 @@ Read [audience-first image copy](../openclaw-thumbnail-copy-policy.md) and [Suno
 New copy direction for this channel: `Hoy se siente bonito` or `Canciones para soltar`. These are examples, not fixed slogans; keep the actual music promise and channel language truthful.
 Use this after the selected channel is `Solwave Radio`. This document decides the next playlist concept. Use `../openclaw-channel-profiles/solwave-radio.md` afterward for cover, thumbnail, and still-image render rules.
 
-Mandatory vocal arrangement override: read
-[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md)
-first. Every new Solwave vocal release uses exactly one of themed large-scale
-orchestral vocal, piano-only vocal, or acoustic-guitar-only vocal. The legacy
-Latin-pop/reggaeton/R&B lanes below guide Spanish lyrics, delivery, discovery
-packaging, and catalog labels only; they cannot add beat-led or full-band
-accompaniment.
+Current vocal direction — 2026-10-27: read
+[../openclaw-vocal-arrangement-policy.md](../openclaw-vocal-arrangement-policy.md).
+Rotate the channel's actual genres and plan singing, singing rap, rap verses
+with sung hooks, occasional rap bridges, and appropriate rap-led/rap-only
+songs. Include singing rap in a new vocal playlist without forcing rap into
+every track. Modern beats/bands are allowed; the old three-family restriction
+is retired. Keep one coherent groove/emotional arc, language and source rules.
 
 ## Channel Promise
 

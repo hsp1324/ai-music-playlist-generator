@@ -14,10 +14,9 @@ mix profile repeatedly.
 
 For every lyric/vocal generation, first read and obey
 [openclaw-vocal-arrangement-policy.md](openclaw-vocal-arrangement-policy.md).
-That standing direction limits new vocal music to one release-level family:
-themed large-scale orchestra, piano-only accompaniment, or acoustic-guitar-only
-accompaniment. It overrides older beat-led vocal lane examples unless the
-human explicitly requests a one-off exception.
+The 2026-10-27 direction retires the three-family limit: rotate actual genres
+and plan distinct singing, singing-rap, rap/sung-hook and occasional rap-bridge
+configurations. Include singing rap without putting rap in every track.
 
 ## v6 UI compatibility
 
@@ -36,9 +35,9 @@ Before pressing Create, record these choices for each track:
 - genre/subgenre and BPM or tempo feel
 - rhythmic feel and two or three defining instruments
 - arrangement role, such as anchor, contrast, peak, or closer
-- for vocal songs: `vocal_arrangement_family`, the orchestral theme when
-  applicable, the hard allowed/forbidden instrument palette, vocal gender
-  control, and a distinct singer identity
+- for vocal songs: genre lane, vocal configuration, section map, instrument
+  palette, vocal gender control and a distinct singer identity; keep these in
+  the local plan rather than inventing API fields or forcing an old family
 
 Do not leave every track at `50 / 50`. Do not reuse the same slider pair for
 every track in a release. For three or more newly generated tracks, use at least
@@ -65,11 +64,11 @@ same safe output pattern.
 Slider changes are only one source of variation. Also change meaningful musical
 inputs: tempo, drum pocket, bass movement, key/mode, instrumentation, harmonic
 color, section order, intro texture, breakdown/drop design, vocal register, and
-delivery. Keep the release inside its selected genre lane and arrangement
-family. For piano-only and guitar-only vocal work, do not add drums, bass,
-synths, strings, or other instruments merely to create variation. For
-orchestral vocal work, vary within the one selected release theme instead of
-switching eras or replacing the orchestra with a pop rhythm section.
+delivery. Keep the release coherent while rotating related vocal patterns.
+For explicitly piano-only or guitar-only work, vary rap/sung delivery without
+adding other instruments. Broader R&B, hip-hop, pop and band lanes may use
+their defining rhythm section. Do not carry `rap`/`spoken vocals` exclusions
+into a track with planned singing rap or a rap section.
 
 ## Adaptive correction
 

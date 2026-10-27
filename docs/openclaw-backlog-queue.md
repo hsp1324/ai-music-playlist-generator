@@ -1,5 +1,13 @@
 # OpenClaw Backlog Queue Planner
 
+## New vocal production — 2026-10-27
+
+Read [the current vocal genre and delivery policy](openclaw-vocal-arrangement-policy.md)
+before new lyric prompts. Rotate real genres and include singing rap alongside
+singing-led songs, rap verses with sung hooks and occasional rap bridges.
+Do not default to piano ballads or the retired three-family rotation. Rap is
+not required in every track; keep existing ready work moving without regeneration.
+
 ## Publishing schedule — effective 2026-10-19
 
 Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.

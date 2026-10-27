@@ -5,172 +5,142 @@
 Every channel publishes at most one video each Wednesday at 07:00 Asia/Seoul (Tuesday 22:00 UTC). This overrides all older daily, dual-slot, and branch-specific times below. Upload/render/metadata preparation may continue on other days; public publication must use the server-calculated weekly slot.
 Cinematic Pulse shares ONE weekly channel slot: orchestra on 2026-10-21, cute_game on 2026-10-28, orchestra on 2026-11-04, alternating every week thereafter. Each lane therefore publishes every 14 days, always at 07:00. Set the exact lane; do not schedule two videos on the same Wednesday. Do not manually reintroduce daily timestamps. Follow `docs/openclaw-weekly-publishing.md`.
 
-This is the standing production direction for every **new song with singable
-lyrics**, regardless of channel, language, scripture source, public genre
-label, or visual concept. It applies to playlists and singles created after
-2026-08-24. A direct human request for a different arrangement may override it
-for that request only.
+## Current human direction — 2026-10-27
 
-The purpose is to separate these channels from ordinary low-cost pop
-production. New vocal music should sound as if it would require either a large,
-expensive live ensemble or a deliberately exposed one-instrument performance.
+For HaruHaru, sundaze, Solwave Radio, Tokyo Daydream Radio, BibliaCanto,
+불송 and any other channel making songs with lyrics, vary both the actual
+music genre and the balance of singing, singing rap and rap. This replaces
+the 2026-08-24 restriction to three accompaniment families and its mandatory
+orchestra/piano/guitar rotation. Modern beats, bass, synths, bands and hybrid
+arrangements are allowed when they fit the selected channel and genre.
 
-Already generated, rendered, scheduled, or published audio is not
-automatically discarded or regenerated. Apply this policy to new generation
-and to an unstarted workspace. Preserve real existing assets unless the human
-explicitly asks for a rebuild.
+Do not keep choosing piano ballads as the safe default. Piano and acoustic
+songs remain useful parts of the rotation. Preserve existing songs, lyrics,
+assets and releases; apply this direction to new prompts and genuine missing
+material, rather than regenerating finished work to satisfy a quota.
 
-## The only three vocal arrangement families
+Instrumental/no-vocal channels and explicit instrumental requests retain their
+own rules. Do not add rap, humming or sung hooks to Soft Hour Radio,
+Cinematic Pulse or Club Bloom instrumental work under this vocal policy.
 
-Every new vocal release must choose exactly one of these families. Do not mix
-families within one playlist.
+## Plan genre and vocal delivery separately
 
-### 1. Themed orchestral vocal
+Choose a coherent genre/groove and emotional arc for each playlist, then vary
+vocal configurations within it. Rotate genres across releases; related
+hybrids may share a playlist when tempo, groove and emotional context connect.
+Avoid an unrelated genre sampler or repeated near-identical piano ballads.
+Use recent release plans and the app's existing history for rotation; do not
+start a historical Suno Library sweep.
 
-This is the primary and most frequent family. Put a clear lead vocal and
-original lyrics over a genuinely large cinematic orchestra: layered strings,
-brass, woodwinds, timpani and other orchestral percussion, with harp, piano,
-ethnic acoustic instruments, or restrained choir color only when the selected
-theme needs them. The orchestra must be a central musical identity, not a thin
-string pad behind a normal pop, trap, EDM, or rock backing track.
+| Channel | Examples to rotate, subject to its current channel brief |
+| --- | --- |
+| HaruHaru | Korean hip-hop, rap-pop, boom bap, trap-soul, R&B/neo-soul, indie-acoustic, pop-rock, piano vocal |
+| Tokyo Daydream Radio | Japanese hip-hop/R&B, melodic J-rap, pop-rock, synth-pop, city-pop, anime-pop, acoustic pop |
+| sundaze | pop hip-hop, R&B/soul, funk/disco pop, synth-pop, indie/alt pop, pop-rock, country/folk, acoustic or piano songs |
+| Solwave Radio | urbano/reggaeton pop, Latin R&B/soul, bachata, salsa/cumbia pop, Latin pop-rock, Spanish acoustic or piano songs |
+| BibliaCanto | passage-faithful scripture hip-hop, rap-pop, R&B, neo-soul, pop-rock, Afropop, synth-pop, acoustic or orchestral songs |
+| 불송 | source-faithful Korean rap, boom bap, trap-soul, R&B/soul, indie-acoustic, pop-rock, piano or cinematic hybrids |
 
-Choose exactly one release-level theme before writing or generating tracks.
-Valid theme families include:
+Keep each channel's lyric language, source requirements and public packaging.
+BibliaCanto stays passage-based and outside gospel/worship/CCM; 불송 keeps its
+verified source-to-lyric mapping and mainstream public language. Retain the
+existing public-title restrictions and channel-specific routing.
 
-- epic or heroic journey
-- majestic or ceremonial
-- lyrical, tender, or emotionally sweeping
-- Nordic, fjord, winter, or runic-folk orchestral
-- medieval court, castle, bardic, or pilgrimage orchestral
-- dark fantasy, gothic, or tragic orchestral
-- mythic, legendary, or ancient-world orchestral
-- romantic, bittersweet, or tearful film-score orchestral
-- celestial, wonder, creation, or starlight orchestral
-- adventure, battle-march, victory, or homecoming orchestral
+## Include singing rap without putting rap in every song
 
-Keep all tracks inside that one theme and a coherent ensemble palette. Vary
-tempo, mode, dynamics, vocal identity, melodic contour, solo instrument,
-section shape, and emotional viewpoint without turning the playlist into a
-sampler of unrelated eras or fantasy worlds. A Nordic playlist must not drift
-into medieval court music halfway through; an intimate lyrical-orchestra
-playlist must not become trailer battle music.
+A normal new multi-song vocal playlist must include at least one distinct
+**singing-rap** prompt and at least one primarily sung song. Do not count a
+label in the title as delivery, or two outputs of one prompt as two different
+vocal plans. A single-song request can use whichever configuration fits; do
+not add a rap bridge to every single or to every track.
 
-Useful Suno style shape:
+Rotate these patterns rather than copying one verse/chorus template:
 
-```text
-themed cinematic orchestral vocal song, full symphony orchestra, [ONE THEME],
-prominent intelligible lead vocal, layered strings, expressive brass and
-woodwinds, natural orchestral dynamics, expensive live-ensemble scale,
-song-first verse/chorus/bridge structure, [DISTINCT SINGER IDENTITY]
-```
+| Configuration | Concrete section plan |
+| --- | --- |
+| Singing only | sung verses, sung chorus, melodic bridge; no required rap |
+| Singing rap | pitched rhythmic speech with melodic contour in a verse or hook, contrasted with fully sung sections |
+| Rap verse + sung hook | rhythm-led rap verses, recognizably melodic chorus, optional sung bridge |
+| Singing-led + occasional rap | mostly sung song with one short rap verse or bridge, then return to the melody |
+| Rap-led + sung chorus | rap carries most verses and development; singing provides the chorus or a brief refrain |
+| Rap only | developed rap verses and rhythmic/spoken refrain without a forced sung chorus; use when the lane supports it |
+| Alternating voices | distinct rapper and singer exchange sections, or a duet changes delivery while retaining one coherent song |
 
-Exclude ordinary beat-led production that would replace the orchestra, such
-as `generic pop beat, trap drums, 808 bass, EDM drop, synth-pop backing,
-lo-fi beat, rock band, small combo`, unless a human explicitly requests a
-specific hybrid. Orchestral percussion is allowed when it serves the selected
-theme. Do not default to worship, gospel, or church choir styling for
-BibliaCanto.
+For an eight-song plan, one possible mix is two singing-led songs, two singing
+rap songs, two rap-verse/sung-hook songs, one sung song with a rap bridge and
+one rap-led or rap-only song. This is an example, not a fixed order or a
+requirement to force every pattern into every playlist. Change the mix and
+section placement across releases. Pure rap is welcome where it fits; a
+piano-ballad collection need not contain a pure-rap track.
 
-### 2. Piano-only vocal
+## Piano songs can contain a rap section
 
-Use one acoustic grand, upright, or felt piano as the **only accompaniment**
-under a clear lead vocal. The exposed voice, lyric, harmony, touch, silence,
-and dynamics must carry the song.
+For some piano vocal songs, plan a restrained 8- or 16-bar rap/half-sung bridge
+between developed sung sections. Others should remain fully sung. Rap changes
+the vocal delivery, not the instrumentation: if the chosen lane is genuinely
+piano-only, keep piano as the only accompaniment, without adding drums, 808s,
+bass, pads or orchestra just because the voice raps. The same principle applies
+to an explicitly acoustic-guitar-only song. Broader R&B/hip-hop or band lanes
+may use the rhythm section and instruments that define that genre.
 
-Do not add drums, percussion, bass, guitar, strings, pads, synths, orchestra,
-choir, Rhodes, organ, or ambient backing layers. A different piano register,
-voicing, rhythmic pattern, room intimacy, and singer identity may vary by
-track, but the playlist remains piano plus voice only.
-
-Useful Suno style shape:
-
-```text
-intimate vocal song, solo acoustic [GRAND|UPRIGHT|FELT] piano accompaniment
-only, no other instruments, exposed natural dynamics, clear close lead vocal,
-song-first verse/chorus/bridge structure, [DISTINCT SINGER IDENTITY]
-```
-
-### 3. Guitar-only acoustic vocal
-
-Use one acoustic guitar as the **only accompaniment** under a clear lead
-vocal. Choose a coherent guitar palette for the release: steel-string
-fingerstyle, gentle strumming, nylon-string intimacy, or another clearly
-acoustic lane.
-
-Do not add drums, percussion, bass, piano, strings, pads, synths, orchestra,
-electric-guitar layers, or full-band backing. Vary picking pattern, capo/key,
-register, dynamics, lyrical angle, and singer identity while keeping the same
-release-level acoustic lane.
-
-Useful Suno style shape:
+Example Style direction:
 
 ```text
-intimate acoustic vocal song, one [STEEL-STRING|NYLON-STRING] acoustic guitar
-accompaniment only, no other instruments, natural fingerstyle or restrained
-strumming, clear close lead vocal, [DISTINCT SINGER IDENTITY]
+Korean intimate piano vocal song, one acoustic upright piano only,
+clear close-mic expressive lead, sung verse and chorus, one restrained
+8-bar rhythmic rap bridge in the middle, return to a fully sung final chorus,
+no drums, no bass, no synths, distinct natural singer identity
 ```
 
-## Release rotation and channel identity
+Write actual original lyrics under concise section cues, for example:
 
-- Make orchestral vocal releases the plurality. The normal new-vocal rotation
-  is `orchestral -> piano-only -> orchestral with a different theme ->
-  guitar-only`, then repeat without reusing a recent orchestral theme.
-- Channel and language identity still control lyrics, vocal delivery, public
-  metadata, and visuals. They do not permit a fourth accompaniment family.
-  Korean, Japanese, English, Spanish, BibliaCanto, and 불송 vocal songs must all
-  use one of the same three families.
-- Old detailed labels such as trap, R&B, synth-pop, dance-pop, Afropop, or
-  neo-soul may classify legacy catalog items, vocal phrasing, or a lyrical
-  sensibility, but they must not reintroduce a beat-led fourth arrangement into
-  new vocal generation.
-- Title and metadata should truthfully surface the audible family when useful:
-  orchestral vocal, cinematic orchestra songs, piano vocal, piano ballad,
-  acoustic guitar vocal, or natural localized equivalents.
+```text
+[Verse 1: sung, close and conversational]
+[full original verse lyrics]
+[Chorus: fully sung, clear melodic hook]
+[full original chorus lyrics]
+[Verse 2: sung, new scene and developed story]
+[full original second verse lyrics]
+[Bridge: 8 bars of restrained rap, piano accompaniment only]
+[original rhythmically phrased rap lyrics]
+[Final Chorus: fully sung, emotional lift]
+[full original final chorus lyrics]
+```
 
-## Reuse and one-hour fill
+Replace every placeholder before Create. Do not ask Suno to sing instructions.
+For singing rap, specify melodic rhythmic delivery explicitly rather than only
+adding `rap` to a generic ballad prompt. For rap-only, do not simultaneously
+request an obligatory fully sung chorus. Keep all exclusion lists consistent:
+remove `rap`/`spoken vocals` blockers for planned rap sections, while retaining
+clarity, noise and genuinely forbidden-instrument exclusions.
 
-Reuse is strict for new vocal releases:
+## Record the plan before Create
 
-- Reuse only vocal tracks from the same channel and the same arrangement
-  family.
-- For orchestral releases, also require the same or a genuinely compatible
-  orchestral theme and ensemble scale.
-- Never use an instrumental Cinematic Pulse track as a vocal-song substitute.
-  It may guide scale and instrumentation, but the new track must be generated
-  as a real vocal song with matching lyrics.
-- Do not backfill a new orchestral, piano-only, or guitar-only playlist with
-  legacy trap, synth-pop, EDM, full-band, R&B-beat, generic pop, or unrelated
-  acoustic tracks merely to reach one hour.
-- If compatible reuse is insufficient, render and publish the coherent shorter
-  release rather than weakening the identity.
+In the local production plan, record each track's genre/subgenre, tempo and
+groove, instrument palette, vocal configuration, section map, singer identity,
+lead gender and lyric language/source. These are planning notes, not invented
+API or CLI flags. Use existing backend fields only when they truly describe
+the track; do not label a full-band rap-pop song `piano_only` to fit an old
+three-family plan.
 
-## Required plan before Suno
+Vary at least two meaningful musical choices between adjacent new prompts:
+groove/tempo, harmony, instrument palette, singer identity, delivery balance,
+section order or emotional angle. A low-energy piano song should not dictate
+the next track's genre, voice and structure by default. Follow the existing
+intro quota and write enough developed lyrics for a full song.
 
-Record these fields for the release before the first Create:
+Before Create, check the playlist plan contains singing rap and singing-led
+material, the style and section cues agree, lyrics fit their source and
+language, and the exclusions do not forbid the requested delivery. Record
+intended configuration honestly; do not invent evidence about unheard audio
+or introduce a new listening-QC or per-song approval gate. Standing audio
+pre-approval and existing real-file integrity checks continue to apply.
 
-- `vocal_arrangement_family`: `orchestral`, `piano_only`, or
-  `acoustic_guitar_only`
-- `orchestral_theme`: required only for `orchestral`
-- allowed instrument palette
-- forbidden instruments and beat types
-- lyric language and release-level emotional arc
-- track-by-track singer identity and vocal gender control
-
-For every track, put the chosen family and its hard instrumentation boundary in
-the Style field. Also keep the existing distinct singer-identity cue in both
-Style and Lyrics. Do not rely on a title or lyric cue alone to make an
-orchestral song; the actual Style prompt must demand the full ensemble.
-
-## Approval check
-
-Before accepting, uploading, reusing, or rendering a vocal track:
-
-- It has real singable lyrics and an audible lead vocal.
-- Its accompaniment belongs to the selected one of three families.
-- Piano-only and guitar-only tracks contain no audible extra backing ensemble.
-- Orchestral tracks sound genuinely large-scale and match the one selected
-  release theme.
-- The lyrics file belongs to that exact audio output; reject a title/lyrics
-  mismatch or language mismatch.
-- Adjacent new tracks do not repeat the same singer identity, melodic shape,
-  or emotional angle.
+Reuse must fit the same channel, intended genre/groove, emotional arc and
+verified standard-v6 eligibility. Explicit piano-only/guitar-only releases
+retain their literal palette; an orchestral concept retains a compatible
+ensemble/theme. For broader lanes, compatible rap/sung combinations need not
+fit the retired three-family taxonomy. BibliaCanto's passage/no-reuse rules
+and HaruHaru's current freshness rules still apply. Generate only a genuine
+shortfall and reach the existing one-hour target before render. Finish
+already audio-full releases rather than generating extra songs for a quota.
