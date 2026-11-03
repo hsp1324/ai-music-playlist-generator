@@ -1,5 +1,9 @@
 # OpenClaw Skills For AI Music Releases
 
+For production, Gateway, automation, or Slack reporting failures, follow the
+[autonomous recovery runbook](openclaw-autonomous-recovery.md) before retrying
+or deferring the affected work.
+
 ## Publishing schedule — effective 2026-10-19
 
 Each automated channel publishes at most once weekly at 07:00 Asia/Seoul on its assigned day: Monday HaruHaru and 불송; Tuesday Solwave Radio and BibliaCanto; Wednesday Tokyo Daydream Radio; Thursday Soft Hour Radio; Friday sundaze; Saturday Cinematic Pulse; Sunday Club Bloom. Storylight OST and MusicSun remain manual-only. The app calculates the slot; do not override it with a manual timestamp.

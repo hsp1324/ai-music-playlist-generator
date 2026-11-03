@@ -1,5 +1,9 @@
 # OpenClaw Next Release Planner Skill
 
+When a run or release is blocked, use [the autonomous recovery runbook](openclaw-autonomous-recovery.md)
+to diagnose and safely repair it, quarantine only the affected request, and
+continue eligible independent work without duplicate generation.
+
 ## New vocal production — 2026-10-27
 
 Read [the current vocal genre and delivery policy](openclaw-vocal-arrangement-policy.md)

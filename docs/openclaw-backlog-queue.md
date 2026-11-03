@@ -1,5 +1,12 @@
 # OpenClaw Backlog Queue Planner
 
+## Autonomous failure recovery
+
+For Gateway, scheduled-job, Suno uncertainty, or Slack reporting failures,
+follow [the autonomous recovery runbook](openclaw-autonomous-recovery.md).
+Isolate an unresolved request without repeatedly blocking independent eligible
+work; preserve active locks, in-flight provider operations and existing assets.
+
 ## New vocal production — 2026-10-27
 
 Read [the current vocal genre and delivery policy](openclaw-vocal-arrangement-policy.md)
